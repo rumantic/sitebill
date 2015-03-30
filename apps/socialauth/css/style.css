@@ -1,0 +1,12 @@
+@CHARSET "UTF-8";
+.vk_button {
+	display: block;
+	float: left;
+	width: 16px;
+	height: 16px;
+	background-image: url("../img/vk.png");
+}
+.login_label {
+	float: left;
+	padding-right: 5px;
+}

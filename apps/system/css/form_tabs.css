@@ -1,0 +1,21 @@
+#form_tab_switcher a {
+	margin-right: 10px;
+	border: 1px solid silver;
+	padding: 10px;
+	background-color: white;
+	padding-top: 2px;
+}
+
+#form_tab_switcher a.active_tab_link {
+	font-weight: bold;
+	text-decoration: none;
+	border-bottom: 0;
+}
+
+.form_tab {
+	border: 1px solid silver;
+	float: left;
+	padding: 10px;
+	background-color: white;
+	width: 96%;
+}

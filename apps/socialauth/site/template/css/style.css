@@ -1,0 +1,16 @@
+.socialauth-panel {overflow:hidden; margin-bottom:20px}
+.socialauth-panel .icon {
+    background-image: url(../../../img/social-icons.png);
+    width:32px;
+    height:32px;
+    float:left;
+    margin-right:10px;
+}
+
+.socialauth-panel .icon.facebook {}
+.socialauth-panel .icon.vkontakte {background-position:0px -1px;}
+
+.socialauth-panel .icon.facebook {background-position:0px -106px;}
+.socialauth-panel .icon.odnoklassniki {background-position:0px -36px;}
+.socialauth-panel .icon.twitter {background-position:0px -141px;}
+.socialauth-panel .icon.google {background-position:0px -281px;}

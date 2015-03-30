@@ -1,0 +1,26 @@
+<table class="message_list table">
+{section name=i loop=$msgs}
+<tr class="message{if $msgs[i].status eq 0} unreaded{/if}" alt="{$msgs[i].mailbox_id}">
+	<td class="message_list_title">{$msgs[i].mailbox_id}</td>
+	<td class="message_list_title">{$msgs[i].name}</td>
+	<td class="message_list_title">{$msgs[i].theme}</td>
+	<td class="message_list_title">{$msgs[i].creation_date}</td>
+	<td><a href="#" class="showmessage">Развернуть</a></td>
+	<td><a href="{$estate_folder}/mailbox/delete/{$msgs[i].mailbox_id}">Удалить</a></td>
+</tr>
+<tr class="message_body">
+	<td colspan="6">
+		{if $msgs[i].realty_id!=0}
+			(к объявлению <a href="{$estate_folder}{$msgs[i].href}">ID {$msgs[i].realty_id})</a><br />
+		{/if}
+		{$msgs[i].message|nl2br}<br />
+		{if $msgs[i].phone!=''}
+		Телефон: {$msgs[i].phone}<br />
+		{/if}
+		{if $msgs[i].email!=''}
+		E-mail: {$msgs[i].email}
+		{/if}
+	</td>
+</tr>
+{/section}
+</table>

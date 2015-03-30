@@ -1,0 +1,7 @@
+.sitemap ul {
+	list-style: none;
+}
+.sitemap ul li {
+	font-size: 16px;
+	padding: 2px;
+}

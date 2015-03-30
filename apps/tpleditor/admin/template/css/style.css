@@ -1,0 +1,18 @@
+#left {
+  width: 100%;
+  float: left;
+}
+
+#right {
+  width: 190px;
+}
+
+.CodeMirror-scroll {
+	border: 1px solid silver;
+	height: 600px;
+}
+
+.warning {
+font-weight: bold;
+color: red;
+}

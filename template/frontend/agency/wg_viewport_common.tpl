@@ -1,0 +1,1 @@
+<li><label>{$wg_item.title}</label><span>{if is_array($wg_item.value)}{$wg_item.value|implode:','}{else}{$wg_item.value}{/if}</span></li>

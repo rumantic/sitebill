@@ -1,0 +1,75 @@
+{literal}
+<style>
+.dictionary td {
+	vertical-align: top;
+	padding: 5px;
+}
+
+.dictionary td.not_full {
+	background-color: #c41;
+}
+
+.dictionary input[type=text] {
+	width: 160px;
+}
+
+.dictionary textarea {
+	width: 300px;
+	height: 100px;
+}
+
+table.template_table {
+	display: none;
+}
+
+</style>
+{/literal}
+<script type="text/javascript" src="{$estate_folder}/apps/language/js/utils.js"></script>
+
+<table class="template_table">
+<tr class="template_row">
+<td>
+<input type="text" value="" name="dictionary_key[~]" />
+<br />
+<a class="delete_word" href="javascript:void(0);">DEL</a>
+</td>
+{foreach from=$langs item=lang}
+<td class="not_full">
+	<textarea name="dictionary_value[~][{$lang}]"></textarea>
+</td>
+{/foreach}
+</tr>
+</table>
+
+<form action="/admin/?action=language&do=save_words&app_name={$app_name}" method="post">
+<table class="dictionary">
+	<thead>
+		<tr>
+			<th></th>
+			{foreach from=$langs item=lang}
+			<th>{$lang}</th>
+			{/foreach}
+		</tr>
+	</thead>
+	{assign var=i value=0}
+	{foreach from=$keys item=key}
+	{assign var=i value=$i+1}
+	<tr>
+		<td>
+			<input type="text" value="{$key}" name="dictionary_key[{$i}]" />
+			<br />
+			<a class="delete_word" href="javascript:void(0);">DEL</a>
+		</td>
+		{foreach from=$langs item=lang}
+		<td{if $words[$key][$lang] eq ''} class="not_full"{/if}>
+			<textarea name="dictionary_value[{$i}][{$lang}]">{$words[$key][$lang]}</textarea>
+		</td>
+		{/foreach}
+		
+	</tr>
+	{/foreach}
+</table>
+<input type="hidden" value="{$i}" name="terms_counter" id="terms_counter" />
+<button id="add_new_word">Добавить</button>
+<input type="submit" value="Сохранить" name="submit" />
+</form>

@@ -1,0 +1,38 @@
+<table>
+	<thead>
+		<tr>
+			<th>Приложение</th>
+			<th>Словари</th>
+		</tr>
+	</thead>
+	<tbody>
+		{foreach from=$apps key=app item=app_dictionaries}
+		<tr>
+			<td>
+				{$app}
+				<!-- <a href="/?do=edit_application&app_name={$app}">{$app}</a> -->
+			</td>
+			<td>
+				{if $app_dictionaries|count!=0}
+				<a href="{$estate_folder}/admin/?action=language&do=all_words&app_name={$app}">Редактировать</a>
+				Словари: 
+				{foreach from=$app_dictionaries key=lang_code item=dictionary_state}
+					{if $dictionary_state==1}
+					{$lang_code}
+					{/if}
+					<!-- <a href="{$estate_folder}/admin/?action=language&do=edit_dictionary&app_name={$app}&dictionary={$lang_code}">{$lang_code}</a>
+					{if $dictionary_state==1}
+					<a href="{$estate_folder}/admin/?action=language&do=edit_dictionary&app_name={$app}&dictionary={$lang_code}">Редактировать файл словаря</a>
+					{else}
+					<a href="{$estate_folder}/admin/?action=language&do=create_dictionary&app_name={$app}&dictionary={$lang_code}">Создать файл словаря</a>
+					{/if} -->
+					
+				{/foreach}
+				{else}
+				<a href="{$estate_folder}/admin/?action=language&do=all_words&app_name={$app}">Добавить</a>
+				{/if}
+			</td>
+		</tr>
+		{/foreach}
+	</tbody>
+</table>

@@ -1,0 +1,1 @@
+<tr><td><b>{$wg_item.title}</b></td><td><input type="checkbox" checked="checked" disabled="disabled" /></td></tr>

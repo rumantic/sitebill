@@ -1,0 +1,92 @@
+<div class="grid">
+	{section name=i loop=$grid_items}
+	<div class="t_i_i{if $smarty.section.i.index is even} t_i_odd{/if}{if $grid_items[i].hot==1}{if $smarty.section.i.index is even} t_i_opayed{else} t_i_payed{/if}{/if}{if $grid_items[i].bold_status==1} grid_thumbs_bold{/if}{if $grid_items[i].premium_status==1} grid_thumbs_premium{/if}">
+		<div class="t_i_date">
+			<span class="t_i_time">{$grid_items[i].date}</span>
+		</div>
+
+		{if $grid_items[i].img != '' }
+		<div class="t_i_photo t_i_photo_s">
+			<a
+				href="{if $grid_items[i].url!=''}{$grid_items[i].url}{else}{$grid_items[i].href}{/if}"
+				title="{$grid_items[i].city}/{$grid_items[i].district}/{$grid_items[i].street}">
+				<img src="{$estate_folder}/img/data/{$grid_items[i].img[0].preview}"
+				alt="{$grid_items[i].city}/{$grid_items[i].district}/{$grid_items[i].street}"
+				width="110" />
+			</a>
+		</div>
+		{else}
+		<div class="t_i_photo t_i_photo_s">
+			<a
+				href="{if $grid_items[i].url!=''}{$grid_items[i].url}{else}{$grid_items[i].href}{/if}"
+				title="{$grid_items[i].city}/{$grid_items[i].district}/{$grid_items[i].street}">
+				<img src="{$estate_folder}/img/no_foto.png"
+				alt="{$grid_items[i].city}/{$grid_items[i].district}/{$grid_items[i].street}"
+				width="110" />
+			</a>
+		</div>
+		{/if}
+
+		<div class="t_i_title">
+			<h3 class="t_i_h3">
+
+				<a href="{$grid_items[i].href}"
+					title="{$grid_items[i].city}, {$grid_items[i].type_sh}"> {if
+					$grid_items[i].city ne ''} {$grid_items[i].city}{if
+					$grid_items[i].street ne ''}, {$grid_items[i].street}{if
+					$grid_items[i].number ne ''}, {$grid_items[i].number}{/if}{/if}
+					{else} {if $grid_items[i].street ne ''} {$grid_items[i].street}{if
+					$grid_items[i].number ne ''}, {$grid_items[i].number}{/if} {/if}
+					{/if} </a>
+			</h3>
+			<p>
+				<span>ID: {$grid_items[i].id}</span>
+			</p>
+			<!--p>
+            <span>Телефон: {if isset($grid_items[i]._user_info.phone) && $grid_items[i]._user_info.phone!=''}{$grid_items[i]._user_info.phone}{/if} {if $grid_items[i].phone!=''}{$grid_items[i].phone}{/if}</span>
+        </p-->
+			<p>
+				<span>Площадь {if $grid_items[i].square_all ne
+					''}{$grid_items[i].square_all}{else}-{/if} / {if
+					$grid_items[i].square_live ne
+					''}{$grid_items[i].square_live}{else}-{/if} / {if
+					$grid_items[i].square_kitchen ne
+					''}{$grid_items[i].square_kitchen}{else}-{/if}</span>
+			</p>
+			<p>
+				<span>Этаж
+					{$grid_items[i].floor}/{$grid_items[i].floor_count}</span>
+			</p>
+			<p>
+				<span class="listitemprice">{$grid_items[i].price|number_format:0:",":"
+					"} {if $grid_items[i].currency_name != ''}{$grid_items[i].currency_name}{/if}</span>
+			</p>
+			{if $grid_items[i].metro!=''}
+			<p class="listitemmetro">
+				<span>{$grid_items[i].metro}</span>
+			</p>
+			{/if}
+			<div class="t_i_data">
+				<p class="t_i_c">
+					<span>{$grid_items[i].type_sh}</span>
+				</p>
+			</div>
+		</div>
+		<div class="t_i_desc">{$grid_items[i].text|strip_tags|truncate:200}</div>
+		<div class="favblock">
+			{if isset($smarty.session.favorites)} {if
+			in_array($grid_items[i].id,$smarty.session.favorites)} <a
+				class="remove_from_favorites" alt="{$grid_items[i].id}"
+				title="{$L_DELETEFROMFAVORITES}" href="#remove_from_favorites"></a>
+			{else} <a class="add_to_favorites" alt="{$grid_items[i].id}"
+				title="{$L_ADDTOFAVORITES}" href="#add_to_favorites"></a> {/if}
+			{/if}
+		</div>
+	</div>
+	{if $smarty.section.i.iteration==5}
+	<div class="banner_holder">{$banner7}</div>
+	{/if} {/section}
+</div>
+{if $pager != ''}
+<div class="pager">{$pager}</div>
+{/if}

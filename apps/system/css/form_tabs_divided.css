@@ -1,0 +1,39 @@
+#form_tab_switcher a {
+	margin-right: 0;
+	border: 0;
+	padding: 0;
+	background-color: white;
+	padding-top: 2px;
+	padding: 5px 20px 5px 5px;
+	display: inline-block;
+	background-image: url(/img/arrow_2.png);
+	background-color: #063;
+	background-position: 100% 50%;
+	background-repeat: no-repeat;
+	color: White;
+}
+
+#form_tab_switcher span {
+	margin-right: 0;
+	padding: 5px;
+	display: inline-block;
+}
+.steps {
+	font-size: 16px;
+}
+.steps div {
+	padding: 10px;
+	float: left;
+	margin-left: 3px;
+    margin-right: 3px;
+}
+.steps .current {
+	font-weight: bold;
+	background-color: #edf4fa;
+}
+.steps .done {
+    background-color: #edf4fa;
+}
+.steps .future {
+    background-color: #f6fbff;
+}

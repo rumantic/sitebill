@@ -1,0 +1,527 @@
+body {
+    font-family: Tahoma;
+    font-size: 12px;
+    margin: 0px auto;
+    background-color: #F2F2F2;
+    background-image: url("../img/top_bg.jpg");
+    background-position: top;
+    background-repeat: repeat-x;
+}
+td {
+    font-size: 12px;
+}
+.row3 {
+    background-color: #F2f2f2;
+}
+.row3 td {
+}
+.row3:hover {
+    background-color: #ccffcc;
+}
+
+.row3notactive {
+    background-color: #efaaaa;
+}
+.row3notactive td {
+}
+.row3notactive:hover {
+    background-color: #ffd1d1;
+}
+
+
+#est {
+	float: left;
+	padding-left: 10px;
+	font-weight: bold;
+}
+#esh {
+	float: left;
+	padding-bottom: 10px;
+}
+#esf {
+	float: left;
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+#esf a {
+	font-weight: normal;
+	
+}
+#esrt {
+	float: right;
+	padding-right: 20px;
+}
+
+
+#menu_top_cont {
+    float: left;
+    padding: 10px;
+    background-image: url("../img/menu_bg.png");
+    background-repeat: no-repeat;
+    width: 916px;
+    height: 30px;
+    color: black;
+}
+
+#content {
+    width: 916px;
+    margin: 0px auto;
+    overflow: hidden;
+}
+#ctop {
+    float: left;
+    background-image: url("../img/ctop.png");
+    background-repeat: no-repeat;
+    border: 0px;
+    width: 916px;
+    height: 6px;
+}
+#cbottom {
+    float: left;
+    background-image: url("../img/cbottom.png");
+    background-repeat: no-repeat;
+    border: 0px;
+    width: 916px;
+    height: 7px;
+}
+#cmiddle {
+    float: left;
+    background-image: url("../img/cmiddle.png");
+    background-repeat: repeat-y;
+    padding: 5px;
+    border: 0px;
+    width: 916px;
+}
+
+.top_admin {
+	background-image: url("../img/adminpanel_bg.gif");
+	background-repeat: repeat-x;
+	height: 25px;
+	text-align: right;
+	padding-left: 5px;
+	padding-right: 5px;
+}
+
+.top_text {
+	float: right;
+	padding-left: 5px;
+	padding-top: 1px;
+	padding-right: 20px;
+}
+.top_text a {
+	color: #054F82;
+	text-decoration: none;
+}
+.top_text a:HOVER {
+	color: #8EA4BE;
+	text-decoration: underline;
+}
+
+.top_image {
+	float: right;
+}
+
+.browse_summ {
+	margin-left: 3ex;
+	padding: 0px;
+}
+
+h1.top
+{
+	text-align:	left;
+	color: #7cc812;
+	font-size: 12pt;
+	
+}
+
+.lehd
+{
+	text-align:	left;
+	background-color:  #7cc812;
+	font-weight:bold;
+	color: #ffffff;
+}
+
+
+.cat_title
+{
+	color:#660000;
+	text-decoration:underline;
+	font-weight:bold;
+}
+
+#config_table td {
+	border-bottom: 1px dotted #a7a7a7;
+	padding-bottom: 15px;
+}
+
+#config_table th {
+	font-size: 12px;
+	font-weight: bold;
+	background-color: #ebebeb;
+}
+
+
+.menu, .bottom_menu
+{
+	width: 100%;
+	padding: 3px 0px 5px 0px;
+	margin: 0px;
+	border-bottom: 1px dotted;
+}
+
+.menu li a {
+	font-size: 10pt;
+    color:#161616;
+    text-decoration:none;
+}
+.menu li, .bottom_menu li
+{
+    display:inline;
+    padding-left: 10px;
+	padding: 2px;
+	-webkit-border-radius: 5px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+	margin: 5px;
+	background-color: #ebebeb;
+	line-height: 30px;
+	border: 3px solid #ebebeb;
+}
+
+#a_active {
+	color: white;
+}
+
+li.active, a.active 
+{
+	font-size: 10pt;
+    text-decoration:underline;
+    display:inline;
+    padding-left: 10px;
+	padding: 2px;
+	-webkit-border-radius: 5px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+	margin: 5px;
+	background-color: #949494;
+	line-height: 30px;
+	border: 3px solid #ebebeb;
+}
+
+
+
+.address
+{
+	padding: 3px 0px 5px 0px;
+	margin: 0px;
+	font-size: 10pt;
+	color:#000000;
+	padding-left: 10px;
+}
+
+
+.list {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10pt;
+	width: 100%;
+}
+
+.r1 {
+}
+
+.r2 {
+	background-color:  #eeffe0;
+}
+
+
+
+
+
+.date
+{
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 12px;
+        color: #575555;
+}
+
+h1
+{
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 14px;
+	font-weight: bold;
+    color: #575555;
+}
+h2
+{
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 12px;
+	font-weight: bold;
+    color: #575555;
+}
+
+.row1 {
+    background-color:#F3F3F3;
+    color: Gray;
+}
+
+.row2 {
+    background-color:#F9F9F9;
+    color: Gray;
+}
+
+.row1 a {
+    color: Gray;
+}
+
+.row2 a {
+    color: Gray;
+}
+
+.maincat a{
+	color: Black;
+	font-weight: bold;
+}
+
+.hot {
+    background-color: #87FF95;
+}
+
+.row_title {
+    background-color:#F3F3F3;
+    font-weight: bold;
+}
+
+.error {
+    color:#FF0606;
+}
+.bookmark {
+    border: 1px none #999999;
+    color: #996600;
+}
+.bookmarkmenu {
+    color: #CCFF00;
+}
+table.bookmarks
+{
+    font-size: 10px;
+    color: #B0B0B0;
+    font-family: Verdana;
+    margin: 0px;
+    padding: 0px;
+}
+
+table.bookmarks a
+{
+    color: #999900;
+    text-decoration:none;
+}
+
+.gridTable {
+    margin: 0px;
+    border: 0px solid gray;
+    width: 100%;
+}
+
+.simpleTable {
+    margin: 0px;
+    border: 0px solid gray;
+    padding: 0px;
+}
+table.bookmarks td
+{
+    vertical-align:middle;
+    text-align:center;
+    height: 22px;
+    font-weight: bold;
+    background-color: #F3F3F3;
+    margin: 0px;
+    border: 1px solid gray;
+    border-bottom: 1px solid silver;
+    white-space:nowrap;
+    padding-left: 10px;
+    padding-right:10px;
+}
+
+table.bookmarks td.top
+{
+    background-color: #FFFFFF;
+    padding:0px;
+    border: none;
+    height: 2px;
+}
+
+table.bookmarks td.selected
+{
+    color: #505050;
+    border-left: 1px solid silver;
+    border-top: 1px solid silver;
+    border-right: 1px solid silver;
+    border-bottom: none;
+    background-color: #FFFFFF;
+}
+
+table.bookmarks td.rightfiller
+{
+    padding: 0px;
+    border: none;
+    border-bottom: 1px solid silver;
+    background-color: #FFFFFF;
+    width:100%;
+}
+
+table.bookmarks td.leftfiller
+{
+    padding: 0px;
+    border: none;
+    border-bottom: 1px solid silver;
+    background-color: #FFFFFF;
+}
+
+table.main
+{
+    padding: 0px;
+    border: none;
+    border: 1px solid silver;
+    background-color: #FFFFFF;
+}
+
+#structure {
+
+}
+
+#structure table
+{
+    border-collapse: collapse;
+    border: 1px solid #CCCCCC;
+}
+
+#structure table td, #structure table th
+{
+    font-family: Verdana;
+    font-size:  12px;
+    border: 1px solid #CCCCCC;
+}
+
+#calendar
+{
+
+    background: #FFFFFF;
+    border: 1px solid #000000;
+    text-align: justify;
+    font: 11px Verdana, Helvetica, sans-serif;
+    margin:0px;
+    padding: 0px;
+    position:absolute;
+    visibility: hidden;
+    left: 300px;
+    top: 300px;
+    z-index: 999;
+}
+
+#calendar table
+{
+    border-collapse: collapse;
+    border: 1px solid #CCCCCC;
+}
+
+#calendar table td, #calendar table th
+{
+    font-family: Verdana;
+    font-size:  11px;
+    border: 1px solid #CCCCCC;
+}
+
+
+#calendar select
+{
+    font: 11px, Verdana;
+}
+
+#calendar #c_today
+{
+    border: 2px solid #FF5555;
+}
+
+#calendar #c_selected
+{
+    background-color:#FFFFCC;
+}
+
+#calendar #c_today_selected
+{
+    background-color:#FFFFCC;
+    border: 2px solid #FF5555;
+}
+.green_bg {
+    background-color: #D3F89A;
+}
+.red_bg {
+    background-color: #F89A9A;
+}
+#area {
+    border: 1px solid gray;
+    padding: 2px;
+    background-color: #FFFFCC;
+    float: left;
+    margin: 2px;
+    width: 100%;
+}
+#info {
+    padding: 2px;
+    float: left;
+}
+#error_message {
+    border: 1px solid gray;
+    background-color: #FFCCCC;
+    padding: 2px;
+}
+#es {
+    float: left;
+}
+#es100 {
+    float: left;
+    width: 100%;
+    background-color: #F3F3F3;
+    height: 16px;
+    margin: 1px;
+}
+/* tables */
+table.tablesorter {
+	font-family:arial;
+	background-color: #CDCDCD;
+	margin:10px 0pt 15px;
+	font-size: 8pt;
+	width: 100%;
+	text-align: left;
+}
+table.tablesorter thead tr th, table.tablesorter tfoot tr th {
+	background-color: #e6EEEE;
+	border: 1px solid #FFF;
+	font-size: 8pt;
+	padding: 4px;
+}
+table.tablesorter thead tr .header {
+	background-image: url(/img/bg.gif);
+	background-repeat: no-repeat;
+	background-position: center right;
+	cursor: pointer;
+}
+table.tablesorter tbody td {
+	color: #3D3D3D;
+	padding: 4px;
+	background-color: #FFF;
+	vertical-align: top;
+}
+table.tablesorter tbody tr.odd td {
+	background-color:#F0F0F6;
+}
+table.tablesorter thead tr .headerSortUp {
+	background-image: url(/img/asc.gif);
+}
+table.tablesorter thead tr .headerSortDown {
+	background-image: url(/img/desc.gif);
+}
+table.tablesorter thead tr .headerSortDown, table.tablesorter thead tr .headerSortUp {
+background-color: #8dbdd8;
+}

@@ -1,0 +1,19 @@
+User-Agent: * 
+
+Disallow: /admin
+Disallow: /cache
+Disallow: /apps
+Disallow: /css
+Disallow: /inc
+Disallow: /install
+Disallow: /js
+Disallow: /template
+Disallow: /third
+Disallow: /remind/
+Disallow: /getrent/
+Disallow: /contactus/
+Disallow: /add/
+Disallow: /mailbox/
+Disallow: /ipotekaorder/
+
+#Sitemap: http://mysite.ru/sitemap.xml

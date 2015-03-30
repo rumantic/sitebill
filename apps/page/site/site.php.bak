@@ -1,0 +1,79 @@
+<?php
+defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
+/**
+ * Static pages handler fronend
+ * @author Abushyk Kostyantyn <abushyk@gmail.com> http://www.sitebill.ru
+ */
+class page_site extends page_admin {
+	
+	function frontend () {
+		if ( !$this->getConfigValue('apps.page.enable') ) {
+			return false;
+		}
+		if ( $_SERVER['REQUEST_URI'] == SITEBILL_MAIN_URL.'/' and ($page_array = $this->getPageByURI('index.html')) ) {
+			
+		} else {
+			$page_array=$this->getPageByURI($_SERVER['REQUEST_URI']);
+		}
+		
+		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/page_view.tpl')){
+			$render_tpl=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/page_view.tpl';
+		}else{
+			$render_tpl=SITEBILL_DOCUMENT_ROOT.'/apps/system/template/page_view.tpl';
+		}
+		
+		if($page_array){
+			if ( preg_match('/roadmap/', $_SERVER['REQUEST_URI']) ) {
+                $map_array = $this->getPageByURI('map');
+                //$this->template->assert('main', $page_array['body'].$map_array['body']);
+                $page_body=$page_array['body'].$map_array['body'];
+            } else {
+                //$this->template->assert('main', $page_array['body']);
+                $page_body=$page_array['body'];
+            }
+            
+            global $smarty;
+            $smarty->assign('page_title', $page_array['title']);
+            $smarty->assign('page_body', $page_body);
+            
+            $page_html=$smarty->fetch($render_tpl);
+            
+            
+            $this->template->assert('main', $page_html);
+            
+            
+            
+            
+            $this->template->assert('title', $page_array['title']);
+            $this->template->assert('breadcrumbs', $this->get_breadcrumbs(array('<a href="'.SITEBILL_MAIN_URL.'/">'.Multilanguage::_('L_HOME').'</a>',$page_array['title'])));
+            
+            $this->template->assert('meta_title', $page_array['meta_title']);
+            $this->template->assert('meta_keywords', $page_array['meta_keywords']);
+            $this->template->assert('meta_description', $page_array['meta_description']);
+            $this->template->render();
+            $rs = $this->template->toHTML();
+            return true;
+		}
+		return false;
+    }
+    
+	function getPageByURI($uri){
+        $uri = mysql_real_escape_string($uri);
+        if ( SITEBILL_MAIN_URL != '' ) {
+        	$uri = str_replace(SITEBILL_MAIN_URL, '', $uri);
+        }
+        
+        $uri = str_replace('/', '', $uri);
+        
+    	$query = "SELECT * FROM ".DB_PREFIX."_".$this->table_name." WHERE uri='".$uri."'";
+    	//echo $query;
+    	$this->db->exec($query);
+    	if($this->db->success){
+	    	$this->db->fetch_assoc();
+	    	if($this->db->row['page_id']>0){
+	    		return $this->db->row;
+	    	}
+    	}
+    	return 0;
+    }
+}

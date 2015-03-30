@@ -1,0 +1,12 @@
+<table>
+{section name=i loop=$tplfiles}
+<tr class="row3">
+{if $tplfiles[i] eq $smarty.request.file}
+<td><b>{$tplfiles[i]}</b></td>
+{else}
+<td>{$tplfiles[i]}</td>
+{/if}
+<td><a href="?action=tpleditor&do=edit&file={$tplfiles[i]}" class="btn btn-info" ><i class="icon-white icon-pencil"></a></td>
+</tr>
+{/section}
+</table>

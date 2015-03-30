@@ -1,0 +1,24 @@
+form textarea {
+    border: 1px solid Silver;
+    border-radius: 4px 4px 4px 4px;
+    color: graytext;
+    padding: 4px;
+    width: 270px;
+    height: 200px;
+}
+
+form input[type=text] {
+    border: 1px solid Silver;
+    border-radius: 4px 4px 4px 4px;
+    color: gray;
+    padding: 4px;
+	width: 260px;
+}
+
+form select {
+    border: 1px solid silver;
+    border-radius: 4px 4px 4px 4px;
+    color: gray;
+    padding: 4px;
+    width: 271px;
+}

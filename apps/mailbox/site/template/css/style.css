@@ -1,0 +1,29 @@
+table.message_list {
+	
+}
+
+table.message_list td.message_list_title  {
+	cursor: pointer;
+}
+
+table.message_list tr.message_body {
+	display: none;
+}
+
+table.message_list tr.message_body td {
+	border: 1px solid #eee;
+	border-top: 0;
+	padding-left: 40px;
+	padding-bottom: 30px;
+}
+
+table.message_list td {
+	padding: 5px;
+	border-bottom: 1px solid White;
+}
+
+.unreaded td {
+	font-weight: bold;
+	background-color: #eee;
+	
+}

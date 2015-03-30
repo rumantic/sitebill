@@ -1,0 +1,143 @@
+body{
+    font-family: Tahoma;
+    font-size: 12px;
+    margin: 0px auto;
+    background-color: #F2F2F2;
+    background-image: url("../img/top_bg.jpg");
+    background-position: top;
+    background-repeat: repeat-x;
+}
+h1 {
+	font-size: 20px;
+	color: #4a7097;
+}
+.license td {
+	font-size: 14px;
+}
+.license_field {
+	font-weight: bold;
+}
+.demo {
+	color: #ff6d0d;
+	padding-top: 10px;
+}
+input[type="submit"] {
+	font-size: 18px;
+	font-weight: bold;
+}
+input[type="button"] {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.clear {
+	clear: both;
+	overflow: hidden;
+}
+#title {
+	padding-left: 12px;
+}
+#content {
+    width: 1093px;
+    margin: 0px auto;
+}
+
+#page {
+	width: 1000px;
+	margin:auto;
+}
+
+#progress_table{
+	float:left;
+	position: related;
+	width: 300px;
+	background-color: #fbfbfb;
+	padding: 10px;
+    -moz-border-radius: 15px;
+    border-radius: 15px;	
+}
+	
+#install_content{
+	padding-left: 350px;
+}
+	
+#install_content h1 {
+	text-align: right;
+	border-bottom: 1px solid Black;
+}
+	
+#progressbar{
+	clear:both;
+}
+
+.error {
+	color:Red;
+}
+
+.ok {
+	color:Green;
+}
+
+.es_back {
+	float: left;
+	width: 200px;
+}
+#esh {
+    float: left;
+    padding-bottom: 10px;
+}
+#esh1 {
+    float: left;
+    width: 100%;
+}
+.corners {
+    margin-top: 3px;
+    margin-bottom: 3px;
+    background: white;
+    border: 1px solid #d6d6d6;
+}
+#tl {
+      background: url(../img/t-l.png) top left no-repeat; 
+      margin: -1px; /* Р·РЅР°С‡РµРЅРёРµ СѓРєР°Р·С‹РІР°РµРј СЂР°РІРЅС‹Рј С‚РѕР»С‰РёРЅРµ СЂР°РјРєРё */
+}
+#tr {
+      background: url(../img/t-r.png) top right no-repeat; 
+      margin: 0px;
+}
+#bl {
+      background: url(../img/b-r.png) bottom right no-repeat; 
+}
+#br {
+      background: url(../img/b-l.png) bottom left no-repeat; 
+}
+
+.cornersy {
+    margin-top: 3px;
+    margin-bottom: 3px;
+    background: #fefeda;
+    border: 1px solid #d6d6d6;
+}
+#tly {
+      background: url(../img/t-l-y.png) top left no-repeat; 
+      margin: -1px; /* Р·РЅР°С‡РµРЅРёРµ СѓРєР°Р·С‹РІР°РµРј СЂР°РІРЅС‹Рј С‚РѕР»С‰РёРЅРµ СЂР°РјРєРё */
+}
+#try {
+      background: url(../img/t-r-y.png) top right no-repeat; 
+      margin: 0px;
+}
+#bly {
+      background: url(../img/b-r-y.png) bottom right no-repeat; 
+}
+#bry {
+      background: url(../img/b-l-y.png) bottom left no-repeat; 
+}
+div.header_corner {
+    width: 100%;    
+    min-height: 500px;
+    padding: 5px;
+}
+
+div.controls {
+	border-top: 1px solid Black;
+	text-align: right;
+}

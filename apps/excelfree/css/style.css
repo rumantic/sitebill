@@ -1,0 +1,80 @@
+@CHARSET "UTF-8";
+.file {
+	padding: 10px;
+	width: 880px;
+	margin-bottom: 10px;
+	overflow: hidden;
+    border: 1px solid #CFCFCF;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    border-radius: 5px;	
+}
+#excel {
+	width: 900px;
+	overflow: auto;
+}
+#excel .field {
+	width: 100px;
+}
+#excel td {
+	font-size: 11px;
+}
+.import {
+	float: left;
+	width: 390px;
+	padding: 10px;
+	margin: 10px;
+    border-radius: 5px;
+    background-color: #fef4e8;
+    background-image: url("../img/from_xls.png");
+    background-repeat: no-repeat; 
+    background-position: bottom right;
+    opacity:0.6;
+    filter:alpha(opacity=60); /* For IE8 and earlier */    
+}
+.import:HOVER {
+    background-color: #f9c07d; 
+}
+.export {
+    float: left;
+    height: 100px; 
+    width: 390px;
+    padding: 10px;
+    margin: 10px;
+    border-radius: 5px; 
+    background-color: #c3ffbe; 
+    background-image: url("../img/from_db.png");
+    background-repeat: no-repeat; 
+    background-position: bottom right;
+    opacity:0.6;
+    filter:alpha(opacity=60); /* For IE8 and earlier */    
+}
+.export:HOVER {
+    background-color: #68ff5c; 
+}
+.export a {
+	font-size: 20px;
+}
+.sql_button {
+	display: none;
+}
+.sql_button a {
+	font-size: 20px;
+}
+.input_field {
+	margin-top: -5px;
+	font-size: 20px;
+}
+#save_export_template_button {
+	font-size: 20px;
+	cursor: pointer;
+}
+#save_export_template_button:HOVER {
+	text-decoration: underline;
+}
+#save_export_template {
+    font-size: 14px;
+    cursor: pointer;
+}
+#save_export_template:HOVER {
+    text-decoration: underline;
+}

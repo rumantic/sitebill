@@ -1,0 +1,19 @@
+@CHARSET "UTF-8";
+.image_news {
+	float: left;
+	padding: 5px;
+}
+.news {
+	margin: 3px;
+	padding: 5px;
+	padding-bottom: 10px;
+	padding-top: 10px;
+	background-color: #edf4fa;
+	overflow: hidden;
+}
+.news:hover {
+	background-color: #cde6fb;
+}
+#singleNews {
+	padding-bottom: 10px;
+}

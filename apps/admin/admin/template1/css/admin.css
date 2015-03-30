@@ -1,0 +1,752 @@
+body {
+    margin: 0px auto;
+}
+.prv {
+	width: 50px;
+}
+.row3 {
+    background-color: #F2f2f2;
+}
+.row3 td {
+}
+.row3:hover {
+    background-color: #ccffcc;
+}
+
+.row3notactive {
+    background-color: #efaaaa;
+}
+.row3notactive td {
+}
+.row3notactive:hover {
+    background-color: #ffd1d1;
+}
+
+
+#est {
+	float: left;
+	padding-left: 10px;
+	font-weight: bold;
+}
+#esh {
+	float: left;
+	padding-bottom: 10px;
+}
+#esf {
+	float: left;
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+#esf a {
+	font-weight: normal;
+	
+}
+#esrt {
+	float: right;
+	padding-right: 20px;
+}
+
+
+#menu_top_cont {
+    float: left;
+    width: 100%;
+}
+
+
+
+
+.top_admin {
+	background-image: url("../img/adminpanel_bg.gif");
+	background-repeat: repeat-x;
+	height: 25px;
+	text-align: right;
+	padding-left: 5px;
+	padding-right: 5px;
+}
+
+.top_text {
+	float: right;
+	padding-left: 5px;
+	padding-top: 1px;
+	padding-right: 20px;
+}
+.top_text a {
+	color: #054F82;
+	text-decoration: none;
+}
+.top_text a:HOVER {
+	color: #8EA4BE;
+	text-decoration: underline;
+}
+
+.top_image {
+	float: right;
+}
+
+.browse_summ {
+	margin-left: 3ex;
+	padding: 0px;
+}
+
+h1.top
+{
+	text-align:	left;
+	color: #7cc812;
+	
+}
+
+.lehd
+{
+	text-align:	left;
+	background-color:  #7cc812;
+	font-weight:bold;
+	color: #ffffff;
+}
+
+
+.cat_title
+{
+	color:#660000;
+	text-decoration:underline;
+	font-weight:bold;
+}
+
+#config_table td {
+	border-bottom: 1px dotted #a7a7a7;
+	padding-bottom: 15px;
+}
+
+#config_table th {
+	font-size: 12px;
+	font-weight: bold;
+	background-color: #ebebeb;
+}
+
+
+.menu, .bottom_menu
+{
+	width: 100%;
+	padding: 3px 0px 5px 0px;
+	margin: 0px;
+	border-bottom: 1px dotted;
+}
+
+.menu li a {
+	font-size: 10pt;
+    color:#161616;
+    text-decoration:none;
+}
+.menu li, .bottom_menu li
+{
+    display:inline;
+    padding-left: 10px;
+	padding: 2px;
+	-webkit-border-radius: 5px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+	margin: 5px;
+	background-color: #ebebeb;
+	line-height: 30px;
+	border: 3px solid #ebebeb;
+}
+
+#a_active {
+	color: white;
+}
+
+/*li.active, a.active 
+{
+    text-decoration:underline;
+    display:inline;
+    padding-left: 10px;
+	padding: 2px;
+	-webkit-border-radius: 5px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+	margin: 5px;
+	background-color: #949494;
+	line-height: 30px;
+	border: 3px solid #ebebeb;
+}*/
+
+
+
+.address
+{
+	padding: 3px 0px 5px 0px;
+	margin: 0px;
+	font-size: 10pt;
+	color:#000000;
+	padding-left: 10px;
+}
+
+
+.list {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 10pt;
+	width: 100%;
+}
+
+.r1 {
+}
+
+.r2 {
+	background-color:  #eeffe0;
+}
+
+
+
+
+
+.date
+{
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 12px;
+        color: #575555;
+}
+
+h1
+{
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 14px;
+	font-weight: bold;
+    color: #575555;
+}
+h2
+{
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 12px;
+	font-weight: bold;
+    color: #575555;
+}
+
+.row1 {
+    background-color:#F3F3F3;
+    color: Gray;
+}
+
+.row2 {
+    background-color:#F9F9F9;
+    color: Gray;
+}
+
+.row1 a {
+    color: Gray;
+}
+
+.row2 a {
+    color: Gray;
+}
+
+.maincat a{
+	color: Black;
+	font-weight: bold;
+}
+
+.hot {
+    background-color: #87FF95;
+}
+
+.row_title {
+    background-color:#F3F3F3;
+    font-weight: bold;
+}
+
+.error {
+    color:#FF0606;
+}
+.bookmark {
+    border: 1px none #999999;
+    color: #996600;
+}
+.bookmarkmenu {
+    color: #CCFF00;
+}
+table.bookmarks
+{
+    font-size: 10px;
+    color: #B0B0B0;
+    font-family: Verdana;
+    margin: 0px;
+    padding: 0px;
+}
+
+table.bookmarks a
+{
+    color: #999900;
+    text-decoration:none;
+}
+
+.gridTable {
+    margin: 0px;
+    border: 0px solid gray;
+    width: 100%;
+}
+
+.simpleTable {
+    margin: 0px;
+    border: 0px solid gray;
+    padding: 0px;
+}
+table.bookmarks td
+{
+    vertical-align:middle;
+    text-align:center;
+    height: 22px;
+    font-weight: bold;
+    background-color: #F3F3F3;
+    margin: 0px;
+    border: 1px solid gray;
+    border-bottom: 1px solid silver;
+    white-space:nowrap;
+    padding-left: 10px;
+    padding-right:10px;
+}
+
+table.bookmarks td.top
+{
+    background-color: #FFFFFF;
+    padding:0px;
+    border: none;
+    height: 2px;
+}
+
+table.bookmarks td.selected
+{
+    color: #505050;
+    border-left: 1px solid silver;
+    border-top: 1px solid silver;
+    border-right: 1px solid silver;
+    border-bottom: none;
+    background-color: #FFFFFF;
+}
+
+table.bookmarks td.rightfiller
+{
+    padding: 0px;
+    border: none;
+    border-bottom: 1px solid silver;
+    background-color: #FFFFFF;
+    width:100%;
+}
+
+table.bookmarks td.leftfiller
+{
+    padding: 0px;
+    border: none;
+    border-bottom: 1px solid silver;
+    background-color: #FFFFFF;
+}
+
+table.main
+{
+    padding: 0px;
+    border: none;
+    border: 1px solid silver;
+    background-color: #FFFFFF;
+}
+
+#structure {
+
+}
+
+#structure table
+{
+    border-collapse: collapse;
+    border: 1px solid #CCCCCC;
+}
+
+#structure table td, #structure table th
+{
+    font-family: Verdana;
+    font-size:  12px;
+    border: 1px solid #CCCCCC;
+}
+
+#calendar
+{
+
+    background: #FFFFFF;
+    border: 1px solid #000000;
+    text-align: justify;
+    font: 11px Verdana, Helvetica, sans-serif;
+    margin:0px;
+    padding: 0px;
+    position:absolute;
+    visibility: hidden;
+    left: 300px;
+    top: 300px;
+    z-index: 999;
+}
+
+#calendar table
+{
+    border-collapse: collapse;
+    border: 1px solid #CCCCCC;
+}
+
+#calendar table td, #calendar table th
+{
+    font-family: Verdana;
+    font-size:  11px;
+    border: 1px solid #CCCCCC;
+}
+
+
+#calendar select
+{
+    font: 11px, Verdana;
+}
+
+#calendar #c_today
+{
+    border: 2px solid #FF5555;
+}
+
+#calendar #c_selected
+{
+    background-color:#FFFFCC;
+}
+
+#calendar #c_today_selected
+{
+    background-color:#FFFFCC;
+    border: 2px solid #FF5555;
+}
+.green_bg {
+    background-color: #D3F89A;
+}
+.red_bg {
+    background-color: #F89A9A;
+}
+#area {
+    border: 1px solid gray;
+    padding: 2px;
+    background-color: #FFFFCC;
+    float: left;
+    margin: 2px;
+    width: 100%;
+}
+#info {
+    padding: 2px;
+    float: left;
+}
+#error_message {
+    border: 1px solid gray;
+    background-color: #FFCCCC;
+    padding: 2px;
+}
+#es {
+    float: left;
+}
+#es100 {
+    float: left;
+    width: 100%;
+    background-color: #F3F3F3;
+    height: 16px;
+    margin: 1px;
+}
+/* tables */
+table.tablesorter {
+	font-family:arial;
+	background-color: #CDCDCD;
+	margin:10px 0pt 15px;
+	font-size: 8pt;
+	width: 100%;
+	text-align: left;
+}
+table.tablesorter thead tr th, table.tablesorter tfoot tr th {
+	background-color: #e6EEEE;
+	border: 1px solid #FFF;
+	font-size: 8pt;
+	padding: 4px;
+}
+table.tablesorter thead tr .header {
+	background-image: url(/img/bg.gif);
+	background-repeat: no-repeat;
+	background-position: center right;
+	cursor: pointer;
+}
+table.tablesorter tbody td {
+	color: #3D3D3D;
+	padding: 4px;
+	background-color: #FFF;
+	vertical-align: top;
+}
+table.tablesorter tbody tr.odd td {
+	background-color:#F0F0F6;
+}
+table.tablesorter thead tr .headerSortUp {
+	background-image: url(/img/asc.gif);
+}
+table.tablesorter thead tr .headerSortDown {
+	background-image: url(/img/desc.gif);
+}
+table.tablesorter thead tr .headerSortDown, table.tablesorter thead tr .headerSortUp {
+background-color: #8dbdd8;
+}
+
+
+.admin_control {
+	padding-left: 5px;
+	padding-right: 5px;
+	filter: alpha(opacity=10);
+    opacity: 0.1;	
+}
+.admin_control:hover {
+	filter: alpha(opacity=100);
+    opacity: 1;	
+}
+.admin_button {
+	-moz-box-shadow:inset 0px 1px 0px 0px #bbdaf7;
+	-webkit-box-shadow:inset 0px 1px 0px 0px #bbdaf7;
+	box-shadow:inset 0px 1px 0px 0px #bbdaf7;
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #79bbff), color-stop(1, #378de5) );
+	background:-moz-linear-gradient( center top, #79bbff 5%, #378de5 100% );
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#79bbff', endColorstr='#378de5');
+	background-color:#79bbff;
+	-moz-border-radius:6px;
+	-webkit-border-radius:6px;
+	border-radius:6px;
+	border:1px solid #84bbf3;
+	display:inline-block;
+	color:#ffffff;
+	font-family:arial;
+	font-size:15px;
+	font-weight:bold;
+	padding:6px 24px;
+	text-decoration:none;
+	text-shadow:1px 1px 0px #528ecc;
+}.admin_button:hover {
+	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #378de5), color-stop(1, #79bbff) );
+	background:-moz-linear-gradient( center top, #378de5 5%, #79bbff 100% );
+	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#378de5', endColorstr='#79bbff');
+	background-color:#378de5;
+}.admin_button:active {
+	position:relative;
+	top:1px;
+}
+.row3hot {
+    background-color: #ffe4cd;
+}
+
+.row3hot:hover {
+    background-color: #edf4fa;
+    cursor: pointer;
+}
+.row3hot td {
+    border-bottom: 1px dotted;
+}
+
+.row3best {
+    background-color: #b9ff6f;
+}
+
+.row3best:hover {
+    background-color: #edf4fa;
+    cursor: pointer;
+}
+.row3best td {
+    border-bottom: 1px dotted;
+}
+.apps_path {
+	padding: 5px;
+	margin-bottom: 5px;
+	background-color: #F2f2f2;
+	border: 1px solid gray;
+	float: left;
+	width: 893px;
+}
+.child {
+	padding-left: 50px;
+}
+.child .row3 {
+    background-color: #f7fff3;
+}
+.child .row3 td {
+}
+.child .row3:hover {
+    background-color: #ccffcc;
+}
+.child .row_title {
+	background-color: #d7e3f4;
+}
+
+span.hint {
+	color: Gray;
+	font-size: 10px;
+	display: block;	
+}
+.top_help {
+	float: right;
+	padding-right: 20px;
+}
+
+a.mapviewer_active {
+	background-image: url(../img/map.png);
+	width: 32px;
+	height: 32px;
+	display: block;
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+}
+
+a.mapviewer_notactive {
+	background-image: url(../img/map_notactive.png);
+	width: 32px;
+	height: 32px;
+	display: block;
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+}
+
+div#mapviewer_edit_window {
+	/*display: none;*/
+	position: absolute;
+	left: -10000px;
+	width: 620px;
+	border: 1px solid silver;
+	padding: 10px;
+	border-radius: 6px;
+	background-color: white;
+}
+
+div#mapviewer_edit_window div label {
+	padding-right: 10px;
+}
+
+#element_preview {
+	/*float: right;
+	margin-right: 20px;*/
+	background-color: lightGreen;
+	padding: 10px;
+	border-radius: 5px;
+	border: 1px solid green;
+	
+}
+
+#element_preview table td {
+	font-size: 16px;
+}
+
+#element_preview table tr.row3 {
+	background-color: transparent;
+}
+
+#element_preview select {
+	max-width: 300px;
+}
+
+#widget_recently_apps {
+	padding: 10px;
+	float: left;
+}
+
+#widget_recently_apps .hidden{
+	color: Silver;
+	display: none;
+}
+
+#widget_recently_apps .disabled{
+	color: Silver;
+}
+
+#widget_recently_apps ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+#widget_recently_apps #next, #widget_recently_apps #prev {
+	cursor: pointer;
+}
+
+#widget_recently_apps_fixed {
+	position: fixed;
+	right: 0;
+	top: 300px;
+	width: 300px;
+	height: 200px;
+	background-color: Silver;
+	z-index: 10000;
+	border-radius: 10px;
+}
+
+#widget_recently_apps_fixed h1 {
+	margin-left: 50px;
+	font-size: 16px;
+	line-height: 20px;
+}
+
+#widget_recently_apps_fixed ul {
+	list-style: none;
+	padding: 0;
+	overflow-y: scroll;
+	height: 150px;
+	margin: 0 10px 0 45px;
+}
+
+#widget_recently_apps_fixed ul li {
+	display: block;
+	height: 30px;
+}
+
+#cntrl {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	cursor: pointer;
+	width: 35px;
+	height: 39px;
+	
+}
+
+.hide_block {
+	background-image: url(../img/widget_recently_apps_fixed_hide.png);
+}
+
+.show_block {
+	background-image: url(../img/widget_recently_apps_fixed_show.png);
+}
+.fl {
+	float: left;
+	padding-right: 10px;
+}
+.fl img {
+    margin: auto;
+    vertical-align: middle; 	
+}
+#save {
+	width: 100px;
+	font-weight: bold;
+	cursor:pointer;
+	text-align: center;
+	padding: 10px;
+	margin: 10px;
+    background-color: #eaeaea;
+    border-radius: 5px;
+}
+#save:hover {
+    background-color: Silver;
+}
+.spacer-top {
+	margin-top: 5px;
+}
+
+.column .field_tab {
+	background-color: #eee;
+	min-width: 100px;
+}
+
+.column .field_tab span.undefined {
+	color: silver;
+	font-style: italic;
+}
+
+.column .field_tab span.defined {
+	color: Green;
+}
+
+#geodata > div img {
+	max-width: none;
+}

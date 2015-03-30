@@ -1,0 +1,1 @@
+<tr><td><b>{$wg_item.title}</b></td><td>{$wg_item.value_string}</td></tr>

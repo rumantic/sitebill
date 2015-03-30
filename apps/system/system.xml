@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<install>
+    <name>system</name>
+    <creationDate>December 2012</creationDate>
+    <author>The Sitebill Development Team</author>
+    <authorEmail>kondin@etown.ru</authorEmail>
+    <authorUrl>http://www.sitebill.ru</authorUrl>
+    <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
+    <license>http://www.sitebill.ru/licenses/sitebill.html</license>
+    <version>2.9.9.2</version>
+    <backendMenu>false</backendMenu>
+    <administration>
+        <!-- Administration Menu Section -->
+        <menu>Система</menu>
+    </administration>   
+</install>

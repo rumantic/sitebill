@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<install>
+	<name>menu</name>
+	<creationDate>November 2013</creationDate>
+	<author>The Sitebill Development Team</author>
+	<authorEmail>abushyk@gmail.com</authorEmail>
+	<authorUrl>http://www.sitebill.ru</authorUrl>
+	<copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
+	<license>http://www.sitebill.ru/licenses/sitebill.html</license>
+    <backendMenu>false</backendMenu>
+	<version status="beta">1.0.2</version>
+	<administration>
+		<!-- Administration Menu Section -->
+		<menu>Меню</menu>
+	</administration>	
+</install>

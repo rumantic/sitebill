@@ -1,0 +1,36 @@
+<!-- <script type="text/javascript" src="{$estate_folder}/js/tiny_mce/tiny_mce.js"></script>
+<script type="text/javascript" src="{$estate_folder}/apps/tpleditor/admin/template/js/utils.js"></script>
+ -->
+ 
+<link rel="stylesheet" href="{$estate_folder}/apps/tpleditor/admin/template/js/codemirror/lib/codemirror.css">
+<script type="text/javascript" src="{$estate_folder}/apps/tpleditor/admin/template/js/codemirror/lib/codemirror.js"></script>
+<script type="text/javascript" src="{$estate_folder}/apps/tpleditor/admin/template/js/codemirror/mode/xml/xml.js"></script>
+<script type="text/javascript" src="{$estate_folder}/apps/tpleditor/admin/template/js/codemirror/mode/javascript/javascript.js"></script>
+<script type="text/javascript" src="{$estate_folder}/apps/tpleditor/admin/template/js/codemirror/mode/css/css.js"></script>
+<script type="text/javascript" src="{$estate_folder}/apps/tpleditor/admin/template/js/codemirror/mode/htmlmixed/htmlmixed.js"></script>
+<script type="text/javascript" src="{$estate_folder}/apps/tpleditor/admin/template/js/utils.js"></script>
+<link href="{$estate_folder}/apps/tpleditor/admin/template/css/style.css" rel="stylesheet" type="text/css"/>
+
+<div class="apps_path">{$L_ADMIN_MENU_APPLICATIONS} / <a href="?action=tpleditor">{$apps_words.tpleditor.APPLICATION_NAME}</a></div>
+<div class="clear"></div>
+
+{$topmenu}
+<div class="clear"></div>
+<div class="row-fluid">
+    <div class="span9">
+<div id="left">
+{if $left_col_tpl ne ''}
+    {include file=$left_col_tpl}
+{else}
+{$apps_words.tpleditor.TEXT}
+{/if}
+</div>
+    </div>
+    <div class="span3">
+<div id="right">
+{if $right_col_tpl ne ''}
+    {include file=$right_col_tpl}
+{/if}
+</div>    
+    </div>
+</div>

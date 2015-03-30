@@ -1,0 +1,34 @@
+<div class="navbar navbar-fixed-top">
+	<div class="navbar-inner">
+		<div class="container">
+
+			<ul class="nav">
+				{section name=i loop=$right_menu}
+				<li><a href="{$right_menu[i].url}">{$right_menu[i].name}</a></li>
+				{/section}
+			</ul>
+
+			<div class=" pull-right">
+
+				<div class="btn-group">
+					<a class="btn btn-success btn-small dropdown-toggle" data-toggle="dropdown" href="#">{$smarty.session._lang} <span class="caret"></span></a>
+					<ul class="dropdown-menu">
+						{foreach item=ln from=$available_langs key=k} {if
+						$smarty.session._lang eq $k} {else} {/if}
+						<li><a href="{$smarty.const.SITEBILL_MAIN_URL}/?_lang={$k}">{$ln}</a></li>
+						{/foreach}
+					</ul>
+				</div>
+				{if $smarty.session.user_id eq ''}
+				<div class="btn-group">
+					<a class="btn btn-small" data-toggle="modal" data-target="#prettyLogin">{$L_LOGIN_BUTTON}</a>
+				</div>
+				{else} {if isset($user_menu)}{$user_menu}{/if}
+				<div class="btn-group">
+					<a class="btn btn-primary btn-small" data-toggle="modal" href="{$estate_folder}/logout/">{$L_LOGOUT_BUTTON}</a>
+				</div>
+				{/if}
+			</div>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,24 @@
+{if $demomode eq 'yes'}
+<p class="warning">{$apps_words.tpleditor.TRIAL_MESSAGE}</p>
+<textarea id="tple_filetext" name="content" style="width: 100%; height: 800px;">{$filetext}</textarea>
+{else}
+<form method="post" action="{$estate_folder}/admin/index.php">
+<textarea id="tple_filetext" name="content" style="width: 100%; height: 800px;">{$filetext}</textarea>
+<input type="hidden" name="action" value="tpleditor" />
+<input type="hidden" name="do" value="edit_done" />
+<input type="hidden" name="file" value="{$file}" />
+<input type="submit" name="submit" value="{$apps_words.tpleditor.SAVE}" class="btn btn-primary" />
+</form>
+{/if}
+
+{literal}
+<script>
+$(document).ready(function() {
+		var editor = CodeMirror.fromTextArea(document.getElementById("tple_filetext"),{
+			mode: "{/literal}{$editor_mode}{literal}", 
+			tabMode: "indent",
+			lineNumbers: true
+		});
+	});
+</script>
+{/literal}

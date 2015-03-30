@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<install>
+    <name>admin</name>
+    <creationDate>December 2012</creationDate>
+    <author>The Sitebill Development Team</author>
+    <authorEmail>kondin@etown.ru</authorEmail>
+    <authorUrl>http://www.sitebill.ru</authorUrl>
+    <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
+    <license>http://www.sitebill.ru/licenses/sitebill.html</license>
+    <version status="beta">2.0.7</version>
+    <backendMenu>false</backendMenu>
+    <administration>
+        <!-- Administration Menu Section -->
+        <menu>Панель управления</menu>
+    </administration>   
+</install>

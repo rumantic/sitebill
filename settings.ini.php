@@ -1,0 +1,2 @@
+[Settings]
+estate_folder=

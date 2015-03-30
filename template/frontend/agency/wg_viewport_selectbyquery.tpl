@@ -1,0 +1,1 @@
+<li><label>{$wg_item.title}</label><span>{$wg_item.value_string}</span></li>

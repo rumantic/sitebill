@@ -1,0 +1,18 @@
+<p>{$apps_words.tpleditor.CURRENT_LOGO}</p>
+{if $error_message ne ''}
+<p class="warning">{$error_message}</p>
+{/if}
+<img src="{$estate_folder}/template/frontend/{$current_theme}/img/{$logo}" width="400" />
+{if $demomode eq 'yes'}
+<p class="warning">{$apps_words.tpleditor.TRIAL_MESSAGE}</p>
+
+{else}
+
+<p>{$apps_words.tpleditor.NEW_LOGO}</p>
+<form method="post" action="{$estate_folder}/admin/index.php" enctype="multipart/form-data">
+<input type="hidden" name="action" value="tpleditor" />
+<input type="hidden" name="do" value="logo" />
+<input type="file" name="new_logo" />
+<input type="submit" name="submit" value="{$apps_words.tpleditor.SAVE}" class="btn btn-primary" />
+</form>
+{/if}

@@ -1,0 +1,59 @@
+<script type="text/javascript">
+$(document).ready(function(){
+	$.ajax({
+	    url: estate_folder+'/js/ajax.php?action=get_form_fields_rules_by_model&model=client',
+	    dataType: 'json',
+	    success: function(json){
+	        form_field_view_topic=json;
+	        //console.log(form_field_view_topic);
+	        testf({$client_topic_id}, form_field_view_topic, $('form#client_form'));
+	        //checkFormFieldsVisibility(11,form_field_view_topic,$('#topic_id').parents('form').eq(0));
+	        console.log('finish');
+	        
+	    }
+	});
+});
+
+
+
+function testf (current_topic_id,topic_array,context) {
+	console.log(context);
+    if(current_topic_id!='' && current_topic_id!=0){
+        for(var key in topic_array){
+            console.log(key);
+        	
+            console.log(current_topic_id + ' ' + topic_array[key]);
+            if(topic_array[key][0]!='all'){
+                if($.inArray(String(current_topic_id),topic_array[key])!==-1){
+                    context.find('[alt='+key+']').show();
+                }else{
+                    console.log('hide');
+                	
+                    context.find('[alt='+key+']').hide();
+                }
+            }else{
+                context.find('[alt='+key+']').show();
+            }
+        }
+    }else if(current_topic_id==0){
+        for(var key in topic_array){
+            if(topic_array[key][0]!='all'){
+                console.log('hide');
+            	
+                context.find('[alt='+key+']').hide();
+            }
+        }
+    }
+    
+}
+
+
+</script>
+
+<ul class="breadcrumb">
+{foreach from=$breadcrumbs_array item=crumb}
+<li><a href="{$crumb.href}">{$crumb.title}</a>{if $crumb.last ne 'true'} <span class="divider">/</span>{/if}</li>
+{/foreach}
+</ul>
+{$client_text}
+{$form}

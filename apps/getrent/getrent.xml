@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<install>
+	<name>getrent</name>
+	<creationDate>March 2013</creationDate>
+	<author>The Sitebill Development Team</author>
+	<authorEmail>kondin@etown.ru</authorEmail>
+	<authorUrl>http://www.sitebill.ru</authorUrl>
+	<copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
+	<license>http://www.sitebill.ru/licenses/sitebill.html</license>
+    <backendMenu>true</backendMenu>
+	<version status="beta">1.3.8</version>
+	<administration>
+		<!-- Administration Menu Section -->
+		<menu>Заявки на аренду</menu>
+	</administration>	
+</install>

@@ -1,0 +1,1 @@
+<li><label>{$wg_item.title}</label><span>{$wg_item.value|nl2br}</span></li>
