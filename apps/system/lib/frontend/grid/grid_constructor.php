@@ -5,25 +5,50 @@
  */
 class Grid_Constructor extends SiteBill_Krascap {
 	public $grid_total;
+	protected $grid_item_data_model=null;
+	protected $billing_mode=false;
+	protected $currency_admin=null;
+	
     /**
      * Constructor
      */
     function __construct() {
         $this->SiteBill();
+        require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+        $data_model = new Data_Model();
+        $this->grid_item_data_model=$data_model->get_kvartira_model(false, true);
+        $this->grid_item_data_model=$this->grid_item_data_model['data'];
     }
     
+   
+    
     function vip_right ( $params ) {
+    	if(!isset($params['_no_interactive_search'])){
+    		$params['_no_interactive_search']=1;
+    	}
     	$res = $this->get_sitebill_adv_ext( $params, true, false );
     	$this->template->assign('special_items2', $res);
     }
     
     function vip_array ( $params ) {
     	$params['per_page'] = 100;
+    	if(!isset($params['_no_interactive_search'])){
+    		$params['_no_interactive_search']=1;
+    	}
     	$res = $this->get_sitebill_adv_ext( $params, true, false );
     	return $res;
     }
     
-    function specialGen(){
+  
+    
+    public function getRealty($filter_params=array(), $hidden_filter_params=array(), $sort_params=array(), $limit_params=array()){
+    	
+    }
+    
+    
+    
+    
+    /*function specialGen(){
     	$params=array(
     		'min_price'=>1000,
     		'srch_word'=>'asdd ds'		
@@ -52,15 +77,6 @@ class Grid_Constructor extends SiteBill_Krascap {
     		)
     	);
     	
-    	/*
-    	 id
-    	 min_price
-    	 max_price
-    	 min_floor
-    	 max_floor
-    	 min_square
-    	 max_square
-    	 */
     	
     	$fields=array(
     		array(
@@ -83,181 +99,9 @@ class Grid_Constructor extends SiteBill_Krascap {
     			)
     		)		
     	);
-    }
+    }*/
     
-    private function _grid($params){
-    	
-    	$default_order_by=array('lt.id DESC');
-    	$default_sort_direction='DESC';
-    	
-    	$order_by=array(
-    		array('price', 'asc'),
-    		array('id', 'desc'),
-    		array('topic_id', 'desc'),
-    		array('city_id', 'desc'),
-    		array('zxc', 'desc')
-    	);
-    	
-    	$select_what=array('id', 'price', 'topic_id');
-    	
-    	$conditions=array(
-    		array('price', 'lt', 3000),
-    		array('price', 'gt', 1000),
-    		array('topic_id', 'eq', array(1,2,3,4)),
-    		array('city_id', 'eq', array(1))
-    	);
-    	
-    	
-    	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
-    	$data_model = new Data_Model();
-    	//print_r($params);
-    	$params = $_REQUEST;
-    	
-    	$_model=$data_model->get_kvartira_model(false, true);
-    	$_model_elements=$_model['data'];
-    	$table='data';
-    	$ptable='re_data';
-    	
-    	$_order_by=array();
-    	$_left_joins=array();
-    	
-    	//print_r($_model_elements);
-    	
-    	
-    	if(!empty($order_by)){
-    		foreach($order_by as $order_by_variant){
-    			$field_name=mb_strtolower($order_by_variant[0], SITE_ENCODING);
-    			$sort_direction=mb_strtolower($order_by_variant[1], SITE_ENCODING);
-    			
-    			if(isset($_model_elements[$field_name])){
-    				if($_model_elements[$field_name]['type']=='select_by_query'){
-    					//print_r($_model_elements[$field_name]);
-    					$_left_joins[]='LEFT JOIN '.DB_PREFIX.'_'.$_model_elements[$field_name]['primary_key_table'].' ON '.DB_PREFIX.'_data.'.$field_name.'='.DB_PREFIX.'_'.$_model_elements[$field_name]['primary_key_name'];
-    					$sort_field_name=DB_PREFIX.'_'.$_model_elements[$field_name]['primary_key_table'].'.'.$_model_elements[$field_name]['value_name'];
-    				}elseif($_model_elements[$field_name]['type']=='select_box_structure'){
-    					$_left_joins[]='LEFT JOIN '.DB_PREFIX.'_topic ON '.DB_PREFIX.'_data.'.$field_name.'='.DB_PREFIX.'_topic.id';
-    					$sort_field_name=DB_PREFIX.'_topic.name';
-    				}else{
-    					$sort_field_name=DB_PREFIX.'_data.'.$field_name;
-    				}
-    				
-    				
-    				
-    				if($sort_direction=='asc'){
-    					$_order_by[]=$sort_field_name.' ASC';
-    				}elseif($sort_direction=='desc'){
-    					$_order_by[]=$sort_field_name.' DESC';
-    				}else{
-    					$_order_by[]=$sort_field_name.' '.$default_sort_direction;
-    				}
-    			}
-    		}
-    	}
-    	
-    	if(empty($_order_by)){
-    		$_order_by=$default_order_by;
-    	}
-    	
-    	print_r($_order_by);
-    	print_r($_left_joins);
-    	 /*
-    	foreach($_model['data'] as $field_key=>$field_opts){
-    		
-    		if(!isset($params[$field_key])){
-    			continue;
-    		}
-    		
-    		$value=$params[$field_key];
-    		
-    		
-    		if($field_opts['type']=='safe_string'){
-    			
-    			if(is_array($value)){
-    				$where[]=$ptable.'.'.$field_key.' IN (\''.implode('\', \'', $value).'\')';
-    			}else{
-    				if($value!=''){
-    					$where[]=$ptable.'.'.$field_key.'= \''.$value.'\'';
-    				}
-    				
-    			}
-    			
-    		}
-    
-    		if($field_opts['type']=='textarea'){
-    			$where[]=$ptable.'.'.$field_key.'LIKE \'%'.$value.'%\'';
-    		}
-    		
-    		if($field_opts['type']=='password'){
-    			 
-    		}
-    		
-    		if($field_opts['type']=='primary_key'){
-    			if(!is_array($value)){
-    				$value=(array)$value;
-    			}
-    			$where[]=$ptable.'.'.$field_key.' IN ('.implode(', ', $value).')';
-    		}
-    		
-    		if($field_opts['type']=='hidden'){
-    
-    		}
-    		
-    		if($field_opts['type']=='checkbox'){
-    			echo $field_key;
-    			if(1==(int)$value){
-    				$where[]=$ptable.'.'.$field_key.' = 1';
-    			}
-    		}
-    		
-    		if($field_opts['type']=='select_by_query'){
-    			if(!is_array($value)){
-    				$value=(array)$value;
-    			}
-    			$where[]=$ptable.'.'.$field_key.' IN ('.implode(', ', $value).')';
-    		}
-    		
-    		if($field_opts['type']=='select_box'){
-    			if(!is_array($value)){
-    				$value=(array)$value;
-    			}
-    			$where[]=$ptable.'.'.$field_key.' IN ('.implode(', ', $value).')';
-    		}
-    		
-    		if($field_opts['type']=='structure'){
-    			if(!is_array($value)){
-    				$value=(array)$value;
-    			}
-    			$where[]=$ptable.'.'.$field_key.' IN ('.implode(', ', $value).')';
-    		}
-    		
-    		if($field_opts['type']=='select_box_structure'){
-    			if(!is_array($value)){
-    				$value=(array)$value;
-    			}
-    			$where[]=$ptable.'.'.$field_key.' IN ('.implode(', ', $value).')';
-    		}
-    		
-    		if($field_opts['type']=='price'){
-    			if(!is_array($value)){
-    				$where[]=$ptable.'.'.$field_key.' = '.$value;
-    			}else{
-    				$where[]=$ptable.'.'.$field_key.' IN ('.implode(', ', $value).')';
-    			}
-    		}
-    		
-    		if($field_opts['type']=='mobilephone'){
-    			if(is_array($value)){
-    				$where[]=$ptable.'.'.$field_key.' IN ('.implode(', ', $value).')';
-    			}else{
-    				$where[]=$ptable.'.'.$field_key.'= \''.$value.'\'';
-    			}
-    		}
-    
-    	}*/
-    	echo '<pre>';
-    	print_r($where);
-    	echo '</pre>';
-    }
+
     
     function tryGetSimilarTopicsByTranslitName($topic_id) {
     	$translit_name = false;
@@ -298,13 +142,15 @@ class Grid_Constructor extends SiteBill_Krascap {
      * @return array
      */
     function main ( $params ) {
+    	
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
         $category_structure = $Structure_Manager->loadCategoryStructure();
         
-        
+       
         $this->template->assign('category_tree', $this->get_category_tree( $params, $category_structure ) );
-		$this->template->assign('breadcrumbs', $this->prepareBreadcrumbs($params) );
+		
+        $this->template->assign('breadcrumbs', $this->prepareBreadcrumbs($params) );
 		$this->template->assign('search_params', json_encode($params) );
 		$this->template->assign('search_url', $_SERVER['REQUEST_URI'] );
 		
@@ -315,6 +161,7 @@ class Grid_Constructor extends SiteBill_Krascap {
 		}
 		
 		if($params['admin']!=1 && file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/grid/front_grid_constructor.php')){
+			
 			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
 			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/grid/front_grid_constructor.php');
 			
@@ -325,6 +172,7 @@ class Grid_Constructor extends SiteBill_Krascap {
 					$FGG = new Front_Grid_Local();
 				}else{
 					$FGG = new Front_Grid_Constructor();
+					
 				}
 					
 					
@@ -347,7 +195,7 @@ class Grid_Constructor extends SiteBill_Krascap {
 					$topic=$params['topic_id'];
 				}
 				
-				//echo $FGG->grid_exists($topic);
+				
 					
 				if($columns_data=$FGG->grid_exists($topic)){
 					
@@ -355,7 +203,7 @@ class Grid_Constructor extends SiteBill_Krascap {
 				
 					$_model=$data_model->get_kvartira_model();
 				
-				
+					
 					//$fields=new stdClass();
 					//$FGG->generate($_model, $columns_data, $params);
 					$FGG->fullGenerate($_model, $columns_data, $params);
@@ -430,6 +278,9 @@ class Grid_Constructor extends SiteBill_Krascap {
      * @param array $params
      */
     function special ( $params ) {
+    	if(!isset($params['_no_interactive_search'])){
+    		$params['_no_interactive_search']=1;
+    	}
         $res = $this->get_sitebill_adv_ext( $params, true );
         $this->template->assign('special_items', $res);
         
@@ -442,6 +293,9 @@ class Grid_Constructor extends SiteBill_Krascap {
     function special_right ( $params ) {
     	if ( $this->getConfigValue('theme') == '3columns' ) {
     		$params['only_img'] = 1;
+    	}
+    	if(!isset($params['_no_interactive_search'])){
+    		$params['_no_interactive_search']=1;
     	}
         $res = $this->get_sitebill_adv_ext( $params, true );
         $this->template->assign('special_items2', $res);
@@ -476,7 +330,6 @@ class Grid_Constructor extends SiteBill_Krascap {
     }
     
     function get_sitebill_adv_ext( $params, $random = false, $premium = false ) {
-    	
     	/*if(defined('IS_DEVELOPER') && IS_DEVELOPER==1){
     		
     		return $this->get_sitebill_adv_ext_modern($params, $random);
@@ -485,6 +338,10 @@ class Grid_Constructor extends SiteBill_Krascap {
     	if ( $premium ) {
     		$premium_ra = $this->get_sitebill_adv_ext_base($params, $random, true);
     	}
+    	
+    	/*if($premium){
+    		$params['sort_premium']=1;
+    	}*/
     	
     	$ra=$this->get_sitebill_adv_ext_base($params, $random);
     	
@@ -496,7 +353,7 @@ class Grid_Constructor extends SiteBill_Krascap {
     	return $ra;
     }
     
-    function getGridSelectQuery($params){
+    /*function getGridSelectQuery($params){
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/grid/front_grid_constructor.php');
     	$data_model = new Data_Model();
@@ -532,28 +389,6 @@ class Grid_Constructor extends SiteBill_Krascap {
     	$params['__from']=($page-1)*$limit;
     	$params['__to']=$limit;
     	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
     	//Data_Model::getSelectQuery($_model, $params);
     	$qp=Data_Model::prepareQueryParts($_model, $params);
     	//print_r($qp);
@@ -588,16 +423,7 @@ class Grid_Constructor extends SiteBill_Krascap {
     	//echo Data_Model::primaryQuery($qp);
     	//print_r(Data_Model::getSelectQuery($_model, $params));
     	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    	
-    }
+    }*/
     
     /**
      * Get sitebill adv ext
@@ -608,9 +434,6 @@ class Grid_Constructor extends SiteBill_Krascap {
     function get_sitebill_adv_ext_base( $params, $random = false, $premium=false ) {
     	
     	$data=$this->get_sitebill_adv_core($params, $random, $premium, true, true);
-    	
-    	 
-    	
     	$this->template->assert('pager_array', $data['paging']);
     	$this->template->assert('pager', $data['pager']);
     	$this->template->assert('pagerurl', $data['pagerurl']);
@@ -623,21 +446,136 @@ class Grid_Constructor extends SiteBill_Krascap {
     	$this->template->assert('_mysearch_params', $data['_mysearch_params']);
     	
     	return $data['data'];
-    	print_r($d);
-    	
-    	
+    }
+    
+    
+    
+    protected function get_data($params, $needle_fields=array()){
     	$select_fields=array();
-    	/*$select_fields=array(
-    		DB_PREFIX.'_data.id',
-    		DB_PREFIX.'_data.city_id',
-    		DB_PREFIX.'_data.price'		
-    	);*/
-    	//$this->_grid($params);
+    	$return=array();
+    }
+    
+    function get_sitebill_adv_geomarkers( $params ) {
+    	//print_r($params);
+    	$select_fields=array();
+    	$return=array();
+    	 
     	
+    	require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php';
+    	
+    	if ( $this->getConfigValue('currency_enable') ) {
+    	
+    		require_once SITEBILL_DOCUMENT_ROOT.'/apps/currency/admin/admin.php';
+    		$CM=new currency_admin();
+    	}
+    
+    	
+    
+    	$preparedParams=$this->prepareRequestParams($params, $premium);
+    	 
+    	 
+    	$where_array=$preparedParams['where_array'];
+    	$add_from_table=$preparedParams['add_from_table'];
+    	$add_select_value=$preparedParams['add_select_value'];
+    	$params=$preparedParams['params'];
+    	 
+    	$where_array_prepared=$preparedParams['where_array_prepared'];
+    	$where_value_prepared=$preparedParams['where_value_prepared'];
+    
+    	$select_what=$preparedParams['select_what'];
+    	$left_joins=$preparedParams['left_joins'];
+    
+    	$left_joins[]='LEFT JOIN '.DB_PREFIX.'_topic ON '.DB_PREFIX.'_data.topic_id='.DB_PREFIX.'_topic.id';
+    
+    	if ( $this->getConfigValue('currency_enable') ) {
+    		$select_what[]=DB_PREFIX.'_currency.code AS currency_code';
+    		$select_what[]=DB_PREFIX.'_currency.name AS currency_name';
+    		$select_what[]='(('.DB_PREFIX.'_data.price*'.DB_PREFIX.'_currency.course)/'.$CM->getCourse(CURRENT_CURRENCY).') AS price_ue';
+    		 
+    		$left_joins[]='LEFT JOIN '.DB_PREFIX.'_currency ON '.DB_PREFIX.'_data.currency_id='.DB_PREFIX.'_currency.currency_id';
+    	}else{
+    		$select_what[]=DB_PREFIX.'_data.price AS price_ue';
+    	}
+    
+    
+    	if(isset($params['_no_interactive_search']) && 1==(int)$params['_no_interactive_search']){
+    			
+    	}else{
+    		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/template_search.php')){
+    			require_once(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/template_search.php');
+    			$Template_Search=new Template_Search();
+    			$results=$Template_Search->run();
+    			if(isset($results['where'])){
+    				$where_array=array_merge($where_array, $results['where']);
+    				$where_array_prepared=array_merge($where_array_prepared, $results['where']);
+    			}
+    			if(isset($results['params'])){
+    				$params=array_merge($params, $results['params']);
+    			}
+    		}
+    	}
+    	unset($params['_no_interactive_search']);
+    	 
+    	$REQUESTURIPATH=Sitebill::getClearRequestURI();
+    	if($REQUESTURIPATH=='admin' or $this->getConfigValue('allow_tags_search_frontend')){
+    		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/data/data_manager.php');
+    
+    		$DM=new Data_Manager();
+    		$tagged_params = $DM->add_tags_params($params);
+    		$where_array_prepared = $DM->add_tagged_parms_to_where($where_array_prepared, $tagged_params);
+    	}
+    
+    	if ( count($where_array)>0 ) {
+    		$where_statement = " WHERE ".implode(' AND ', $where_array);
+    	}
+    
+    	if ( count($where_array_prepared)>0 ) {
+    		$where_statement_prepared = " WHERE ".implode(' AND ', $where_array_prepared);
+    	}
+    
+    
+    	$DBC=DBC::getInstance();
+    	
+    
+    	global $smarty;
+    	$select_what=array();
+    
+    	$select_what[]=DB_PREFIX.'_data.id, '.DB_PREFIX.'_data.geo_lat, '.DB_PREFIX.'_data.geo_lng';
+    	 
+    	 
+    	$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value.' FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').' '.$where_statement_prepared;
+    	 
+    	$stmt=$DBC->query($query, $where_value_prepared);
+    	 
+    		
+    	$ra = array();
+    	if($stmt){
+    		 
+    		$i = 0;
+    		while($ar=$DBC->fetch($stmt)){
+    			$ra[$i] = $ar;
+    			$i++;
+    		}
+    	}
+    	 
+    	
+    	 
+    	$return['_total_records']=count($ra);
+    	$return['data']=$ra;
+    	return $return;
+    }
+    
+    /*function get_sitebill_adv_core_ids( $params, $random = false, $premium=false, $paging=true, $geodata=false ) {
+    	$select_fields=array();
+    	$return=array();
+    	 
+    	$is_route_catch=$this->getRequestValue('router_info');
     	$is_country_view=$this->getRequestValue('country_view');
+    	$is_region_view=$this->getRequestValue('region_view');
     	$is_city_view=$this->getRequestValue('city_view');
     	$is_complex_view=$this->getRequestValue('complex_view');
-    	 
+    	$is_find_view=intval($this->getRequestValue('find_url_catched'));
+    	$predefined_info=$this->getRequestValue('predefined_info');
     	
     	$this_is_favorites=false;
     	
@@ -650,39 +588,34 @@ class Grid_Constructor extends SiteBill_Krascap {
     	if(isset($params['favorites']) && !empty($params['favorites'])){
     		$this_is_favorites=true;
     	}
+    	 
+    	require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php';
     	
-        if ( $this->getConfigValue('currency_enable') ) {
-			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php';
-            require_once SITEBILL_DOCUMENT_ROOT.'/apps/currency/admin/admin.php';
-			$CM=new currency_admin();
-        }
-        
-        if(isset($params['_collect_user_info']) && $params['_collect_user_info']==1){
-        	$_collect_user_info=true;
-        	unset($params['_collect_user_info']);
-        }else{
-        	$_collect_user_info=false;
-        }
-        
+    	if ( $this->getConfigValue('currency_enable') ) {
+    	
+    		require_once SITEBILL_DOCUMENT_ROOT.'/apps/currency/admin/admin.php';
+    		$CM=new currency_admin();
+    	}
+    	 
+    	
+    	
     	$this->grid_total = 0;
     	
-    	
-    	//collect WHERE parts
     	$preparedParams=$this->prepareRequestParams($params, $premium);
-    	
-    	
+    	 
+    	 
     	$where_array=$preparedParams['where_array'];
     	$add_from_table=$preparedParams['add_from_table'];
     	$add_select_value=$preparedParams['add_select_value'];
     	$params=$preparedParams['params'];
-    	
+    	 
     	$where_array_prepared=$preparedParams['where_array_prepared'];
     	$where_value_prepared=$preparedParams['where_value_prepared'];
     	
     	$select_what=$preparedParams['select_what'];
     	$left_joins=$preparedParams['left_joins'];
     	
-    	$left_joins[]='LEFT JOIN '.DB_PREFIX.'_topic ON '.DB_PREFIX.'_data.topic_id='.DB_PREFIX.'_topic.id';
+    	//$left_joins[]='LEFT JOIN '.DB_PREFIX.'_topic ON '.DB_PREFIX.'_data.topic_id='.DB_PREFIX.'_topic.id';
     	
     	if ( $this->getConfigValue('currency_enable') ) {
     		$select_what[]=DB_PREFIX.'_currency.code AS currency_code';
@@ -695,414 +628,126 @@ class Grid_Constructor extends SiteBill_Krascap {
     	}
     	
     	
-    	//append user vars
-        
-        if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/template_search.php')){
-        	require_once(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/template_search.php');
-        	$Template_Search=new Template_Search();
-        	$results=$Template_Search->run();
-        	if(isset($results['where'])){
-        		$where_array=array_merge($where_array, $results['where']);
-        		$where_array_prepared=array_merge($where_array_prepared, $results['where']);
-        	}
-        	if(isset($results['params'])){
-        		$params=array_merge($params, $results['params']);
-        	}
-        }
-        
-        /*print_r($where_array_prepared);
-        print_r($where_value_prepared);*/
-        
-        if ( count($where_array)>0 ) {
-            $where_statement = " WHERE ".implode(' AND ', $where_array);
-        }
-        
-        if ( count($where_array_prepared)>0 ) {
-        	$where_statement_prepared = " WHERE ".implode(' AND ', $where_array_prepared);
-        }
-        
-        $order=$this->prepareSortOrder($params, $random, $premium);
-        
-       /*
-        require_once SITEBILL_DOCUMENT_ROOT.'/apps/activelinker/admin/admin.php';
-        $AL=new activelinker_admin();
-        $this->template->assert('activelinker_desc', $AL->generate($params));
-        */
-        if ( !isset($params['page']) || (int)$params['page'] == 0 ) {
-            $page = 1;
-        } else {
-            $page = (int)$params['page'];
-        }
-		
-        
-		
-        /*
-		if ( $this->getConfigValue('currency_enable') ) {
-			$query = "select count(*) as total from re_data LEFT JOIN re_currency ON re_data.currency_id=re_currency.currency_id, re_topic $add_from_table $where_statement ";
-		}else{
-			$query = "select count(*) as total from re_data, re_topic $add_from_table $where_statement ";
-		}
-		*/
-        
-        $query = 'SELECT COUNT('.DB_PREFIX.'_data.id) AS total FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').' '.$where_statement_prepared;
-        
-		/*if ( $this->getConfigValue('currency_enable') ) {
-			$query = 'SELECT COUNT(re_data.id) AS total FROM '.DB_PREFIX.'_data LEFT JOIN '.DB_PREFIX.'_currency ON '.DB_PREFIX.'_data.currency_id='.DB_PREFIX.'_currency.currency_id, '.DB_PREFIX.'_topic '.$add_from_table.' '.$where_statement_prepared.' ';
-		}else{
-			$query = 'SELECT COUNT(re_data.id) AS total FROM '.DB_PREFIX.'_data, re_topic '.$add_from_table.' '.$where_statement_prepared.' ';
-		}*/
-		//echo $query.'<br>';
-		//print_r($where_value_prepared);
-		$DBC=DBC::getInstance();
-		$stmt=$DBC->query($query, $where_value_prepared);
-		/*
-		$query1='SELECT COUNT('.DB_PREFIX.'_data.*) as total FROM '.DB_PREFIX.'_data d 
-				LEFT JOIN '.DB_PREFIX.'_topic t ON t.id=d.topic_id';
-		*/
-		
-		/*
-		$this->db->exec($query);
-		if ( !$this->db->success ) {
-			echo $this->db->error.'<br>';
-		}*/
-		$total = 0;
-		$this->grid_total = $total;
-		if(!$stmt){
-			$total = 0;
-			$this->grid_total = $total;
-			//return array();
-		}else{
-			$ar=$DBC->fetch($stmt);
-			$total = $ar['total'];
-			$this->grid_total = $total;
-		}
-		//echo $this->grid_total;
-		
-		global $smarty;
-		
-		
-		$pageLimitParams=$this->preparePageLimitParams($params, $page, $total, $premium);
-		$start=$pageLimitParams['start'];
-		$limit=$pageLimitParams['limit'];
-		$max_page=$pageLimitParams['max_page'];
-		$page = (int)$params['page'];
-		
-		
-		$pager_params=$params;
-        	
-	    
-        unset($params['order']);
-        unset($params['asc']);
-        unset($params['favorites']);
-        
-        if ( preg_match('/\/special\//', $_SERVER['REQUEST_URI']) ) {
-        	unset($params['spec']);
-        	unset($pager_params['spec']);
-        }
-        
-        if(''!=$is_country_view){
-        	unset($pager_params['country_id']);
-        	$pageurl=$is_country_view;
-        	
-        }elseif($is_city_view){
-        	unset($pager_params['city_id']);
-        	$pageurl=$is_city_view;
-        }elseif(''!=$is_complex_view){
-        	unset($pager_params['complex_id']);
-        	$pageurl=$is_complex_view;
-        	
-        }else{
-        	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
-        	$Structure_Manager = new Structure_Manager();
-        	$category_structure = $Structure_Manager->loadCategoryStructure();
-        	if($this_is_favorites){
-        		$pageurl='myfavorites';
-        	}else{
-        		if(!is_array($params['topic_id']) && $params['topic_id']!=''){
-        			if(!$params['admin']){
-        				if($this->cityTopicUrlFind($_SERVER['REQUEST_URI'])){
-        					$p=parse_url($_SERVER['REQUEST_URI']);
-        					unset($params['city_id']);
-        					unset($params['topic_id']);
-        					unset($pager_params['city_id']);
-        					unset($pager_params['topic_id']);
-        					$pageurl=trim($p['path'],'/');
-        				}elseif($category_structure['catalog'][$params['topic_id']]['url']!='' && 1==$this->getConfigValue('apps.seo.level_enable')){
-        					$pageurl=$category_structure['catalog'][$params['topic_id']]['url'];
-        					//unset($pager_params['topic_id']);
-        					unset($params['topic_id']);
-        					unset($pager_params['topic_id']);
-        				}elseif($category_structure['catalog'][$params['topic_id']]['url']!=''){
-        					//echo 1;
-        					$pageurl=$category_structure['catalog'][$params['topic_id']]['url'];
-        					unset($pager_params['topic_id']);
-        					unset($params['topic_id']);
-        				}else{
-        					if(preg_match('/topic(\d*).html/',$_SERVER['REQUEST_URI'])){
-        						unset($pager_params['topic_id']);
-        					}
-        					if($params['topic_id']!=0){
-        						$pageurl='topic'.$params['topic_id'].'.html';
-        						unset($params['topic_id']);
-        					}else{
-        						$pageurl='';
-        						unset($params['topic_id']);
-        						unset($pager_params['topic_id']);
-        					}
-        					 
-        				}
-        			}else{
-        				$pageurl='';
-        			}
-        		}else{
-        			$pageurl='';
-        		}
-        	}
-        }
-	    
-        
-        
-        if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/page_navigator.php')){
-        	require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/page_navigator.php';
-        	$url='';
-        	if(isset($params['pager_url'])){
-        		$url=$params['pager_url'];
-        		unset($params['pager_url']);
-        	}
-        	
-        	if($params['admin']){
-        		$nurl='account/data';
-        	}else{
-        		$nurl=$pageurl;
-        	}
-        	$paging=Page_Navigator::getPagingArray($total, $page, $limit, $pager_params, $nurl);
-        	$this->template->assert('pager_array', $paging);
-        }
-        
-        
-        $pager_params['page_url']=$pageurl;
-        $this->template->assert('pager', $this->get_page_links_list ($page, $total, $limit, $pager_params ));
-        $pairs=array();
-        foreach ( $pager_params as $key => $value ) {
-        	if($key=='page_url' || $key=='page_limit'){
-        		
-        	}else{
-        		if(is_array($value)){
-        			if(count($value)>0){
-        				foreach($value as $v){
-        					if($v!=''){
-        						$pairs[] = $key.'[]='.$v;
-        					}
-        				}
-        			}
-        		}elseif ( $value != '') {
-        			if($key!='topic_id'){
-        				$pairs[] = "$key=$value";
-        			}elseif($params['admin']){
-        				$pairs[] = "$key=$value";
-        			}
-        		
-        		}
-        	}
-        	
-        }
-       
-        if ( is_array($pairs) ) {
-        	$url = $pageurl.'?'.implode('&', $pairs);
-        }else{
-        	$url = $pageurl.'?key=value';
-        }
-        $this->template->assert('pagerurl', $url);
-	    
-        $pairs=array();
-        if($is_country_view){
-        	unset($params['country_id']);
-        }
-        foreach ( $params as $key => $value ) {
-        	if(is_array($value)){
-        		if(count($value)>0){
-        			foreach($value as $v){
-        				if($v!=''){
-        					$pairs[] = $key.'[]='.$v;
-        				}
-        			}
-        		}
-        	}elseif ( $value != '') {
-	        	if($key!='topic_id'){
-	                //echo "key = $key, value = $value<br>";
-		            $pairs[] = "$key=$value";
-	        	}elseif($params['admin']){
-	        		$pairs[] = "$key=$value";
-	        	}
-	        	
-	        }
-	    }
-      
-	    if($is_country_view){
-	    	if ( is_array($pairs) ) {
-	    		$url = $is_country_view.'?'.implode('&', $pairs);
-	    	}else{
-	    		$url = $is_country_view.'?';
-	    	}
-	    }else{
-	    	if ( is_array($pairs) ) {
-	    		$url = $pageurl.'?'.implode('&', $pairs);
-	    	}else{
-	    		$url = $pageurl.'?key=value';
-	    	}
-	    }
-	    
-        $this->template->assert('url', $url);
-        
-        /*
-        if ( $this->getConfigValue('apps.company.timelimit') ) {
-        	if ( $this->getConfigValue('currency_enable') ) {
-        		$query = "select re_currency.code AS currency_code, re_currency.name AS currency_name, ((re_data.price*re_currency.course)/".$CM->getCourse(CURRENT_CURRENCY).") AS price_ue, re_data.*, re_topic.name as type_sh $add_select_value from re_data LEFT JOIN re_currency ON re_data.currency_id=re_currency.currency_id, re_topic $add_from_table $where_statement ORDER BY ".$order.($params['no_portions']==1 ? '' : " LIMIT ".$start.", ".$limit);
-        	} else {
-        		$query = "select re_data.*, re_data.price AS price_ue, re_topic.name as type_sh $add_select_value from re_data, re_topic $add_from_table $where_statement order by ".$order.($params['no_portions']==1 ? '' : " LIMIT ".$start.", ".$limit);
-        	}
-        	
-        } else {
-        	if ( $this->getConfigValue('currency_enable') ) {
-        		$query = "select re_currency.code AS currency_code, re_currency.name AS currency_name, ((re_data.price*re_currency.course)/".$CM->getCourse(CURRENT_CURRENCY).") AS price_ue, re_data.*, re_topic.name as type_sh $add_select_value from re_data LEFT JOIN re_currency ON re_data.currency_id=re_currency.currency_id, re_topic $add_from_table $where_statement ORDER BY ".$order.($params['no_portions']==1 ? '' : " LIMIT ".$start.", ".$limit);
-        	} else {
-        		$query = "select re_data.*, re_data.price AS price_ue, re_topic.name as type_sh $add_select_value from re_data, re_topic $add_from_table $where_statement ORDER BY ".$order.($params['no_portions']==1 ? '' : " LIMIT ".$start.", ".$limit);
-        	}
-        }
-        */
-       
-        //$select_what=array();
-        if(count($select_fields)==0){
-        	$select_what[]=DB_PREFIX.'_data.*';
-        }else{
-        	$select_what=array_merge($select_what, $select_fields);
-        }
-        
-        $select_what[]=DB_PREFIX.'_topic.name AS type_sh';
-        
-        
-        
-        
-        if ( $this->getConfigValue('apps.company.timelimit') ) {
-        	$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value.'
+    	$REQUESTURIPATH=Sitebill::getClearRequestURI();
+    	if($REQUESTURIPATH=='admin' or $this->getConfigValue('allow_tags_search_frontend')){
+    		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/data/data_manager.php');
+    	
+    		$DM=new Data_Manager();
+    		$tagged_params = $DM->add_tags_params($params);
+    		$where_array_prepared = $DM->add_tagged_parms_to_where($where_array_prepared, $tagged_params);
+    	}
+    	
+    	if ( count($where_array)>0 ) {
+    		$where_statement = " WHERE ".implode(' AND ', $where_array);
+    	}
+    	
+    	if ( count($where_array_prepared)>0 ) {
+    		$where_statement_prepared = " WHERE ".implode(' AND ', $where_array_prepared);
+    	}
+    	
+    	$order=$this->prepareSortOrder($params, $random, $premium);
+    	
+    	 
+    	if ( !isset($params['page']) || (int)$params['page'] == 0 ) {
+    		$page = 1;
+    	} else {
+    		$page = (int)$params['page'];
+    	}
+    	$DBC=DBC::getInstance();
+    	if($paging){
+    	
+    	
+    		$query = 'SELECT COUNT('.DB_PREFIX.'_data.id) AS total FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').' '.$where_statement_prepared;
+    		$md5_query_sum = md5($query.implode('', $where_value_prepared));
+    	
+    		$get_cache_value = false;
+    		if ( $this->getConfigValue('query_cache_enable') ) {
+    			//Попробуем получить значение счетчика из кэша
+    			$cache_query = "select `value` from ".DB_PREFIX."_cache where parameter = ? and valid_for > ?";
+    			$stmt=$DBC->query($cache_query, array($md5_query_sum, time()));
+    			if($stmt){
+    				$ar=$DBC->fetch($stmt);
+    				$total = $ar['value'];
+    				$this->grid_total = $total;
+    				$get_cache_value = true;
+    			}
+    		}
+    	
+    		//Если нет кэшированного значения для данного запроса, то делаем запрос в базу
+    		if ( !$get_cache_value ) {
+    			$stmt=$DBC->query($query, $where_value_prepared);
+    	
+    			$total = 0;
+    			$this->grid_total = $total;
+    			if(!$stmt){
+    				$total = 0;
+    				$this->grid_total = $total;
+    				//return array();
+    			}else{
+    				$ar=$DBC->fetch($stmt);
+    				$total = $ar['total'];
+    				$this->grid_total = $total;
+    			}
+    			//Если кэш включен, то добавляем значение в кэш
+    			if ( $this->getConfigValue('query_cache_enable') ) {
+    				$query_insert_cache = "insert into ".DB_PREFIX."_cache (`parameter`, `value`, `created_at`, `valid_for`) values (?, ?, ?, ?)";
+    				$stmt=$DBC->query($query_insert_cache, array($md5_query_sum, $total, time(), time()+$this->getConfigValue('query_cache_time')));
+    			}
+    		}
+    		if ( $this->getConfigValue('query_cache_enable') ) {
+    			//Очищаем старые записи кэша
+    			$query_delete_cache = "delete from ".DB_PREFIX."_cache where `created_at`<?";
+    			$stmt=$DBC->query($query_delete_cache, array(time()-$this->getConfigValue('query_cache_time')));
+    		}
+    	}
+    	
+    	
+    	$pageLimitParams=$this->preparePageLimitParams($params, $page, $total, $premium);
+    	$start=$pageLimitParams['start'];
+    	$limit=$pageLimitParams['limit'];
+    	$max_page=$pageLimitParams['max_page'];
+    	$page = (isset($params['page']) ? (int)$params['page'] : 0);
+    	
+    	if ( $_REQUEST['REST_API'] == 1 ) {
+    		if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/api/classes/class.static_data.php') ) {
+    			$static_data = Static_Data::getInstance();
+    			$static_data::set_param('max_page', $max_page);
+    		}
+    	}
+    	
+    	
+    	 
+    	if(count($select_fields)==0){
+    		$select_what[]=DB_PREFIX.'_data.id';
+    	}else{
+    		$select_what=array_merge($select_what, $select_fields);
+    	}
+    	
+    	$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value.'
         		FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').' '.$where_statement_prepared.'
-        		ORDER BY '.$order.($params['no_portions']==1 ? '' : ' LIMIT '.$start.', '.$limit);
-        	/*if ( $this->getConfigValue('currency_enable') ) {
-        		$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value.' 
-        				FROM '.DB_PREFIX.'_data '.(count($left_joins)>0 ? implode(' ', $left_joins).' ' : '').'
-        				re_topic '.' '.$where_statement_prepared.' 
-        				ORDER BY '.$order.($params['no_portions']==1 ? '' : ' LIMIT '.$start.', '.$limit);
-        	} else {
-        		$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value.' 
-        				FROM '.DB_PREFIX.'_data, '.DB_PREFIX.'_topic '.$add_from_table.' '.$where_statement_prepared.' 
-        				ORDER BY '.$order.($params['no_portions']==1 ? '' : ' LIMIT '.$start.', '.$limit);
-        	}*/
-        	 
-        } else {
-        	$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value.'
-        		FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').' '.$where_statement_prepared.'
-        		ORDER BY '.$order.($params['no_portions']==1 ? '' : ' LIMIT '.$start.', '.$limit);
-        	/*if ( $this->getConfigValue('currency_enable') ) {
-        		$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value .'
-        		FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').'
-        		'.$where_statement_prepared .'
-        		ORDER BY '.$order.($params['no_portions']==1 ? '' : ' LIMIT '.$start.', '.$limit);
-        	} else {
-        		$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value.' 
-        		FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').' '.$where_statement_prepared.' 
-        		ORDER BY '.$order.($params['no_portions']==1 ? '' : ' LIMIT '.$start.', '.$limit);
-        	}*/
-        }
-       
-       // echo $query;
-       // echo $query.'<br>';
-      // print_r($where_value_prepared);
-        $stmt=$DBC->query($query, $where_value_prepared);
-        
-        $ra = array();
-        if($stmt){
-        	
-        	$i = 0;
-        	if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/company/company.xml') ) {
-        		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/user/account.php');
-        		$Account = new Account;
-        	
-        	}
-        	
-        	while($ar=$DBC->fetch($stmt)){
-        		if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/company/company.xml') ) {
-        			$company_profile = $Account->get_company_profile($ar['user_id']);
-        			$ar['company'] = $company_profile['name']['value'];
-        		}
-        		$ra[$i] = $ar;
-        		$i++;
-        	}
-        }
-        
-        $gdata=array();
-        $geoobjects_collection=array();
-        if(count($ra)>0){
-        	$ra=$this->transformGridData($ra, $_collect_user_info);
-        	foreach($ra as $k=>$d){
-        		if( isset($d['geo_lat']) && isset($d['geo_lng']) && $d['geo_lat']!='' && $d['geo_lng']!='' ){
-        			 
-        			 
-        			$gdata[$k]['currency_name']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['currency_name']);
-        			$gdata[$k]['city']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['city']);
-        			$gdata[$k]['street']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['street']);
-        			$gdata[$k]['price']=number_format($d['price'],0,'.',' ');
-        			$gdata[$k]['type_sh']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['type_sh']);
-        			$gdata[$k]['title']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['city'].' '.$d['street'].(($d['number']!='' && $d['number']!=0) ? ', '.$d['number'] : '').' ('.$d['price'].')');
-        			if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/realty_on_map.tpl')){
-        				$smarty->assign('realty',$d);
-        				$html=$smarty->fetch(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/realty_on_map.tpl');
-        				$html = str_replace("\r\n", ' ', $html);
-        				$html = str_replace("\n", ' ', $html);
-        				$html = str_replace("\t", ' ', $html);
-        				//$html = htmlspecialchars($html);
-        				$html = addslashes($html);
-        			}else{
-        				$html = '';
-        			}
-        			 
-        			 
-        			$gdata[$k]['html']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $html);
-        			$gdata[$k]['geo_lat']=$d['geo_lat'];
-        			$gdata[$k]['geo_lng']=$d['geo_lng'];
-        			$gdata[$k]['href']=$d['href'];
-        			$gdata[$k]['parent_category_url']=$d['parent_category_url'];
-        		}
-        	}
-        	
-        	$grid_geodata=array();
-        	$this->template->assert('grid_geodata', json_encode($this->generateGridGeoDataOld($ra)));
-        }else{
-        	$this->template->assert('grid_geodata', json_encode(array()));
-        }
-        
-        if(count($gdata)>0){
-        	foreach ($gdata as $gd){
-        		$gc=$gd['geo_lat'].'_'.$gd['geo_lng'];
-        		if(isset($geoobjects_collection[$gc])){
-        			$geoobjects_collection[$gc]['html'].=$gd['html'];
-        			$geoobjects_collection[$gc]['count']++;
-        		}else{
-        			$geoobjects_collection[$gc]['lat']=$gd['geo_lat'];
-        			$geoobjects_collection[$gc]['lng']=$gd['geo_lng'];
-        			$geoobjects_collection[$gc]['html']=$gd['html'];
-        			$geoobjects_collection[$gc]['count']=1;
-        		}
-        	}
-        }
-        
-        
-        $this->template->assert('geoobjects_collection_clustered', json_encode($geoobjects_collection));
-        $this->template->assert('_total_records', $total);
-        $this->template->assert('_max_page', $max_page);
-        
-        
-        return $ra;
-    }
+        		ORDER BY '.$order.((isset($params['no_portions']) && $params['no_portions']==1) ? '' : ' LIMIT '.$start.', '.$limit);
+    	//echo $query;
+    	//print_r($where_value_prepared);
+    	$stmt=$DBC->query($query, $where_value_prepared);
+    	 
+    	$ra = array();
+    	if($stmt){
+    		while($ar=$DBC->fetch($stmt)){
+    			$ra[] = $ar['id'];
+    		}
+    	}	
+    	
+    	
+    	 
+    	$return['_total_records']=$total;
+    	$return['_max_page']=$max_page;
+    	//$return['_params']=$params;
+    	//$return['_mysearch_params']=$mysearch_params;
+    	
+    	$return['data']=$ra;
+    	//$return['order']=$order;
+    	return $return;
+	}*/
     
     
     function get_sitebill_adv_core( $params, $random = false, $premium=false, $paging=true, $geodata=false ) {
@@ -1110,41 +755,54 @@ class Grid_Constructor extends SiteBill_Krascap {
     	$select_fields=array();
     	$return=array();
     	
+    	$is_route_catch=$this->getRequestValue('router_info');
     	$is_country_view=$this->getRequestValue('country_view');
     	$is_region_view=$this->getRequestValue('region_view');
     	$is_city_view=$this->getRequestValue('city_view');
     	$is_complex_view=$this->getRequestValue('complex_view');
+    	$is_find_view=intval($this->getRequestValue('find_url_catched'));
     	$predefined_info=$this->getRequestValue('predefined_info');
     	 
     	$this_is_favorites=false;
     	 
     	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/billing/lib/billing.php') && $this->getConfigValue('apps.billing.enable')==1){
-    		$_billing_on=true;
+    		//$_billing_on=true;
+    		$this->billing_mode=true;
     	}else{
-    		$_billing_on=false;
+    		//$_billing_on=false;
+    		$this->billing_mode=false;
     	}
     	 
     	if(isset($params['favorites']) && !empty($params['favorites'])){
     		$this_is_favorites=true;
     	}
+    	
+    	require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php';
     	 
     	if ( $this->getConfigValue('currency_enable') ) {
-    		require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php';
+    		
     		require_once SITEBILL_DOCUMENT_ROOT.'/apps/currency/admin/admin.php';
     		$CM=new currency_admin();
+    		$this->currency_admin=$CM;
     	}
-    
-    	if(isset($params['_collect_user_info']) && $params['_collect_user_info']==1){
+    	
+    	if(1===intval($this->getConfigValue('core.listing.add_user_info'))){
     		$_collect_user_info=true;
     		unset($params['_collect_user_info']);
     	}else{
-    		$_collect_user_info=false;
+    		if(isset($params['_collect_user_info']) && $params['_collect_user_info']==1){
+    			$_collect_user_info=true;
+    			unset($params['_collect_user_info']);
+    		}else{
+    			$_collect_user_info=false;
+    		}
     	}
+    
+    	
     
     	$this->grid_total = 0;
     	 
     	$preparedParams=$this->prepareRequestParams($params, $premium);
-    	
     	
     	$where_array=$preparedParams['where_array'];
     	$add_from_table=$preparedParams['add_from_table'];
@@ -1157,7 +815,7 @@ class Grid_Constructor extends SiteBill_Krascap {
     	$select_what=$preparedParams['select_what'];
     	$left_joins=$preparedParams['left_joins'];
     	 
-    	$left_joins[]='LEFT JOIN '.DB_PREFIX.'_topic ON '.DB_PREFIX.'_data.topic_id='.DB_PREFIX.'_topic.id';
+    	//$left_joins[]='LEFT JOIN '.DB_PREFIX.'_topic ON '.DB_PREFIX.'_data.topic_id='.DB_PREFIX.'_topic.id';
     	 
     	if ( $this->getConfigValue('currency_enable') ) {
     		$select_what[]=DB_PREFIX.'_currency.code AS currency_code';
@@ -1173,10 +831,12 @@ class Grid_Constructor extends SiteBill_Krascap {
     	if(isset($params['_no_interactive_search']) && 1==(int)$params['_no_interactive_search']){
 			
 		}else{
+			
 			if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/template_search.php')){
 				require_once(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/template_search.php');
 				$Template_Search=new Template_Search();
 				$results=$Template_Search->run();
+				
 				if(isset($results['where'])){
 					$where_array=array_merge($where_array, $results['where']);
 					$where_array_prepared=array_merge($where_array_prepared, $results['where']);
@@ -1187,8 +847,18 @@ class Grid_Constructor extends SiteBill_Krascap {
 			}
 		}
 		unset($params['_no_interactive_search']);
+		
+		
     	
-    	
+    	$REQUESTURIPATH=Sitebill::getClearRequestURI();
+    	if($REQUESTURIPATH=='admin' or $this->getConfigValue('allow_tags_search_frontend')){
+    		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/data/data_manager.php');
+    		
+    		$DM=new Data_Manager();
+    		$tagged_params = $DM->add_tags_params($params);
+    		$where_array_prepared = $DM->add_tagged_parms_to_where($where_array_prepared, $tagged_params);
+    		
+    	}
     
     	if ( count($where_array)>0 ) {
     		$where_statement = " WHERE ".implode(' AND ', $where_array);
@@ -1206,22 +876,52 @@ class Grid_Constructor extends SiteBill_Krascap {
     	} else {
     		$page = (int)$params['page'];
     	}
-    
-      	$query = 'SELECT COUNT('.DB_PREFIX.'_data.id) AS total FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').' '.$where_statement_prepared;
-    
     	$DBC=DBC::getInstance();
-    	$stmt=$DBC->query($query, $where_value_prepared);
-    	
-		$total = 0;
-    	$this->grid_total = $total;
-    	if(!$stmt){
-    		$total = 0;
-    		$this->grid_total = $total;
-    		//return array();
-    	}else{
-    		$ar=$DBC->fetch($stmt);
-    		$total = $ar['total'];
-    		$this->grid_total = $total;
+    	if($paging){
+    		
+    		
+	      	$query = 'SELECT COUNT('.DB_PREFIX.'_data.id) AS total FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').' '.$where_statement_prepared;
+	      	$md5_query_sum = md5($query.implode('', $where_value_prepared));
+	      	
+	      	$get_cache_value = false;
+	      	if ( $this->getConfigValue('query_cache_enable') ) {
+	      		//Попробуем получить значение счетчика из кэша
+	      		$cache_query = "select `value` from ".DB_PREFIX."_cache where parameter = ? and valid_for > ?";
+	      		$stmt=$DBC->query($cache_query, array($md5_query_sum, time()));
+	      		if($stmt){
+	      			$ar=$DBC->fetch($stmt);
+	      			$total = $ar['value'];
+	      			$this->grid_total = $total;
+	      			$get_cache_value = true;
+	      		}
+	      	}
+	      	
+	      	//Если нет кэшированного значения для данного запроса, то делаем запрос в базу
+			if ( !$get_cache_value ) {
+				$stmt=$DBC->query($query, $where_value_prepared);
+				
+				$total = 0;
+				$this->grid_total = $total;
+				if(!$stmt){
+					$total = 0;
+					$this->grid_total = $total;
+					//return array();
+				}else{
+					$ar=$DBC->fetch($stmt);
+					$total = $ar['total'];
+					$this->grid_total = $total;
+				}
+				//Если кэш включен, то добавляем значение в кэш
+				if ( $this->getConfigValue('query_cache_enable') ) {
+					$query_insert_cache = "insert into ".DB_PREFIX."_cache (`parameter`, `value`, `created_at`, `valid_for`) values (?, ?, ?, ?)";
+					$stmt=$DBC->query($query_insert_cache, array($md5_query_sum, $total, time(), time()+$this->getConfigValue('query_cache_time')));
+				}
+			}
+			if ( $this->getConfigValue('query_cache_enable') ) {
+				//Очищаем старые записи кэша
+				$query_delete_cache = "delete from ".DB_PREFIX."_cache where `created_at`<?";
+				$stmt=$DBC->query($query_delete_cache, array(time()-$this->getConfigValue('query_cache_time')));
+			}
     	}
     	//echo $this->grid_total;
     
@@ -1266,15 +966,25 @@ class Grid_Constructor extends SiteBill_Krascap {
     	}
     	
     	
+    	//$catched_router=$this->getCatchedRoute();
+    	
+    	
     
     	if(isset($params['pager_url'])){
     		$pageurl=$params['pager_url'];
     		unset($params['pager_url']);
     		unset($pager_params['pager_url']);
+    	}elseif($is_find_view==1){
+    		$pageurl='find';
     	}elseif(''!=$is_country_view){
     		unset($pager_params['country_id']);
     		$pageurl=$is_country_view;
     		 
+    	}elseif($is_route_catch!=''){
+    		$pageurl=$is_route_catch['alias'];
+    		foreach($is_route_catch['params'] as $k=>$v){
+    			unset($pager_params[$k]);
+    		}
     	}elseif($predefined_info!=''){
     		$pageurl=$predefined_info['alias'];
     		foreach($predefined_info['params'] as $k=>$v){
@@ -1368,15 +1078,6 @@ class Grid_Constructor extends SiteBill_Krascap {
     		$return['pager']=$this->get_page_links_list ($page, $total, $limit, $pager_params);
     	}
     	
-    
-    	
-    
-    
-    	
-    	
-    	
-    	
-    	//$this->template->assert('pager', $this->get_page_links_list ($page, $total, $limit, $pager_params ));
     	$pairs=array();
     	foreach ( $pager_params as $key => $value ) {
     		if($key=='page_url' || $key=='page_limit'){
@@ -1456,11 +1157,6 @@ class Grid_Constructor extends SiteBill_Krascap {
     		$select_what=array_merge($select_what, $select_fields);
     	}
     
-    	$select_what[]=DB_PREFIX.'_topic.name AS type_sh';
-    
-    
-   
-    	
     	$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value.'
         		FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').' '.$where_statement_prepared.'
         		ORDER BY '.$order.((isset($params['no_portions']) && $params['no_portions']==1) ? '' : ' LIMIT '.$start.', '.$limit);
@@ -1477,7 +1173,6 @@ class Grid_Constructor extends SiteBill_Krascap {
     		if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/company/company.xml') ) {
     			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/user/account.php');
     			$Account = new Account;
-    			 
     		}
     		 
     		while($ar=$DBC->fetch($stmt)){
@@ -1490,19 +1185,14 @@ class Grid_Constructor extends SiteBill_Krascap {
     		}
     	}
     	
-    	
-    	
     	if(count($ra)>0){
     		$ra=$this->transformGridData($ra, $_collect_user_info);
     	}
     	
-    	
     	if($geodata && count($ra)>0){
     		
     		$gdata=array();
-
-    		
-    		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/realty_on_map.tpl')){
+			if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/realty_on_map.tpl')){
     			$geotpl=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/realty_on_map.tpl';
     		}else{
     			$geotpl='';
@@ -1512,6 +1202,9 @@ class Grid_Constructor extends SiteBill_Krascap {
     			
     			if( isset($d['geo_lat']) && isset($d['geo_lng']) && $d['geo_lat']!='' && $d['geo_lng']!='' ){
     				$gdata[$k]['currency_name']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['currency_name']);
+    				if(isset($d['currency_id'])){
+    					$gdata[$k]['currency_id']=$d['currency_id'];
+    				}
     				if((int)$d['price']!=0){
 						$gdata[$k]['price']=number_format($d['price'],0,'.',' ');
 					}else{
@@ -1520,6 +1213,7 @@ class Grid_Constructor extends SiteBill_Krascap {
 					if(isset($d['type_sh'])){
 						$gdata[$k]['type_sh']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['type_sh']);
 					}
+					
 					$address=array();
 					if(isset($d['city'])){
 						$address[]=$d['city'];
@@ -1535,6 +1229,7 @@ class Grid_Constructor extends SiteBill_Krascap {
 					if(isset($d['price'])){
 						$address[]=$d['price'];
 					}
+					$gdata[$k]['topic_id']=$d['topic_id'];
 					
     				$gdata[$k]['title']=SiteBill::iconv(SITE_ENCODING, 'utf-8', implode(', ', $address));
     				if($geotpl!=''){
@@ -1551,9 +1246,11 @@ class Grid_Constructor extends SiteBill_Krascap {
     		
     		
     				$gdata[$k]['html']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $html);
+    				//$gdata[$k]['html']='';
     				$gdata[$k]['geo_lat']=$d['geo_lat'];
     				$gdata[$k]['geo_lng']=$d['geo_lng'];
     				$gdata[$k]['href']=$d['href'];
+    				$gdata[$k]['id']=$d['id'];
     				$gdata[$k]['parent_category_url']=$d['parent_category_url'];
     				
     				unset($html);
@@ -1568,15 +1265,19 @@ class Grid_Constructor extends SiteBill_Krascap {
     				if(isset($geoobjects_collection[$gc])){
     					$geoobjects_collection[$gc]['html'].=$gd['html'];
     					$geoobjects_collection[$gc]['count']++;
+    					$geoobjects_collection[$gc]['ids'][]=$gd['id'];
     				}else{
+    					/*if($gd['topic_id']==44){
+    					$geoobjects_collection[$gc]['icon']='map';
+    					}*/
     					$geoobjects_collection[$gc]['lat']=$gd['geo_lat'];
     					$geoobjects_collection[$gc]['lng']=$gd['geo_lng'];
     					$geoobjects_collection[$gc]['html']=$gd['html'];
     					$geoobjects_collection[$gc]['count']=1;
+    					$geoobjects_collection[$gc]['ids'][]=$gd['id'];
     				}
     			}
     		}
-    		
     		$return['geoobjects_collection_clustered']=$geoobjects_collection;
     		$return['grid_geodata']=$this->generateGridGeoDataOld($ra);
     		$grid_geodata=array();
@@ -1592,371 +1293,11 @@ class Grid_Constructor extends SiteBill_Krascap {
     	return $return;
     }
     
+
+    
     function get_sitebill_adv_ext_base_ajax( $params, $random = false, $premium=false, $paging=true, $geodata=false ) {
-    	
     	$data=$this->get_sitebill_adv_core($params, $random, $premium, true, true);
-    	
-    	 
     	return $data;
-    	
-    	$return=array();
-    	//$this->_grid($params);
-    	 
-    	$is_country_view=$this->getRequestValue('country_view');
-    	 
-    	 
-    	$this_is_favorites=false;
-    	 
-    	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/billing/lib/billing.php') && $this->getConfigValue('apps.billing.enable')==1){
-    		$_billing_on=true;
-    	}else{
-    		$_billing_on=false;
-    	}
-    	 
-    	if(isset($params['favorites']) && !empty($params['favorites'])){
-    		$this_is_favorites=true;
-    	}
-    	 
-    	if ( $this->getConfigValue('currency_enable') ) {
-    		require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php';
-    		require_once SITEBILL_DOCUMENT_ROOT.'/apps/currency/admin/admin.php';
-    		$CM=new currency_admin();
-    	}
-    
-    	if(isset($params['_collect_user_info']) && $params['_collect_user_info']==1){
-    		$_collect_user_info=true;
-    		unset($params['_collect_user_info']);
-    	}else{
-    		$_collect_user_info=false;
-    	}
-    
-    	$this->grid_total = 0;
-    	 
-    	 
-    	//collect WHERE parts
-    	$preparedParams=$this->prepareRequestParams($params, $premium);
-    	
-    	$where_array=$preparedParams['where_array'];
-    	$add_from_table=$preparedParams['add_from_table'];
-    	$add_select_value=$preparedParams['add_select_value'];
-    	$params=$preparedParams['params'];
-    	 
-		$where_array_prepared=$preparedParams['where_array_prepared'];
-    	$where_value_prepared=$preparedParams['where_value_prepared'];
-		
-    	$select_what=$preparedParams['select_what'];
-    	$left_joins=$preparedParams['left_joins']; 
-		
-		$left_joins[]='LEFT JOIN '.DB_PREFIX.'_topic ON '.DB_PREFIX.'_data.topic_id='.DB_PREFIX.'_topic.id';
-    	
-    	if ( $this->getConfigValue('currency_enable') ) {
-    		$select_what[]=DB_PREFIX.'_currency.code AS currency_code';
-    		$select_what[]=DB_PREFIX.'_currency.name AS currency_name';
-    		$select_what[]='(('.DB_PREFIX.'_data.price*'.DB_PREFIX.'_currency.course)/'.$CM->getCourse(CURRENT_CURRENCY).') AS price_ue';
-    		 
-    		$left_joins[]='LEFT JOIN '.DB_PREFIX.'_currency ON '.DB_PREFIX.'_data.currency_id='.DB_PREFIX.'_currency.currency_id';
-    	}else{
-    		$select_what[]=DB_PREFIX.'_data.price AS price_ue';
-    	}
-    	 
-    	//append user vars
-    
-    	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/template_search.php')){
-        	require_once(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/template_search.php');
-        	$Template_Search=new Template_Search();
-        	$results=$Template_Search->run();
-        	if(isset($results['where'])){
-        		$where_array=array_merge($where_array, $results['where']);
-        		$where_array_prepared=array_merge($where_array_prepared, $results['where']);
-        	}
-        	if(isset($results['params'])){
-        		$params=array_merge($params, $results['params']);
-        	}
-        }
-    
-    
-    
-    	if ( count($where_array)>0 ) {
-            $where_statement = " WHERE ".implode(' AND ', $where_array);
-        }
-        
-        if ( count($where_array_prepared)>0 ) {
-        	$where_statement_prepared = " WHERE ".implode(' AND ', $where_array_prepared);
-        }
-    
-    	$order=$this->prepareSortOrder($params, $random, $premium);
-    
-    	/*
-    	 require_once SITEBILL_DOCUMENT_ROOT.'/apps/activelinker/admin/admin.php';
-    	$AL=new activelinker_admin();
-    	$this->template->assert('activelinker_desc', $AL->generate($params));
-    	*/
-    	if ( !isset($params['page']) or $params['page'] == 0 ) {
-    		$page = 1;
-    	} else {
-    		$page = $params['page'];
-    	}
-    
-    
-    
-    
-    	$query = 'SELECT COUNT('.DB_PREFIX.'_data.id) AS total FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').' '.$where_statement_prepared;
-        
-    	$DBC=DBC::getInstance();
-		$stmt=$DBC->query($query, $where_value_prepared);
-		
-		
-    	$total = 0;
-		$this->grid_total = $total;
-		if(!$stmt){
-			$total = 0;
-			$this->grid_total = $total;
-			//return array();
-		}else{
-			$ar=$DBC->fetch($stmt);
-			$total = $ar['total'];
-			$this->grid_total = $total;
-		}
-		
-		global $smarty;
-		
-    	
-    
-    
-    	$pageLimitParams=$this->preparePageLimitParams($params, $page, $total, $premium);
-		$start=$pageLimitParams['start'];
-		$limit=$pageLimitParams['limit'];
-		$max_page=$pageLimitParams['max_page'];
-		$page = (int)$params['page'];
-		
-		
-		$pager_params=$params;
-    
-    	if ( preg_match('/\/special\//', $_SERVER['REQUEST_URI']) ) {
-    		unset($params['spec']);
-    		unset($pager_params['spec']);
-    	}
-    
-    	if(''!=$is_country_view){
-    		unset($pager_params['country_id']);
-    		$pageurl=$is_country_view;
-    		 
-    	}else{
-    		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
-    		$Structure_Manager = new Structure_Manager();
-    		$category_structure = $Structure_Manager->loadCategoryStructure();
-    		if($this_is_favorites){
-    			$pageurl='myfavorites';
-    		}else{
-    			if(!is_array($params['topic_id']) && $params['topic_id']!=''){
-    				if(!$params['admin']){
-    					if($this->cityTopicUrlFind($_SERVER['REQUEST_URI'])){
-    						$p=parse_url($_SERVER['REQUEST_URI']);
-    						unset($params['city_id']);
-    						unset($params['topic_id']);
-    						unset($pager_params['city_id']);
-    						unset($pager_params['topic_id']);
-    						$pageurl=trim($p['path'],'/');
-    					}elseif($category_structure['catalog'][$params['topic_id']]['url']!='' && 1==$this->getConfigValue('apps.seo.level_enable')){
-    						$pageurl=$category_structure['catalog'][$params['topic_id']]['url'];
-    						//unset($pager_params['topic_id']);
-    						unset($params['topic_id']);
-    						unset($pager_params['topic_id']);
-    					}elseif($category_structure['catalog'][$params['topic_id']]['url']!=''){
-    						//echo 1;
-    						$pageurl=$category_structure['catalog'][$params['topic_id']]['url'];
-    						unset($pager_params['topic_id']);
-    						unset($params['topic_id']);
-    					}else{
-    						if(preg_match('/topic(\d*).html/',$_SERVER['REQUEST_URI'])){
-    							unset($pager_params['topic_id']);
-    						}
-    						if($params['topic_id']!=0){
-    							$pageurl='topic'.$params['topic_id'].'.html';
-    							unset($params['topic_id']);
-    						}else{
-    							$pageurl='';
-    							unset($params['topic_id']);
-    							unset($pager_params['topic_id']);
-    						}
-    
-    					}
-    				}else{
-    					$pageurl='';
-    				}
-    			}else{
-    				$pageurl='';
-    			}
-    		}
-    	}
-    	 
-    
-    	if($paging){
-    		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/page_navigator.php')){
-    			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/page_navigator.php';
-    			$url='';
-    			if(isset($params['pager_url'])){
-    				$url=$params['pager_url'];
-    				unset($params['pager_url']);
-    			}
-    			 
-    			if($params['admin']){
-    				$nurl='account/data';
-    			}else{
-    				$nurl=$pageurl;
-    			}
-    			//print_r($params);
-    			 
-    			$paging=Page_Navigator::getPagingArray($total, $page, $limit, $pager_params, $nurl);
-    			//$this->template->assert('pager_array', $paging);
-    		}
-    		$return['paging']=$paging;
-    	}
-    	
-    
-    
-    
-    	$select_what[]=DB_PREFIX.'_data.*';
-        $select_what[]=DB_PREFIX.'_topic.name AS type_sh';
-        
-        
-        
-        
-        if ( $this->getConfigValue('apps.company.timelimit') ) {
-        	$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value.'
-        		FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').' '.$where_statement_prepared.'
-        		ORDER BY '.$order.($params['no_portions']==1 ? '' : ' LIMIT '.$start.', '.$limit);
-        	/*if ( $this->getConfigValue('currency_enable') ) {
-        		$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value.' 
-        				FROM '.DB_PREFIX.'_data '.(count($left_joins)>0 ? implode(' ', $left_joins).' ' : '').'
-        				re_topic '.' '.$where_statement_prepared.' 
-        				ORDER BY '.$order.($params['no_portions']==1 ? '' : ' LIMIT '.$start.', '.$limit);
-        	} else {
-        		$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value.' 
-        				FROM '.DB_PREFIX.'_data, '.DB_PREFIX.'_topic '.$add_from_table.' '.$where_statement_prepared.' 
-        				ORDER BY '.$order.($params['no_portions']==1 ? '' : ' LIMIT '.$start.', '.$limit);
-        	}*/
-        	 
-        } else {
-        	$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value.'
-        		FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').' '.$where_statement_prepared.'
-        		ORDER BY '.$order.($params['no_portions']==1 ? '' : ' LIMIT '.$start.', '.$limit);
-        	/*if ( $this->getConfigValue('currency_enable') ) {
-        		$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value .'
-        		FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').'
-        		'.$where_statement_prepared .'
-        		ORDER BY '.$order.($params['no_portions']==1 ? '' : ' LIMIT '.$start.', '.$limit);
-        	} else {
-        		$query = 'SELECT '.implode(', ', $select_what).' '.$add_select_value.' 
-        		FROM '.DB_PREFIX.'_data'.(count($left_joins)>0 ? ' '.implode(' ', $left_joins).' ' : '').' '.$where_statement_prepared.' 
-        		ORDER BY '.$order.($params['no_portions']==1 ? '' : ' LIMIT '.$start.', '.$limit);
-        	}*/
-        }
-       // echo $query.'<br>';
-       // print_r($where_value_prepared);
-       
-        $stmt=$DBC->query($query, $where_value_prepared);
-    
-    	$ra = array();
-        if($stmt){
-        	
-        	$i = 0;
-        	if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/company/company.xml') ) {
-        		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/user/account.php');
-        		$Account = new Account;
-        	
-        	}
-        	
-        	while($ar=$DBC->fetch($stmt)){
-        		if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/company/company.xml') ) {
-        			$company_profile = $Account->get_company_profile($ar['user_id']);
-        			$ar['company'] = $company_profile['name']['value'];
-        		}
-        		$ra[$i] = $ar;
-        		$i++;
-        	}
-        }
-    	
-    
-    	if(count($ra)>0){
-			$ra=$this->transformGridData($ra, $_collect_user_info);
-		}
-		
-    	 
-    	 
-    	
-    	if($geodata){
-    		$gdata=array();
-    		foreach($ra as $k=>$d){
-    			if( isset($d['geo_lat']) && isset($d['geo_lng']) && $d['geo_lat']!='' && $d['geo_lng']!='' ){
-    		
-    		
-    				$gdata[$k]['currency_name']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['currency_name']);
-    				$gdata[$k]['city']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['city']);
-    				$gdata[$k]['street']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['street']);
-    				$gdata[$k]['price']=number_format($d['price'],0,'.',' ');
-    				$gdata[$k]['type_sh']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['type_sh']);
-    				$gdata[$k]['title']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['city'].' '.$d['street'].(($d['number']!='' && $d['number']!=0) ? ', '.$d['number'] : '').' ('.$data[$k]['price'].')');
-    				if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/realty_on_map.tpl')){
-    					$smarty->assign('realty',$d);
-    					$html=$smarty->fetch(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/realty_on_map.tpl');
-    					$html = str_replace("\r\n", ' ', $html);
-    					$html = str_replace("\n", ' ', $html);
-    					$html = str_replace("\t", ' ', $html);
-    					//$html = htmlspecialchars($html);
-    					$html = addslashes($html);
-    				}else{
-    					$html = '';
-    				}
-    		
-    		
-    				$gdata[$k]['html']=SiteBill::iconv(SITE_ENCODING, 'utf-8', $html);
-    				$gdata[$k]['geo_lat']=$d['geo_lat'];
-    				$gdata[$k]['geo_lng']=$d['geo_lng'];
-    				$gdata[$k]['href']=$d['href'];
-    				$gdata[$k]['parent_category_url']=$d['parent_category_url'];
-    			}
-    		}
-    		$geoobjects_collection=array();
-    		if(count($gdata)>0){
-    			foreach ($gdata as $gd){
-    				$gc=$gd['geo_lat'].'_'.$gd['geo_lng'];
-    				if(isset($geoobjects_collection[$gc])){
-    					$geoobjects_collection[$gc]['html'].=$gd['html'];
-    					$geoobjects_collection[$gc]['count']++;
-    				}else{
-    					$geoobjects_collection[$gc]['lat']=$gd['geo_lat'];
-    					$geoobjects_collection[$gc]['lng']=$gd['geo_lng'];
-    					$geoobjects_collection[$gc]['html']=$gd['html'];
-    					$geoobjects_collection[$gc]['count']=1;
-    				}
-    			}
-    		}
-    		//$this->template->assert('geoobjects_collection_clustered', json_encode($geoobjects_collection));
-    		$return['geoobjects_collection_clustered']=json_encode($geoobjects_collection);
-    		$return['grid_geodata']=json_encode($this->generateGridGeoDataOld($ra));
-    		
-    		//$this->template->assert('geoobjects_collection', json_encode($gdata));
-    		//}
-    		
-    		//LEGACY BLOCK. For old templates only!
-    		$grid_geodata=array();
-    		//$this->template->assert('grid_geodata', json_encode($this->generateGridGeoDataOld($ra)));
-    	}
-    	
-    	$return['_total_records']=$total;
-    	$return['_max_page']=$max_page;
-    	
-    	$return['data']=$ra;
-    	$return['order']=$order;
-    	return $return;
-    
-    
-    	$this->template->assert('_total_records', $total);
-    	$this->template->assert('_max_page', $max_page);
-    
-    
-    	return $ra;
     }
     
     function getTranslitAlias($city,$street,$number){
@@ -3039,15 +2380,13 @@ class Grid_Constructor extends SiteBill_Krascap {
     	$query1='SELECT COUNT('.DB_PREFIX.'_data.id) as total FROM '.DB_PREFIX.'_data d
 				LEFT JOIN '.DB_PREFIX.'_topic t ON t.id=d.topic_id';
     
-    	//$query = "select count(re_data.id) as total from re_data LEFT JOIN re_currency ON re_data.currency_id=re_currency.currency_id, re_topic $add_from_table $where_statement ";
-    	//echo $query.'<br>';
-    
-    	$this->db->exec($query);
-    	if ( !$this->db->success ) {
-    		echo $this->db->error.'<br>';
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+    	if ( !$stmt ) {
+    		echo 'ERROR ON SELECT<br>';
     	}
-    	$this->db->fetch_assoc();
-    	$total = $this->db->row['total'];
+    	$ar=$DBC->fetch($stmt);
+    	$total = $ar['total'];
     	$this->grid_total = $total;
     	global $smarty;
     	$smarty->assign('_total_records',$total);
@@ -3163,10 +2502,10 @@ class Grid_Constructor extends SiteBill_Krascap {
     			$query = "select re_data.*, re_topic.name as type_sh $add_select_value from re_data, re_topic $add_from_table $where_statement ORDER BY ".$order.($params['no_portions']==1 ? '' : " LIMIT ".$start.", ".$limit);
     		}
     	}
-    	//echo $query."<br>";
-    	$this->db->exec($query);
-    	if ( !$this->db->success ) {
-    		echo $this->db->error.'<br>';
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+    	if ( !$stmt ) {
+    		echo 'ERROR ON SELECT<br>';
     	}
     
     	$ra = array();
@@ -3177,38 +2516,18 @@ class Grid_Constructor extends SiteBill_Krascap {
     
     	}
     
-    	while ( $this->db->fetch_assoc() ) {
+    	while ( $ar=$DBC->fetch($stmt) ) {
     		if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/company/company.xml') ) {
-    			$company_profile = $Account->get_company_profile($this->db->row['user_id']);
-    			//echo '<pre>';
-    			//print_r($company_profile);
-    			//echo '</pre>';
-    			$this->db->row['company'] = $company_profile['name']['value'];
+    			$company_profile = $Account->get_company_profile($ar['user_id']);
+    			$ar['company'] = $company_profile['name']['value'];
     		}
-    		$ra[$i] = $this->db->row;
+    		$ra[$i] = $ar;
     		$i++;
     	}
-    	 
-    	//require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
-    	//$Structure_Manager = new Structure_Manager();
-    	//$category_structure = $Structure_Manager->loadCategoryStructure();
-    
-    
+    	
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
     	$data_model = new Data_Model();
     	$params = array();
-    	//echo '<pre>';
-    	//print_r($ra);
-    	/*
-    	 if($this->getConfigValue('apps.agentphones.enable')==1){
-    	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/agentphones/admin/admin.php');
-    	$AP=new agentphones_admin();
-    	$AP->init();
-    	}else{
-    	$AP=NULL;
-    	}
-    	*/
-    	 
     	if($this->getConfigValue('apps.mapviewer.enable')){
     		require_once SITEBILL_DOCUMENT_ROOT.'/apps/mapviewer/admin/admin.php';
     		$Map_Viewer=new mapviewer_admin();
@@ -3301,6 +2620,8 @@ class Grid_Constructor extends SiteBill_Krascap {
     
     	echo '<br /><br />'.$QB->build().'<br /><br />';
     	return $ra;
+    	
+    	
     }
     
     /**
@@ -3353,69 +2674,97 @@ class Grid_Constructor extends SiteBill_Krascap {
     }
     
     protected function prepareSortOrder($params, $random = false, $premium=false){
+    	
     	$order='';
     	$asc='';
     	
     	$default_sorts=$this->getConfigValue('apps.realty.sorts');
     	$sorts=array();
     	if($default_sorts!=''){
-    		$matches=array();
-			preg_match_all('/([a-z0-9_]+)\|(asc|desc)[;]?/i', $default_sorts, $matches);
-			
-			if(count($matches[0])>0){
-				foreach($matches[1] as $k=>$fkey){
-					if($matches[2][$k]=='asc' || $matches[2][$k]=='desc'){
-						switch($fkey){
-							case 'id' : {
-								$sorts[]=DB_PREFIX.'_data.id '.$matches[2][$k];
-								break;
-							}
-							case 'type' : {
-								$sorts[]='type_sh '.$matches[2][$k];
-								break;
-							}
-							case 'street' : {
-								$sorts[]='street '.$matches[2][$k];
-								break;
-							}
-							case 'square_all' : {
-								$sorts[]=DB_PREFIX.'_data.square_all*1 '.$matches[2][$k];
-								break;
-							}
-							case 'floor' : {
-								$sorts[]=DB_PREFIX.'_data.floor*1 '.$matches[2][$k];
-								break;
-							}
-							case 'district' : {
-								$sorts[]='district '.$matches[2][$k];
-								break;
-							} 
-							case 'metro' : {
-								$sorts[]='metro '.$matches[2][$k];
-								break;
-							}
-							case 'city' : {
-								$sorts[]='city '.$matches[2][$k];
-								break;
-							}
-							case 'date_added' : {
-								$sorts[]=DB_PREFIX.'_data.date_added '.$matches[2][$k];
-								break;
-							}
-							case 'price' : {
-								$sorts[]='price_ue '.$matches[2][$k];
-								break;
-							}
-						}
-					}
-				}
-			}
+    		switch($default_sorts){
+    			case 'priceup' : {
+    				$sorts[]=DB_PREFIX.'_data.price_ue ASC';
+    				break;
+    			}
+    			case 'pricedown' : {
+    				$sorts[]=DB_PREFIX.'_data.price_ue DESC';
+    				break;
+    			}
+    			default : {
+    				$matches=array();
+    				preg_match_all('/([a-z0-9_]+)\|(asc|desc)[;]?/i', $default_sorts, $matches);
+    					
+    				if(count($matches[0])>0){
+    					foreach($matches[1] as $k=>$fkey){
+    						if($matches[2][$k]=='asc' || $matches[2][$k]=='desc'){
+    							switch($fkey){
+    								case 'id' : {
+    									$sorts[]=DB_PREFIX.'_data.id '.$matches[2][$k];
+    									break;
+    								}
+    								case 'type' : {
+    									$sorts[]='type_sh '.$matches[2][$k];
+    									break;
+    								}
+    								case 'street' : {
+    									$sorts[]='street '.$matches[2][$k];
+    									break;
+    								}
+    								case 'square_all' : {
+    									$sorts[]=DB_PREFIX.'_data.square_all*1 '.$matches[2][$k];
+    									break;
+    								}
+    								case 'floor' : {
+    									$sorts[]=DB_PREFIX.'_data.floor*1 '.$matches[2][$k];
+    									break;
+    								}
+    								case 'district' : {
+    									$sorts[]='district '.$matches[2][$k];
+    									break;
+    								}
+    								case 'metro' : {
+    									$sorts[]='metro '.$matches[2][$k];
+    									break;
+    								}
+    								case 'city' : {
+    									$sorts[]='city '.$matches[2][$k];
+    									break;
+    								}
+    								case 'date_added' : {
+    									$sorts[]=DB_PREFIX.'_data.date_added '.$matches[2][$k];
+    									break;
+    								}
+    								case 'date' : {
+    									$field=trim($this->getConfigValue('apps.realty.updated_at_field'));
+    									if($field==''){
+    										$field='date_added';
+    									}
+    									$sorts[]=DB_PREFIX.'_data.`'.$field.'` '.$matches[2][$k];
+    									break;
+    								}
+    								case 'price' : {
+    									$sorts[]='price_ue '.$matches[2][$k];
+    									break;
+    								}
+    							}
+    						}
+    					}
+    				}
+    			}
+    		}
+    		
     	}
+    	
+    	//print_r($sorts);
     	
     	if(!empty($sorts)){
     		$default_sorts=implode(', ', $sorts);
     	}else{
-    		$default_sorts=DB_PREFIX.'_data.date_added DESC, '.DB_PREFIX.'_data.id DESC';
+    		$field=trim($this->getConfigValue('apps.realty.updated_at_field'));
+    		if($field==''){
+    			$field='date_added';
+    		}
+    		$default_sorts=DB_PREFIX.'_data.`'.$field.'` DESC, '.DB_PREFIX.'_data.id DESC';
     	}
     	
     	if ( $random ) {
@@ -3435,15 +2784,21 @@ class Grid_Constructor extends SiteBill_Krascap {
             
             switch($params['order']){
             	case 'id' : {
-            		$order=DB_PREFIX.'_data.id '.$asc;
+            		$order='id '.$asc;
             		break;
             	}
             	case 'type' : {
             		$order='type_sh '.$asc;
+            		//$order=DB_PREFIX.'_data.topic_id '.$asc;
             		break;
             	}
             	case 'street' : {
-            		$order='street '.$asc;
+            		if(isset($this->grid_item_data_model['street_id'])){
+            			$order='street '.$asc;
+            		}else{
+            			$order=$default_sorts;
+            		}
+            		
             		break;
             	}
             	case 'square_all' : {
@@ -3478,10 +2833,40 @@ class Grid_Constructor extends SiteBill_Krascap {
             		$order=DB_PREFIX.'_data.view_count '.$asc;
             		break;
             	}
+            	case 'priceup' : {
+            		$order='price_ue ASC';
+            		break;
+            	}
+            	case 'pricedown' : {
+            		$order='price_ue DESC';
+            		break;
+            	}
+            	case 'popularup' : {
+            		$order=DB_PREFIX.'_data.view_count ASC';
+            		break;
+            	}
+            	case 'populardown' : {
+            		$order=DB_PREFIX.'_data.view_count DESC';
+            		break;
+            	}
+            	case 'dateup' : {
+            		$order=DB_PREFIX.'_data.date_added ASC';
+            		break;
+            	}
+            	case 'datedown' : {
+            		$order=DB_PREFIX.'_data.date_added DESC';
+            		break;
+            	}
             	default : {
-            		$order=$default_sorts;
+            		if(isset($params['_sortmodel']) && $params['_sortmodel']==1){
+            			$order=DB_PREFIX.'_data.`'.$params['order'].'` '.$asc;
+            		}else{
+            			$order=$default_sorts;
+            		}
+            		
             	}
             }
+            
             //
             /*if     ( $params['order'] == 'type' ) $order = 'type_sh ';
             elseif ( $params['order'] == 'street' ) $order = 'street ';
@@ -3511,7 +2896,7 @@ class Grid_Constructor extends SiteBill_Krascap {
         		$order = $default_sorts;
         	}
         }
-        
+      
         return $order;
     }
     
@@ -3529,7 +2914,7 @@ class Grid_Constructor extends SiteBill_Krascap {
     	return $grid_geodata;
     }
     
-    protected function transformGridData($ra, $_collect_user_info=false){
+    function transformGridData($ra, $_collect_user_info=false){
     	
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
     	$data_model = new Data_Model();
@@ -3537,6 +2922,8 @@ class Grid_Constructor extends SiteBill_Krascap {
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
     	$Structure_Manager = new Structure_Manager();
     	$category_structure = $Structure_Manager->loadCategoryStructure();
+    	
+    	$chains=$Structure_Manager->createCatalogChains();
     	
     	
     	$params = array();
@@ -3553,6 +2940,9 @@ class Grid_Constructor extends SiteBill_Krascap {
     	
     	
     	foreach ( $ra as $item_id => $item_array ) {
+    		
+    		
+    		
     		if( isset($item_array['geo_lat']) && isset($item_array['geo_lng']) && $item_array['geo_lat']!='' && $item_array['geo_lng']!='' ){
     			$grid_geodata[]=array(
     					'lat'=>$item_array['geo_lat'],
@@ -3561,28 +2951,101 @@ class Grid_Constructor extends SiteBill_Krascap {
     			);
     		}
     		if ( $item_array['country_id'] > 0 ) {
-    			$ra[$item_id]['country'] = $data_model->get_string_value_by_id('country', 'country_id', 'name', $item_array['country_id'], true);
+    			$parameters=$_model['data']['country_id']['parameters'];
+				$fname='name';
+    			if(1===intval($this->getConfigValue('apps.language.use_langs')) && (!isset($parameters['no_ml']) || 0===intval($parameters['no_ml']))){
+    				$curlang=$this->getCurrentLang();
+    				if(1===intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang=='ru'){
+    				
+    				}else{
+    					$fname.='_'.$this->getCurrentLang();
+    				}
+    			}
+    			$ra[$item_id]['country'] = $data_model->get_string_value_by_id('country', 'country_id', $fname, $item_array['country_id'], true);
     		}
     		
     		if ( $item_array['region_id'] > 0 ) {
-    			$ra[$item_id]['region'] = $data_model->get_string_value_by_id('region', 'region_id', 'name', $item_array['region_id'], true);
+    			$parameters=$_model['data']['region_id']['parameters'];
+				$fname='name';
+    			if(1===intval($this->getConfigValue('apps.language.use_langs')) && (!isset($parameters['no_ml']) || 0===intval($parameters['no_ml']))){
+    				$curlang=$this->getCurrentLang();
+    				if(1===intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang=='ru'){
+    				
+    				}else{
+    					$fname.='_'.$this->getCurrentLang();
+    				}
+    			}
+    			$ra[$item_id]['region'] = $data_model->get_string_value_by_id('region', 'region_id', $fname, $item_array['region_id'], true);
     		}
     		if ( $item_array['district_id'] > 0 ) {
-    			$ra[$item_id]['district'] = $data_model->get_string_value_by_id('district', 'id', 'name', $item_array['district_id'], true);
+    			$parameters=$_model['data']['district_id']['parameters'];
+				$fname='name';
+    			if(1===intval($this->getConfigValue('apps.language.use_langs')) && (!isset($parameters['no_ml']) || 0===intval($parameters['no_ml']))){
+    				$curlang=$this->getCurrentLang();
+    				if(1===intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang=='ru'){
+    				
+    				}else{
+    					$fname.='_'.$this->getCurrentLang();
+    				}
+    			}
+    			$ra[$item_id]['district'] = $data_model->get_string_value_by_id('district', 'id', $fname, $item_array['district_id'], true);
     		}
     		if ( $item_array['street_id'] > 0 ) {
-    			$ra[$item_id]['street'] = $data_model->get_string_value_by_id('street', 'street_id', 'name', $item_array['street_id'], true);
+    			$parameters=$_model['data']['street_id']['parameters'];
+				$fname='name';
+    			if(1===intval($this->getConfigValue('apps.language.use_langs')) && (!isset($parameters['no_ml']) || 0===intval($parameters['no_ml']))){
+    				$curlang=$this->getCurrentLang();
+    				if(1===intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang=='ru'){
+    				
+    				}else{
+    					$fname.='_'.$this->getCurrentLang();
+    				}
+    			}
+    			$ra[$item_id]['street'] = $data_model->get_string_value_by_id('street', 'street_id', $fname, $item_array['street_id'], true);
     		}
     		if ( $item_array['city_id'] > 0 ) {
-    			$ra[$item_id]['city'] = $data_model->get_string_value_by_id('city', 'city_id', 'name', $item_array['city_id'], true);
+    			
+    			$parameters=$_model['data']['city_id']['parameters'];
+    			
+    			$fname='name';
+    			if(1===intval($this->getConfigValue('apps.language.use_langs')) && (!isset($parameters['no_ml']) || 0===intval($parameters['no_ml']))){
+    				$curlang=$this->getCurrentLang();
+    				if(1===intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang=='ru'){
+    				
+    				}else{
+    					$fname.='_'.$this->getCurrentLang();
+    				}
+    			}
+    			$ra[$item_id]['city'] = $data_model->get_string_value_by_id('city', 'city_id', $fname, $item_array['city_id'], true);
     		}
     		if ( $item_array['metro_id'] > 0 ) {
-    			$ra[$item_id]['metro'] = $data_model->get_string_value_by_id('metro', 'metro_id', 'name', $item_array['metro_id'], true);
+    			$parameters=$_model['data']['metro_id']['parameters'];
+				$fname='name';
+    			if(1===intval($this->getConfigValue('apps.language.use_langs')) && (!isset($parameters['no_ml']) || 0===intval($parameters['no_ml']))){
+    				$curlang=$this->getCurrentLang();
+    				if(1===intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang=='ru'){
+    				
+    				}else{
+    					$fname.='_'.$this->getCurrentLang();
+    				}
+    			}
+    			$ra[$item_id]['metro'] = $data_model->get_string_value_by_id('metro', 'metro_id', $fname, $item_array['metro_id'], true);
     		}
     		if ( $item_array['user_id'] > 0 ) {
     			if($_collect_user_info){
+    				$fields_str=trim($this->getConfigValue('core.listing.add_user_info_fields'));
+    				if($fields_str==''){
+    					$fields='`phone`, `login`, `fio`';
+    					$fields=array();
+    				}else{
+    					$fields=explode(',', $fields_str);
+    					$fields=array_map(function($it){if(trim($it)!==''){return trim($it);}}, $fields);
+    				}
+    				if(empty($fields)){
+    					$fields=array('phone', 'login', 'fio');
+    				}
     				$DBC=DBC::getInstance();
-    				$stmt=$DBC->query('SELECT phone, login, fio FROM '.DB_PREFIX.'_user WHERE user_id=? LIMIT 1', array($item_array['user_id']));
+    				$stmt=$DBC->query('SELECT `'.implode('`,`', $fields).'` FROM '.DB_PREFIX.'_user WHERE user_id=? LIMIT 1', array($item_array['user_id']));
     				if($stmt){
     					$ar=$DBC->fetch($stmt);
     					$ra[$item_id]['_user_info']=$ar;
@@ -3602,6 +3065,7 @@ class Grid_Constructor extends SiteBill_Krascap {
     	
     		foreach($_model['data'] as $k=>$v){
     			if($v['type']=='select_box'){
+    				$ra[$item_id]['_'.$k.'_']=$ra[$item_id][$k];
     				if(isset($_model['data'][$k]['select_data'][$ra[$item_id][$k]])){
     					$ra[$item_id][$k]=$_model['data'][$k]['select_data'][$ra[$item_id][$k]];
     				}else{
@@ -3609,11 +3073,24 @@ class Grid_Constructor extends SiteBill_Krascap {
     				}
     			}
     		}
-    	
+    		if(1===intval($this->getConfigValue('apps.language.use_langs'))){
+    			$curlang=$this->getCurrentLang();
+	    		foreach($_model['data'] as $k=>$v){
+	    			if(($v['type']=='safe_string' || $v['type']=='textarea' || $v['type']=='textarea_editor') && isset($item_array[$k.'_'.$curlang]) && $item_array[$k.'_'.$curlang]!=''){
+	    				$ra[$item_id][$k]=$item_array[$k.'_'.$curlang];
+	    			}
+	    		}
+    		}
+    		
+    		
+    		//$select_what[]=DB_PREFIX.'_topic.name AS type_sh';
     	
     		$params['topic_id'] = $item_array['topic_id'];
     	
     		$ra[$item_id]['path'] = $this->get_category_breadcrumbs_string( $params, $category_structure );
+    		$ra[$item_id]['_chain'] = $chains['ar'][$item_array['topic_id']];
+    		
+    		
     		$ra[$item_id]['date'] = date('d.m',strtotime($ra[$item_id]['date_added']));
     		$ra[$item_id]['datetime'] = date('d.m H:i',strtotime($ra[$item_id]['date_added']));
     		$ra[$item_id]['text'] = strip_tags($ra[$item_id]['text']);
@@ -3626,25 +3103,18 @@ class Grid_Constructor extends SiteBill_Krascap {
     	
     	*/
     		$ra[$item_id]['topic_info'] = $category_structure['catalog'][$ra[$item_id]['topic_id']];
-    		if(1==$this->getConfigValue('apps.seo.level_enable')){
-    			 
-    			if($category_structure['catalog'][$ra[$item_id]['topic_id']]['url']!=''){
-    				$ra[$item_id]['parent_category_url']=$category_structure['catalog'][$ra[$item_id]['topic_id']]['url'].'/';
+    		
+    		if(1===intval($this->getConfigValue('apps.language.use_langs'))){
+    			$curlang=$this->getCurrentLang();
+    			if(1===intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang=='ru'){
+    				$ra[$item_id]['topic_info']['name']=$ra[$item_id]['topic_info']['name'];
     			}else{
-    				$ra[$item_id]['parent_category_url']='';
+    				$ra[$item_id]['topic_info']['name']=$ra[$item_id]['topic_info']['name_'.$curlang];
     			}
-    		}else{
-    			$ra[$item_id]['parent_category_url']='';
     		}
+    		$ra[$item_id]['type_sh']=$ra[$item_id]['topic_info']['name'];
     		
-    		if(1==$this->getConfigValue('apps.seo.data_alias_enable') && $ra[$item_id]['translit_alias']!=''){
-    			$ra[$item_id]['href']=SITEBILL_MAIN_URL.'/'.$ra[$item_id]['parent_category_url'].$ra[$item_id]['translit_alias'];
-    		}elseif(1==$this->getConfigValue('apps.seo.html_prefix_enable')){
-    			$ra[$item_id]['href']=SITEBILL_MAIN_URL.'/'.$ra[$item_id]['parent_category_url'].'realty'.$ra[$item_id]['id'].'.html';
-    		}else{
-    			$ra[$item_id]['href']=SITEBILL_MAIN_URL.'/'.$ra[$item_id]['parent_category_url'].'realty'.$ra[$item_id]['id'];
-    		}
-    		
+    		$ra[$item_id]['href']=$this->getRealtyHREF($ra[$item_id]['id'], false, array('topic_id'=>$ra[$item_id]['topic_id'], 'alias'=>$ra[$item_id]['translit_alias']));
     	
     		if($billing){
     			if(isset($item_array['premium_status_end']) && isset($_model['data']['premium_status_end']) && $ra[$item_id]['premium_status_end']>time()){
@@ -3663,6 +3133,7 @@ class Grid_Constructor extends SiteBill_Krascap {
     		$_ids[]=$item['id'];
     	}
     	
+    	$hasMultipleFields=array();
     	$hasUploadify=false;
     	$hasUploads=false;
     	$uploads_element='';
@@ -3674,6 +3145,58 @@ class Grid_Constructor extends SiteBill_Krascap {
     			$uploads_element=$v['name'];
     			break;
     		}
+    	}
+    	
+    	foreach($_model['data'] as $k=>$v){
+    		if(isset($v['type']) && $v['type']=='select_by_query_multi'){
+    			$hasMultipleFields[]=$k;
+    		}
+    	}
+    	
+    	
+    	
+    	if(!empty($hasMultipleFields)){
+    		$elements_keys=array();
+    		$data=array();
+    		$DBC=DBC::getInstance();
+    		$query='SELECT `primary_id`, `field_name`, `field_value` FROM '.DB_PREFIX.'_multiple_field WHERE `table_name`=? AND `field_name` IN ('.implode(',', array_fill(0, count($hasMultipleFields), '?')).') AND `primary_id` IN ('.implode(',', array_fill(0, count($_ids), '?')).')';
+    		$query_params[]='data';
+    		//$query_params=$_ids;
+    		$query_params=array_merge($query_params, $hasMultipleFields, $_ids);
+    		$stmt=$DBC->query($query, $query_params);
+    		if($stmt){
+    			while($ar=$DBC->fetch($stmt)){
+    				$elements_keys[$ar['field_name']][$ar['field_value']]='';
+    				$data[$ar['primary_id']][$ar['field_name']][]=$ar['field_value'];
+    			}
+    		}
+    		//print_r($elements_keys);
+    		if(!empty($elements_keys)){
+    			foreach($elements_keys as $key=>$ikeys){
+    				$name=$_model['data'][$key]['value_name'];
+    				$pk=$_model['data'][$key]['primary_key_name'];
+    				$query='SELECT `'.$pk.'`, `'.$name.'` FROM '.DB_PREFIX.'_'.$_model['data'][$key]['primary_key_table'].' WHERE `'.$_model['data'][$key]['primary_key_name'].'` IN ('.implode(',', array_keys($ikeys)).')';
+    				$stmt=$DBC->query($query);
+    				echo $DBC->getLastError();
+    				if($stmt){
+    					while($ar=$DBC->fetch($stmt)){
+    						$elements_keys[$key][$ar[$pk]]=$ar[$name];
+    					}
+    				}
+    			}
+    			
+    			foreach ( $ra as $item_id => $item_array ) {
+    				if(isset($data[$item_array['id']])){
+    					foreach($data[$item_array['id']] as $ek=>$v){
+    						$ra[$item_id][$ek][0]=$v;
+    						foreach($v as $_v){
+    							$ra[$item_id][$ek][1][$_v]=$elements_keys[$ek][$_v];
+    						}
+    					}
+    				}
+    			}
+    		}
+    		
     	}
     	
     	if($hasUploadify){
@@ -3789,6 +3312,18 @@ class Grid_Constructor extends SiteBill_Krascap {
     }
     
     protected function prepareBreadcrumbs($params, $url = ''){
+    	//print_r($params);
+    	//if($params)
+    		//var_dump(Multilanguage::is_set('LT_BC_HOME_GRID', '_template'));
+    	if(Multilanguage::is_set('LT_BC_HOME_GRID', '_template')){
+    		$ra[]='<a href="'.SITEBILL_MAIN_URL.'/">'.Multilanguage::_('LT_BC_HOME_GRID', '_template').'</a>';
+    	}else{
+    		$ra[]='<a href="'.SITEBILL_MAIN_URL.'/">'.Multilanguage::_('L_HOME').'</a>';
+    	}
+    	
+    	//
+    	$rs = implode(' / ', array_reverse($ra));
+    	
     	if($url==''){
     		$url=SITEBILL_MAIN_URL;
     	}
@@ -3865,6 +3400,7 @@ class Grid_Constructor extends SiteBill_Krascap {
     }
     
     protected function preparePageLimitParams(&$params, $page, $total, $premium){
+    	
     	if ( $premium ) {
     		$limit = (int)$this->getConfigValue('apps.billing.premium_count');
     		if($limit==0){
@@ -3872,6 +3408,9 @@ class Grid_Constructor extends SiteBill_Krascap {
     		}
     	}else{
     		$limit = $this->getConfigValue('per_page');
+    		if(intval($this->getConfigValue('per_page_admin'))>0 && isset($params['admin']) && $params['admin']==1){
+    			$limit = $this->getConfigValue('per_page_admin');
+    		}
     		 
     		if ( (int)$params['vip'] == 1 ) {
     			if ( isset($params['per_page']) && (int)$params['per_page'] > 0 ) {
@@ -3882,9 +3421,14 @@ class Grid_Constructor extends SiteBill_Krascap {
     		} else {
     			if(isset($params['page_limit']) && (int)$params['page_limit']!=0){
     				$limit = (int)$params['page_limit'];
-    			}else{
-    				$limit = $this->getConfigValue('per_page');
-    			}
+    			}/*else{
+    				if(isset($params['admin']) && $params['admin']==1){
+    					$limit = 10;
+    				}else{
+    					$limit = $this->getConfigValue('per_page');
+    				}
+    				
+    			}*/
     			 
     		}
     	}
@@ -3900,53 +3444,39 @@ class Grid_Constructor extends SiteBill_Krascap {
     	return array('start'=>$start, 'limit'=>$limit, 'max_page'=>$max_page);
     }
     
+   
+    
     protected function prepareRequestParams($params, $premium=false){
-    	/*
-    	$fcwhere=array();
-    	$filterconditions=array(
-    		'price_min'=>array(
-    				'field'=>'price',
-    				'cond'=>'<=', //le, leeq, gr, greq, eq, partialeq, eqstart, eqend
-    				'value'=>'int', //text
-    				'notnull'=>1
-    				),
-    				'uniq_id'=>array(
-    				'field'=>'uniq_id',
-    				'cond'=>'eq', //le, leeq, gr, greq, eq, partialeq, eqstart, eqend
-    				'value'=>'int', //text
-    				'notnull'=>1
-    				)	
-    	);
     	
-    	foreach ($filterconditions as $fe=>&$fc){
-    		if(!isset($fc['value'])){
-    			$fc['value']='text';
-    		}
-    		if(!isset($fc['notnull'])){
-    			$fc['notnull']=0;
-    		}
+    	
+    	
+    	/*if($this->grid_model===null){
+    		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+    		$data_model = new Data_Model();
+    		$this->grid_model=$data_model->get_kvartira_model(false, true);
+    	}*/
+    	
+    	
+    	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/billing/lib/billing.php') && $this->getConfigValue('apps.billing.enable')==1){
+    		$_billing_on=true;
+    	}else{
+    		$_billing_on=false;
     	}
-    	
-    	foreach ($filterconditions as $fe=>$fc){
-    		$value=$this->getRequestValue($fe);
-    		if($fc['value']=='int'){
-    			$value=(int)$value;
-    		}
-    		
-    		if($fc['notnull']==1 && $fc['value']=='int' && $value==0){
-    			continue;
-    		}else{
-    			$fcwhere[]='`'.$fc['field'].'`'.$fc['cond'].$value;
-    		}
-    	}
-    	print_r($fcwhere);*/
-    	
-    	
-    	//print_r($params);
-    	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
-    	$data_model = new Data_Model();
     	 
-    	$_model=$data_model->get_kvartira_model(false, true);
+    	 
+    	 
+    	if(isset($params['currency_id']) && 0!=(int)$params['currency_id'] && 1==$this->getConfigValue('currency_enable')){
+    		require_once SITEBILL_DOCUMENT_ROOT.'/apps/currency/admin/admin.php';
+    		$CA=new currency_admin();
+    		$this->use_currency=true;
+    		$this->price_koefficient=$CA->getCourse((int)$params['currency_id']);
+    		
+    	}else{
+    		$this->use_currency=false;
+    		$this->price_koefficient=1;
+    	}
+    	
+    	
     	
     	$where_array = array();
     	$add_from_table='';
@@ -3957,60 +3487,80 @@ class Grid_Constructor extends SiteBill_Krascap {
     	$where_array_prepared = array();
     	$where_value_prepared = array();
     	
-    	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/billing/lib/billing.php') && $this->getConfigValue('apps.billing.enable')==1){
-    		$_billing_on=true;
-    	}else{
-    		$_billing_on=false;
-    	}
+    	/*foreach($params as $param=>$pval){
+    		$method='prepareRequestParam_'.$param;
+    		
+    		if(method_exists($this, $method)){
+    			
+    			$d=$this->$method($pval, $params);
+    			if(false!==$d){
+    				if(isset($d['where_array']) && is_array($d['where_array'])){
+			    		$where_array=array_merge($where_array, $d['where_array']);
+					}
+					if(isset($d['add_from_table']) && is_array($d['add_from_table'])){
+			    		$add_from_table=array_merge($add_from_table, $d['add_from_table']);
+					}
+					if(isset($d['add_select_value']) && is_array($d['add_select_value'])){
+			    		$add_select_value=array_merge($add_select_value, $d['add_select_value']);
+					}
+					if(isset($d['params']) && is_array($d['params'])){
+			    		$params=array_merge($params, $d['params']);
+					}
+					if(isset($d['wa']) && is_array($d['wa'])){
+			    		$where_array_prepared=array_merge($where_array_prepared, $d['wa']);
+					}
+					if(isset($d['wv']) && is_array($d['wv'])){
+			    		$where_value_prepared=array_merge($where_value_prepared, $d['wv']);
+					}
+					if(isset($d['select_what']) && is_array($d['select_what'])){
+			    		$select_what=array_merge($select_what, $d['select_what']);
+					}
+					if(isset($d['left_joins']) && is_array($d['left_joins'])){
+			    		$left_joins=array_merge($left_joins, $d['left_joins']);
+					}
+    			}
+    		}
+    	}*/
     	
     	
-    	
-    	if(isset($params['currency_id']) && 0!=(int)$params['currency_id'] && 1==$this->getConfigValue('currency_enable')){
-    		require_once SITEBILL_DOCUMENT_ROOT.'/apps/currency/admin/admin.php';
-    		$CA=new currency_admin();
-    		$use_currency=true;
-    		$price_koefficient=$CA->getCourse((int)$params['currency_id']);
-    	}else{
-    		$use_currency=false;
-    		$price_koefficient=1;
-    	}
     	
     	if ( isset($params['order']) && $params['order'] == 'city' ) {
-    		 
-    		//$where_array[] = 're_city.city_id=re_data.city_id';
-    		//$add_from_table .= ' , re_city ';
-    		//$add_select_value .= ' , re_city.name as city ';
-    		$select_what[]=DB_PREFIX.'_city.name as city';
+    		if($this->getConfigValue('apps.language.use_langs')){
+    			$curr_lang=$this->getCurrentLang();
+    			$select_what[]=DB_PREFIX.'_city.name_'.$curr_lang.' as city';
+    		}else{
+    			$select_what[]=DB_PREFIX.'_city.name as city';
+    		}
+    		
     		$left_joins[]='LEFT JOIN '.DB_PREFIX.'_city ON '.DB_PREFIX.'_city.city_id='.DB_PREFIX.'_data.city_id';
     	}
     	
     	if ( isset($params['order']) && $params['order'] == 'district' ) {
-    		//$where_array[] = 're_district.id=re_data.district_id';
-    		//$add_from_table .= ' , re_district ';
-    		//$add_select_value .= ' , re_district.name as district ';
     		$select_what[]=DB_PREFIX.'_district.name as district';
     		$left_joins[]='LEFT JOIN '.DB_PREFIX.'_district ON '.DB_PREFIX.'_district.id='.DB_PREFIX.'_data.district_id';
     	}
     	
     	if ( isset($params['order']) && $params['order'] == 'metro' ) {
-    		//$where_array[] = 're_metro.metro_id=re_data.metro_id';
-    		//$add_from_table .= ' , re_metro ';
-    		//$add_select_value .= ' , re_metro.name as metro ';
     		$select_what[]=DB_PREFIX.'_metro.name as metro';
     		$left_joins[]='LEFT JOIN '.DB_PREFIX.'_metro ON '.DB_PREFIX.'_metro.metro_id='.DB_PREFIX.'_data.metro_id';
     	}
     	
-    	if ( isset($params['order']) && $params['order'] == 'street' ) {
-    		//$where_array[] = 're_street.street_id=re_data.street_id';
-    		//$add_from_table .= ' , re_street ';
-    		//$add_select_value .= ' , re_street.name as street ';
+    	if ( isset($params['order']) && $params['order'] == 'street' && isset($this->grid_item_data_model['street_id'])) {
     		$select_what[]=DB_PREFIX.'_street.name as street';
     		$left_joins[]='LEFT JOIN '.DB_PREFIX.'_street ON '.DB_PREFIX.'_street.street_id='.DB_PREFIX.'_data.street_id';
     	}
     	
     	
+    	if ( isset($params['order']) && $params['order'] == 'type' && isset($this->grid_item_data_model['topic_id'])) {
+    		$select_what[]=DB_PREFIX.'_topic.name AS type_sh';
+    		$left_joins[]='LEFT JOIN '.DB_PREFIX.'_topic ON '.DB_PREFIX.'_topic.id='.DB_PREFIX.'_data.topic_id';
+    	}
+    	
+    	
+    	
+    	
     	//Подключать модель и проверять на наличие такого поля
-    	if(isset($params['srch_export_cian']) && $params['srch_export_cian']==1 && isset($_model['data']['export_cian'])){
+    	if(isset($params['srch_export_cian']) && $params['srch_export_cian']==1 && isset($this->grid_item_data_model['export_cian'])){
     		$where_array[] = DB_PREFIX.'_data.export_cian=1';
     		$where_array_prepared[]='('.DB_PREFIX.'_data.export_cian=1)';
     	}else{
@@ -4040,7 +3590,14 @@ class Grid_Constructor extends SiteBill_Krascap {
     		
     	}
     	
-    	
+    	if(isset($params['client_id']) && (int)$params['client_id']!=0){
+    			
+    		$where_array[] = 're_data.client_id='.(int)$params['client_id'];
+    		$where_array_prepared[]='('.DB_PREFIX.'_data.client_id = ?)';
+    		$where_value_prepared[]=(int)$params['client_id'];
+    	}else{
+    		unset($params['client_id']);
+    	}
     	
     	if(isset($params['uniq_id']) && (int)$params['uniq_id']!=0){
     		$where_array[] = 're_data.uniq_id='.(int)$params['uniq_id'];
@@ -4080,7 +3637,40 @@ class Grid_Constructor extends SiteBill_Krascap {
     	
     	//echo '$params[\'topic_id\'] = '.$params['topic_id'].'<br>';
     	
-    	if ( !is_array($params['topic_id']) && $params['topic_id'] != '' &&  (int)$params['topic_id'] != 0) {
+    	if(isset($params['topic_id'])){
+    		$topics=$params['topic_id'];
+    		
+    		if(!is_array($topics)){
+    			$topics=(array)$topics;
+    		}
+    		if(!empty($topics)){
+    			$list=array();
+    			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
+    			$Structure_Manager = new Structure_Manager();
+    			$category_structure = $Structure_Manager->loadCategoryStructure();
+    			foreach($topics as $topic_id){
+    				if(intval($topic_id)>0 && isset($category_structure['catalog'][$topic_id])){
+    					$childs = $Structure_Manager->get_all_childs($topic_id, $category_structure);
+    					if(!empty($childs)){
+    						$list=array_merge($list, $childs);
+    					}
+    					$list[]=intval($topic_id);
+    				}
+    			}
+    		}
+    		
+    		if(!empty($list)){
+    			$list=array_unique($list, SORT_NUMERIC);
+    			$where_array_prepared[]='('.DB_PREFIX.'_data.topic_id IN ('.implode(',', array_fill(0, count($list), '?')).'))';
+    			$where_value_prepared=array_merge($where_value_prepared, $list);
+    		}else{
+    			unset($params['topic_id']);
+    		}
+    	}
+    	
+    	
+    	
+    	/*if ( !is_array($params['topic_id']) && $params['topic_id'] != '' &&  (int)$params['topic_id'] != 0) {
     		$topic_id=(int)$params['topic_id'];
     		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
     		$Structure_Manager = new Structure_Manager();
@@ -4121,7 +3711,7 @@ class Grid_Constructor extends SiteBill_Krascap {
     		//$where_array[] = 're_data.topic_id IN ('.implode(',', $params['topic_id']).')';
     	}else{
     		unset($params['topic_id']);
-    	}
+    	}*/
     	
     	if ( isset($params['country_id']) && (int)$params['country_id'] != 0  ) {
     		$where_array[] = 're_data.country_id = '.(int)$params['country_id'];
@@ -4188,6 +3778,12 @@ class Grid_Constructor extends SiteBill_Krascap {
     		}
     	}
     	
+    	if(isset($params['agg_user_id'])){
+    		$where_array_prepared[]='('.DB_PREFIX.'_data.user_id IN ('.implode(',', array_fill(0, count($params['agg_user_id']), '?')).'))';
+    		$where_value_prepared=array_merge($where_value_prepared, array_values($params['agg_user_id']));
+    		unset($params['agg_user_id']);
+    	}
+    	
     	
     	if ( isset($params['onlyspecial']) && (int)$params['onlyspecial'] > 0  ) {
     		$where_array[] = 're_data.hot = 1';
@@ -4198,10 +3794,12 @@ class Grid_Constructor extends SiteBill_Krascap {
     	
     	
     	if ( isset($params['price']) && $params['price'] != 0  ) {
+    		
+    		//$price_str=preg_replace('/[^\d.,]/', '', $params['price']);
     		$price_str=(int)str_replace(' ', '', $params['price']);
-    		if($use_currency){
+    		if($this->use_currency){
     			$where_array[] = DB_PREFIX.'_data.price  <= '.$price_str;
-    			$where_array_prepared[]='((('.DB_PREFIX.'_data.price*'.DB_PREFIX.'_currency.course)/'.$price_koefficient.')<=?)';
+    			$where_array_prepared[]='((('.DB_PREFIX.'_data.price*'.DB_PREFIX.'_currency.course)/'.$this->price_koefficient.')<=?)';
     			$where_value_prepared[]=$price_str;
     		}else{
     			$where_array[] = DB_PREFIX.'_data.price  <= '.$price_str;
@@ -4213,11 +3811,13 @@ class Grid_Constructor extends SiteBill_Krascap {
     		unset($params['price']);
     	}
     	
+    	 
+    	
     	if ( isset($params['price_min']) && $params['price_min'] != 0  ) {
     		$price_str=(int)str_replace(' ', '', $params['price_min']);
-    		if($use_currency){
+    		if($this->use_currency){
     			$where_array[] = DB_PREFIX.'_data.price  >= '.$price_str;
-    			$where_array_prepared[]='((('.DB_PREFIX.'_data.price*'.DB_PREFIX.'_currency.course)/'.$price_koefficient.')>=?)';
+    			$where_array_prepared[]='((('.DB_PREFIX.'_data.price*'.DB_PREFIX.'_currency.course)/'.$this->price_koefficient.')>=?)';
     			$where_value_prepared[]=$price_str;
     		}else{
     			$where_array[] = DB_PREFIX.'_data.price  >= '.$price_str;
@@ -4230,17 +3830,35 @@ class Grid_Constructor extends SiteBill_Krascap {
     	////
     	if ( isset($params['price_pm']) && $params['price_pm'] != 0  ) {
     		$price_str=(int)str_replace(' ', '', $params['price_pm']);
-    		$where_array[] = 're_data.price_pm  <= '.$price_str*$price_koefficient;
-    		$where_array_prepared[]='('.DB_PREFIX.'_data.price<=?)';
-    		$where_value_prepared[]=$price_str;
+			
+			if($this->use_currency){
+    			$where_array[] = DB_PREFIX.'_data.price_pm<='.$price_str;
+    			$where_array_prepared[]='((('.DB_PREFIX.'_data.price_pm*'.DB_PREFIX.'_currency.course)/'.$this->price_koefficient.')<=?)';
+    			$where_value_prepared[]=$price_str;
+    		}else{
+    			$where_array[] = DB_PREFIX.'_data.price_pm<= '.$price_str;
+    			$where_array_prepared[]='('.DB_PREFIX.'_data.price_pm<=?)';
+    			$where_value_prepared[]=$price_str;
+    		}
+			
+    
     	}else{
     		unset($params['price_pm']);
     	}
     	if ( isset($params['price_pm_min']) && $params['price_pm_min'] != 0  ) {
     		$price_str=(int)str_replace(' ', '', $params['price_pm_min']);
-    		$where_array[] = 're_data.price_pm  >= '.$price_str*$price_koefficient;
-    		$where_array_prepared[]='('.DB_PREFIX.'_data.price>=?)';
-    		$where_value_prepared[]=$price_str;
+			
+			if($this->use_currency){
+    			$where_array[] = DB_PREFIX.'_data.price_pm  >= '.$price_str;
+    			$where_array_prepared[]='((('.DB_PREFIX.'_data.price_pm*'.DB_PREFIX.'_currency.course)/'.$this->price_koefficient.')>=?)';
+    			$where_value_prepared[]=$price_str;
+    		}else{
+    			$where_array[] = DB_PREFIX.'_data.price_pm  >= '.$price_str;
+    			$where_array_prepared[]='('.DB_PREFIX.'_data.price_pm>=?)';
+    			$where_value_prepared[]=$price_str;
+    		}
+			
+    	
     	}else{
     		unset($params['price_pm_min']);
     	}
@@ -4463,31 +4081,15 @@ class Grid_Constructor extends SiteBill_Krascap {
     		$where_array_prepared_sub=array();
     		
     		$word=htmlspecialchars($params['srch_word']);
-    		$sub_where[] = '(re_data.text LIKE \'%'.$word.'%\')';
-    		
-    		$where_array_prepared_sub[]='('.DB_PREFIX.'_data.text LIKE ?)';
-    		$where_value_prepared[]='%'.$word.'%';
-    		
-    		/*
-    		$sub_where[] = '(re_data.more1 LIKE \'%'.$word.'%\')';
-    		
-    		$where_array_prepared_sub[]='('.DB_PREFIX.'_data.more1 LIKE ?)';
-    		$where_value_prepared[]='%'.$word.'%';
+    		if($word!=''){
+    			$sub_where[] = '(re_data.text LIKE \'%'.$word.'%\')';
+    			
+    			$where_array_prepared_sub[]='('.DB_PREFIX.'_data.text LIKE ?)';
+    			$where_value_prepared[]='%'.$word.'%';
     		
     		
-    		$sub_where[] = '(re_data.more2 LIKE \'%'.$word.'%\')';
-    		
-    		$where_array_prepared_sub[]='('.DB_PREFIX.'_data.more2 LIKE ?)';
-    		$where_value_prepared[]='%'.$word.'%';
-    		
-    		$sub_where[] = '(re_data.more3 LIKE \'%'.$word.'%\')';
-    		
-    		$where_array_prepared_sub[]='('.DB_PREFIX.'_data.more3 LIKE ?)';
-    		$where_value_prepared[]='%'.$word.'%';
-    		
-    		$where_array[]='('.implode(' OR ',$sub_where).')';
-    		*/
-    		$where_array_prepared[]='('.implode(' OR ', $where_array_prepared_sub).')';
+    			$where_array_prepared[]='('.implode(' OR ', $where_array_prepared_sub).')';
+    		}
     	}else{
     		unset($params['srch_word']);
     	}
@@ -4529,27 +4131,40 @@ class Grid_Constructor extends SiteBill_Krascap {
     	
     	
     	if(isset($params['srch_date_to'])){
-    		$srch_date_to=preg_replace('/[^\d-]/', '', $params['srch_date_to']);
-    		if($srch_date_to!='' && $srch_date_to!=0){
-    			$where_array[]="(re_data.date_added<='".$srch_date_to."')";
+    		$srch_date_to='';
+    		if(preg_match('/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)$/', $params['srch_date_to'])){
+    			$srch_date_to=$params['srch_date_to'];
+    		}elseif(preg_match('/^(\d\d\d\d-\d\d-\d\d)$/', $params['srch_date_to'])){
+    			$srch_date_to=$params['srch_date_to'];
+    		}else{
     			
+    		}
+    		if($srch_date_to!=''){
+    			$where_array[]="(re_data.date_added<='".$srch_date_to."')";
     			$where_value_prepared[]=$srch_date_to;
     			$where_array_prepared[]='('.DB_PREFIX.'_data.date_added<=?)';
     		}else{
-	    		unset($params['srch_date_to']);
-	    	}
-	    }
+    			unset($params['srch_date_to']);
+    		}
+    	}
 	    
 	    if(isset($params['srch_date_from'])){
-	    	$srch_date_from=preg_replace('/[^\d-]/', '', $params['srch_date_from']);
-	    	if($srch_date_from!='' && $srch_date_from!=0){
+	    	$srch_date_from='';
+	    	if(preg_match('/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d)$/', $params['srch_date_from'])){
+	    		$srch_date_from=$params['srch_date_from'];
+	    	}elseif(preg_match('/^(\d\d\d\d-\d\d-\d\d)$/', $params['srch_date_from'])){
+	    		$srch_date_from=$params['srch_date_from'];
+	    	}else{
+	    		 
+	    	}
+	    	if($srch_date_from!=''){
 	    		$where_array[]="(re_data.date_added>='".$srch_date_from."')";
-    		
-    			$where_value_prepared[]=$srch_date_from;
-    			$where_array_prepared[]='('.DB_PREFIX.'_data.date_added>=?)';
+	    		$where_value_prepared[]=$srch_date_from;
+	    		$where_array_prepared[]='('.DB_PREFIX.'_data.date_added>=?)';
 	    	}else{
 	    		unset($params['srch_date_from']);
 	    	}
+	    
 	    }
     	
     	
@@ -4606,52 +4221,52 @@ class Grid_Constructor extends SiteBill_Krascap {
     	
     	
     	if(isset($params['not_first_floor']) && (int)$params['not_first_floor']==1){
-    		$where_array[]="(re_data.floor <> 1)";
-    		$where_array_prepared[]='('.DB_PREFIX.'_data.floor <> 1)';
+    		$where_array[]="(re_data.floor*1 > 1)";
+    		$where_array_prepared[]='('.DB_PREFIX.'_data.floor*1 > 1)';
     	}else{
     		unset($params['not_first_floor']);
     	}
     	
     	if(isset($params['not_last_floor']) && (int)$params['not_last_floor']==1){
-    		$where_array[]="(re_data.floor <> re_data.floor_count)";
-    		$where_array_prepared[]='('.DB_PREFIX.'_data.floor <> '.DB_PREFIX.'_data.floor_count)';
+    		$where_array[]="(re_data.floor*1 > 0 AND re_data.floor*1 <> re_data.floor_count*1)";
+    		$where_array_prepared[]='('.DB_PREFIX.'_data.floor*1 > 0 AND '.DB_PREFIX.'_data.floor*1 <> '.DB_PREFIX.'_data.floor_count*1)';
     	}else{
     		unset($params['not_last_floor']);
     	}
     	
     	if(isset($params['live_square_min']) && $params['live_square_min']!=0 && $params['live_square_min']!==''){
-    		$square_min=preg_match('/[^\d.,]/', '', $params['live_square_min']);
+    		$square_min=preg_replace('/[^\d.,]/', '', $params['live_square_min']);
     		$where_array[]="(re_data.square_live>=".$square_min.")";
     		$where_value_prepared[]=$square_min;
-    		$where_array_prepared[]='('.DB_PREFIX.'_data.square_live>= ?)';
+    		$where_array_prepared[]='('.DB_PREFIX.'_data.square_live*1>= ?)';
     	}else{
     		unset($params['live_square_min']);
     	}
     	 
     	if(isset($params['live_square_max']) && $params['live_square_max']!=0 && $params['live_square_max']!==''){
-    		$square_max=preg_match('/[^\d.,]/', '', $params['live_square_max']);
+    		$square_max=preg_replace('/[^\d.,]/', '', $params['live_square_max']);
     		$where_array[]="(re_data.square_live<=".$square_max.")";
     		$where_value_prepared[]=$square_max;
-    		$where_array_prepared[]='('.DB_PREFIX.'_data.square_live<= ?)';
+    		$where_array_prepared[]='('.DB_PREFIX.'_data.square_live*1<= ?)';
     	}else{
     		unset($params['live_square_max']);
     	}
     	
     	
     	if(isset($params['kitchen_square_min']) && $params['kitchen_square_min']!=0 && $params['kitchen_square_min']!==''){
-    		$square_min=preg_match('/[^\d.,]/', '', $params['kitchen_square_min']);
+    		$square_min=preg_replace('/[^\d.,]/', '', $params['kitchen_square_min']);
     		$where_array[]="(re_data.square_kitchen>=".$square_min.")";
     		$where_value_prepared[]=$square_min;
-    		$where_array_prepared[]='('.DB_PREFIX.'_data.square_kitchen>= ?)';
+    		$where_array_prepared[]='('.DB_PREFIX.'_data.square_kitchen*1>= ?)';
     	}else{
     		unset($params['kitchen_square_min']);
     	}
     	
     	if(isset($params['kitchen_square_max']) && $params['kitchen_square_max']!=0 && $params['kitchen_square_max']!==''){
-    		$square_max=preg_match('/[^\d.,]/', '', $params['kitchen_square_max']);
+    		$square_max=preg_replace('/[^\d.,]/', '', $params['kitchen_square_max']);
     		$where_array[]="(re_data.square_kitchen<=".$square_max.")";
     		$where_value_prepared[]=$square_max;
-    		$where_array_prepared[]='('.DB_PREFIX.'_data.square_kitchen<= ?)';
+    		$where_array_prepared[]='('.DB_PREFIX.'_data.square_kitchen*1<= ?)';
     	}else{
     		unset($params['kitchen_square_max']);
     	}
@@ -4685,12 +4300,19 @@ class Grid_Constructor extends SiteBill_Krascap {
     		unset($params['owner']);
     	}
     	
+    	if(isset($params['status_id']) && isset($this->grid_item_data_model['status_id']) && intval($params['status_id'])>0){
+    		$where_array_prepared[]='('.DB_PREFIX.'_data.status_id=?)';
+    		$where_value_prepared[]=intval($params['status_id']);
+    	}else{
+    		unset($params['status_id']);
+    	}
+    	
     	if(isset($params['has_photo']) && (int)$params['has_photo']==1){
     		//print_r($_model);
     		$hasUploadify=false;
     		$hasUploads=false;
     		$uploadsFields=array();
-    		foreach($_model['data'] as $item){
+    		foreach($this->grid_item_data_model as $item){
     			if($item['type']=='uploadify_image'){
     				$hasUploadify=true;
     				break;
@@ -4933,22 +4555,28 @@ class Grid_Constructor extends SiteBill_Krascap {
     	}
     	
     	if(isset($params['vip_status']) && (int)$params['vip_status']!=0){
-    		$where_array[]='('.DB_PREFIX.'_data.vip_status_end<>0 AND '.DB_PREFIX.'_data.vip_status_end >= '.time().')';
-    		$where_array_prepared[]='('.DB_PREFIX.'_data.vip_status_end<>0 AND '.DB_PREFIX.'_data.vip_status_end >= '.time().')';
+    		$_time=strtotime(date('Y-m-d H:00:00', time()+3600));
+    		$where_array[]='('.DB_PREFIX.'_data.vip_status_end<>0 AND '.DB_PREFIX.'_data.vip_status_end >= '.$_time.')';
+    		$where_array_prepared[]='('.DB_PREFIX.'_data.vip_status_end<>0 AND '.DB_PREFIX.'_data.vip_status_end >= ?)';
+    		$where_value_prepared[]=$_time;
     	}else{
     		unset($params['vip_status']);
     	}
     	
     	if(isset($params['premium_status']) && (int)$params['premium_status']!=0){
-    		$where_array[]='('.DB_PREFIX.'_data.premium_status_end<>0 AND '.DB_PREFIX.'_data.premium_status_end >= '.time().')';
-    		$where_array_prepared[]='('.DB_PREFIX.'_data.premium_status_end<>0 AND '.DB_PREFIX.'_data.premium_status_end >= '.time().')';
+    		$_time=strtotime(date('Y-m-d H:00:00', time()+3600));
+    		$where_array[]='('.DB_PREFIX.'_data.premium_status_end<>0 AND '.DB_PREFIX.'_data.premium_status_end >= '.$_time.')';
+    		$where_array_prepared[]='('.DB_PREFIX.'_data.premium_status_end<>0 AND '.DB_PREFIX.'_data.premium_status_end >= ?)';
+    		$where_value_prepared[]=$_time;
     	}else{
     		unset($params['premium_status']);
     	}
     	
     	if(isset($params['bold_status']) && (int)$params['bold_status']!=0){
-    		$where_array[]='('.DB_PREFIX.'_data.bold_status_end<>0 AND '.DB_PREFIX.'_data.bold_status_end >= '.time().')';
-    		$where_array_prepared[]='('.DB_PREFIX.'_data.bold_status_end<>0 AND '.DB_PREFIX.'_data.bold_status_end >= '.time().')';
+    		$_time=strtotime(date('Y-m-d H:00:00', time()+3600));
+    		$where_array[]='('.DB_PREFIX.'_data.bold_status_end<>0 AND '.DB_PREFIX.'_data.bold_status_end >= '.$_time.')';
+    		$where_array_prepared[]='('.DB_PREFIX.'_data.bold_status_end<>0 AND '.DB_PREFIX.'_data.bold_status_end >= ?)';
+    		$where_value_prepared[]=$_time;
     	}else{
     		unset($params['bold_status']);
     	}
@@ -4956,15 +4584,16 @@ class Grid_Constructor extends SiteBill_Krascap {
     	if ( $params['admin'] != 1 ) {
     		$where_array[] = 're_data.active=1';
     		$where_array_prepared[]='('.DB_PREFIX.'_data.active=1)';
-    		if(isset($_model['data']['is_predeleted'])){
-    			$where_array_prepared[]='('.DB_PREFIX.'_data.is_predeleted<>1)';
+    		if(1==(int)$this->getConfigValue('apps.realty.use_predeleting')){
+    			$where_array_prepared[]='('.DB_PREFIX.'_data.archived<>1)';
     		}
     		//echo $_SESSION['current_user_group_name'];
     	}else{
-    		if($_SESSION['current_user_group_name']!='admin'){
-    			if(isset($_model['data']['is_predeleted'])){
-    				$where_array_prepared[]='('.DB_PREFIX.'_data.is_predeleted<>1)';
-    			}
+    		
+    		if(1==(int)$this->getConfigValue('apps.realty.use_predeleting') && $params['archived'] == 1){
+    			$where_array_prepared[]='('.DB_PREFIX.'_data.archived=1)';
+    		}elseif(1==(int)$this->getConfigValue('apps.realty.use_predeleting')){
+    			$where_array_prepared[]='('.DB_PREFIX.'_data.archived<>1)';
     		}
     	
   			if ( $params['active'] == 1 ) {
@@ -4976,11 +4605,7 @@ class Grid_Constructor extends SiteBill_Krascap {
 	    	}
     	}
     	
-    	if(isset($params['is_predeleted']) && (int)$params['is_predeleted']!=0){
-    		if(isset($_model['data']['is_predeleted'])){
-    			$where_array_prepared[]='('.DB_PREFIX.'_data.is_predeleted=1)';
-    		}
-    	}
+    	
     	
     	if ( $this->getConfigValue('apps.company.timelimit') ) {
     		$current_time = time();
@@ -5002,25 +4627,32 @@ class Grid_Constructor extends SiteBill_Krascap {
     	}
     	
     	
-    	if ( $_billing_on && $premium  ) {
-    		$where_array[] = 're_data.premium_status_end >= '.time();
-    		$where_value_prepared[]=time();
+    	if ( $this->billing_mode && $premium  ) {
+    		$_time=strtotime(date('Y-m-d H:00:00', time()+3600));
+    		$where_array[] = 're_data.premium_status_end >= '.$_time;
+    		$where_value_prepared[]=$_time;
     		$where_array_prepared[]='('.DB_PREFIX.'_data.premium_status_end >= ?)';
-    	} elseif ($_billing_on && $params['vip']==1 ) {
-    		$where_array[] = '(re_data.vip_status_end<>0 AND re_data.vip_status_end >= '.time().')';
-    		$where_value_prepared[]=time();
+    	} elseif ($this->billing_mode && $params['vip']==1 ) {
+    		$_time=strtotime(date('Y-m-d H:00:00', time()+3600));
+    		$where_array[] = '(re_data.vip_status_end<>0 AND re_data.vip_status_end >= '.$_time.')';
+    		$where_value_prepared[]=$_time;
     		$where_array_prepared[]='('.DB_PREFIX.'_data.vip_status_end<>0 AND '.DB_PREFIX.'_data.vip_status_end >= ?)';
-    	} elseif ($_billing_on && $params['premium']==1 ) {
-    		$where_array[] = '(re_data.premium_status_end<>0 AND re_data.premium_status_end >= '.time().')';
-    		$where_value_prepared[]=time();
+    	} elseif ($this->billing_mode && $params['premium']==1 ) {
+    		$_time=strtotime(date('Y-m-d H:00:00', time()+3600));
+    		$where_array[] = '(re_data.premium_status_end<>0 AND re_data.premium_status_end >= '.$_time.')';
+    		$where_value_prepared[]=$_time;
     		$where_array_prepared[]='('.DB_PREFIX.'_data.premium_status_end<>0 AND '.DB_PREFIX.'_data.premium_status_end >= ?)';
     	} elseif($_billing_on && $params['admin'] == 1) {
     		//$where_array[] = '(re_data.premium_status_end < '.time().')';
     		//$where_array[] = 're_data.premium_status_end = 0';
-    	}elseif($_billing_on){
-    		$where_array[] = '(re_data.premium_status_end < '.time().')';
-    		$where_value_prepared[]=time();
-    		$where_array_prepared[]='('.DB_PREFIX.'_data.premium_status_end < ?)';
+    	}elseif($this->billing_mode){
+    		if(!isset($params['no_premium_filtering'])){
+    			$_time=strtotime(date('Y-m-d H:00:00', time()+3600));
+    			$where_array[] = '(re_data.premium_status_end < '.$_time.')';
+    			$where_value_prepared[]=$_time;
+    			$where_array_prepared[]='('.DB_PREFIX.'_data.premium_status_end < ?)';
+    		}
+    		
     	}
     	/*
     	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/template_search.php')){
@@ -5051,6 +4683,8 @@ class Grid_Constructor extends SiteBill_Krascap {
     		'left_joins'=>$left_joins,
     		'select_what'=>$select_what
     	));*/
+    	
+    	
     	return array(
     		'where_array'=>$where_array,
     		'add_from_table'=>$add_from_table,
@@ -5206,23 +4840,16 @@ class Grid_Constructor extends SiteBill_Krascap {
     	}
     	
     
-    	$this->db->exec($query);
-    	if ( !$this->db->success ) {
-    		echo $this->db->error.'<br>';
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+			
+    	if ( !$stmt ) {
+    		echo 'ERROR ON SELECT<br>';
     	}
-    	$this->db->fetch_assoc();
-    	$total = $this->db->row['total'];
+    	$ar=$DBC->fetch($stmt);
+    	$total = $ar['total'];
     	$this->grid_total = $total;
     	
-    	
-    	
-    	
-    	
-    	
-    	//global $smarty;
-    	
-    
-    
     	$limit = $this->getConfigValue('per_page');
     
     	if ( $params['vip'] == 1 ) {
@@ -5288,9 +4915,11 @@ class Grid_Constructor extends SiteBill_Krascap {
     		}
     	}
     	
-    	$this->db->exec($query);
-    	if ( !$this->db->success ) {
-    		echo $this->db->error.'<br>';
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+			
+    	if ( !$stmt ) {
+    		echo 'ERROR ON SELECT<br>';
     	}
     
     	$ra = array();
@@ -5301,20 +4930,15 @@ class Grid_Constructor extends SiteBill_Krascap {
     
     	}
     
-    	while ( $this->db->fetch_assoc() ) {
+    	while ( $ar=$DBC->fetch($stmt) ) {
     		if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/company/company.xml') ) {
-    			$company_profile = $Account->get_company_profile($this->db->row['user_id']);
-    			$this->db->row['company'] = $company_profile['name']['value'];
+    			$company_profile = $Account->get_company_profile($ar['user_id']);
+    			$ar['company'] = $company_profile['name']['value'];
     		}
-    		$ra[$i] = $this->db->row;
+    		$ra[$i] = $ar;
     		$i++;
     	}
-    	 
-    
-    	 
-    	 
-    	 
-    	 
+
     	$ra=$this->transformGridData($ra);
     	
     	$result_data['_total_records']=$total;
@@ -5328,4 +4952,3 @@ class Grid_Constructor extends SiteBill_Krascap {
     	return $ra;
     }
 }
-?>

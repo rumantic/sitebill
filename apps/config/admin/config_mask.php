@@ -1,9 +1,17 @@
 <?php
 class Config_Mask {
 	
+	public static $themes_array=null;
+	
 	public function get_model(){
 		
 		$data_model = array();
+		
+		$data_model['add_pagenumber_title_place']['name'] = 'add_pagenumber_title_place';
+		$data_model['add_pagenumber_title_place']['title'] = 'Куда добавлять кличество страниц в заголовке';
+		$data_model['add_pagenumber_title_place']['value'] = '';
+		$data_model['add_pagenumber_title_place']['type'] = 'select_box';
+		$data_model['add_pagenumber_title_place']['select_data'] = array('0'=>'заголовок на странице','1'=>'МЕТА-заголовок','2'=>'во все заголовки');
 		
 		$data_model['captcha_type']['name'] = 'captcha_type';
 		$data_model['captcha_type']['title'] = 'Тип капчи';
@@ -879,8 +887,11 @@ class Config_Mask {
 		
 		$data_model['theme']['name'] = 'theme';
 		$data_model['theme']['title'] = 'Тема оформления';
-		$data_model['theme']['value'] = 'albostar';
-		$data_model['theme']['type'] = 'safe_string';
+		$data_model['theme']['value'] = 'agency';
+		$data_model['theme']['type'] = 'select_box';
+		$data_model['theme']['select_data'] = $this->get_themes_array();
+		
+		
 		
 		$data_model['update1']['name'] = 'update1';
 		$data_model['update1']['title'] = 'update1';
@@ -1116,7 +1127,37 @@ class Config_Mask {
 		$data_model['save_without_watermark']['value'] = '0';
 		$data_model['save_without_watermark']['type'] = 'checkbox';
 		
+		$data_model['check_permissions']['name'] = 'check_permissions';
+		$data_model['check_permissions']['title'] = 'Разделение прав доступа для групп. Группа администраторов (admin) имеет доступ ко всем функциям без учета прав доступа.';
+		$data_model['check_permissions']['value'] = '0';
+		$data_model['check_permissions']['type'] = 'checkbox';
+		
+		
 		return $data_model;
+	}
+	
+	function get_themes_array () {
+		if(is_null(self::$themes_array)){
+			$template_dir = SITEBILL_DOCUMENT_ROOT.'/template/frontend';
+			$template_array = array();
+			if (is_dir($template_dir)) {
+				if ($dh = opendir($template_dir)) {
+					while (($current_template_dir = readdir($dh)) !== false) {
+						//var_dump($current_template_dir);
+						//if ( is_dir($template_dir.'/'.$current_template_dir) and !preg_match('/\./', $current_template_dir) ) {
+						if ( is_dir($template_dir.'/'.$current_template_dir) && $current_template_dir!='.' && $current_template_dir!='..' && !preg_match('/^\./', $current_template_dir)) {
+							$template_array[$current_template_dir] = $current_template_dir;
+						}
+					}
+					closedir($dh);
+				}
+				self::$themes_array=$template_array;
+			}
+		}else{
+			$template_array=self::$themes_array;
+		}
+		
+		return $template_array;
 	}
 	
 }

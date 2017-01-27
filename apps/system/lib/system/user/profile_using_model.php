@@ -11,7 +11,9 @@ class User_Profile_Model extends User_Profile {
 			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
 			$data_model = new Data_Model();
 			$form_data = $this->data_model;
-			
+			if ( $this->getConfigValue('email_as_login') ) {
+				unset($form_data[$this->table_name]['email']);
+			}
 			$rs.='<h1>'.Multilanguage::_('PROFILE','system').'</h1>';
 			$rs.=$this->getTopMenu();
 			
@@ -31,7 +33,8 @@ class User_Profile_Model extends User_Profile {
 					unset($form_data[$this->table_name]['publication_limit']);
 					unset($form_data[$this->table_name]['captcha']);
 					unset($form_data[$this->table_name]['active']);
-	
+					unset($form_data[$this->table_name]['notify']);
+						
 					if ( !$this->check_data( $form_data[$this->table_name] ) ) {
 						
 						$rs = $this->get_form($form_data[$this->table_name], 'edit', 0, '', SITEBILL_MAIN_URL.'/account/profile/'  );
@@ -76,6 +79,9 @@ class User_Profile_Model extends User_Profile {
 						unset($form_data[$this->table_name]['publication_limit']);
 						unset($form_data[$this->table_name]['captcha']);
 						unset($form_data[$this->table_name]['active']);
+						unset($form_data[$this->table_name]['notify']);
+						
+						
 						$rs = $this->get_form($form_data[$this->table_name], 'edit', 0, '', SITEBILL_MAIN_URL.'/account/profile/');
 					}
 						
@@ -115,11 +121,16 @@ class User_Profile_Model extends User_Profile {
 		$form_data = $data_model->init_model_data_from_db ( $this->table_name, $this->primary_key, $user_id, $this->data_model[$this->table_name] );
 		unset($form_data['captcha']);
 		unset($form_data['active']);
+		
+		unset($form_data['publication_limit']);
+		unset($form_data['captcha']);
+		unset($form_data['notify']);
+		
 		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/form/form_generator.php');
 		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/form/form_view.php');
 		$form_view = new Form_View_Generator();
 
-		$rs .= '<table>';
+		$rs .= '<table class="table table-hover">';
 		$rs .= $form_view->compile_form($form_data);
 		$rs .= '</table>';
 		//return $rs;

@@ -42,16 +42,6 @@ $(document).ready(function() {
      */
     function get_version () {
         return 1;
-        /*
-        $query = "select version from ".DB_PREFIX."_version order by version_id desc limit 1";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['version'] == '' ) {
-            return 1;
-        }
-        return $this->db->row['version'];
-        */
     }
     
 }
-?>

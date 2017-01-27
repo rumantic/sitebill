@@ -1,0 +1,37 @@
+{literal}
+<style>
+table.mybs {
+width: 100%;
+max-width: 100%;
+background-color: transparent;
+border-collapse: collapse;
+border-spacing: 0;
+}
+
+table.mybs tr:hover {
+background-color: #eee;
+}
+
+table.mybs td {
+padding: 8px;
+line-height: 20px;
+text-align: left;
+vertical-align: top;
+border-top: 1px solid #dddddd;
+}
+</style>
+{/literal}
+Корзина
+<table class="mybs">
+
+
+{foreach from=$logdata item=ld}
+<tr>
+<td>Удаление объявления ID {$ld.id} от {$ld.actiondate}<br /><i>{$ld.title}</i></td>
+<td>
+	<a href="{$estate_folder}/{$realtylogv2_namespace}/restore/{$ld.realtylog_id}">Восстановить</a> 
+	<a href="{$estate_folder}/{$realtylogv2_namespace}/trash/clear/{$ld.realtylog_id}">Удалить</a>
+</td>
+</tr>
+{/foreach}
+</table>

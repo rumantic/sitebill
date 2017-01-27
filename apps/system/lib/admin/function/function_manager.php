@@ -35,7 +35,8 @@ CREATE TABLE `".DB_PREFIX."_function` (
   PRIMARY KEY (`function_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=".DB_ENCODING." ;
         ";
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
     }
     
     /**
@@ -52,7 +53,8 @@ CREATE TABLE `".DB_PREFIX."_function` (
             $query = "select * from ".DB_PREFIX."_".$this->table_name." order by name asc";
         }
         
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
         
         $rs = '<table class="table table-hover">';
         $rs .= '<thead>';
@@ -63,26 +65,28 @@ CREATE TABLE `".DB_PREFIX."_function` (
         $rs .= '</tr>';
         $rs .= '<thead>';
         $rs .= '<tbody>';
-        while ( $this->db->fetch_assoc() ) {
-        	$rs .= '<tr>';
-        	$rs .= '<td>'.$this->db->row['name'].'</td>';
-        	$rs .= '<td>'.$this->db->row['description'].'</td>';
-        	
-        	$rs .= '<td>';
-            $rs .= '<a class="btn btn-info" href="?action='.$this->action.'&do=edit&'.$this->primary_key.'='.$this->db->row[$this->primary_key].'"><i class="icon-white icon-pencil"></i></a> ';
-           	$rs .= '<a class="btn btn-danger" href="?action='.$this->action.'&do=delete&'.$this->primary_key.'='.$this->db->row[$this->primary_key].'" onclick="if ( confirm(\''.Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE').'\') ) {return true;} else {return false;}"><i class="icon-white icon-remove"></i></a> ';
-			
-            
-        	if ( is_object($this->language) ) {
-        		if ( $this->language->get_version($this->table_name, $this->primary_key, $this->db->row[$this->primary_key], 1) ) {
-        			$exist = true;
-        		} else {
-        			$exist = false;
+        if($stmt){
+        	while($ar=$DBC->fetch($stmt)){
+        		$rs .= '<tr>';
+        		$rs .= '<td>'.$ar['name'].'</td>';
+        		$rs .= '<td>'.$ar['description'].'</td>';
+        		 
+        		$rs .= '<td>';
+        		//$rs .= '<a class="btn btn-info" href="?action='.$this->action.'&do=edit&'.$this->primary_key.'='.$ar[$this->primary_key].'"><i class="icon-white icon-pencil"></i></a> ';
+        		//$rs .= '<a class="btn btn-danger" href="?action='.$this->action.'&do=delete&'.$this->primary_key.'='.$ar[$this->primary_key].'" onclick="if ( confirm(\''.Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE').'\') ) {return true;} else {return false;}"><i class="icon-white icon-remove"></i></a> ';
+        			
+        		
+        		if ( is_object($this->language) ) {
+        			if ( $this->language->get_version($this->table_name, $this->primary_key, $ar[$this->primary_key], 1) ) {
+        				$exist = true;
+        			} else {
+        				$exist = false;
+        			}
+        			$rs .= $this->language->get_control($this->action, 'edit', $this->primary_key, $ar[$this->primary_key], 1, $exist);
         		}
-        		$rs .= $this->language->get_control($this->action, 'edit', $this->primary_key, $this->db->row[$this->primary_key], 1, $exist);
+        		$rs .= '</td>';
+        		$rs .= '</tr>';
         	}
-        	$rs .= '</td>';
-        	$rs .= '</tr>';
         }
         $rs .= '</tbody>';
         $rs .= '</table>';
@@ -149,12 +153,14 @@ CREATE TABLE `".DB_PREFIX."_function` (
 			Multilanguage::_('TABLE_COMP_FUNC','system')=>'SELECT COUNT(*) AS rs FROM '.DB_PREFIX.'_component_function WHERE function_id=?'
 		);
 		$ans=array();
+		$DBC=DBC::getInstance();
+		
 		foreach($search_queries as $k=>$v){
 			$query=str_replace('?', $primary_key_value, $v);
-			$this->db->exec($query);
-		    if ($this->db->success) {
-		    	$this->db->fetch_assoc();
-		    	$rs=$this->db->row['rs'];
+			$stmt=$DBC->query($query);
+		    if ($stmt) {
+		    	$ar=$DBC->fetch($stmt);
+		    	$rs=$ar['rs'];
 		        if($rs!=0){
 		        	$ans[]=sprintf(Multilanguage::_('MESSAGE_CANT_DELETE','system'), $k);
 		        }
@@ -167,6 +173,4 @@ CREATE TABLE `".DB_PREFIX."_function` (
 		}
 		
 	}
-    
 }
-?>

@@ -1,9 +1,14 @@
 var LinkedElements={
-	refresh: function(el, linked_el_id, linked_field){
+	refresh: function(el, linked_el_id, linked_field, model_name){
 		var _this=$(el);
 		var holded_form=_this.parents('form').eq(0);
 		var connected_element=holded_form.find('select#'+linked_el_id).eq(0);
 		LinkedElements.setEmpty(connected_element);
+		connected_element.trigger('change');
+		if('function' == typeof refresher_linked_global_callback){
+			refresher_linked_global_callback(connected_element);
+		}
+		
 		/*connected_element.find('option').remove();
 		var opt=$('<option>', {'value': ''});
 		opt.text('--');
@@ -15,7 +20,7 @@ var LinkedElements={
 			$.ajax({
 				type: 'post',
 				url: estate_folder+'/js/ajax.php',
-				data: {action: 'get_options', frommodelfield: linked_el_id, byfield: linked_field, value: value},
+				data: {action: 'get_options', frommodelfield: linked_el_id, byfield: linked_field, value: value, model: model_name},
 				dataType: 'json',
 				success: function(json){
 					if(json.length>0){
@@ -26,6 +31,9 @@ var LinkedElements={
 						}
 					}
 					connected_element.trigger('change');
+					if('function' == typeof refresher_linked_global_callback){
+						refresher_linked_global_callback(connected_element);
+					}
 				}
 			});
 			//connected_element.css({'border': '1px solid Green'});
@@ -97,11 +105,8 @@ var LinkedElements={
 		
 		
 		for(var i in linked_options){
-			console.log(linked_options[i]);
 			var connected_element=holded_form.find('select[name='+linked_options[i][0]+']').eq(0);
-			//console.log(connected_element);
-			
-			console.log('Append to '+_this.attr('id')+' '+linked_options[i][0]);
+			//console.log('Append to '+_this.attr('id')+' '+linked_options[i][0]);
 			
 			
 			_this.change(function(){
@@ -136,7 +141,7 @@ var LinkedElements={
 				
 			});
 		}
-		console.log('----');
+		
 		/*if(holded_form.length>0){
 			
 		}*/
@@ -180,29 +185,99 @@ function update_child_list ( id, context ) {
 	}
 	
 	var parent=$(context).parents('form').eq(0);
+	var c=parent.find('#'+ id);
+	//console.log(c);
+	var multiselect=false;
+	if(c.attr('multiple')=='multiple'){
+		multiselect=true;
+	}
 	
 	parent.find('[id='+ id +'_div]').html('<div id="select_box_loading"></div>');
 	
-	var country_id = parent.find('#country_id').val();
-	var region_id = parent.find('#region_id').val();
-	var city_id = parent.find('#city_id').val();
-	var district_id = parent.find('#district_id').val();
-	var metro_id = parent.find('#metro_id').val();
-	var street_id = parent.find('#street_id').val();
-
-	var url = estate_folder+'/js/ajax.php?action=get_'+ id +'&country_id='+ country_id  +'&region_id='+ region_id +'&city_id='+ city_id +'&district_id='+ district_id +'&metro_id='+ metro_id +'&street_id='+ street_id + '&callback=?';
-
-	//console.log(url);
+	var it=parent.find('#country_id');
+	if(it.length!=0){
+		var country_id = parseInt(it.val());
+	}else{
+		var country_id = 0;
+	}
 	
+	var it=parent.find('#region_id');
+	if(it.length!=0){
+		var region_id = parseInt(it.val());
+	}else{
+		var region_id = 0;
+	}
+	
+	var it=parent.find('#city_id');
+	if(it.length!=0){
+		var city_id = parseInt(it.val());
+	}else{
+		var city_id = 0;
+	}
+	
+	var it=parent.find('#district_id');
+	if(it.length!=0){
+		var district_id = parseInt(it.val());
+	}else{
+		var district_id = 0;
+	}
+	
+	var it=parent.find('#metro_id');
+	if(it.length!=0){
+		var metro_id = parseInt(it.val());
+	}else{
+		var metro_id = 0;
+	}
+	
+	var it=parent.find('#street_id');
+	if(it.length!=0){
+		var street_id = parseInt(it.val());
+	}else{
+		var street_id = 0;
+	}
+	
+	
+	var parts=[];
+	parts.push('action=get_'+ id);
+	if(country_id !== undefined && !isNaN(country_id) && country_id!=0){
+		parts.push('country_id='+ country_id);
+	}
+	if(region_id!==undefined && !isNaN(region_id) && region_id!=0){
+		parts.push('region_id='+ region_id);
+	}
+	if(city_id!==undefined && !isNaN(city_id) && city_id!=0){
+		parts.push('city_id='+ city_id);
+	}
+	if(district_id!==undefined && !isNaN(district_id) && district_id!=0){
+		parts.push('district_id='+ district_id);
+	}
+	if(metro_id!==undefined && !isNaN(metro_id) && metro_id!=0){
+		parts.push('metro_id='+ metro_id);
+	}
+	if(street_id!==undefined && !isNaN(street_id) && street_id!=0){
+		parts.push('street_id='+ street_id);
+	}
+	/*if(multiselect){
+		parts.push('multiselect=1');
+	}*/
+	parts.push('callback=?');
+	
+	//var url = estate_folder+'/js/ajax.php?action=get_'+ id +'&country_id='+ country_id  +'&region_id='+ region_id +'&city_id='+ city_id +'&district_id='+ district_id +'&metro_id='+ metro_id +'&street_id='+ street_id +(multiselect ? '&multiselect=1' : '')+'&callback=?';
+	var url=estate_folder+'/js/ajax.php?'+parts.join('&');
+		
 	jQuery.ajax({
 		url: url, 
 		dataType: 'json', 
 		type: "get",
-		timeout: 2000,
+		/*timeout: 2000,*/
 		success: function(json){
-			parent.find('[id='+ id +'_div]').replaceWith(json.response.body).fadeIn('slow', function() {}); 
+			parent.find('[id='+ id +'_div]').replaceWith(json.response.body).fadeIn('slow', function() {
+				if('function' == typeof refresher_global_callback){
+					refresher_global_callback(parent.find('[id='+ id +'_div] select'));
+				}
+			}); 
 		},
-		error: function(){/*alert("error");*/}
+		error: function(){}
 	});
 
 }
@@ -225,13 +300,11 @@ function update_child_list_without_district ( id, context ) {
 
 	var url = estate_folder+'/js/ajax.php?action=get_'+ id +'&country_id='+ country_id  +'&region_id='+ region_id +'&city_id='+ city_id +'&metro_id='+ metro_id +'&street_id='+ street_id + '&callback=?';
 
-	//console.log(url);
-	
 	jQuery.ajax({
 		url: url, 
 		dataType: 'json', 
 		type: "get",
-		timeout: 2000,
+		/*timeout: 2000,*/
 		success: function(json){
 			parent.find('[id='+ id +'_div]').replaceWith(json.response.body).fadeIn('slow', function() {}); 
 		},
@@ -286,7 +359,7 @@ function update_mkrn_list(id, context){
 		url: url, 
 		dataType: 'json', 
 		type: "get",
-		timeout: 2000,
+		/*timeout: 2000,*/
 		success: function(json){
 			parent.find('[id='+ id +'_div]').replaceWith(json.response.body).fadeIn('slow', function() {}); 
 		},
@@ -309,24 +382,33 @@ $(document).ready(function(){
 	
 	
 	$('.geoautocomplete').each(function(){
+		var _this=$(this);
 		var parent=$(this).parents('.geoautocomplete_block').eq(0);
 		var _hidden=parent.find('input[type=hidden]');
 		var _pk=$(this).attr('pk');
 		var _table=$(this).attr('from');
-		var _this=$(this);
+		var _table=$(this).attr('from');
+		var _depel=$(this).data('depel');
+		var _depelkey=$(this).data('depelkey');
+		
 		
 		$(this).autocomplete({
 			open: function() { 
-	            $('.ui-menu')
-	                .width(_this.width());
+	            $('.ui-menu').width(_this.width());
+	            /**/
 	        } ,
 			source: function( request, response ) {
 				var answer=[];
+				if(_depel!=''){
+					var dep_val=parent.parents('form').eq(0).find('[name='+_depel+']').val();
+				}else{
+					var dep_val=0;
+				}
 				$.ajax({
 					url: estate_folder+'/apps/tlocation/js/ajax.php',
 					type: 'GET',
 					dataType: 'json',
-					data: 'action=get_geolist&from='+_table+'&term='+encodeURIComponent(request.term),
+					data: 'action=get_geolist&from='+_table+'&term='+encodeURIComponent(request.term)+'&depelkey='+_depelkey+'&dep_val='+dep_val,
 					success: function(json) {
 						
 						$.map(json,function(n,i){
@@ -341,14 +423,30 @@ $(document).ready(function(){
 					}
 				});
 	    	},
+	    	response: function( event, ui ) {
+				_hidden.val('');
+			},
 			minLength: 1,
 			select: function( event, ui ) {
+				event.stopPropagation();
 				_hidden.val(ui.item.id);
-			}
+				//_hidden.trigger('change');
+			},
+			change: function( event, ui ) {
+				_hidden.trigger('change');
+				if(ui.item===null){
+					_hidden.val('');
+					
+				}
+			},
 		});
 		
-		$(this).keyup(function(){
+		/*$(this).input(function(){
 			_hidden.val('');
-		});
+		});*/
+		
+		/*$(this).keydown(function(){
+			_hidden.val('');
+		});*/
 	});
 });

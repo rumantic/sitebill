@@ -38,11 +38,15 @@ class Group_Manager extends Object_Manager {
      * @return array
      */
     function load_by_system_name ( $system_name ) {
-        $system_name = mysql_real_escape_string($system_name);
-        $query = "select group_id from ".DB_PREFIX."_group where system_name='$system_name'";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        $group_id = $this->db->row['group_id'];
+        $DBC=DBC::getInstance();
+        $group_id=0;
+        $query = "SELECT `group_id` FROM ".DB_PREFIX."_group WHERE `system_name`=?";
+        $stmt=$DBC->query($query, array($system_name));
+    	if($stmt){
+			$ar=$DBC->fetch($stmt);
+			$group_id = $ar['group_id'];
+		}
+        
         return $this->load_by_id($group_id);
     }
     
@@ -89,7 +93,8 @@ CREATE TABLE `".DB_PREFIX."_dna` (
   `function_id` int(11) NOT NULL DEFAULT '0'
 ) ENGINE=MyISAM DEFAULT CHARSET=".DB_ENCODING." ;
         ";
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+			$stmt=$DBC->query($query);
     }
     
     function create_table () {
@@ -100,7 +105,8 @@ CREATE TABLE `".DB_PREFIX."_group` (
   PRIMARY KEY (`group_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=".DB_ENCODING." ;
         ";
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+			$stmt=$DBC->query($query);
     }
     
     /**
@@ -200,7 +206,7 @@ CREATE TABLE `".DB_PREFIX."_group` (
      */
     function structurePermissionProcessor () {
         //echo $this->getRequestValue('structure_permission_do', 'default');
-        switch ( $this->getRequestValue('structure_permission_do', 'default') ) {
+        switch ( $this->getRequestValue('structure_permission_do') ) {
             case 'update':
                 $rs = $this->updateStructurePermission( $this->getRequestValue('group_id') );
                 return $rs;
@@ -221,7 +227,8 @@ CREATE TABLE `".DB_PREFIX."_group` (
         
         //delete dna items for this group_id
         $query = "delete from ".DB_PREFIX."_dna where group_id=$group_id";
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
         
         $component_list = $this->loadComponentList();
         
@@ -230,9 +237,9 @@ CREATE TABLE `".DB_PREFIX."_group` (
                 if ( ( $this->getRequestValue($component_id.':'.$function_id) == $function_id ) ) {
                     $query = "insert into ".DB_PREFIX."_dna (group_id, component_id, function_id) values ($group_id, $component_id, $function_id)";
                     //echo $query;
-                    $this->db->exec($query);
-                    if ( !$this->db->success ) {
-                    	echo $this->db->error;
+                    $stmt=$DBC->query($query, array(), $row, $succes_mark);
+                    if ( !$succes_mark ) {
+                    	$rs .= $DBC->getLastError();
                     }
                 }
             }
@@ -248,11 +255,14 @@ CREATE TABLE `".DB_PREFIX."_group` (
      */
     function loadComponentList () {
         $query = "select * from ".DB_PREFIX."_component_function order by component_id, function_id";
-        //echo $query.'<br>';
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            $ra[$this->db->row['component_id']][] = $this->db->row['function_id'];
-        }
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		$ra=array();
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				$ra[$ar['component_id']][] = $ar['function_id'];
+			}
+		}
         return $ra;
     }
     
@@ -263,17 +273,17 @@ CREATE TABLE `".DB_PREFIX."_group` (
      * @return string 
      */
     function getStructurePermissionEditForm ( $group_id ) {
-        global $init;
-        
         $rs = '<form method="post">';
-        $rs .= '<table id="structure">';
+        $rs .= '<table id="structure" class="table table-hover">';
+        $rs .= '<thead>';
         $rs .= '<tr><td>'.Multilanguage::_('ACCESS_RULES_SET','system').'</td></tr>';
+        $rs .= '</thead>';
         $rs .= $this->getComponentList( $group_id );
         $rs .= '<input type="hidden" name="action" value="group">';
         $rs .= '<input type="hidden" name="group_id" value="'.$this->getRequestValue('group_id').'">';
         $rs .= '<input type="hidden" name="structure_permission_do" value="update">';
         $rs .= '<input type="hidden" name="do" value="structure_permission">';
-        $rs .= '<tr><td><input type="submit" value="'.Multilanguage::_('L_TEXT_SAVE').'"></td></tr>';
+        $rs .= '<tr><td><input type="submit" class="btn btn-primary btn-large" value="'.Multilanguage::_('L_TEXT_SAVE').'"></td></tr>';
         $rs .= '</table>';
         $rs .= '</form>';
         return $rs;
@@ -287,16 +297,16 @@ CREATE TABLE `".DB_PREFIX."_group` (
     function getComponentList ( $group_id ) {
         $ra = array();
         $query = "select * from ".DB_PREFIX."_component order by name";
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc($query) ) {
-            $ra[] = $this->db->row;
-            //$rs .= '<tr><td class="row1"><b>'.$this->db->row['name'].'</b>'.$this->getFunctionRow($this->db->row['molekula_id'], $group_id).'</td></tr>';
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				$ra[] = $ar;
+			}
+		}
+		foreach ( $ra as $item_id => $row ) {
+            $rs .= '<tr><td><b>'.$row['title'].' ('.$row['name'].')'.'</b>'.$this->getFunctionRow($row['component_id'], $group_id).'</td></tr>';
         }
-        
-        foreach ( $ra as $item_id => $row ) {
-            $rs .= '<tr><td class="row1"><b>'.$row['name'].'</b>'.$this->getFunctionRow($row['component_id'], $group_id).'</td></tr>';
-        }
-        
         return $rs;
     }
     
@@ -308,27 +318,32 @@ CREATE TABLE `".DB_PREFIX."_group` (
      */
     function getFunctionRow ( $component_id, $group_id ) {
         $molekula = array();
+       
         //load DNA structure
         //return 'row';
         $query = "select * from ".DB_PREFIX."_dna where group_id=$group_id and component_id=$component_id";
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            $component[] = $this->db->row['function_id'];
-        }
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				$component[] = $ar['function_id'];
+			}
+		}
+		
         $query = "select a.* from ".DB_PREFIX."_component_function ma, ".DB_PREFIX."_function a where ma.component_id=$component_id and ma.function_id=a.function_id";
-        $this->db->exec($query);
+        $stmt=$DBC->query($query);
         $rs = '<table border="1">';
         $rs .= '<tr>';
-        //if ( is_array($component) ) {
-            while ( $this->db->fetch_assoc() ) {
-                if ( @in_array( $this->db->row['function_id'], $component ) ) {
+        if($stmt){
+        	while($ar=$DBC->fetch($stmt)){
+        		if ( @in_array( $ar['function_id'], $component ) ) {
                     $checked = "checked";
                 } else {
                     $checked = '';
                 }
-                $rs .= '<td>'.$this->db->row['name'].'<input type="checkbox" name="'.$component_id.':'.$this->db->row['function_id'].'" value="'.$this->db->row['function_id'].'" '.$checked.'></td>';
-            }
-        //}
+                $rs .= '<td>'.$ar['name'].' <input type="checkbox" name="'.$component_id.':'.$ar['function_id'].'" value="'.$ar['function_id'].'" '.$checked.'></td>';
+        	}
+        }
         $rs .= '</tr>';
         $rs .= '</table>';
         return $rs;
@@ -344,12 +359,10 @@ CREATE TABLE `".DB_PREFIX."_group` (
      */
     function grid () {
         global $_SESSION;
-        global $__db_prefix;
+        $DBC=DBC::getInstance();
         
         $query = "select * from ".DB_PREFIX."_".$this->table_name." order by '".$this->grid_key."'";
-        //echo $query;
-        
-        $this->db->exec($query);
+        $stmt=$DBC->query($query);
         
         $rs = '<table class="table table-hover">';
         $rs .= '<thead>';
@@ -359,15 +372,17 @@ CREATE TABLE `".DB_PREFIX."_group` (
         $rs .= '</tr>';
         $rs .= '<thead>';
         $rs .= '<tbody>';
-        while ( $this->db->fetch_assoc() ) {
-        	$rs .= '<tr>';
-        	$rs .= '<td>'.$this->db->row[$this->grid_key].'</td>';
-        	$rs .= '<td>
-            <a class="btn btn-info" href="?action='.$this->action.'&do=edit&'.$this->primary_key.'='.$this->db->row[$this->primary_key].'"><i class="icon-white icon-pencil"></i></a>
-            <a class="btn btn-danger" href="?action='.$this->action.'&do=delete&'.$this->primary_key.'='.$this->db->row[$this->primary_key].'" onclick="if ( confirm(\''.Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE').'\') ) {return true;} else {return false;}"><i class="icon-white icon-remove"></i></a>
-			<a href="?action='.$this->action.'&do=structure_permission&'.$this->primary_key.'='.$this->db->row[$this->primary_key].'" class="btn btn-info">права доступа</a>
-            </td>';
-        	$rs .= '</tr>';
+        if($stmt){
+        	while($ar=$DBC->fetch($stmt)){
+        		$rs .= '<tr>';
+	        	$rs .= '<td>'.$ar[$this->grid_key].'</td>';
+	        	$rs .= '<td>
+	            <a class="btn btn-info" href="?action='.$this->action.'&do=edit&'.$this->primary_key.'='.$ar[$this->primary_key].'"><i class="icon-white icon-pencil"></i></a>
+	            <a class="btn btn-danger" href="?action='.$this->action.'&do=delete&'.$this->primary_key.'='.$ar[$this->primary_key].'" onclick="if ( confirm(\''.Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE').'\') ) {return true;} else {return false;}"><i class="icon-white icon-remove"></i></a>
+				<a href="?action='.$this->action.'&do=structure_permission&'.$this->primary_key.'='.$ar[$this->primary_key].'" class="btn btn-info">права доступа</a>
+	            </td>';
+	        	$rs .= '</tr>';
+        	}
         }
         $rs .= '</tbody>';
         $rs .= '</table>';
@@ -386,12 +401,14 @@ CREATE TABLE `".DB_PREFIX."_group` (
 			Multilanguage::_('TABLE_USER','system')=>'SELECT COUNT(*) AS rs FROM '.DB_PREFIX.'_user WHERE group_id=?'
 		);
 		$ans=array();
+		$DBC=DBC::getInstance();
+		
 		foreach($search_queries as $k=>$v){
 			$query=str_replace('?', $primary_key_value, $v);
-			$this->db->exec($query);
-		    if ($this->db->success) {
-		    	$this->db->fetch_assoc();
-		    	$rs=$this->db->row['rs'];
+			$stmt=$DBC->query($query);
+		    if ($stmt) {
+		    	$ar=$DBC->fetch($stmt);
+		    	$rs=$ar['rs'];
 		        if($rs!=0){
 		        	$ans[]=sprintf(Multilanguage::_('MESSAGE_CANT_DELETE','system'), $k);
 		        }
@@ -405,4 +422,3 @@ CREATE TABLE `".DB_PREFIX."_group` (
 		
 	}
 }
-?>

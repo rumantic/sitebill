@@ -15,8 +15,8 @@ class Logout extends SiteBill {
      * Main 
      */
     function main () {
-    	setcookie('logged_user_id', '', time()-60*60*24*5, '/');
-    	setcookie('logged_user_token', '', time()-60*60*24*5, '/');
+    	setcookie('logged_user_id', '', time()-60*60*24*5, '/', self::$_cookiedomain);
+    	setcookie('logged_user_token', '', time()-60*60*24*5, '/', self::$_cookiedomain);
         $_SESSION['key'] = '';
         $this->delete_session_key($_SESSION['session_key']);
         unset($_SESSION['user_id']);
@@ -32,10 +32,10 @@ class Logout extends SiteBill {
         unset($_SESSION['favorites']);
         /*$Sitebill_User=Sitebill_User::getInstance();
         $Sitebill_User->logoutUser();*/
+        session_destroy();
         header('location: '.SITEBILL_MAIN_URL.'/');
         exit();
         echo '<script type="text/javascript">location.replace(\'http://'.$_SERVER['SERVER_NAME'].SITEBILL_MAIN_URL.'\'); </script>';
         return 'logout complete';
     }
 }
-?>

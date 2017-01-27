@@ -23,10 +23,15 @@ class search_forms_admin extends table_admin {
 			  `title_en` varchar(255) NOT NULL,
 			  PRIMARY KEY (`searchform_id`)
 		) ENGINE=MyISAM DEFAULT CHARSET=".DB_ENCODING.";";
-		$this->db->exec($query);
-	
-		$rs = 'Приложение установлено';
-		return $rs;
+		$DBC=DBC::getInstance();
+		$success=false;
+    	$stmt=$DBC->query($query, array(), $rows, $success);
+        if(!$success){
+        	$rs = Multilanguage::_('L_APPLICATION_INSTALLED_ERROR');
+        }else{
+        	$rs = Multilanguage::_('L_APPLICATION_INSTALLED');
+        }
+        return $rs;
 	}
 	
 	function getTopMenu () {
@@ -154,95 +159,7 @@ class search_forms_admin extends table_admin {
 	
 	
 	
-	/*function get_topic_columns($topic_id){
-		
-		$parents=array(0);
-		include_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php';
-		$SM=new Structure_Manager();
-		$chains=$SM->createCatalogChains();
-		
-		foreach($chains['num'] as $k=>$v){
-			$chains['num'][$k]=explode('|',$v);
-		}
-		if(isset($chains['num'][$topic_id])){
-			$parents=array_merge($parents, $chains['num'][$topic_id]);
-		}
-		
-		$parents=array_reverse($parents);
-		
-		$avial_cols=array();
-		$selected_cols=array();
-		$columns_ids=array();
-		$topic_selected_columns=array();
-		$all_columns=array();
-		
-		
-		
-		$columns_ids=$this->_getColumnsNameIds();
-		
-		foreach($parents as $p){
-			$topic_selected_columns=$this->getTopicColumns($p);
-			if($topic_selected_columns){
-				//print_r($topic_selected_columns);
-				break;
-			}else{
-				$topic_selected_columns=array();
-			}
-		}
-		
-		$model_data = $this->helper->load_model('data');
-		
-		$all_columns=$this->get_test_form($model_data['data']);
-		
-		
-		
-		
-		foreach($topic_selected_columns as $k=>$sc){
-			if(isset($all_columns[$columns_ids[$sc]])){
-				$selected_cols[]=$all_columns[$columns_ids[$sc]];
-				unset($all_columns[$columns_ids[$sc]]);
-			}
-		}
-		$avial_cols=$all_columns;
-		
-		
-		
-		
-		return array(
-			'selected'=>$selected_cols,
-			'available'=>$avial_cols
-		);
-	}*/
 	
-	/*private function getTopicFormTitle($topic_id){
-		$DBC=DBC::getInstance();
-		$stmt=$DBC->query("SELECT `title` FROM ".DB_PREFIX."_table_searchform WHERE topic_id=".$topic_id." LIMIT 1");
-		if($stmt){
-			$ar=$DBC->fetch($stmt);
-			return $ar['title'];
-		}else{
-			return '';
-		}
-		
-	}*/
-	
-	/*private function getTopicColumns($topic_id){
-		$topic_selected_columns=array();
-		$q='SELECT columns FROM '.DB_PREFIX.'_table_searchform WHERE topic_id='.$topic_id;
-		
-		$this->db->exec($q);
-		$this->db->fetch_assoc();
-		
-		if($this->db->row['columns']!=''){
-			$topic_selected_columns=unserialize($this->db->row['columns']);
-		}
-		
-		
-		if(empty($topic_selected_columns)){
-			return FALSE;
-		}
-		return $topic_selected_columns;
-	}*/
 	
 	public function save_search_form(){
 		$DBC=DBC::getInstance();
@@ -265,16 +182,16 @@ class search_forms_admin extends table_admin {
 		$fields=$this->getRequestValue('fields');
 		if(count($fields)==0){
 			$q="DELETE FROM ".DB_PREFIX."_table_searchform WHERE `searchform_id`=".$form_id;
-			$this->db->exec($q);
+			$stmt=$DBC->query($q);
 			return;
 		}
 		$q='SELECT columns_id, name FROM '.DB_PREFIX.'_columns WHERE table_id=(SELECT table_id FROM '.DB_PREFIX.'_table WHERE `name`=\'data\' LIMIT 1)';
-		$this->db->exec($q);
-		while($this->db->fetch_assoc()){
-			$columns_ids[$this->db->row['name']]=$this->db->row['columns_id'];
+		$stmt=$DBC->query($q);
+		while($ar=$DBC->fetch($stmt)){
+			$columns_ids[$ar['name']]=$ar['columns_id'];
 		}
 		$q="DELETE FROM ".DB_PREFIX."_table_searchform WHERE `searchform_id`=".$form_id;
-		$this->db->exec($q);
+		$stmt=$DBC->query($q);
 		
 		$input_fields=array();
 		foreach($fields as $f){
@@ -546,12 +463,17 @@ class search_forms_admin extends table_admin {
 	}
 	
 	private function _getColumnsNameIds(){
+		$DBC=DBC::getInstance();
+		
 		$columns_ids=array();
 		$q='SELECT columns_id, name FROM '.DB_PREFIX.'_columns WHERE table_id=(SELECT table_id FROM '.DB_PREFIX.'_table WHERE `name`=\'data\' LIMIT 1)';
-		$this->db->exec($q);
-		while($this->db->fetch_assoc()){
-			$columns_ids[$this->db->row['columns_id']]=$this->db->row['name'];
+		$stmt=$DBC->query($q);
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				$columns_ids[$ar['columns_id']]=$ar['name'];
+			}
 		}
+		
 		return $columns_ids;
 	}
 }

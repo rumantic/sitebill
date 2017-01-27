@@ -408,12 +408,15 @@ class Auto_Grid_Constructor extends Auto_Manager {
         } else {
             //$query = "select auto.*, city.name as city from ".DB_PREFIX."_auto as auto, ".DB_PREFIX."_city as city ";
         }
-        //echo $query;
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
         $ra = array();
-        while ( $this->db->fetch_assoc() ) {
-            $ra[$this->db->row['auto_id']] = $this->db->row;            
+        if($stmt){
+        	while ( $ar=$DBC->fetch($stmt) ) {
+        		$ra[$ar['auto_id']] = $ar;
+        	}
         }
+        
         return $ra;
     }
 
@@ -506,10 +509,13 @@ class Auto_Grid_Constructor extends Auto_Manager {
         } 
         $query .= " order by ".$order;
         //echo $query;
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
         $ra = array();
-        while ( $this->db->fetch_assoc() ) {
-            $ra[$this->db->row['autoreview_id']] = $this->db->row;            
+        if($stmt){
+        	while ( $ar=$DBC->fetch($stmt) ) {
+        		$ra[$ar['autoreview_id']] = $ar;
+        	}
         }
         return $ra;
 	}

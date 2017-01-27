@@ -1,4 +1,22 @@
 DataImagelist={
+	av_deleteImage: function(el, pk_value, table, pk_name, field_name){
+		if(confirm('Действительно хотите удалить изображение?')){
+			var parentel=$(el).parents('.preview_admin');
+			$.ajax({
+				url: estate_folder + "/js/ajax.php",
+				data: {action: 'avatar', what: 'delete', table_name: table, id: pk_value, key: pk_name, field_name: field_name},
+				dataType: 'text',
+				success: function(json){
+					if(json=='ok'){
+						//parentel.fadeOut(function(){parentel.remove();});
+					}
+					
+				}
+			});
+		}
+		
+		return false;
+	},
 	deleteImage: function(el,img_id, data_id, table, key){
 		if(confirm('Действительно хотите удалить изображение?')){
 			var parentel=$(el).parents('.preview_admin');
@@ -33,6 +51,22 @@ DataImagelist={
 		}
 		return false;
 	},
+	dz_clearDocs: function(el, pk_value, table, pk_name, field_name){
+		if(confirm('Действительно хотите удалить все документы?')){
+			var parentel=$(el).parents('.dz-preview-uploaded').eq(0);
+			$.ajax({
+				url: estate_folder + "/js/ajax.php?action=dz_imagework",
+				data: 'what=delete_all&table_name='+table+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name+'&doc_mode=1',
+				dataType: 'text',
+				success: function(json){
+					if(json=='ok'){
+						parentel.find('.dz-preview-uploaded-list').remove();
+					}
+				}
+			});
+		}
+		return false;
+	},
 	dz_deleteImage: function(el, pk_value, table, pk_name, field_name){
 		if(confirm('Действительно хотите удалить изображение?')){
 			var parentel=$(el).parents('.dz-preview-uploaded-item').eq(0);
@@ -43,6 +77,30 @@ DataImagelist={
 				$.ajax({
 					url: estate_folder + "/js/ajax.php?action=dz_imagework",
 					data: 'what=delete&table_name='+table+'&current_position='+current_element_index+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name,
+					dataType: 'text',
+					success: function(json){
+						if(json=='ok'){
+							parentel.fadeOut(function(){parentel.remove();});
+						}
+						
+					}
+				});
+			}
+			
+		}
+		
+		return false;
+	},
+	dz_deleteDoc: function(el, pk_value, table, pk_name, field_name){
+		if(confirm('Действительно хотите удалить документ?')){
+			var parentel=$(el).parents('.dz-preview-uploaded-item').eq(0);
+			var parent_el=$(el).parents('.dz-preview-uploaded-list').eq(0);
+			var all_els=parent_el.find('.dz-preview-uploaded-item');
+			var current_element_index=all_els.index(parentel);
+			if(current_element_index!==-1){
+				$.ajax({
+					url: estate_folder + "/js/ajax.php?action=dz_imagework",
+					data: 'what=delete&table_name='+table+'&current_position='+current_element_index+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name+'&doc_mode=1',
 					dataType: 'text',
 					success: function(json){
 						if(json=='ok'){
@@ -100,6 +158,35 @@ DataImagelist={
 				}
 			});
 		}
+		return false;
+	},
+	dz_rotateImage: function(el, pk_value, table, pk_name, field_name, rot_dir){
+		var parent_el=$(el).parents('.dz-preview-uploaded-list').eq(0);
+		var parentel=$(el).parents('.dz-preview-uploaded-item').eq(0);
+		var all_els=parent_el.find('.dz-preview-uploaded-item');
+		var total_count=all_els.length;
+		var current_element_index=1+all_els.index(parentel);
+		
+		
+		//var gross_parent=parentel.parents().eq(0);
+		$.ajax({
+			url: estate_folder + "/js/ajax.php?action=dz_imagework",
+			dataType: 'text',
+			data: 'what=rotate&table_name='+table+'&current_position='+(current_element_index-1)+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name+'&rot_dir='+rot_dir,
+			success: function(text){
+				if(text=='ok'){
+					var im=parentel.find('img').eq(0);
+					im.attr('src', im.attr('src')+'?'+(new Date()).getTime());
+				}
+				//var im=parentel.find('img').eq(0);
+				//var news=
+				//im.attr('src', im.attr('src')+'?'+(new Date()).getTime());
+				/*parentel.fadeOut('slow',function(){
+					//parentel.prependTo(gross_parent).fadeIn('slow');
+					//DataImagelist.markMainImage();
+				});*/
+			}
+		});
 		return false;
 	},
 	dz_makeMain: function(el, pk_value, table, pk_name, field_name){
@@ -232,6 +319,25 @@ DataImagelist={
 		});
 		
 		
+	},
+	
+	rotateImage: function(el, img_id, data_id, table, key, rot_dir){
+		var parentel=$(el).parents('.preview_admin').eq(0);
+		var gross_parent=parentel.parents().eq(0);
+		$.ajax({
+			url: estate_folder + "/js/ajax.php?action=rotate_image",
+			data: 'table_name='+table+'&image_id='+img_id+'&key='+key+'&key_value='+data_id+'&rot_dir='+rot_dir,
+			success: function(){
+				var im=parentel.find('img').eq(0);
+				//var news=
+				im.attr('src', im.attr('src')+'?'+(new Date()).getTime());
+				/*parentel.fadeOut('slow',function(){
+					//parentel.prependTo(gross_parent).fadeIn('slow');
+					//DataImagelist.markMainImage();
+				});*/
+			}
+		});
+		return false;
 	},
 	upImage: function(el, img_id, data_id, table, key){
 		var parentel=$(el).parents('.preview_admin').eq(0);

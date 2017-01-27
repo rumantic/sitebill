@@ -25,7 +25,7 @@ class Form_View_Generator extends Form_Generator {
 					$rs = $this->get_price_input($item_array);
 					break;
 				case 'select_box':
-					$rs = $this->get_select_box_row($item_array);
+					$rs = $this->get_select_box_row_view($item_array);
 					break;
 	
 				case 'email':
@@ -33,7 +33,7 @@ class Form_View_Generator extends Form_Generator {
 					break;
 	
 				case 'mobilephone':
-					$rs = $this->get_mobilephone_input($item_array);
+					$rs = $this->get_safe_text_view($item_array);
 					break;
 	
 				case 'select_by_query':
@@ -96,7 +96,7 @@ class Form_View_Generator extends Form_Generator {
 					break;
 	
 				case 'checkbox':
-					$rs = $this->get_checkbox_box_row($item_array);
+					$rs = $this->get_checkbox_box_row_view($item_array);
 					break;
 	
 				case 'grade':
@@ -312,6 +312,19 @@ class Form_View_Generator extends Form_Generator {
 		return $rs;
 	}
 	
+	function get_select_box_row_view ( $item_array ) {
+		$rs = '<tr  class="row3"  alt="'.$item_array['name'].'">';
+		$rs .= '<td>';
+		$rs .= $item_array['title'];
+		$rs .= '</td>';
+		$rs .= '<td>';
+		$rs .= $this->get_single_select_box_view($item_array);
+		$rs .= '</td>';
+		$rs .= '</tr>';
+	
+		return $rs;
+	}
+	
 	/**
 	 * Get single select box by query
 	 * @param array $item_array
@@ -321,23 +334,31 @@ class Form_View_Generator extends Form_Generator {
 		//return '';
 		$this->total_in_select[$item_array['name']] = 0;
 		$rs .= '<div id="'.$item_array['name'].'_div">';
-		//echo $item_array['query'];
-		$this->db->exec($item_array['query']);
-		while ( $this->db->fetch_assoc() ) {
-			$this->total_in_select[$item_array['name']]++;
-			$value = $this->db->row[$item_array['value_name']];
-			$value = trim($value);
-			$value = htmlspecialchars_decode($value);
-			if ( $this->db->row[$item_array['primary_key_name']] ==  $item_array['value'] ) {
-				$rs .= $value;
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($item_array['query']);
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				$this->total_in_select[$item_array['name']]++;
+				$value = $ar[$item_array['value_name']];
+				$value = trim($value);
+				$value = htmlspecialchars_decode($value);
+				if ( $ar[$item_array['primary_key_name']] ==  $item_array['value'] ) {
+					$rs .= $value;
+				}
 			}
 		}
-		/*if(1==$this->getConfigValue('use_combobox')){
-		 $rs .= '<input type="text" name="nw" id="nw" />';
-		}*/
 		$rs .= '</div>';
 	
 		return $rs;
+	}
+	
+	function get_single_select_box_view ( $item_array ) {
+		//return '';
+		$val=$item_array['value'];
+		if(isset($item_array['select_data'][$item_array['value']])){
+			return $item_array['select_data'][$item_array['value']];
+		}
+		return '';
 	}
 	
 	
@@ -373,11 +394,12 @@ class Form_View_Generator extends Form_Generator {
 		$rs .= '</td>';
 	
 		$rs .= '<td>';
-		$rs .= '<input type="checkbox" name="'.$item_array['name'].'" disabled="disabled"';
 		if ( $item_array['value'] == 1 ) {
-			$rs .= ' checked ';
+			$rs .= Multilanguage::_('YES_CHECK_MARK');
+		}else{
+			$rs .= Multilanguage::_('NO_CHECK_MARK');
 		}
-		$rs .= '/>';
+		
 	
 		$rs .= '</td>';
 		$rs .= '</tr>';

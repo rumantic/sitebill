@@ -26,7 +26,7 @@ var SitebillCore={
 	},
 	isValidEmail: function (email)
 	{
-	    return (/^([a-z0-9_-]+.)*[a-z0-9_-]+@([a-z0-9][a-z0-9-]*[a-z0-9].)+[a-z]{2,4}$/i).test(email);
+	    return (/^([a-z0-9_-]+.)*[a-z0-9_-]+@([a-z0-9-]*[a-z0-9].)+[a-z]{2,4}$/i).test(email);
 	},
 	serializeFormJSON: function(el) {
 		var el=el;
@@ -49,7 +49,7 @@ var SitebillCore={
 		var _this=$(el);
 		
 		if(_this.data('valid_me')!==undefined && _this.data('valid_me').length>0){
-			var alertwin=$('<div class="modal hide fade"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h3>Ошибка</h3></div><div class="modal-body"></div></div>');
+			var alertwin=$('<div class="modal fade" role="dialog"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h3>Ошибка</h3></div><div class="modal-body"></div></div></div></div>');
 			var vm=_this.data('valid_me');
 			var form=_this.parents('form').eq(0);
 			for(var i in vm){
@@ -77,5 +77,32 @@ var SitebillCore={
 		_this.hide();
 		$('<p class="loading">Сохраняю данные...</p>').insertAfter(_this).slideDown("fast");
 		return true;
+	},
+	number_format: function( number, decimals, dec_point, thousands_sep ) {
+		var i, j, kw, kd, km;
+
+		if( isNaN(decimals = Math.abs(decimals)) ){
+			decimals = 2;
+		}
+		if( dec_point == undefined ){
+			dec_point = ",";
+		}
+		if( thousands_sep == undefined ){
+			thousands_sep = ".";
+		}
+
+		i = parseInt(number = (+number || 0).toFixed(decimals)) + "";
+
+		if( (j = i.length) > 3 ){
+			j = j % 3;
+		} else{
+			j = 0;
+		}
+
+		km = (j ? i.substr(0, j) + thousands_sep : "");
+		kw = i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + thousands_sep);
+		kd = (decimals ? dec_point + Math.abs(number - i).toFixed(decimals).replace(/-/, 0).slice(2) : "");
+
+		return km + kw + kd;
 	}
 };

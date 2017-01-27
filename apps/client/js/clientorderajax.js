@@ -21,9 +21,8 @@ ClientOrder={
 				errorb.hide();
 				form.prepend(errorb);
 				form.submit(function(e){
-					ClientOrder.save_form($(this), model);
+					ClientOrder.save_form($(this), model, options.redirect_after);
 					e.preventDefault();
-					
 				});
 			}
 		});
@@ -43,10 +42,33 @@ ClientOrder={
 			success: function(json){
 				if(json.status=='ok'){
 					form.replaceWith($('<div>'+json.message+'</div>'));
+					if(typeof redirect_after !== 'undefined'){
+						window.location.replace(redirect_after);
+					}
 				}else{
 					errorb.html(json.message).show();
 				}
 			}
+		});
+	},
+	init_prepared_form: function(container_id, model, options){
+		var options = options || {};
+		var container=$('#'+container_id);
+		if(container.length==0){
+			return;
+		}
+		var model=model;
+		var form=container.find('form');
+		var errorb=form.find('.error');
+		if(errorb.length==0){
+			var errorb=$('<p class="error"></p>');
+			form.prepend(errorb);
+		}
+		errorb.hide();
+		
+		form.submit(function(e){
+			ClientOrder.save_form($(this), model, options.redirect_after);
+			e.preventDefault();
 		});
 	}
 };

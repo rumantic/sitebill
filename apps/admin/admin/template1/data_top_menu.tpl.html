@@ -1,26 +1,29 @@
 <div class="navbar">
-  <div class="navbar-inner">
-    <div class="container">
-    <div class="nav pull-left">
-          <a href="?action=data&do=new" class="btn btn-primary">{$L_ADD_RECORD_BUTTON}</a>
-    </div>                     
-    
-    <div class="nav pull-right">
-
-    <ul class="nav">
-        <li {if $active == '' and $hot == ''} class="active"{/if}><a href="?action=data">Все ({$all_items_count})</a></li>
-        <li {if $active == 1} class="active"{/if}><a href="?action=data&active=1">Активные ({$active_items_count})</a></li>
-        <li {if $active == 'notactive'} class="active"{/if}><a href="?action=data&active=notactive">Неактивные ({$notactive_items_count})</a></li>
-        <li {if $hot == 1} class="active"{/if}><a href="?action=data&hot=1">Спецпредложения ({$hot_items_count})</a></li>
-    </ul> 
- 
-    <form class="navbar-search pull-left" action="">
-    {$user_select_box}
-    <input type="hidden" name="action" value="data">
-    </form>
-    </div>
-
-    </div>
-  </div>
+	<div class="navbar-inner">
+	    <div class="container">
+		    <div class="nav pull-left" style="padding-left: 5px;">
+		          <a href="{$estate_folder}/admin/?action=data&do=new" class="btn btn-success"><i class="icon-white icon-file"></i> {$L_ADD_RECORD_BUTTON}</a>
+		    </div>                     
+		    <div class="nav pull-right">
+			    <ul class="nav">
+			        <li {if $active == '' and $hot == ''} class="active"{/if}><a href="{$estate_folder}/admin/?action=data">Все ({$all_items_count})</a></li>
+			        <li {if $active == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&active=1">Активные ({$active_items_count})</a></li>
+			        <li {if $active == 'notactive'} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&active=notactive">Неактивные ({$notactive_items_count})</a></li>
+			        {if isset($billing_mode_on) && $billing_mode_on==1}
+			        <li {if $billing_mode_on_statuses.vip == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&vip_status=1">VIP ({$billing_mode_on_counts.vip})</a></li>
+			        <li {if $billing_mode_on_statuses.premium == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&premium_status=1">PREMIUM ({$billing_mode_on_counts.premium})</a></li>
+			        <li {if $billing_mode_on_statuses.bold == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&bold_status=1">BOLD ({$billing_mode_on_counts.bold})</a></li>
+			        {else}
+			        <li {if $hot == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&hot=1">Спецпредложения ({$hot_items_count})</a></li>
+			        {/if}
+			        {if isset($archived_count)}
+			    	<li {if $hot == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&archived=1">Архивные ({$archived_count})</a></li>
+			    	{/if}
+		     	</ul> 
+		 		<form class="navbar-search pull-left" action="{$estate_folder}/admin/">
+			    	{$user_select_box}<input type="hidden" name="action" value="data">
+			    </form>
+		    </div>
+		</div>
+	</div>
 </div>
-

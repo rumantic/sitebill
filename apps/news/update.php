@@ -16,6 +16,8 @@ class news_update extends SiteBill {
         $query_data[] = "ALTER TABLE ".DB_PREFIX."_news ADD COLUMN meta_description text";
         $query_data[] = "ALTER TABLE ".DB_PREFIX."_news ADD COLUMN meta_keywords text";
         $query_data[] = "ALTER TABLE ".DB_PREFIX."_news ADD COLUMN newsalias text";
+
+        $query_data[] = "ALTER TABLE ".DB_PREFIX."_news ADD COLUMN user_id INT(11)";
         
         $query_data[] = "CREATE TABLE IF NOT EXISTS `".DB_PREFIX."_news_topic` (
 				  `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -26,10 +28,13 @@ class news_update extends SiteBill {
         
         
         $rs = '<h3>'.Multilanguage::_('SQL_NOW','system').'</h3>';
+        $DBC=DBC::getInstance();
+        
         foreach ( $query_data as $query ) {
-        	$this->db->exec($query);
-        	if ( !$this->db->success ) {
-        		$rs .= Multilanguage::_('ERROR_ON_SQL_RUN','system').': '.$query.', <b>'.$this->db->error.'</b><br>';
+        	$success=false;
+        	$stmt=$DBC->query($query, array(), $rows, $success);
+        	if ( !$success ) {
+        		$rs .= Multilanguage::_('ERROR_ON_SQL_RUN','system').': '.$query.'<br>';
         	} else {
         		$rs .= Multilanguage::_('QUERY_SUCCESS','system').': '.$query.'<br>';
         	}

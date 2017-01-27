@@ -113,7 +113,8 @@ class Cache extends Sitebill {
   `valid_for` int(15) NOT NULL,
   PRIMARY KEY (`parameter`)
 ) ENGINE=MyISAM DEFAULT CHARSET=".DB_ENCODING.";";
-		$this->db->exec($query);
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
 		$this->loadCache();
 	}
 	
@@ -129,11 +130,14 @@ class Cache extends Sitebill {
 	 */
 	private function loadCache(){
 		$query='SELECT parameter, value, valid_for FROM '.DB_PREFIX.'_cache';
-		//echo $query;
-		$this->db->exec($query);
-		while($this->db->fetch_assoc()){
-			$this->cacheValues[$this->db->row['parameter']]['valid_for']=$this->db->row['valid_for'];
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				$this->cacheValues[$ar['parameter']]['valid_for']=$ar['valid_for'];
+			}
 		}
+		
 	}
 		
 	/**
@@ -142,7 +146,8 @@ class Cache extends Sitebill {
 	 */
 	private function deleteCacheValue($name){
 		$query="DELETE FROM ".DB_PREFIX."_cache WHERE parameter='".$name."'";
-		$this->db->exec($query);
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
 	}
 	
 	/**
@@ -152,8 +157,9 @@ class Cache extends Sitebill {
 	 * @param timestamp $valid_for
 	 */
 	private function addCacheValue($name, $value, $valid_for){
-		$query="INSERT INTO ".DB_PREFIX."_cache (parameter,value,created_at,valid_for) VALUES ('".$name."','".mysql_real_escape_string(serialize($value))."', ".time().", ".$valid_for.")";
-		$this->db->exec($query);
+		$query="INSERT INTO ".DB_PREFIX."_cache (parameter,value,created_at,valid_for) VALUES (?,?,?,?)";
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query, array(name, serialize($value), time(), $valid_for));
 	}
 	
 	/**
@@ -163,8 +169,9 @@ class Cache extends Sitebill {
 	 * @param timestamp $valid_for
 	 */
 	private function updateCacheValue($name, $value, $valid_for){
-		$query="UPDATE ".DB_PREFIX."_cache SET value='".mysql_real_escape_string(serialize($value))."', valid_for='".$valid_for."' WHERE parameter='".$name."'";
-		$this->db->exec($query);
+		$query="UPDATE ".DB_PREFIX."_cache SET value=?, valid_for=? WHERE parameter=?";
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query, array(serialize($value), $valid_for, $name));
 	}
 	
 	/**
@@ -172,7 +179,8 @@ class Cache extends Sitebill {
 	 */
 	private function clearCache(){
 		$query='TRUNCATE TABLE '.DB_PREFIX.'_cache';
-		$this->db->exec($query);
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
 	}
 	
 	/**
@@ -182,9 +190,12 @@ class Cache extends Sitebill {
 	 */
 	private function extractValue($name){
 		$query="SELECT value FROM ".DB_PREFIX."_cache WHERE parameter='".$name."'";
-		$this->db->exec($query);
-		$this->db->fetch_assoc();
-		return unserialize($this->db->row['value']);
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			return unserialize($ar['value']);
+		}
 	}
 	
 	/*

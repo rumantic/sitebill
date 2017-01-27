@@ -45,6 +45,8 @@ class API_stat extends API_Common {
 			$ar = $DBC->fetch($stmt);
 			$ra['client_total'] = $ar['client_total'];
 		}
+		$ra['success'] = 1;
+		
 		
 		
 		return $this->json_string($ra);
@@ -53,42 +55,46 @@ class API_stat extends API_Common {
 	public function _load_file () {
 		$upload_result = false;
 		$realty_id = (int)$this->getRequestValue('realty_id');
+		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+		$data_model = new Data_Model();
+		$form_data = $data_model->get_kvartira_model($this->getConfigValue('ajax_form_in_admin'));
 		
-		$this->writeLog(array('apps_name'=>'apps.api', 'method' => __METHOD__, 'message' => 'files = '.var_export($_FILES, true).', realty_id = '.$realty_id, 'type' => NOTICE));
+		//$this->writeLog(array('apps_name'=>'apps.api', 'method' => __METHOD__, 'message' => 'files = '.var_export($_FILES, true).', realty_id = '.$realty_id, 'type' => NOTICE));
 		
 		if (move_uploaded_file($_FILES['uploadedfile']['tmp_name'], SITEBILL_DOCUMENT_ROOT."/cache/upl/".$_FILES['uploadedfile']['name'])) {
 			$upload_result = true;
 			$images = array(0 => $_FILES['uploadedfile']['name']);
-			$this->writeLog(array('apps_name'=>'apps.api', 'method' => __METHOD__, 'message' => 'images = '.var_export($images, true), 'type' => NOTICE));
+			//$this->writeLog(array('apps_name'=>'apps.api', 'method' => __METHOD__, 'message' => 'images = '.var_export($images, true), 'type' => NOTICE));
 			
 			$imgs=array();
 			$updated = false;
 			
-			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
-			$data_model = new Data_Model();
-			$form_data = $data_model->get_kvartira_model($this->getConfigValue('ajax_form_in_admin'));
 			
-			$this->writeLog(array('apps_name'=>'apps.api', 'method' => __METHOD__, 'message' => 'form_data = '.var_export($form_data, true), 'type' => NOTICE));
+			//$this->writeLog(array('apps_name'=>'apps.api', 'method' => __METHOD__, 'message' => 'form_data = '.var_export($form_data, true), 'type' => NOTICE));
 			$this->setExternalUploadifyImageArray($images);
 				
 			foreach ($form_data['data'] as $form_item){
 				if($form_item['type']=='uploads'){
 					
-					$this->writeLog(array('apps_name'=>'apps.api', 'method' => __METHOD__, 'message' => 'start uploads', 'type' => NOTICE));
+					//$this->writeLog(array('apps_name'=>'apps.api', 'method' => __METHOD__, 'message' => 'start uploads', 'type' => NOTICE));
 						
 					$ims=$this->appendUploads('data', $form_item, 'id', $realty_id);
 					$updated = true;
 				}
 			}
 			if ( !$updated ) {
-				$this->writeLog(array('apps_name'=>'apps.api', 'method' => __METHOD__, 'message' => 'start image multi', 'type' => NOTICE));
+				//$this->writeLog(array('apps_name'=>'apps.api', 'method' => __METHOD__, 'message' => 'start image multi', 'type' => NOTICE));
 				$ims=$this->editImageMulti('data', 'data', 'id', $realty_id);
 			}
 			if ( $this->getExternalUploadifyImageArray() ) {
 				$this->delete_external_images_from_upl($this->getExternalUploadifyImageArray());
 			}
 		}
+		
+		$result_array['success'] = $upload_result;
 		$ra['result'] = $upload_result;
+		$ra['result_image'] = $ims;
+		$ra['success'] = $upload_result;
 		return $this->json_string($ra);
 		
 	}
@@ -112,8 +118,9 @@ class API_stat extends API_Common {
 		$realtyview_site->setRealtyID($realty_id);
 		$realtyview_site->showRealty();
 		$static_data = Static_Data::getInstance();
+		$result_array['success'] = 1;
 		$result_array['data'] = $static_data::get_data();
-
+		
 		if ( $result_array['data']['user_id']['value'] > 0 ) {
 			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/users/user_object_manager.php');
 			$user_object_manager = new User_Object_Manager();
@@ -136,6 +143,7 @@ class API_stat extends API_Common {
 		if ( $to_array ) {
 			return $ra;
 		}
+		$result_array['success'] = 1;
 		$result_array['city_list'] =  $ra;
 		return $this->json_string($result_array);
 	}
@@ -150,8 +158,27 @@ class API_stat extends API_Common {
 		$sitebill_krascap = new SiteBill_Krascap();
 		$sitebill_krascap->grid_adv();
 		$static_data = Static_Data::getInstance();
+		$result_array['success'] = 1;
 		$result_array['data'] = $static_data::get_data();
 		$result_array['params'] = $static_data::get_params();
 		return $this->json_string($result_array);
 	}
+	
+	public function _my_data_grid () {
+		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
+		$Structure_Manager = new Structure_Manager();
+		$Structure_Manager->getCategorySelectBoxWithName('topic_id', $this->getRequestValue('topic_id'));
+		$_SERVER['REQUEST_URI'] = '/';
+		$_REQUEST['REST_API'] = 1;
+		$this->setRequestValue('user_id', $this->get_my_user_id());
+	
+		$sitebill_krascap = new SiteBill_Krascap();
+		$sitebill_krascap->grid_adv();
+		$static_data = Static_Data::getInstance();
+		$result_array['success'] = 1;
+		$result_array['data'] = $static_data::get_data();
+		$result_array['params'] = $static_data::get_params();
+		return $this->json_string($result_array);
+	}
+	
 }

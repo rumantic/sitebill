@@ -14,6 +14,14 @@ class client_site extends client_admin {
 		}
 		
 		$REQUESTURIPATH=$this->getClearRequestURI();
+		/*
+		$client_namespace='';
+		if($this->getConfigValue('apps.client.namespace')!=''){
+			preg_replace('', $replacement, $subject)
+		}
+		
+		//try catch order alias
+		if(preg_match($pattern, $subject))*/
 		
 		$this->root_url=SITEBILL_MAIN_URL.'/'.($this->getConfigValue('apps.client.namespace')!='' ? $this->getConfigValue('apps.client.namespace').'/' : '');
 		
@@ -34,6 +42,10 @@ class client_site extends client_admin {
 		//$action=$this->getRequestValue('subaction')
 		
 		if(preg_match('/^order\/(\w+)[\/]?$/', $clearrequesturi, $matches) || key_exists($REQUESTURIPATH, $reserved_urls)){
+			//echo 
+			if(in_array($matches[1], array('data', 'city', 'country', 'region', 'user'))){
+				return false;
+			}
 			
 			if(key_exists($REQUESTURIPATH, $reserved_urls)){
 				$order_model=$reserved_urls[$REQUESTURIPATH];
@@ -58,6 +70,7 @@ class client_site extends client_admin {
 			}
 			//print_r($PA->getPageByURI($page_url));
 			$form=$Client_Order->makeClientOrder($order_model);
+			
 			if(!$form){
 				return false;
 			}
@@ -86,6 +99,8 @@ class client_site extends client_admin {
 				return true;
 			}
 		}
+		
+		return false;
 		
 		$app_alias=$this->getConfigValue('apps.client.namespace');
 		
@@ -128,23 +143,46 @@ class client_site extends client_admin {
 	
 	
 	public function get_email_list () {
-		$email='';
+		$email=array();
 		$DBC=DBC::getInstance();
-		$query = 'SELECT email FROM '.DB_PREFIX.'_user WHERE user_id=? LIMIT 1';
-		$stmt=$DBC->query($query, array($this->getAdminUserId()));
-		if($stmt){
-			$ar=$DBC->fetch($stmt);
-			$email[$ar['email']]=$ar['email'];
-		}
-		
-		$query = "select email from ".DB_PREFIX."_user where notify='1' limit 1";
-		$stmt=$DBC->query($query);
-		if($stmt){
-			$ar=$DBC->fetch($stmt);
-			if($ar['email']!=''){
-				$email[$ar['email']]=$ar['email'];
+		if($this->getConfigValue('apps.client.orders_email')!=''){
+			$emails=explode(',', $this->getConfigValue('apps.client.orders_email'));
+			foreach ($emails as $em){
+				if(trim($em)!=''){
+					$email[$em]=$em;
+				}	
 			}
 		}
+		
+		if(empty($emails)){
+			$query = "select email from ".DB_PREFIX."_user where notify='1' limit 1";
+			$stmt=$DBC->query($query);
+			if($stmt){
+				$ar=$DBC->fetch($stmt);
+				if($ar['email']!=''){
+					$email[$ar['email']]=$ar['email'];
+				}
+			}
+			if($this->getConfigValue('order_email_acceptor')!=''){
+				$email[$this->getConfigValue('order_email_acceptor')]=$this->getConfigValue('order_email_acceptor');
+			}
+		}
+		
+		if($this->getConfigValue('apps.client.notify_admin')){
+			$query = 'SELECT email FROM '.DB_PREFIX.'_user WHERE user_id=? LIMIT 1';
+			$stmt=$DBC->query($query, array($this->getAdminUserId()));
+			if($stmt){
+				while($ar=$DBC->fetch($stmt)){
+					if($ar['email']!=''){
+						$email[$ar['email']]=$ar['email'];
+					}
+				}
+			}
+		}
+		
+		
+		
+		
 		$this->writeLog(array('apps_name'=>'apps.client', 'method' => __METHOD__, 'message' => 'Get email = '.$email, 'type' => NOTICE));
 		
 		return array_values($email);
@@ -177,8 +215,9 @@ class client_site extends client_admin {
 						} else {
 							$type_id = 'usual';
 						}
-						$query = "update ".DB_PREFIX."_client set date=".time().", type_id='".$type_id."', status_id='new' where client_id=".$new_record_id;
-						$this->db->exec($query);
+						$query = "UPDATE ".DB_PREFIX."_client SET `date`=?, `type_id`=?, `status_id`='new' WHERE `client_id`=?";
+						$DBC=DBC::getInstance();
+						$stmt=$DBC->query($query, array(time(), $type_id, $new_record_id));
 						foreach($form_data as $hvd){
 							if($hvd['tab']==''){
 								$hvd_tabbed[$this->getConfigValue('default_tab_name')][]=$hvd;
@@ -187,13 +226,7 @@ class client_site extends client_admin {
 							}
 						
 						}
-						/*
-						echo '<pre>';
-						print_r($hvd_tabbed);
-						echo '</pre>';
-						*/
 						
-						 
 						$this->template->assert('form_data',$form_data);
 
 						$smarty->template_dir = SITEBILL_DOCUMENT_ROOT.'/apps/client/site/template/';

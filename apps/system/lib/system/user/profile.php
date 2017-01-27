@@ -255,9 +255,9 @@ class User_Profile extends User_Object_Manager {
                             list($width,$height)=$this->makePreview(SITEBILL_DOCUMENT_ROOT.'/'.$imgfile_directory.$preview_name_tmp, $sitebill_document_root.'/'.$imgfile_directory.$preview_name, $this->getConfigValue('user_pic_width'),$this->getConfigValue('user_pic_height'), $ext,1);
                             unlink(SITEBILL_DOCUMENT_ROOT.'/'.$imgfile_directory.$preview_name_tmp);
                             
-							$query='UPDATE '.DB_PREFIX.'_user SET imgfile="'.$preview_name.'" WHERE user_id='.$user_id;
-							//$ret=$query;
-							$this->db->exec($query);
+							$query='UPDATE '.DB_PREFIX.'_user SET imgfile=? WHERE user_id=?';
+							$DBC=DBC::getInstance();
+							$stmt=$DBC->query($query, array($preview_name, $user_id));
 						}
 					}
 					
@@ -296,11 +296,13 @@ class User_Profile extends User_Object_Manager {
 	}
 	
 	function getUserProfileData($user_id){
-		$query = 'SELECT * FROM '.DB_PREFIX.'_user WHERE user_id='.$user_id;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        return $this->db->row;
-		//return $query;
+		$query = 'SELECT * FROM '.DB_PREFIX.'_user WHERE user_id=? LIMIT 1';
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query, array($user_id));
+		if($stmt){
+			return $DBC->fetch($stmt);
+		}
+        return array();
 	}
 	
 	function updateUserProfile($user_id,$nd){
@@ -317,7 +319,7 @@ class User_Profile extends User_Object_Manager {
 		        $set[] = '`'.$k.'`';
 		        $values[] = '\''.$v.'\'';
 		    }
-		    $query = 'insert  into '.DB_PREFIX.'_user ('.implode(' , ',$set).') values ('.implode(' , ',$values).') ';
+		    $query = 'INSERT INTO '.DB_PREFIX.'_user ('.implode(' , ',$set).') VALUES ('.implode(' , ',$values).') ';
 		    //echo $query;
 	    } else {
 		    $qparts=array();
@@ -326,8 +328,10 @@ class User_Profile extends User_Object_Manager {
 		    }
 		    $query = 'UPDATE '.DB_PREFIX.'_user SET '.implode(',',$qparts).' WHERE user_id='.$user_id;
 	    }
-        $this->db->exec($query);
-		if($this->db->success){
+	    $DBC=DBC::getInstance();
+	    $stmt=$DBC->query($query);
+        
+		if($stmt){
 			return TRUE;
 		}else{
 			return FALSE;

@@ -89,16 +89,14 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
      * @return boolean
      */
     function addRecord ( $data ) {
-        global $__db_prefix;
-        
         $time_now = time();
         
-        $query = "insert into ".$__db_prefix."_data_get_rent 
+        $query = "insert into ".DB_PREFIX."_data_get_rent 
         	(room_type_id, time_range_id, district_id, name, phone, email, more, date_added) 
         		values 
         	(".$data['room_type_id'].", ".$data['time_range_id'].", ".$data['district_id'].", '".$data['name']."', '".$data['phone']."', '".$data['email']."', '".$data['more']."', ".$time_now.")";
-        //echo $query;
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
         
     }
 
@@ -147,15 +145,18 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
     function getDistrictTitleByID ( $district_id ) {
         global $__db_prefix;
         
-        $query = "select * from ".$__db_prefix."_district where id=$district_id";
-        //echo $query;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['name'] == '' ) {
-            return 'Любой';
-        }
-        
-        return $this->db->row['name'];
+        $query = "select * from ".DB_PREFIX."_district where id=$district_id";
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			if ( $ar['name'] == '' ) {
+				return 'Любой';
+			}else{
+				return $ar['name'];
+			}
+		}
+		return 'Любой';
     }
 
     /**
@@ -186,16 +187,19 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
      */
     function getDistrictList( $district_id = '', $class="" ) {
         $query = "select * from re_district order by id";
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
         $rs = '<select name="district_id" class="'.$class.'" onChange="upd_streetlist()">';
         $rs .= '<option value="0">Любой</option>';
-        while ( $this->db->fetch_assoc() ) {
-            if ( $district_id == $this->db->row['id'] ) {
-                $selected = 'selected';
-            } else {
-                $selected = '';
-            }
-            $rs .= '<option value="'.$this->db->row['id'].'" '.$selected.'>'.$this->db->row['name'].'</option>';
+        if($stmt){
+        	while($ar=$DBC->fetch($stmt)){
+        		if ( $district_id == $ar['id'] ) {
+	                $selected = 'selected';
+	            } else {
+	                $selected = '';
+	            }
+	            $rs .= '<option value="'.$ar['id'].'" '.$selected.'>'.$ar['name'].'</option>';
+        	}
         }
         $rs .= '</select>';
         return $rs;
@@ -251,7 +255,7 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
         $rs .= '</tr>';
         
         $rs .= '<tr>';
-        $rs .= '<td style="vertical-align: top;">Защитный код <span style="color: red;">*</span> </td>';
+        $rs .= '<td style="vertical-align: top;">'.Multilanguage::_('CAPTCHA_TITLE', 'system').' <span style="color: red;">*</span> </td>';
         $rs .= '<td><input type="text" name="captcha_code" value="" class="getrent_form_input" /></td>';
         $rs .= '</tr>';
         
@@ -305,4 +309,3 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
     }
     
 }
-?>

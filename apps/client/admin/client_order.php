@@ -6,13 +6,39 @@ class Client_Order extends client_site {
 		$data_model = new Data_Model();
 		$form_data = $this->loadOrderModel($order_model);
 		
+		
 		if(empty($form_data)){
 			return false;
 		}
 		
 		switch( $this->getRequestValue('do') ){
 			case 'new_done' : {
+				$pk=0;
 				$form_data = $data_model->init_model_data_from_request($form_data);
+				try {
+					if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/customentity/admin/admin.php') ) {
+						require_once(SITEBILL_DOCUMENT_ROOT.'/apps/customentity/admin/admin.php');
+						
+						$form_data_entity = $this->loadOnlyEntityModel($order_model);
+						if($form_data_entity){
+							$form_data_entity = $data_model->init_model_data_from_request($form_data_entity);
+							
+							$customentity = new customentity_admin();
+							$customentity->custom_construct($order_model);
+							if ( $this->check_data( $form_data_entity ) ){
+								$pk=$customentity->add_data($form_data_entity);
+							}
+							
+							if ( $customentity->getError() ) {
+								$this->writeLog(array('apps_name' => 'apps.client', 'method' => __METHOD__, 'message' => $customentity->GetErrorMessage(), 'type' => 'ERROR' ));
+							}
+						}
+						
+					}
+				} catch (Exception $e) {
+					$this->writeLog(array('apps_name' => 'apps.client', 'method' => __METHOD__, 'message' => $e->getMessage(), 'type' => 'ERROR' ));
+				}
+				
 				$new_values=$this->getRequestValue('_new_value');
 				if(1==$this->getConfigValue('use_combobox') && count($new_values)>0){
 					$remove_this_names=array();
@@ -38,26 +64,36 @@ class Client_Order extends client_site {
 					$rs = $this->get_form($form_data, 'new', 0, Multilanguage::_('L_TEXT_SEND'));
 						
 				} else {
+					$primary_key_name='';
+					foreach($form_data as $k=>$v){
+						if($v['type']=='hidden'){
+							$form_data[$k]['type']='safe_string';
+						}
+						if($v['type']=='primary_key' && $pk!=0){
+							$form_data[$k]['value']=$pk;
+							$primary_key_name=$form_data[$k]['name'];
+						}
+					}
+					
+					require_once ((SITEBILL_DOCUMENT_ROOT.'/apps/client/admin/admin.php'));
+					$client_admin = new client_admin();
 					
 					require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/view.php');
 					$table_view = new Table_View();
+					
+					
+					if($form_data_entity && $pk!=0){
+						$form_data = $data_model->init_model_data_from_db($order_model, $primary_key_name, $pk, $form_data);
+					}
+					
 					$order_table = '';
 					$order_table .= '<table border="1" cellpadding="2" cellspacing="2" style="border: 1px solid gray;">';
+					$table_view->setAbsoluteUrls();
 					$order_table .= $table_view->compile_view($form_data);
 					$order_table .= '</table>';
-					
-					/*require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
-						
-					$mailer = new Mailer();*/
-					$subject = $_SERVER['SERVER_NAME'].': Новая заявка от клиента на расчет';
+					$subject = $_SERVER['SERVER_NAME'].': Новая заявка от клиента / '.$client_admin->data_model['client']['type_id']['select_data'][$order_model];
 					$to = $this->get_email_list();
 					$from = $this->getConfigValue('order_email_acceptor');
-						
-					/*if ( $this->getConfigValue('use_smtp') ) {
-						$mailer->send_smtp($to, $from, $subject, $order_table, 1);
-					} else {
-						$mailer->send_simple($to, $from, $subject, $order_table, 1);
-					}*/
 					$this->sendFirmMail($to, $from, $subject, $order_table);
 					
 					if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/client/client.xml') ) {
@@ -81,6 +117,7 @@ class Client_Order extends client_site {
 	    				}else{
 	    					if(1==$this->getConfigValue('apps.client.allow-redirect_url_for_orders')){
 	    						header('location: '.SITEBILL_MAIN_URL.'/client/order/'.$order_model.'/online-'.$order_model.'/');
+	    						exit();
 	    					}else{
 	    						$rs = '<div class="alert alert-success">'.Multilanguage::_('L_MESSAGE_ORDER_ACCEPTED_EXT').'</div>';
 	    					}
@@ -98,13 +135,18 @@ class Client_Order extends client_site {
 		return $rs;
 	}
 	
-	
-	
-	
 	function save_order_form($order_model){
+		if(in_array($order_model, array('data', 'city', 'country', 'region', 'user'))){
+			return '';
+		}
 		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
 		$data_model = new Data_Model();
+		
 		$form_data=$this->loadOrderModel($order_model);
+		
+		if(!$form_data){
+			return;
+		}
 		$form_data = $data_model->init_model_data_from_request($form_data);
 		$new_values=$this->getRequestValue('_new_value');
 		if(1==$this->getConfigValue('use_combobox') && count($new_values)>0){
@@ -134,6 +176,12 @@ class Client_Order extends client_site {
 			$rs = $this->get_form($form_data, 'new', 0, Multilanguage::_('L_TEXT_SEND'));
 				
 		} else {
+			
+			foreach($form_data as $k=>$v){
+				if($v['type']=='hidden'){
+					$form_data[$k]['type']='safe_string';
+				}
+			}
 			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/view.php');
 			$table_view = new Table_View();
 			$order_table = '';
@@ -164,11 +212,6 @@ class Client_Order extends client_site {
 					$this->writeLog(array('apps_name'=>'apps.client', 'method' => __METHOD__, 'message' => 'client_add_error: '.$client_admin->GetErrorMessage(), 'type' => ERROR));
 					return json_encode(array('status'=>'error', 'message'=>'<div class="alert alert-success">'.$client_admin->GetErrorMessage().'</div>'));
 				}else{
-						
-					/*require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
-					
-					$mailer = new Mailer();*/
-						
 					$subject = $_SERVER['SERVER_NAME'].': Новая заявка от клиента / '.$client_admin->data_model['client']['type_id']['select_data'][$order_model];
 					$to = $this->get_email_list();
 						
@@ -176,11 +219,6 @@ class Client_Order extends client_site {
 					$order_mail_body=$order_table;
 					$this->writeLog(array('apps_name'=>'apps.client', 'method' => __METHOD__, 'message' => 'send_email to'.$to, 'type' => NOTICE));
 					$this->sendFirmMail($to, $from, $subject, $order_mail_body);
-					/*if ( $this->getConfigValue('use_smtp') ) {
-						$mailer->send_smtp($to, $from, $subject, $order_mail_body, 1);
-					} else {
-						$mailer->send_simple($to, $from, $subject, $order_mail_body, 1);
-					}*/
 					return json_encode(array('status'=>'ok', 'message'=>'<div class="alert alert-success">'.Multilanguage::_('L_MESSAGE_ORDER_ACCEPTED_EXT').'</div>'));
 				}
 			}else{
@@ -190,8 +228,41 @@ class Client_Order extends client_site {
 		}
 	}
 	
-	function get_order_form($model_name, $options=array()){
+	/*function get_client_form($form, $options=array()){
+		
+		$DBC=DBC::getInstance();
+		$query='SELECT * FROM '.DB_PREFIX.'_client_form WHERE client_form_id=?';
+		$stmt=$DBC->query($query, array($form));
+		if(!$stmt){
+			return '';
+		}
+		$ar=$DBC->fetch($stmt);
+		if($ar['active']==0){
+			return '';
+		}
+		
+		$form_data=$this->loadOrderModel($ar['form_model']);
+		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/form/form_generator.php');
+		$form_generator = new Form_Generator();
+	
+		$el = $form_generator->compile_form_elements($form_data);
+		global $smarty;
+		$smarty->assign('form_elements',$el);
+		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl')){
+			$tpl_name=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl';
+		}else{
+			$tpl_name=$this->getAdminTplFolder().'/data_form.tpl';
+		}
+		return $smarty->fetch($tpl_name);
+		
+		
+		if(in_array($model_name, array('data', 'city', 'country', 'region', 'user'))){
+			return '';
+		}
 		$form_data=$this->loadOrderModel($model_name);
+		if(!$form_data){
+			return '';
+		}
 		if(!empty($options)){
 			foreach ($options as $k=>$opt){
 				if(isset($form_data[$k])){
@@ -200,12 +271,74 @@ class Client_Order extends client_site {
 			}
 		}
 		//return $this->get_form($form_data, 'new');
-		
-		
+	
+	
 		$_SESSION['allow_disable_root_structure_select']=true;
 		global $smarty;
 		if($button_title==''){
-			$button_title = Multilanguage::_('L_TEXT_SEND');
+			$button_title = (Multilanguage::is_set('L_TEXT_SEND', 'system') ? Multilanguage::_('L_TEXT_SEND', 'system') : Multilanguage::_('L_TEXT_SEND'));
+		}
+		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+		$data_model = new Data_Model();
+	
+		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/form/form_generator.php');
+		$form_generator = new Form_Generator();
+	
+	
+		$rs .= $this->get_ajax_functions();
+		if(1==$this->getConfigValue('apps.geodata.enable')){
+			$rs .= '<script type="text/javascript" src="'.SITEBILL_MAIN_URL.'/apps/geodata/js/geodata.js"></script>';
+		}
+		$rs .= '<form method="post" class="form-horizontal" action="" enctype="multipart/form-data" id="client_form">';
+	
+		if ( $this->getError() ) {
+			$smarty->assign('form_error', $form_generator->get_error_message_row($this->GetErrorMessage()));
+		}
+	
+		$el = $form_generator->compile_form_elements($form_data);
+	
+	
+		$el['form_header']=$rs;
+		$el['form_footer']='</form>';
+	
+		
+		$el['controls']['submit']=array('html'=>'<input type="submit" class="btn btn-primary" value="'.$button_title.'">');
+	
+	
+	
+	
+	
+		$smarty->assign('form_elements',$el);
+		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl')){
+			$tpl_name=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl';
+		}else{
+			$tpl_name=$this->getAdminTplFolder().'/data_form.tpl';
+		}
+		return $smarty->fetch($tpl_name);
+	
+	
+		//return $this->get_form($form_data, 'new');
+	}*/
+	
+	function get_order_form($model_name, $options=array()){
+		if(in_array($model_name, array('data', 'city', 'country', 'region', 'user'))){
+			return '';
+		}
+		$form_data=$this->loadOrderModel($model_name);
+		if(!$form_data){
+			return '';
+		}
+		if(!empty($options)){
+			foreach ($options as $k=>$opt){
+				if(isset($form_data[$k])){
+					$form_data[$k]['value']=htmlspecialchars($opt);
+				}
+			}
+		}
+		$_SESSION['allow_disable_root_structure_select']=true;
+		global $smarty;
+		if($button_title==''){
+			$button_title = (Multilanguage::is_set('L_TEXT_SEND', 'system') ? Multilanguage::_('L_TEXT_SEND', 'system') : Multilanguage::_('L_TEXT_SEND'));
 		}
 		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
 		$data_model = new Data_Model();
@@ -229,26 +362,14 @@ class Client_Order extends client_site {
 		
 		$el['form_header']=$rs;
 		$el['form_footer']='</form>';
-		
-		/*if ( $do != 'new' ) {
-		 $el['controls']['apply']=array('html'=>'<button id="apply_changes" class="btn btn-info">'.Multilanguage::_('L_TEXT_APPLY').'</button>');
-		}*/
 		$el['controls']['submit']=array('html'=>'<input type="submit" class="btn btn-primary" value="'.$button_title.'">');
-		
-		
-		
-		
-		
 		$smarty->assign('form_elements',$el);
 		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl')){
 			$tpl_name=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl';
 		}else{
-			$tpl_name=SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template/data_form.tpl';
+			$tpl_name=$this->getAdminTplFolder().'/data_form.tpl';
 		}
 		return $smarty->fetch($tpl_name);
-		
-		
-		//return $this->get_form($form_data, 'new');
 	}
 	
 	function get_form ( $form_data=array(), $do = 'new', $language_id = 0, $button_title = '' ) {
@@ -289,23 +410,53 @@ class Client_Order extends client_site {
 	
 		$el['form_header']=$rs;
 		$el['form_footer']='</form>';
-	
-		/*if ( $do != 'new' ) {
-		 $el['controls']['apply']=array('html'=>'<button id="apply_changes" class="btn btn-info">'.Multilanguage::_('L_TEXT_APPLY').'</button>');
-		}*/
 		$el['controls']['submit']=array('html'=>'<button id="formsubmit" onClick="return SitebillCore.formsubmit(this);" name="submit" class="btn btn-primary">'.$button_title.'</button>');
-	
-	
-	
-	
-	
 		$smarty->assign('form_elements',$el);
 		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl')){
 			$tpl_name=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl';
 		}else{
-			$tpl_name=SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template/data_form.tpl';
+			$tpl_name=$this->getAdminTplFolder().'/data_form.tpl';
 		}
 		return $smarty->fetch($tpl_name);
+	}
+	
+	private function loadOnlyEntityModel( $model_name, $ignore_user_group=false ) {
+		$DBC=DBC::getInstance();
+		$query='SELECT COUNT(table_id) AS cnt FROM '.DB_PREFIX.'_table WHERE name=?';
+		$stmt=$DBC->query($query, array($model_name));
+		if(!stmt){
+			return false;
+		}
+		
+		$ar=$DBC->fetch($stmt);
+		if($ar['cnt']==0){
+			return false;
+		}
+		
+		$query='SELECT COUNT(entity_name) AS cnt FROM '.DB_PREFIX.'_customentity WHERE entity_name=?';
+		$stmt=$DBC->query($query, array($model_name));
+		if(!stmt){
+			return false;
+		}
+		
+		$ar=$DBC->fetch($stmt);
+		if($ar['cnt']==0){
+			return false;
+		}
+		
+		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/columns/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/helper.php') ){
+			require_once SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/helper.php';
+			$ATH=new Admin_Table_Helper();
+			$form_data=$ATH->load_model($model_name, $ignore_user_group);
+			if($form_data){
+				$form_data = $ATH->add_ajax($form_data);
+			}
+		}
+		
+		if(!$form_data){
+			return false;
+		}
+		return $form_data[$model_name];
 	}
 	
 	private function loadOrderModel($model_name){
@@ -325,11 +476,10 @@ class Client_Order extends client_site {
 		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/columns/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/helper.php') ){
 			require_once SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/helper.php';
 			$ATH=new Admin_Table_Helper();
-			$form_data=$ATH->load_model($model_name, $ignore_user_group);
+			$form_data=$ATH->load_model($model_name, false);
 			if($form_data){
 				$form_data = $ATH->add_ajax($form_data);
 			}
-			
 		}
 		
 		if(!$form_data){
@@ -337,7 +487,7 @@ class Client_Order extends client_site {
 		}
 		
 		
-		if(!isset($form_data[$model_name]['fio'])){
+		/*if(!isset($form_data[$model_name]['fio'])){
 			$form_data[$model_name]['fio']['name'] = 'fio';
 			$form_data[$model_name]['fio']['title'] = 'ФИО';
 			$form_data[$model_name]['fio']['value'] = '';
@@ -365,7 +515,7 @@ class Client_Order extends client_site {
 			$form_data[$model_name]['email']['type'] = 'safe_string';
 			$form_data[$model_name]['email']['required'] = 'off';
 			$form_data[$model_name]['email']['unique'] = 'off';
-		}
+		}*/
 		
 		return $form_data[$model_name];
 	}

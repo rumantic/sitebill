@@ -1,0 +1,19 @@
+/* 
+    Created on : 28.06.2016, 18:52:12
+    Author     : Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
+*/
+body {
+}
+.sitebill_dashboard_test {
+    color: #ff9933;
+}
+#dashboard_panel {
+    width: 100%;
+    height: 30px;
+    font-size: 14px;
+    padding: 5px;
+    background-color: #ff9933;
+    color: white;
+    cursor: pointer;
+}
+

@@ -37,6 +37,17 @@ class client_admin extends Object_Manager {
         	$config_admin->addParamToConfig('apps.client.allow-redirect_url_for_orders','','Разрешить редирект на другую страницу при удачном завершении подачи заявки');
         }
         
+        if ( !$config_admin->check_config_item('apps.client.orders_email') ) {
+        	$config_admin->addParamToConfig('apps.client.orders_email','','Email для уведомления о заявках (если несколько, то указать через запятую)');
+        }
+        
+        if ( !$config_admin->check_config_item('apps.client.notify_admin') ) {
+        	$config_admin->addParamToConfig('apps.client.notify_admin','0','Уведомлять администраторов о заявках');
+        }
+        
+        if ( !$config_admin->check_config_item('apps.client.order_mode') ) {
+        	$config_admin->addParamToConfig('apps.client.order_mode','0','Режим заявок',1);
+        }
         //$this->install();
         require_once(SITEBILL_DOCUMENT_ROOT.'/apps/client/admin/client_model.php');
         $Object=new Client_Model();
@@ -68,9 +79,7 @@ class client_admin extends Object_Manager {
         $this->data_model=$form_data;
       }
       
-	protected function _installAction(){
-		$this->install();
-	}
+	
     
     function set_client_topic_id ( $topic_id ) {
     	$this->client_topic_id = $topic_id;
@@ -87,94 +96,98 @@ class client_admin extends Object_Manager {
     	  `date` INT(10) NOT NULL, 
 		  PRIMARY KEY (`client_id`)
 		) ENGINE=MyISAM DEFAULT CHARSET=".DB_ENCODING." AUTO_INCREMENT=1 ;";
-    	$this->db->exec($query);
-    	if ( !$this->db->success ) {
-    		echo $this->db->error.'<br>';
-    	}
-    	$rs = Multilanguage::_('L_APPLICATION_INSTALLED');
+    	$DBC=DBC::getInstance();
+		$success=false;
+    	$stmt=$DBC->query($query, array(), $rows, $success);
+		if(!$success){
+			$rs = Multilanguage::_('L_APPLICATION_INSTALLED_ERROR');
+		}else{
+			$rs = Multilanguage::_('L_APPLICATION_INSTALLED');;
+		}
     	return $rs;
     }
     
-    function main () {
+    protected function _edit_doneAction(){
+    	$rs='';
+    	
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
     	$data_model = new Data_Model();
     	$form_data = $this->data_model;
-    	$rs = $this->getTopMenu();
-    
-    	switch( $this->getRequestValue('do') ){
-    		case 'structure' : {
-    			$rs = $this->structure_processor();
-    			break;
-    		}
-    
-    		case 'edit_done' : {
-    			$form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
-    			$new_values=$this->getRequestValue('_new_value');
-    			if(1==$this->getConfigValue('use_combobox') && count($new_values)>0){
-    				$remove_this_names=array();
-    				foreach($form_data[$this->table_name] as $fd){
-    					if(isset($new_values[$fd['name']]) && $new_values[$fd['name']]!='' && $fd['combo']==1){
-    						$id=md5(time().'_'.rand(100,999));
-    						$remove_this_names[]=$id;
-    						$form_data[$this->table_name][$id]['value'] = $new_values[$fd['name']];
-    						$form_data[$this->table_name][$id]['type'] = 'auto_add_value';
-    						$form_data[$this->table_name][$id]['dbtype'] = 'notable';
-    						$form_data[$this->table_name][$id]['value_table'] = $form_data[$this->table_name][$fd['name']]['primary_key_table'];
-    						$form_data[$this->table_name][$id]['value_primary_key'] = $form_data[$this->table_name][$fd['name']]['primary_key_name'];
-    						$form_data[$this->table_name][$id]['value_field'] = $form_data[$this->table_name][$fd['name']]['value_name'];
-    						$form_data[$this->table_name][$id]['assign_to'] = $fd['name'];
-    						$form_data[$this->table_name][$id]['required'] = 'off';
-    						$form_data[$this->table_name][$id]['unique'] = 'off';
-    					}
-    				}
+    	$form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
+    	$new_values=$this->getRequestValue('_new_value');
+    	if(1==$this->getConfigValue('use_combobox') && count($new_values)>0){
+    		$remove_this_names=array();
+    		foreach($form_data[$this->table_name] as $fd){
+    			if(isset($new_values[$fd['name']]) && $new_values[$fd['name']]!='' && $fd['combo']==1){
+    				$id=md5(time().'_'.rand(100,999));
+    				$remove_this_names[]=$id;
+    				$form_data[$this->table_name][$id]['value'] = $new_values[$fd['name']];
+    				$form_data[$this->table_name][$id]['type'] = 'auto_add_value';
+    				$form_data[$this->table_name][$id]['dbtype'] = 'notable';
+    				$form_data[$this->table_name][$id]['value_table'] = $form_data[$this->table_name][$fd['name']]['primary_key_table'];
+    				$form_data[$this->table_name][$id]['value_primary_key'] = $form_data[$this->table_name][$fd['name']]['primary_key_name'];
+    				$form_data[$this->table_name][$id]['value_field'] = $form_data[$this->table_name][$fd['name']]['value_name'];
+    				$form_data[$this->table_name][$id]['assign_to'] = $fd['name'];
+    				$form_data[$this->table_name][$id]['required'] = 'off';
+    				$form_data[$this->table_name][$id]['unique'] = 'off';
     			}
-    			$data_model->forse_auto_add_values($form_data[$this->table_name]);
-    			//$data_model->clear_auto_add_values($form_data[$this->table_name]);
-    			if ( !$this->check_data( $form_data[$this->table_name] ) ) {
-    				$form_data['data']=$this->removeTemporaryFields($form_data['data'],$remove_this_names);
-    				$rs = $this->get_form($form_data[$this->table_name], 'edit');
-    			} else {
-    				$this->edit_data($form_data[$this->table_name]);
-    				if ( $this->getError() ) {
-    					$form_data['data']=$this->removeTemporaryFields($form_data['data'],$remove_this_names);
-    					$rs = $this->get_form($form_data[$this->table_name], 'edit');
-    				} else {
-    					$rs .= $this->grid();
-    				}
-    			}
-    			break;
     		}
-    
-    		case 'edit' : {
-    			if ( $this->getRequestValue('language_id') > 0 and !$this->language->get_version($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $this->getRequestValue('language_id')) ) {
-    				$rs = $this->get_form($form_data[$this->table_name], 'new', $this->getRequestValue('language_id'));
-    			} else {
-    				if ( $this->getRequestValue('language_id') > 0 ) {
-    					$form_data[$this->table_name] = $data_model->init_model_data_from_db_language ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name], false, $this->getRequestValue('language_id') );
-    				} else {
-    					$form_data[$this->table_name] = $data_model->init_model_data_from_db ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name] );
-    				}
-    				$rs = $this->get_form($form_data[$this->table_name], 'edit');
-    			}
-    
-    			break;
+    	}
+    	$data_model->forse_auto_add_values($form_data[$this->table_name]);
+    	if ( !$this->check_data( $form_data[$this->table_name] ) ) {
+    		$form_data['data']=$this->removeTemporaryFields($form_data['data'],$remove_this_names);
+    		$rs = $this->get_form($form_data[$this->table_name], 'edit');
+    	} else {
+    		$this->edit_data($form_data[$this->table_name]);
+    		if ( $this->getError() ) {
+    			$form_data['data']=$this->removeTemporaryFields($form_data['data'],$remove_this_names);
+    			$rs = $this->get_form($form_data[$this->table_name], 'edit');
+    		} else {
+    			$rs .= $this->grid();
     		}
-    		case 'delete' : {
-    			$this->delete_data($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key));
-    			if ( $this->getError() ) {
-    				$rs .= '<div align="center">'.Multilanguage::_('L_ERROR_ON_DELETE').': '.$this->GetErrorMessage().'<br>';
-    				$rs .= '<a href="?action='.$this->action.'">ОК</a>';
-    				$rs .= '</div>';
-    			} else {
-    				$rs .= $this->grid();
-    			}
+    	}
+    	return $rs;
+    }
     
-    
-    			break;
+    /*protected function _editAction(){
+    	$rs='';
+    	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+    	$data_model = new Data_Model();
+    	$form_data = $this->data_model;
+    	if ( $this->getRequestValue('language_id') > 0 and !$this->language->get_version($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $this->getRequestValue('language_id')) ) {
+   			$rs = $this->get_form($form_data[$this->table_name], 'new', $this->getRequestValue('language_id'));
+    	} else {
+    		if ( $this->getRequestValue('language_id') > 0 ) {
+    			$form_data[$this->table_name] = $data_model->init_model_data_from_db_language ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name], false, $this->getRequestValue('language_id') );
+    		} else {
+    			$form_data[$this->table_name] = $data_model->init_model_data_from_db ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name] );
     		}
-    			
-    		case 'new_done' : {
-    			$form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
+    		$rs = $this->get_form($form_data[$this->table_name], 'edit');
+    	}
+    	return $rs;
+    }*/
+    
+    protected function _deleteAction(){
+    	$rs='';
+    
+    	$this->delete_data($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key));
+    	if ( $this->getError() ) {
+    		$rs .= '<div align="center">'.Multilanguage::_('L_ERROR_ON_DELETE').': '.$this->GetErrorMessage().'<br>';
+    	$rs .= '<a href="?action='.$this->action.'">ОК</a>';
+    		$rs .= '</div>';
+    	} else {
+    		$rs .= $this->grid();
+    	}
+    	return $rs;
+    }
+    
+    protected function _new_doneAction(){
+    	$rs='';
+    	 
+    	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+    	$data_model = new Data_Model();
+    	$form_data = $this->data_model;
+    	$form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
     			$new_values=$this->getRequestValue('_new_value');
     			if(1==$this->getConfigValue('use_combobox') && count($new_values)>0){
     				$remove_this_names=array();
@@ -211,63 +224,55 @@ class client_admin extends Object_Manager {
     					$rs .= $this->grid();
     				}
     			}
-    			break;
-    		}
-    			
-    		case 'new' : {
-    			$rs = $this->get_form($form_data[$this->table_name]);
-    			break;
-    		}
-    		case 'mass_delete' : {
-    			$id_array=array();
-    			$ids=trim($this->getRequestValue('ids'));
-    			if($ids!=''){
-    				$id_array=explode(',',$ids);
-    			}
-    			$rs.=$this->mass_delete_data($this->table_name, $this->primary_key, $id_array);
-    			break;
-    		}
-    		case 'change_param' : {
-    			$id_array=array();
-    			$ids=trim($this->getRequestValue('ids'));
-    			$param_name=trim($this->getRequestValue('param_name'));
-    			$param_value=trim($this->getRequestValue('new_param_value'));
+    	return $rs;
+    }
     
-    			if(isset($form_data[$this->table_name][$param_name]) && $ids!=''){
-    				//echo 1;
-    				$id_array=explode(',',$ids);
-    				$rs.=$this->mass_change_param($this->table_name, $this->primary_key, $id_array, $param_name, $param_value);
-    			}else{
-    				$rs .= $this->grid();
-    			}
-    			break;
-    		}
-    		case 'view' : {
-    			if('add_comment'==$this->getRequestValue('subaction')){
-    				$id=$this->addComment();
-    				if((int)$id!=0){
-    					SiteBill::appendAttachments('comment', (int)$id, $this->getRequestValue('attachments'));
-    				}
-    			}
-    			if ( $this->getRequestValue('language_id') > 0 ) {
-    				$form_data[$this->table_name] = $data_model->init_model_data_from_db_language ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name], false, $this->getRequestValue('language_id') );
-    			} else {
-    				$form_data[$this->table_name] = $data_model->init_model_data_from_db ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name] );
-    			}
-    			$rs = $this->show($form_data[$this->table_name]);
-    			break;
-    		}
-    		case 'install' : {
-    			$this->_installAction();
-    		}
-    		default : {
-    			$rs .= $this->grid($user_id);
+    /*protected function _structureAction(){
+    	return $this->structure_processor();
+    }*/
+    /*
+    protected function _newAction(){
+    	$form_data = $this->data_model;
+    	return $this->get_form($form_data[$this->table_name]);
+    }*/
+    
+    protected function _change_paramAction(){
+    	$form_data = $this->data_model;
+    	$id_array=array();
+    	$ids=trim($this->getRequestValue('ids'));
+    	$param_name=trim($this->getRequestValue('param_name'));
+    	$param_value=trim($this->getRequestValue('new_param_value'));
+    	
+    	if(isset($form_data[$this->table_name][$param_name]) && $ids!=''){
+    		$id_array=explode(',',$ids);
+    		$rs.=$this->mass_change_param($this->table_name, $this->primary_key, $id_array, $param_name, $param_value);
+    	}else{
+    		$rs .= $this->grid();
+    	}
+    	return $rs;
+    }
+    
+    protected function _viewAction(){
+    	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+    	$data_model = new Data_Model();
+    	$form_data = $this->data_model;
+    	
+    	if('add_comment'==$this->getRequestValue('subaction')){
+    		$id=$this->addComment();
+    		if((int)$id!=0){
+    			SiteBill::appendAttachments('comment', (int)$id, $this->getRequestValue('attachments'));
     		}
     	}
-    	$rs_new = $this->get_app_title_bar();
-    	$rs_new .= $rs;
-    	return $rs_new;
+    	if ( $this->getRequestValue('language_id') > 0 ) {
+    		$form_data[$this->table_name] = $data_model->init_model_data_from_db_language ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name], false, $this->getRequestValue('language_id') );
+    	} else {
+    		$form_data[$this->table_name] = $data_model->init_model_data_from_db ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name] );
+    	}
+    	$rs = $this->show($form_data[$this->table_name]);
+    	return $rs;
     }
+    
+
     
     function add_data($form_data, $language_id = 0){
     	$id=parent::add_data($form_data, $language_id);
@@ -334,26 +339,145 @@ class client_admin extends Object_Manager {
     }
     
     function grid () {
+    	if(1==intval($this->getConfigValue('apps.client.order_mode'))){
+    		return $this->grid_order_mode();
+    	}
+    	
+    	
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/grid.php');
     	$common_grid = new Common_Grid($this);
+    	$common_grid->set_action($this->action);
+    	$common_grid->set_grid_table($this->table_name);
+    	 
     
-    
-    	$common_grid->add_grid_item($this->primary_key);
-    	$common_grid->add_grid_item('type_id');
-    	$common_grid->add_grid_item('date');
-    	$common_grid->add_grid_item('fio');
-    	$common_grid->add_grid_item('phone');
-    	$common_grid->add_grid_item('email');
-    	$common_grid->add_grid_item('status_id');
-    	$common_grid->add_grid_control('view');
-    	$common_grid->add_grid_control('edit');
-    	$common_grid->add_grid_control('delete');
+    	
+    	$DBC=DBC::getInstance();
+    	$used_fields=array();
+    	$query='SELECT `grid_fields` FROM '.DB_PREFIX.'_table_grids WHERE `action_code`=?';
+    	$stmt=$DBC->query($query, array($this->action));
+    	if($stmt){
+    		$ar=$DBC->fetch($stmt);
+    		$used_fields=json_decode($ar['grid_fields']);
+    	}
+    	 
+    	if(!empty($used_fields)){
+    		foreach($used_fields as $uf){
+    			$common_grid->add_grid_item($uf);
+    		}
+    	}else{
+    		$common_grid->add_grid_item($this->primary_key);
+    		$common_grid->add_grid_item('type_id');
+    		$common_grid->add_grid_item('date');
+    		$common_grid->add_grid_item('fio');
+    		$common_grid->add_grid_item('phone');
+    		$common_grid->add_grid_item('email');
+    		$common_grid->add_grid_item('status_id');
+    		$common_grid->add_grid_control('view');
+    		$common_grid->add_grid_control('edit');
+    		$common_grid->add_grid_control('delete');
+    	}
+    	 
     
     	$common_grid->setPagerParams(array('action'=>$this->action,'page'=>$this->getRequestValue('page'),'per_page'=>$this->getConfigValue('common_per_page')));
     
     	//$common_grid->set_grid_query("select * from ".DB_PREFIX."_".$this->table_name." order by date desc");
-    	$rs = $common_grid->construct_grid();
+    	$rs = $common_grid->extended_items();
+    	$rs .= $common_grid->construct_grid();
     	return $rs;
+    }
+    
+    function grid_order_mode () {
+    	
+    	$request_params=array();
+    	$request_params['action']='client';
+    	 
+    	 
+    	 
+    	$per_page=10;
+    	$page=intval($_GET['page']);
+    	if($page==0){
+    		$page=1;
+    	}
+    	$where_p=array();
+    	$where=array();
+    	$what=array();
+    	 
+    	 
+    	$DBC=DBC::getInstance();
+    	$status=$_GET['status_id'];
+    	if(!is_array($status)){
+    		$status=array();
+    	}
+    	if(!empty($status)){
+    		$request_params['status_id']=$status;
+    		$where[]='status_id IN ('.implode(',', array_fill(0, count($status), '?')).')';
+    		$where_p=array_merge($where_p, $status);
+    	}
+    	$types=$_GET['type_id'];
+    	if(!is_array($types)){
+    		$types=array();
+    	}
+    	if(!empty($types)){
+    		$request_params['type_id']=$types;
+    		$where[]='type_id IN ('.implode(',', array_fill(0, count($types), '?')).')';
+    		$where_p=array_merge($where_p, $types);
+    	}
+    	 
+    	 
+    	 
+    	 
+    	$order_statuses=array();
+    	foreach($this->data_model[$this->table_name]['status_id']['select_data'] as $k=>$v){
+    		$s=0;
+    		if(in_array($k, $status)){
+    			$s=1;
+    		}
+    		$order_statuses[$k]=array('n'=>$v, 's'=>$s);
+    	}
+    	$order_types=array();
+    	foreach($this->data_model[$this->table_name]['type_id']['select_data'] as $k=>$v){
+    		$s=0;
+    		if(in_array($k, $types)){
+    			$s=1;
+    		}
+    		$order_types[$k]=array('n'=>$v, 's'=>$s);
+    	}
+    	 
+    	$limit=' LIMIT '.(($page-1)*$per_page).', '.$per_page;
+    	$order=' ORDER BY `date` DESC';
+    
+    	$query='SELECT SQL_CALC_FOUND_ROWS * FROM '.DB_PREFIX.'_client '.(!empty($where) ? ' WHERE '.implode(' AND ', $where) : '').$order.$limit;
+    	 
+    	$stmt=$DBC->query($query, $where_p);
+    	 
+    	if($stmt){
+    		while($ar=$DBC->fetch($stmt)){
+    			$ret[]=$ar;
+    		}
+    	}
+    	 
+    	$query='SELECT FOUND_ROWS() AS _cnt';
+    	$stmt=$DBC->query($query);
+    	$ar=$DBC->fetch($stmt);
+    	$total=$ar['_cnt'];
+    	 
+    	 
+    	require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/page_navigator.php';
+    	$nurl='admin';
+    	 
+    	 
+    	//$_params=$pager_params;
+    	//unset($_params['page_url']);
+    	$paging=Page_Navigator::getPagingArray($total, $page, $per_page, $request_params, $nurl);
+    	 
+    	global $smarty;
+    	$smarty->assign('pager_array', $paging);
+    	$smarty->assign('order_types', $order_types);
+    	$smarty->assign('order_statuses', $order_statuses);
+    	$smarty->assign('orders_m', $this->data_model[$this->table_name]);
+    	$smarty->assign('orders', $ret);
+    	return $smarty->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/client/admin/template/grid.tpl');
+    	
     }
     
     /**
@@ -365,11 +489,7 @@ class client_admin extends Object_Manager {
      * @return string
      */
     function get_form ( $form_data=array(), $do = 'new', $language_id = 0, $button_title = '' ) {
-        /*if ( $do == 'edit' ) {
-            return $this->edit_case();
-        }*/
-    
-    	$_SESSION['allow_disable_root_structure_select']=true;
+        $_SESSION['allow_disable_root_structure_select']=true;
     	global $smarty;
     	if($button_title==''){
     		$button_title = Multilanguage::_('L_TEXT_SAVE');
@@ -412,15 +532,11 @@ class client_admin extends Object_Manager {
     	}*/
     	$el['controls']['submit']=array('html'=>'<button id="formsubmit" onClick="return SitebillCore.formsubmit(this);" name="submit" class="btn btn-primary">'.$button_title.'</button>');
     		
-    
-    
-    
-    
     	$smarty->assign('form_elements',$el);
     	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl')){
     		$tpl_name=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl';
     	}else{
-    		$tpl_name=SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template/data_form.tpl';
+    		$tpl_name=$this->getAdminTplFolder().'/data_form.tpl';
     	}
     	return $smarty->fetch($tpl_name);
     }
@@ -434,7 +550,8 @@ class client_admin extends Object_Manager {
     	$this->user_image_dir='/img/data/user/';
     	$imgfile_directory=$this->user_image_dir;
     	 
-    	$document_root = $_SERVER['DOCUMENT_ROOT'].$add_folder;
+    	$document_root = rtrim($_SERVER['DOCUMENT_ROOT'], '/').$add_folder;
+    	
     
     	$avial_ext=array('jpg', 'jpeg', 'gif', 'png');
     	if(isset($_FILES['imgfile'])){
@@ -457,9 +574,9 @@ class client_admin extends Object_Manager {
     					}else{
     						list($width,$height)=$this->makePreview($document_root.'/'.$imgfile_directory.$preview_name_tmp, $document_root.'/'.$imgfile_directory.$preview_name, 160,160, $ext,1);
     						unlink($document_root.'/'.$imgfile_directory.$preview_name_tmp);
-    
-    						$query='UPDATE '.DB_PREFIX.'_'.$this->table_name.' SET imgfile="'.$preview_name.'" WHERE client_id='.$client_id;
-    						$this->db->exec($query);
+    						$DBC=DBC::getInstance();
+    						$query='UPDATE '.DB_PREFIX.'_'.$this->table_name.' SET `imgfile`=? WHERE `client_id`=?';
+    						$stmt=$DBC->query($query, array($preview_name, $client_id));
     					}
     				}
     					
@@ -476,10 +593,65 @@ class client_admin extends Object_Manager {
     		$Client_Order=new Client_Order();
     		$model=$this->getRequestValue('model');
     		$options=$this->getRequestValue('options');
-    		//print_r($options, true);
+    		
     		$this->writeLog(array('apps_name'=>'apps.client', 'method' => __METHOD__, 'message' => 'get_order_form', 'type' => NOTICE));
     		
     		return $Client_Order->get_order_form($model, $options);
+    	}elseif($this->getRequestValue('action') == 'send_by_email' && 1==intval($this->getConfigValue('apps.client.order_mode'))){
+    		if($_SESSION['current_user_group_name']!='admin'){
+    			return json_encode(array('status'=>0, 'txt'=>'Access denied'));
+    		}
+    		$emails=$this->getRequestValue('emails');
+    		$id=intval($_POST['id']);
+    		if(!is_array($emails) || $id==0){
+    			return json_encode(array('status'=>0, 'txt'=>'Unable'));
+    		}
+    		array_filter($emails, function($var){if(trim($var)!='' && filter_var(trim($var), FILTER_VALIDATE_EMAIL)){return true;}else{return false;}});
+    		if(empty($emails)){
+    			return json_encode(array('status'=>0, 'txt'=>'No recievers'));
+    		}
+    		
+    		$theme=mb_substr(trim($this->getRequestValue('theme')), 0, 100, 'utf-8');
+    		if($theme==''){
+    			$theme='Ифнормация о заявке';
+    		}
+    		$message=mb_substr(trim($this->getRequestValue('message')), 0, 500, 'utf-8');
+    		
+    		$DBC=DBC::getInstance();
+    		$query='SELECT `order_text` FROM '.DB_PREFIX.'_client WHERE client_id=?';
+    		$stmt=$DBC->query($query, array($id));
+    		if(!$stmt){
+    			return json_encode(array('status'=>0, 'txt'=>'No recievers'));
+    		}
+    		$ar=$DBC->fetch($stmt);
+    		
+    		$this->sendFirmMail($emails, '', $theme, '<div>'.$message.'</div>'.$ar['order_text']);
+    		
+    		return json_encode(array('status'=>1, 'txt'=>'Sended'));
+    	}elseif($this->getRequestValue('action') == 'delete_order' && 1==intval($this->getConfigValue('apps.client.order_mode'))){
+    		if($_SESSION['current_user_group_name']!='admin'){
+    			return json_encode(array('status'=>0, 'txt'=>'Access denied'));
+    		}
+    		$id=intval($_POST['id']);
+    		$this->delete_data($this->table_name, $this->primary_key, $id);
+    		if ( $this->getError() ) {
+    			return json_encode(array('status'=>0, 'txt'=>'Unable'));
+    		} else {
+    			return json_encode(array('status'=>1, 'txt'=>'Deleted'));
+    		}
+    	}elseif($this->getRequestValue('action') == 'set_status' && 1==intval($this->getConfigValue('apps.client.order_mode'))){
+    		if($_SESSION['current_user_group_name']!='admin'){
+    			return json_encode(array('status'=>0, 'txt'=>'Access denied'));
+    		}
+    		
+    		$DBC=DBC::getInstance();
+    		$status_id=trim($_POST['status_id']);
+    		if(isset($this->data_model[$this->table_name]['status_id']['select_data'][$status_id]) && intval($_POST['id'])>0){
+    			$query='UPDATE '.DB_PREFIX.'_client SET status_id=? WHERE client_id=?';
+    			$stmt=$DBC->query($query, array($status_id, intval($_POST['id'])));
+    			return json_encode(array('status'=>1, 'txt'=>$this->data_model[$this->table_name]['status_id']['select_data'][$status_id]));
+    		}
+    		return json_encode(array('status'=>0, 'txt'=>'Access denied'));
     	}elseif($this->getRequestValue('action') == 'save_order_form'){
     		require_once SITEBILL_DOCUMENT_ROOT.'/apps/client/site/site.php';
     		require_once SITEBILL_DOCUMENT_ROOT.'/apps/client/admin/client_order.php';
@@ -489,13 +661,126 @@ class client_admin extends Object_Manager {
     		$this->writeLog(array('apps_name'=>'apps.client', 'method' => __METHOD__, 'message' => 'save_order_form', 'type' => NOTICE));
     		
     		return $Client_Order->save_order_form($model);
-    	}else {
-    		//return $this->xls_parser();
+    	}elseif($this->getRequestValue('action') == 'get_client'){
+    		$user_id=intval($_SESSION['user_id_value']);
+    		$access_allow=false;
+    		
+    		if($user_id==0){
+    			
+    		}elseif($_SESSION['current_user_group_name']=='admin'){
+    			$access_allow=true;
+    		}elseif((1===(int)$this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name']!=='admin')){
+    			require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/permission/permission.php');
+    			$permission = new Permission();
+    			if ( !$permission->get_access($_SESSION['user_id_value'], 'client', 'access')) {
+    				$access_allow=false;
+    			}else{
+    				$access_allow=true;
+    			}
+    		}
+    		//var_dump($_SESSION['current_user_group_name']);
+    		$ret=array();
+    		if(!$access_allow){
+    			return json_encode(array_values($ret));
+    		}
+    		$client_ids=array();
+    		$phone=preg_replace('/[^\d]/', '', $this->getRequestValue('phone'));
+    		if($phone==''){
+    			return json_encode(array_values($ret));
+    		}
+    		$DBC=DBC::getInstance();
+    		$query='SELECT client_id, fio, phone FROM '.DB_PREFIX.'_client WHERE phone LIKE ?';
+    		$stmt=$DBC->query($query, array('%'.$phone.'%'));
+    		if($stmt){
+    			while ($ar=$DBC->fetch($stmt)){
+    				$ret[$ar['client_id']]=array('n'=>$ar['fio'], 'p'=>$ar['phone'], 'i'=>$ar['client_id']);
+    				$ret[$ar['client_id']]['ob']=0;
+    				$client_ids[]=$ar['client_id'];
+    			}
+    		}
+    		//print_r($ret);
+    		if(!empty($client_ids)){
+    			$query='SELECT COUNT(id) AS _cnt, client_id FROM '.DB_PREFIX.'_data WHERE client_id IN ('.implode(',', $client_ids).') GROUP BY client_id';
+    			$stmt=$DBC->query($query);
+    			if($stmt){
+    				while ($ar=$DBC->fetch($stmt)){
+    					$ret[$ar['client_id']]['ob']=$ar['_cnt'];
+    				}
+    			}
+    		}
+    		return json_encode(array_values($ret));
+    	}elseif($this->getRequestValue('action') == 'add_client'){
+    		$user_id=intval($_SESSION['user_id_value']);
+    		$access_allow=false;
+    		
+    		if($user_id==0){
+    			 
+    		}elseif($_SESSION['current_user_group_name']=='admin'){
+    			$access_allow=true;
+    		}elseif((1===(int)$this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name']!=='admin')){
+    			require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/permission/permission.php');
+    			$permission = new Permission();
+    			if ( !$permission->get_access($_SESSION['user_id_value'], 'client', 'access')) {
+    				$access_allow=false;
+    			}else{
+    				$access_allow=true;
+    			}
+    		}
+    		
+    		if(!$access_allow){
+    			$ret['status']=0;
+    		}else{
+    			$fio=trim($this->getRequestValue('fio'));
+    			$phone=preg_replace('/[^\d]/', '', $this->getRequestValue('phone'));
+    			if($fio!='' && $phone!=''){
+    				$newcid=$this->createClient($fio, $phone);
+    				if($newcid!==0){
+    					$ret['status']=1;
+    					$ret['id']=$newcid;
+    					$ret['fio']=$fio;
+    					$ret['phone']=$phone;
+    				}else{
+    					$ret['status']=0;
+    				}
+    			}else{
+    				$ret['status']=0;
+    			}
+    		}
+    		
+    		
+    		
+    		return json_encode($ret);
+    	}/*elseif ( $this->getRequestValue('action') == 'get_client_form' ) {
+    		
+    		$form=$this->getRequestValue('form_id');
+    		require_once SITEBILL_DOCUMENT_ROOT.'/apps/client/site/site.php';
+    		require_once SITEBILL_DOCUMENT_ROOT.'/apps/client/admin/client_order.php';
+    		
+    		$Client_Order=new Client_Order();
+    		//$model=$this->getRequestValue('model');
+    		//$options=$this->getRequestValue('options');
+    		
+    		//$this->writeLog(array('apps_name'=>'apps.client', 'method' => __METHOD__, 'message' => 'get_order_form', 'type' => NOTICE));
+    		
+    		return $Client_Order->get_client_form($form, $options);
+    	}*/else {
+    		
     	}
     	return false;
     	
     	
     }
     
+    protected function createClient($fio, $phone){
+    	$DBC=DBC::getInstance();
+    	$query='INSERT INTO '.DB_PREFIX.'_client (fio, phone) VALUES (?, ?)';
+    	$stmt=$DBC->query($query, array($fio, $phone));
+    	if($stmt){
+    		return $DBC->lastInsertId();
+    	}
+    	return 0;
+    }
+    
+   
+    
 }
-?>

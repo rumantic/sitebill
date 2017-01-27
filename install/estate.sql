@@ -12,7 +12,8 @@ CREATE TABLE `re_banner` (
   `body` text,
   `catalog_id` int(11) NOT NULL DEFAULT '0',
   `published` tinyint(1) NOT NULL DEFAULT '0',
-  `url` text NOT NULL,
+  `url` text,
+  `description` text NOT NULL,
   PRIMARY KEY (`banner_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;        
 #
@@ -22,6 +23,7 @@ CREATE TABLE IF NOT EXISTS `re_config` (
   `value` text,
   `title` text,
   `sort_order` int(10) unsigned DEFAULT '1',
+  `vtype` INT(11) DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `config_key_idx` (`config_key`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
@@ -35,7 +37,6 @@ CREATE TABLE IF NOT EXISTS `re_data` (
   `city_id` int(10) unsigned NOT NULL DEFAULT '0',
   `metro_id` int(10) unsigned NOT NULL DEFAULT '0',
   `district_id` int(10) unsigned NOT NULL DEFAULT '0',
-  `street` text NOT NULL,
   `price` int(10) unsigned DEFAULT '0',
   `text` text,
   `image` text,
@@ -260,6 +261,7 @@ CREATE TABLE IF NOT EXISTS `re_street` (
 #
 CREATE TABLE IF NOT EXISTS `re_topic` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `published` int(10) unsigned DEFAULT '1', 
   `name` text,
   `name_en` text,
   `name_am` text,
@@ -273,11 +275,12 @@ CREATE TABLE IF NOT EXISTS `re_topic` (
   `def_id1` int(10) unsigned NOT NULL DEFAULT '0',
   `def_id2` int(10) unsigned NOT NULL DEFAULT '0',
   `operation_type_id` int(11) NOT NULL DEFAULT '0',
-  `url` text NOT NULL DEFAULT '',
+  `url` text,
   `description` text,
   `meta_title` text,
   `meta_keywords` text,
   `meta_description` text,
+  `public_title` varchar(255),
   PRIMARY KEY (`id`),
   KEY `parent` (`parent_id`),
   KEY `erased` (`active`),
@@ -330,6 +333,7 @@ CREATE TABLE IF NOT EXISTS `re_user` (
   `imgfile` varchar(200) NOT NULL DEFAULT '',
   `mobile` varchar(200) NOT NULL DEFAULT '',
   `icq` varchar(200) NOT NULL DEFAULT '',
+  `notify` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`user_id`),
   UNIQUE(`login`),
   UNIQUE(`email`)
@@ -396,6 +400,7 @@ CREATE TABLE IF NOT EXISTS `re_bill` (
 CREATE TABLE IF NOT EXISTS `re_component` (
   `component_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL DEFAULT '',
+  `title` varchar(255) NOT NULL DEFAULT '',
   `sort_order` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`component_id`),
   UNIQUE(`name`)
@@ -630,6 +635,11 @@ CREATE TABLE IF NOT EXISTS `re_yandexrealty_assoc` (
   `operation_type` tinyint(4) NOT NULL DEFAULT '0',
   PRIMARY KEY (`topic_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
+#
+CREATE TABLE IF NOT EXISTS `re_table_grids` (
+	`action_code` varchar(255) NOT NULL, 
+	`grid_fields` text NOT NULL, 
+	UNIQUE KEY `action_code` (`action_code`) 
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 

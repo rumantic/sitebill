@@ -24,12 +24,30 @@ class language_admin extends Object_Manager {
     		'ru'=>'Русский',
     		'en'=>'English'
     	);
+    	
+    	require_once (SITEBILL_DOCUMENT_ROOT.'/apps/config/admin/admin.php');
+    	$config_admin = new config_admin();
+    	 
+    	if ( !$config_admin->check_config_item('apps.language.use_langs') ) {
+    		$config_admin->addParamToConfig('apps.language.use_langs','0','Использовать мультиязычность');
+    	}
         
+    	if ( !$config_admin->check_config_item('apps.language.languages') ) {
+    		$config_admin->addParamToConfig('apps.language.languages','','Список языков');
+    	}
+    	
+    	if ( !$config_admin->check_config_item('apps.language.default_lang_code') ) {
+    		$config_admin->addParamToConfig('apps.language.default_lang_code','','Код языка по умолчанию');
+    	}
+    	
+    	if ( !$config_admin->check_config_item('apps.language.use_default_as_ru') ) {
+    		$config_admin->addParamToConfig('apps.language.use_default_as_ru',1,'Использовать технические значения как RU',1);
+    	}
     }
     
     function _preload(){
     	//echo 1;
-    	$this->template->assert('available_langs',$this->getLanguages());
+    	$this->template->assert('available_langs', $this->getLanguages());
     }
     
     function main () {
@@ -53,7 +71,7 @@ class language_admin extends Object_Manager {
     			//dictionary_key
     			//dictionary_value
     			$app_name=$this->getRequestValue('app_name');
-    			$this->saveWords($app_name, $this->getRequestValue('dictionary_key'), $this->getRequestValue('dictionary_value'));
+    			$this->saveWords($app_name, $this->getRequestValue('dictionary_key'), $_POST['dictionary_value']);
     			$rs.=$this->grid();
     			//$rs.=$this->getAppDictionaryEditForm($this->getRequestValue('app_name'), $this->getRequestValue('dictionary'));
     			break;
@@ -92,6 +110,32 @@ class language_admin extends Object_Manager {
     
     function getLanguages(){
     	$langs=array();
+    	if(intval($this->getConfigValue('apps.language.use_langs'))===0){
+    		return $langs;
+    	}
+    	
+    	$langlist=trim($this->getConfigValue('apps.language.languages'));
+    	
+    	if($langlist!==''){
+    		$lang_pairs=explode('|', $langlist);
+    		if(count($lang_pairs)>0){
+    			foreach($lang_pairs as $lp){
+    				$matches=array();
+    				if(preg_match('/([a-z]+)=(.+)/', trim($lp), $matches)){
+    					$langs[$matches[1]]=$matches[2];
+    				}
+    			}
+    		}
+    		
+    		
+    		/*foreach($matches[1] as $l){
+    			$langs[$l]=$l;
+    		}*/
+    		return $langs;
+    	}
+    	
+    	
+    	
     	$path=SITEBILL_DOCUMENT_ROOT.'/apps/system/language/';
 	    $skip = array('.', '..', '.svn');
 		$files = scandir($path);
@@ -131,12 +175,20 @@ class language_admin extends Object_Manager {
     			mkdir($this->apps_path.$app_name.'/language/'.$lang);
     		}
     		$f=fopen($this->apps_path.$app_name.'/language/'.$lang.'/dictionary.ini','w');
-    		$str='';
+    		$str=array();
     		foreach($terms as $term_k=>$term){
-    			if($this->clear($term)!='')
-    			$str.=$this->clear($term).'="'.$this->clear($values[$term_k][$lang]).'"'."\n";
+    			if($this->clear($term)!=''){
+    				$v=$this->clear($values[$term_k][$lang]);
+    				$v=str_replace('"', '\"', $v);
+    				$str[]=$this->clear($term).'="'.$v.'"';
+    			}
     		}
-    		fwrite($f,$str);
+    		if(!empty($str)){
+    			fwrite($f,implode("\n",$str));
+    		}else{
+    			fwrite($f,'');
+    		}
+    		
     		fclose($f);
     		//echo $str;
     	}

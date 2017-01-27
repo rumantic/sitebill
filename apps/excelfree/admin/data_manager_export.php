@@ -27,7 +27,7 @@ class Data_Manager_Export extends Object_Manager {
         
         
         $this->data_model['data']['topic_id']['name'] = 'topic_id';
-        $this->data_model['data']['topic_id']['title'] = Multilanguage::_('L_TEXT_TOPIC');
+        //$this->data_model['data']['topic_id']['title'] = Multilanguage::_('L_TEXT_TOPIC');
         $this->data_model['data']['topic_id']['primary_key_name'] = 'id';
         $this->data_model['data']['topic_id']['primary_key_table'] = 'topic';
         $this->data_model['data']['topic_id']['value_string'] = '';
@@ -49,21 +49,12 @@ class Data_Manager_Export extends Object_Manager {
         $this->data_model[$this->table_name]['hot']['title'] = Multilanguage::_('L_SPECIAL_SH');
         $this->data_model[$this->table_name]['view_count']['title'] = Multilanguage::_('L_VIEW_COUNT');
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
         $this->model = $data_model; 
     }
     
 	
 	function get_model ($adopt=false) {
+		
     	if($adopt){
     		$m=$this->data_model;
     		if(isset($this->data_model[$this->table_name]['tlocation'])){
@@ -72,6 +63,7 @@ class Data_Manager_Export extends Object_Manager {
     			return $m;
     		}
     	}
+    	
     	return $this->data_model[$this->table_name];
     }
     
@@ -83,16 +75,12 @@ class Data_Manager_Export extends Object_Manager {
         $search_model['topic_id']['required'] = 'off';
         $search_model['user_id']['required'] = 'off';
         $search_model['topic_id']['type'] = 'select_box_structure';
-        
-        
+      
         unset($search_model['new_street']);
         unset($search_model['ad_mobile_phone']);
         unset($search_model['ad_stacionary_phone']);
         unset($search_model['can_call_start']);
         unset($search_model['can_call_end']);
-        
-        
-        
         unset($search_model['number']);
         unset($search_model['price']);
         unset($search_model['room_count']);
@@ -112,7 +100,6 @@ class Data_Manager_Export extends Object_Manager {
         unset($search_model['email']);
         unset($search_model['phone']);
         unset($search_model['text']);
-
         unset($search_model['spacer1']);
         unset($search_model['dom']);
         unset($search_model['flat_number']);
@@ -122,19 +109,8 @@ class Data_Manager_Export extends Object_Manager {
         unset($search_model['more1']);
         unset($search_model['more2']);
         unset($search_model['more3']);
-        
-        return $search_model;
+  		return $search_model;
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     function init_request_from_xls ( $assoc_array, $data ) {
     	
@@ -244,11 +220,12 @@ class Data_Manager_Export extends Object_Manager {
             $value = $this->category_not_defined_title;
         }
     	$query="SELECT ".$primary_key." FROM ".DB_PREFIX."_".$table." WHERE ".$field."='".$value."'";
-    	$this->db->exec($query);
-    	if($this->db->success){
-    		$this->db->fetch_assoc();
-    		if($this->db->row[$primary_key]!=0){
-    			return $this->db->row[$primary_key];
+    	$DBC=DBC::getInstance();
+    	$stmt=$DBC->query($query);
+    	if($stmt){
+    		$ar=$DBC->fetch($stmt);
+    		if($ar[$primary_key]!=0){
+    			return $ar[$primary_key];
     		}else{
     			return FALSE;
     		}
@@ -266,20 +243,17 @@ class Data_Manager_Export extends Object_Manager {
             return false;
         }
         $query = "insert into ".DB_PREFIX."_".$table." set ".$field."='".$value."'";
-        $this->db->exec($query);
-        if ( $this->db->success ) {
-            return $this->db->last_insert_id();
+        $DBC=DBC::getInstance();
+    	$stmt=$DBC->query($query);
+        if ( $stmt ) {
+            return $DBC->lastInsertId();
         }
         return false;
     }
     
     function edit() {
-        //$form_data[$this->table_name] = $this->data_model[$this->table_name];
-    	
         $form_data[$this->table_name] = $this->get_model(true);
-        
         $form_data[$this->table_name] = $this->model->init_model_data_from_request($form_data[$this->table_name]);
-        
         $this->model->forse_auto_add_values($form_data[$this->table_name]);
         $this->edit_data($form_data[$this->table_name]);
         if ( $this->getError() ) {
@@ -322,12 +296,25 @@ class Data_Manager_Export extends Object_Manager {
     	$rs .= '<input type="hidden" name="action" value="excelfree">';
 
     	$rs .= '<tr>';
-    	$rs .= '<td>Колонки</td>';
-    	$rs .= '<td>'.$this->get_export_columns_list().'</td>';
+    	$rs .= '<td colspan="2">'.$this->get_export_columns_list().'</td>';
     	$rs .= '</tr>';
 
     	$rs .= '<tr>';
-    	$rs .= '<td></td>';
+    	$rs .= '<td>
+    			Количество строк в одном файле Excel <br/>(если в базе данных много записей, тогда нужно уменьшить количество строк в одном файле).
+    			<select name="per_page">
+    			<option value="0">все</option>
+    			<option value="100">100</option>
+    			<option value="200">200</option>
+    			<option value="500">500</option>
+    			<option value="1000">1000</option>
+    			<option value="2000">2000</option>
+    			<option value="3000">3000</option>
+    			<option value="4000">4000</option>
+    			<option value="5000">5000</option>
+    			<option value="10000">10000</option>
+    			</select>
+    			</td>';
     	$rs .= '<td><input type="submit" name="submit" id="formsubmit" onClick="return SitebillCore.formsubmit(this);" value="'.Multilanguage::_('LOAD_EXCEL_FILE','excelfree').'"></td>';
     	$rs .= '</tr>';
     	
@@ -366,14 +353,15 @@ class Data_Manager_Export extends Object_Manager {
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
     	$data_model = new Data_Model();
     	$query = $this->get_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data, $language_id);
-    	//echo $query.'<br>';
     	$this->nullError();
-    	$this->db->exec($query);
-    	if ( !$this->db->success ) {
-    		$this->riseError($this->db->error);
+    	$DBC=DBC::getInstance();
+    	//$stmt=$DBC->query($query);
+    	$stmt=$DBC->query($query['q'], $query['p'], $row, $success_mark);
+    	if(!$success_mark){
+    		$this->riseError($DBC->getLastError().', query = '.$query['q']);
     		return false;
     	}
-    	$new_record_id = $this->db->last_insert_id();
+    	$new_record_id = $DBC->lastInsertId();
     	return $new_record_id;
     }
     
@@ -386,9 +374,11 @@ class Data_Manager_Export extends Object_Manager {
      * @return boolean
      */
     function get_insert_query ( $table_name, $model_array, $language_id = 0 ) {
-    	$set = array();
-    	$values = array();
+    	/*$set = array();
+    	$values = array();*/
     	unset($model_array['image']);
+    	$qparts=array();
+    	$qvals=array();
     
     	foreach ( $model_array as $key => $item_array ) {
     		if ( $item_array['type'] == 'separator' ) {
@@ -402,28 +392,23 @@ class Data_Manager_Export extends Object_Manager {
     		if ( $item_array['type'] == 'photo' ) {
     			continue;
     		}
-    		if ( $item_array['dbtype'] == 'notable' ) {
+    		if ( $item_array['dbtype'] == 'notable' || $item_array['dbtype'] == '0' ) {
     			continue;
     		}
-    		
-    		if ( $item_array['dbtype'] == 'notable' ) {
-    			continue;
-    		}
-    		
+    	    		
     		if ( $item_array['type'] == 'geodata' ) {
-    			$set[] = '`'.$key.'_lat`';
     			if($item_array['value']['lat']==''){
-    				$values[] = "NULL";
+    				
     			}else{
-    				$values[] = "'".$this->escape($item_array['value']['lat'])."'";
+    				$qparts[] = "`".$key."_lat`";
+    				$qvals[] = $this->escape($item_array['value']['lat']);
     			}
-    		
-    			$set[] = '`'.$key.'_lng`';
-    		
+    			
     			if($item_array['value']['lng']==''){
-    				$values[] = "NULL";
+    				
     			}else{
-    				$values[] = "'".$this->escape($item_array['value']['lng'])."'";
+    				$qparts[] = "`".$key."_lng`";
+    				$qvals[] = $this->escape($item_array['value']['lng']);
     			}
     			continue;
     		}
@@ -432,24 +417,26 @@ class Data_Manager_Export extends Object_Manager {
     		    $item_array['value'] = date('Y-m-d H:i:s');
     		}
     		
-    		
-    		
-    
-    		$set[] = '`'.$key.'`';
     		$item_array['value']=preg_replace('/<script.*\/script>/','',$item_array['value']);
-    		$values[] = "'".$this->model->escape($item_array['value'])."'";
+    		
+    		$qparts[] = "`".$key."`";
+    		$qvals[] = preg_replace('/<script.*\/script>/','',$item_array['value']);
+    
+    		//$set[] = '`'.$key.'`';
+    		
+    		//$values[] = "'".$this->model->escape($item_array['value'])."'";
     	}
-    	//echo "primary_key = $primary_key<br>";
-    	//echo '$this->getRequestValue($primary_key) = '.$this->getRequestValue($primary_key).'<br>';
     	if ( $language_id > 0 ) {
-    		$set[] = '`language_id`';
-    		$values[] = "'".$language_id."'";
-    		$set[] = '`link_id`';
-    		$values[] = "'".$this->getRequestValue($primary_key)."'";
+    		$qparts[] = "`language_id`";
+    		$qvals[] = $language_id;
+    		$qparts[] = "`link_id`";
+    		$qvals[] = $this->getRequestValue($primary_key);
     	}
-    	$query = "insert into $table_name (".implode(' , ', $set).") values (".implode(' , ', $values).")";
-    	//echo $query;
-    	return $query;
+    	$query = 'INSERT INTO '.$table_name.' ('.implode(' , ', $qparts).') VALUES ('.implode(', ', array_fill(0, count($qvals), '?')).')';
+    	
+    	return array('q'=>$query, 'p'=>$qvals);
+    	//$query = "insert into $table_name (".implode(' , ', $set).") values (".implode(' , ', $values).")";
+    	//return $query;
     }
     
     
@@ -463,22 +450,28 @@ class Data_Manager_Export extends Object_Manager {
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
     	$data_model = new Data_Model();
     	if ( $primary_key_value ) {
-    		$query = $data_model->get_edit_query(DB_PREFIX.'_'.$this->table_name, $this->primary_key, $primary_key_value, $form_data, $language_id);
+    		$query_params = $data_model->get_prepared_edit_query(DB_PREFIX.'_'.$this->table_name, $this->primary_key, $primary_key_value, $form_data, $language_id);
     	} else {
-    		$query = $data_model->get_edit_query(DB_PREFIX.'_'.$this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data, $language_id);
+    		$query_params = $data_model->get_prepared_edit_query(DB_PREFIX.'_'.$this->table_name, $this->primary_key, intval($this->getRequestValue($this->primary_key)), $form_data, $language_id);
     	}
-    	//echo '<br><br>'.$query.'<br><br>';
-    	$this->db->success = true;
+    	 
+    	 
+    	$query_params_vals=$query_params['p'];
+    	$query=$query_params['q'];
+    	
+    	
     	$this->nullError();
-    	$this->db->exec($query);
-    	if ( !$this->db->success ) {
-    	    $this->riseError($this->db->error);
+    	$DBC=DBC::getInstance();
+    	$stmt=$DBC->query($query, $query_params_vals, $row, $success_mark);
+    	if(!$success_mark){
+    		$this->riseError($DBC->getLastError().', query = '.$query);
     		return false;
     	}
+    	return true;
     }
     
     function insert () {
-        //$form_data[$this->table_name] = $this->data_model[$this->table_name];
+    	 
         $form_data[$this->table_name] = $this->get_model(true);
         $form_data[$this->table_name] = $this->model->init_model_data_from_request($form_data[$this->table_name]);
         $new_record_id=$this->add_data($form_data[$this->table_name]);
@@ -497,11 +490,12 @@ class Data_Manager_Export extends Object_Manager {
     
     function is_record_exist ( $data, $assoc_array ) {
         $primary_key_value = $data[$assoc_array[$this->primary_key]];
-    	$query = "select {$this->primary_key} from ".DB_PREFIX."_{$this->table_name} where {$this->primary_key}='$primary_key_value'";
-    	$this->db->exec($query);
-    	$this->db->fetch_assoc();
-    	if ( !empty($this->db->row[$this->primary_key]) ) {
-    		return $this->db->row[$this->primary_key];
+    	$query = 'SELECT `'.$this->primary_key.'` FROM '.DB_PREFIX.'_'.$this->table_name.' WHERE `'.$this->primary_key.'`=?';
+    	$DBC=DBC::getInstance();
+    	$stmt=$DBC->query($query, array($primary_key_value));
+    	if($stmt){
+    		$ar=$DBC->fetch($stmt);
+    		return $ar[$this->primary_key];
     	}
     	return false;
     }
@@ -512,8 +506,7 @@ class Data_Manager_Export extends Object_Manager {
      * @param boolean $random
      * @return array
      */
-    function get_search_query ( $params ) {
-    	//print_r($params);
+    function get_search_query ( $params, $get_total_counter = false ) {
     	$this->grid_total = 0;
     	$where_array = false;
     
@@ -549,14 +542,11 @@ class Data_Manager_Export extends Object_Manager {
     
     	$where_array[] = 're_topic.id=re_data.topic_id';
     
-    	//echo '$params[\'topic_id\'] = '.$params['topic_id'].'<br>';
-    
     	if ( $params['topic_id'] != '' ) {
     		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
     		$Structure_Manager = new Structure_Manager();
     		$category_structure = $Structure_Manager->loadCategoryStructure();
     		global $smarty;
-    		//echo $category_structure['catalog'][$params['topic_id']]['description'];
     		$smarty->assign('topic_description', $category_structure['catalog'][$params['topic_id']]['description']);
     
     		$childs = $Structure_Manager->get_all_childs($params['topic_id'], $category_structure);
@@ -566,7 +556,6 @@ class Data_Manager_Export extends Object_Manager {
     		} else {
     			$where_array[] = DB_PREFIX.'_data.topic_id='.$params['topic_id'];
     		}
-    		//print_r($params);
     	}
     
     	if ( isset($params['country_id']) and $params['country_id'] != 0  ) {
@@ -734,8 +723,11 @@ class Data_Manager_Export extends Object_Manager {
     		}
     	}
     
-    
-		$query = "select re_data.*, re_topic.name as type_sh $add_select_value from re_data, re_topic $add_from_table $where_statement order by $order";
+    	if ( $get_total_counter ) {
+    		$query = "select count(re_data.id) as total from re_data, re_topic $add_from_table $where_statement order by $order";
+    	} else {
+    		$query = "select re_data.*, re_topic.name as type_sh $add_select_value from re_data, re_topic $add_from_table $where_statement order by $order";
+    	}
     
     	return $query;
     }
@@ -746,7 +738,7 @@ class Data_Manager_Export extends Object_Manager {
      * @param array $params
      * @return array
      */
-    function grid_array ( $params, $fields=array() ) {
+    function grid_array ( $params, $fields=array(), $set_per_page = 0, $current_page = 1 ) {
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/grid.php');
     	$common_grid = new Common_Grid($this);
     
@@ -779,8 +771,14 @@ class Data_Manager_Export extends Object_Manager {
     
     	$common_grid->add_grid_control('edit');
     	$common_grid->add_grid_control('delete');
+    	if ( $set_per_page == 0 ) {
+    		$per_page = 99999;
+    	} else {
+    		$per_page = intval($set_per_page);
+    	}
+    	
     
-    	$common_grid->setPagerParams(array('action'=>$this->action,'page'=>1,'per_page'=>99999));
+    	$common_grid->setPagerParams(array('action'=>$this->action,'page'=>$current_page,'per_page'=>$per_page));
     	$query = $this->get_search_query($params);
     
     	$common_grid->set_grid_query($query);
@@ -814,21 +812,26 @@ class Data_Manager_Export extends Object_Manager {
     //helper functions for working with topic chains
     function getCatalogChains(){
 		$ret=array();
+		$points=array();
 		$query='SELECT id, parent_id, LOWER(name) AS name FROM '.DB_PREFIX.'_topic';
-		$this->db->exec($query);
-		while($this->db->fetch_assoc()){
-			$categories[$this->db->row['id']]=$this->db->row['name'];
-			$items[$this->db->row['id']]=$this->db->row['parent_id'];
-			$points[]=$this->db->row['id'];
+    	$DBC=DBC::getInstance();
+    	$stmt=$DBC->query($query, array($primary_key_value));
+    	if($stmt){
+    		while($ar=$DBC->fetch($stmt)){
+    			$categories[$ar['id']]=$ar['name'];
+    			$items[$ar['id']]=$ar['parent_id'];
+    			$points[]=$ar['id'];
+    		}
+    	}
+		if(!empty($points)){
+			foreach($points as $p){
+				$chain=$categories[$p];
+				$chain_num=$p;
+				$this->findParent($p,$items,$chain,$chain_num,$categories);
+				$ret[$p]=$chain;
+				$ret_num[$p]=$chain_num;
+			}
 		}
-		foreach($points as $p){
-			$chain=$categories[$p];
-			$chain_num=$p;
-			$this->findParent($p,$items,$chain,$chain_num,$categories);
-			$ret[$p]=$chain;
-			$ret_num[$p]=$chain_num;
-		}
-		
 		return $rs=array('txt'=>$ret,'num'=>$ret_num);
 	}
 	
@@ -869,11 +872,15 @@ class Data_Manager_Export extends Object_Manager {
     	}
     }
     
-	private function addTopics($items,$to){
+	private function addTopics($items, $to){
     	$parent=$to;
+    	$DBC=DBC::getInstance();
     	foreach($items as $it){
-    		$query='INSERT INTO '.DB_PREFIX.'_topic (name, parent_id) VALUES (\''.$this->mb_ucasefirst($it).'\','.$to.')';
-    		$to=$this->db->exec($query);
+    		$query='INSERT INTO '.DB_PREFIX.'_topic (name, parent_id, url) VALUES (\''.$this->mb_ucasefirst($it).'\','.$to.',\''.$this->transliteMe($it).'\' )';
+    		$stmt=$DBC->query($query);
+    		if($stmt){
+    			$to=$DBC->lastInsertId();
+    		}
     	}
     	return $to;
     }
@@ -1101,7 +1108,10 @@ class Data_Manager_Export extends Object_Manager {
     			 
     			$query='SELECT region_id FROM '.DB_PREFIX.'_region WHERE name=? LIMIT 1';
     			$stmt=$DBC->query($query, array($data['region_id']));
-    
+    			
+    			//$this->writeLog(__METHOD__.', region_id = '.$data['region_id']);
+    			//$this->writeLog(__METHOD__.', $stmt = '.var_export($expression));
+    			 
     			if(!$stmt){
     				$query='INSERT INTO '.DB_PREFIX.'_region (name) VALUES (?)';
     				$stmt=$DBC->query($query, array($data['region_id']));
@@ -1179,8 +1189,6 @@ class Data_Manager_Export extends Object_Manager {
     		}
     	}
     	 
-    	 
-    
     	return array(
     			'country_id'=>$country_id,
     			'district_id'=>$district_id,
@@ -1192,4 +1200,3 @@ class Data_Manager_Export extends Object_Manager {
     }
     
 }
-?>

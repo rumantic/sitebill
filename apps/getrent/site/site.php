@@ -84,7 +84,7 @@ class getrent_site extends getrent_admin {
 			$data_model = new Data_Model();
 			if ( $this->getConfigValue('captcha_type') != 2 ) {
 				$this->data_model[$this->table_name]['captcha']['name'] = 'captcha';
-				$this->data_model[$this->table_name]['captcha']['title'] = 'Защитный код';
+				$this->data_model[$this->table_name]['captcha']['title'] = Multilanguage::_('CAPTCHA_TITLE', 'system');
 				$this->data_model[$this->table_name]['captcha']['value'] = '';
 				$this->data_model[$this->table_name]['captcha']['length'] = 40;
 				$this->data_model[$this->table_name]['captcha']['type'] = 'captcha';
@@ -110,54 +110,12 @@ class getrent_site extends getrent_admin {
 		
 			switch( $this->getRequestValue('do') ){
 				case 'new_done' : {
-					$form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
-					
-					
-					$data_model->forse_auto_add_values($form_data[$this->table_name]);
-					if ( !$this->check_data( $form_data[$this->table_name] ) ) {
-						$rs = $this->get_form($form_data[$this->table_name], 'new');
-						 
-					} else {
-						unset($form_data[$this->table_name]['captcha']);
-						$new_record_id=$this->add_data($form_data[$this->table_name], $this->getRequestValue('language_id'));
-						if ( $this->getError() ) {
-							$rs = $this->get_form($form_data[$this->table_name], 'new');
-						} else {
-							$this->template->assert('form_data',$form_data);
-							
-							$smarty->template_dir = SITEBILL_DOCUMENT_ROOT.'/apps/getrent/site/template/';
-							$order_mail_body = $this->template->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/getrent/site/template/order_mail.tpl.html');
-							$smarty->template_dir = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme');
-							
-							/*require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
-							
-							$mailer = new Mailer();*/
-							$subject = $_SERVER['SERVER_NAME'].': Новая заявка от клиента';
-							$to = $this->get_email_list();
-							$from = $this->getConfigValue('order_email_acceptor');
-							
-							/*if ( $this->getConfigValue('use_smtp') ) {
-								$mailer->send_smtp($to, $from, $subject, $order_mail_body, 1);
-							} else {
-								$mailer->send_simple($to, $from, $subject, $order_mail_body, 1);
-							}*/
-							$this->sendFirmMail($to, $from, $subject, $order_mail_body);
-							if(1==$this->getConfigValue('apps.client.allow-redirect_url_for_orders')){
-								header('location: '.SITEBILL_MAIN_URL.'/getrent/online-getrent/');
-							}else{
-								$rs = '<div class="alert alert-success">'.Multilanguage::_('L_MESSAGE_ORDER_ACCEPTED_EXT').'</div>';
-							}	
-							
-							//$rs = Multilanguage::_('L_MESSAGE_ORDER_ACCEPTED_EXT');
-						}
-					}
+					$rs=$this->_new_doneAction();
 					break;
 				}
 					
 				default : {
-					$smarty->assign('description',$this->getConfigValue('apps.getrent.description'));
-						
-					$rs = $this->get_form($form_data[$this->table_name]);
+					$rs=$this->_defaultAction();
 				}
 			}
 			
@@ -166,6 +124,55 @@ class getrent_site extends getrent_admin {
 			return true;
 		}
 		return false;
+	}
+	
+	protected function _defaultAction(){
+		global $smarty;
+		$smarty->assign('description', $this->getConfigValue('apps.getrent.description'));
+		$rs='';
+		$form_data = $this->data_model;
+		unset($form_data[$this->table_name]['created_at']);
+		$rs .= $this->get_form($form_data[$this->table_name]);
+		return $rs;
+	}
+	
+	protected function _new_doneAction(){
+		global $smarty;
+		$rs='';
+		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+		$data_model = new Data_Model();
+		$form_data = $this->data_model;
+		$form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
+							
+		$data_model->forse_auto_add_values($form_data[$this->table_name]);
+		if ( !$this->check_data( $form_data[$this->table_name] ) ) {
+			unset($form_data[$this->table_name]['created_at']);
+			$rs = $this->get_form($form_data[$this->table_name], 'new');
+			 
+		} else {
+			unset($form_data[$this->table_name]['captcha']);
+			$new_record_id=$this->add_data($form_data[$this->table_name], $this->getRequestValue('language_id'));
+			if ( $this->getError() ) {
+				$rs = $this->get_form($form_data[$this->table_name], 'new');
+			} else {
+				$fd[$this->table_name]=$data_model->init_model_data_from_db($this->table_name, $this->primary_key, $new_record_id, $form_data[$this->table_name], true);
+				$this->template->assert('form_data', $fd);
+				
+				$smarty->template_dir = SITEBILL_DOCUMENT_ROOT.'/apps/getrent/site/template/';
+				$order_mail_body = $this->template->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/getrent/site/template/order_mail.tpl.html');
+				$smarty->template_dir = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme');
+				$subject = $_SERVER['SERVER_NAME'].': Новая заявка от клиента';
+				$to = $this->get_email_list();
+				$from = $this->getConfigValue('order_email_acceptor');
+				$this->sendFirmMail($to, $from, $subject, $order_mail_body);
+				if(1==$this->getConfigValue('apps.client.allow-redirect_url_for_orders')){
+					header('location: '.SITEBILL_MAIN_URL.'/getrent/online-getrent/');
+				}else{
+					$rs = '<div class="alert alert-success">'.Multilanguage::_('L_MESSAGE_ORDER_ACCEPTED_EXT').'</div>';
+				}	
+			}
+		}
+		return $rs;
 	}
 	
 	/**
@@ -318,7 +325,7 @@ class getrent_site extends getrent_admin {
 		}elseif(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl')){
 			$tpl_name=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl';
 		}else{
-			$tpl_name=SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template/data_form.tpl';
+			$tpl_name=$this->getAdminTplFolder().'/data_form.tpl';
 		}
 		return $smarty->fetch($tpl_name);
 	}
@@ -328,7 +335,7 @@ class getrent_site extends getrent_admin {
 		$data_model = new Data_Model();
 		if ( $this->getConfigValue('captcha_type') != 2 ) {
 			$this->data_model[$this->table_name]['captcha']['name'] = 'captcha';
-			$this->data_model[$this->table_name]['captcha']['title'] = 'Защитный код';
+			$this->data_model[$this->table_name]['captcha']['title'] = Multilanguage::_('CAPTCHA_TITLE', 'system');
 			$this->data_model[$this->table_name]['captcha']['value'] = '';
 			$this->data_model[$this->table_name]['captcha']['length'] = 40;
 			$this->data_model[$this->table_name]['captcha']['type'] = 'captcha';

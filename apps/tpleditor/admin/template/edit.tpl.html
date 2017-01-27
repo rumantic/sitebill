@@ -1,9 +1,9 @@
 {if $demomode eq 'yes'}
 <p class="warning">{$apps_words.tpleditor.TRIAL_MESSAGE}</p>
-<textarea id="tple_filetext" name="content" style="width: 100%; height: 800px;">{$filetext}</textarea>
+<textarea id="tple_filetext" name="content" style="width: 100%; height: 800px;">{$filetext|htmlspecialchars}</textarea>
 {else}
 <form method="post" action="{$estate_folder}/admin/index.php">
-<textarea id="tple_filetext" name="content" style="width: 100%; height: 800px;">{$filetext}</textarea>
+<textarea id="tple_filetext" name="content" style="width: 100%; height: 800px;">{$filetext|htmlspecialchars}</textarea>
 <input type="hidden" name="action" value="tpleditor" />
 <input type="hidden" name="do" value="edit_done" />
 <input type="hidden" name="file" value="{$file}" />

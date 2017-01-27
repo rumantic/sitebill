@@ -20,15 +20,27 @@ class rss_site extends rss_admin {
 		
 		if ( preg_match('/^rss\/data[\/]?$/', $REQUESTURIPATH) && 1==$this->getConfigValue('apps.rss.enable_realty')) {
 			header('Content-Type:text/xml');
-			echo $this->generateRSSText('realty');
+			$this->exportRssData();
 			exit();
 			return true;
 		}elseif ( preg_match('/^rss[\/]?$/', $REQUESTURIPATH) ) {
 			header('Content-Type:text/xml');
-			echo $this->generateRSSText();
+			$this->exportRssNews();
 			exit();
 			return true;
-		}
+		}elseif ( preg_match('/^rss\/articles[\/]?$/', $REQUESTURIPATH) ) {
+			
+			header('Content-Type:text/xml');
+			$this->exportRssArticles();
+			
+			exit();
+			return true;
+		}/*elseif ( preg_match('/^rss\/dataf[\/]?$/', $REQUESTURIPATH) ) {
+			header('Content-Type:text/xml');
+			$this->generateRSSTextF();
+			exit();
+			return true;
+		}*/
 		return false;
 	}
 }

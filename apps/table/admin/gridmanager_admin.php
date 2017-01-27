@@ -16,10 +16,15 @@ class gridmanager_admin extends table_admin {
 			  PRIMARY KEY (`gridmanager_id`),
 			  KEY `column_id` (`columns_id`)
 			) ENGINE=MyISAM  DEFAULT CHARSET=".DB_ENCODING." AUTO_INCREMENT=1 ;";
-		$this->db->exec($query);
-	
-		$rs = 'Приложение установлено';
-		return $rs;
+		$DBC=DBC::getInstance();
+		$success=false;
+    	$stmt=$DBC->query($query, array(), $rows, $success);
+        if(!$success){
+        	$rs = Multilanguage::_('L_APPLICATION_INSTALLED_ERROR');
+        }else{
+        	$rs = Multilanguage::_('L_APPLICATION_INSTALLED');
+        }
+        return $rs;
 	}
 	
 	
@@ -55,12 +60,17 @@ class gridmanager_admin extends table_admin {
 	}
 	
 	private function _getColumnsNameIds(){
+		$DBC=DBC::getInstance();
+		
 		$columns_ids=array();
-		$q='SELECT columns_id, name FROM '.DB_PREFIX.'_columns WHERE table_id=(SELECT table_id FROM '.DB_PREFIX.'_table WHERE `name`=\'data\' LIMIT 1)';
-		$this->db->exec($q);
-		while($this->db->fetch_assoc()){
-			$columns_ids[$this->db->row['name']]=$this->db->row['columns_id'];
+		$query='SELECT columns_id, name FROM '.DB_PREFIX.'_columns WHERE table_id=(SELECT table_id FROM '.DB_PREFIX.'_table WHERE `name`=\'data\' LIMIT 1)';
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				$columns_ids[$ar['name']]=$ar['columns_id'];
+			}
 		}
+		
 		return $columns_ids;
 	}
 	
@@ -119,16 +129,16 @@ class gridmanager_admin extends table_admin {
 		$fields=$this->getRequestValue('fields');
 		if(count($fields)==0){
 			$q="DELETE FROM ".DB_PREFIX."_table_searchform WHERE `searchform_id`=".$form_id;
-			$this->db->exec($q);
+			$stmt=$DBC->query($q);
 			return;
 		}
 		$q='SELECT columns_id, name FROM '.DB_PREFIX.'_columns WHERE table_id=(SELECT table_id FROM '.DB_PREFIX.'_table WHERE `name`=\'data\' LIMIT 1)';
-		$this->db->exec($q);
-		while($this->db->fetch_assoc()){
-			$columns_ids[$this->db->row['name']]=$this->db->row['columns_id'];
+		$stmt=$DBC->query($q);
+		while($ar=$DBC->fetch($stmt)){
+			$columns_ids[$ar['name']]=$ar['columns_id'];
 		}
 		$q="DELETE FROM ".DB_PREFIX."_table_searchform WHERE `searchform_id`=".$form_id;
-		$this->db->exec($q);
+		$stmt=$DBC->query($q);
 		
 		$input_fields=array();
 		foreach($fields as $f){

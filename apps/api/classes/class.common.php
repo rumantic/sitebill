@@ -27,6 +27,20 @@ class API_Common extends SiteBill {
     	return $this->request_failed('method not defined');
     }
     
+    function get_my_user_id () {
+    	$session_key = $this->getRequestValue('session_key');
+    	$DBC=DBC::getInstance();
+    	$query = 'SELECT user_id FROM '.DB_PREFIX.'_oauth WHERE session_key=?';
+    	$stmt=$DBC->query($query, array($session_key));
+    	if ( $stmt ) {
+    		$ar = $DBC->fetch($stmt);
+    		if ( $ar['user_id'] > 0 ) {
+    			return $ar['user_id'];
+    		}
+    	}
+    	return false;
+    }
+    
     function request_failed( $message ) {
     	$response = array('error' => $message);
     	return $this->json_string($response);

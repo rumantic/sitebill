@@ -27,10 +27,15 @@ class User_Object extends SiteBill {
      * @return string
      */
     function getLoginByUserID ( $user_id ) {
-        $query = "select * from ".DB_PREFIX."_user where user_id=$user_id";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        return $this->db->row['login'];
+    	$query = "select * from ".DB_PREFIX."_user where user_id=?";
+        $DBC=DBC::getInstance();
+        
+        $stmt=$DBC->query($query, array($user_id));
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	return $ar['login'];
+        }
+        return '';
     }
     
     /**
@@ -39,10 +44,14 @@ class User_Object extends SiteBill {
      * @return string
      */
     function getUserGroupName ( $user_id ) {
-        $query = "select g.name from ".DB_PREFIX."_group g, ".DB_PREFIX."_user su where g.group_id = su.group_id and su.user_id=$user_id";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        return $this->db->row['name'];
+        $query = "select g.name from ".DB_PREFIX."_group g, ".DB_PREFIX."_user su where g.group_id = su.group_id and su.user_id=?";
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($user_id));
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	return $ar['name'];
+        }
+        return '';
     }
     
     /**
@@ -51,11 +60,15 @@ class User_Object extends SiteBill {
      * @return string
      */
     function getShortFio ($user_id) {
-        $query = "select * from ".DB_PREFIX."_user where user_id=$user_id";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        $this->login = $this->db->row['login'];
-        return $this->db->row['fio'];
+        $query = "select * from ".DB_PREFIX."_user where user_id=?";
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($user_id));
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	$this->login = $ar['login'];
+        	return $ar['fio'];
+        }
+        return '';
     }
     
     /**
@@ -64,11 +77,15 @@ class User_Object extends SiteBill {
      * @return string
      */
     function getEmail ( $user_id ) {
-        $query = "select email from ".DB_PREFIX."_user where user_id=$user_id";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        return $this->db->row['email'];
-    }
+        $query = "select email from ".DB_PREFIX."_user where user_id=?";
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($user_id));
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	return $ar['email'];
+        }
+        return '';
+     }
     
     /**
      * Get user id by email
@@ -76,14 +93,17 @@ class User_Object extends SiteBill {
      * @return mixed
 	 */
     function getUserIdByEmail ( $email ) {
-        $query = "select user_id from ".DB_PREFIX."_user where email='$email'";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['user_id'] > 0 ) {
-            return $this->db->row['user_id'];
+        $query = "select user_id from ".DB_PREFIX."_user where email=?";
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($email));
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	if($ar['user_id']>0){
+        		return $ar['user_id'];
+        	}
         }
         return false;
-    }
+     }
     
     
     /**
@@ -93,16 +113,21 @@ class User_Object extends SiteBill {
      */
     function getTopList () {
         $query = "select su.*, n.time_cost from ".DB_PREFIX."_user su, ".DB_PREFIX."_note n where su.user_id=n.user_id and n.time_cost > 0";
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            $sum[$this->db->row['user_id']] += $this->db->row['time_cost'];
-            $ra[$this->db->row['user_id']] = $this->db->row;
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query);
+        
+        $sum=array();
+        $ra=array();
+        if($stmt){
+        	while($ar=$DBC->fetch($stmt)){
+        		$sum[$ar['user_id']] += $ar['time_cost'];
+        		$ra[$ar['user_id']] = $ar;
+        	}
         }
+        
+       
         $sum_keys = array_values($sum);
-        //echo '<pre>';
-        //print_r($sum);
-        rsort($sum_keys);
-        //print_r($sum_keys);
+       	rsort($sum_keys);
         foreach ( $sum_keys as $item_id => $sum_value ) {
             foreach ( $sum as $user_id => $sum_item ) {
                 if ( $sum_item == $sum_value ) {
@@ -130,14 +155,17 @@ class User_Object extends SiteBill {
      * @return int
 	 */
     function getUserPublicationLimit ( $user_id ) {
-        $query = "select publication_limit from ".DB_PREFIX."_user where user_id=".$user_id;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['publication_limit'] !='' ) {
-            return $this->db->row['publication_limit'];
-        }else{
-        	return $this->getConfigValue('user_publication_limit');
+        $query = "select publication_limit from ".DB_PREFIX."_user where user_id=?";
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($user_id));
+        
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	if($ar['publication_limit'] !=''){
+        		return $ar['publication_limit'];
+        	}
         }
+        return $this->getConfigValue('user_publication_limit');
     }
     
 	/**
@@ -146,24 +174,27 @@ class User_Object extends SiteBill {
      * @return int
 	 */
     function getUserGroupId ( $user_id ) {
-        $query = "select group_id from ".DB_PREFIX."_user where user_id=".$user_id;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        return $this->db->row['group_id'];
+        $query = "select group_id from ".DB_PREFIX."_user where user_id=?";
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($user_id));
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	return $ar['group_id'];
+        }
+        return 0;
     }
     
     function getUser($user_id){
     	$ret=array('fio'=>'','email'=>'','phone'=>'');
-    	$query = "SELECT fio, email, phone FROM ".DB_PREFIX."_user WHERE user_id=".$user_id;
-    	$this->db->exec($query);
-    	if($this->db->success){
-    		$this->db->fetch_assoc();
-    		$ret['fio']=$this->db->row['fio'];
-    		$ret['email']=$this->db->row['email'];
-    		$ret['phone']=$this->db->row['phone'];
+    	$query = "SELECT fio, email, phone FROM ".DB_PREFIX."_user WHERE user_id=?";
+    	$DBC=DBC::getInstance();
+    	$stmt=$DBC->query($query, array($user_id));
+    	if($stmt){
+    		$ar=$DBC->fetch($stmt);
+    		$ret['fio']=$ar['fio'];
+    		$ret['email']=$ar['email'];
+    		$ret['phone']=$ar['phone'];
     	}
     	return $ret;
-    
     }
 }
-?>

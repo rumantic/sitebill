@@ -1,4 +1,9 @@
 <link rel="stylesheet" href="{$estate_folder}/apps/news/site/template/css/style.css">
+{if $description!=''}
+<div class="news-description">
+{$description}
+</div>
+{/if}
 <div id="news" class="archive">
 	{section name=i loop=$news}
 	<div class="news">
@@ -10,7 +15,7 @@
 		
 		{/if}
 		<div class="anons">{$news[i].anons}</div>
-		
+		{*$news[i]._news_topic_id_.name*}
 	</div>
 	<div class="clear"></div>
 	{/section}
@@ -36,7 +41,7 @@
 				{assign var=__leftsep value=1}
 			{/if}
 			
-			{if $__curpagenr+3>$pager_array.pages|count}
+			{if $__curpagenr+3>$news_paging.pages|count}
 				{assign var=__endnr value=$news_paging.pages|count}
 				{assign var=__rightsep value=0}
 			{else}

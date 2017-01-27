@@ -18,7 +18,8 @@ $sitebill_document_root = $_SERVER['DOCUMENT_ROOT'].$folder;
 require("inc/db.inc.php");
 define('SITEBILL_DOCUMENT_ROOT', $sitebill_document_root);
 define('DB_PREFIX', $__db_prefix);
-
+require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/debugger.class.php';
+require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/logger.class.php';
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/db/MySQL.php');
 global $__server, $__db, $__user, $__password, $sitebill_document_root;
 

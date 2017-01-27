@@ -8,7 +8,7 @@
 	<copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
 	<license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>true</backendMenu>
-	<version status="beta">1.3.8</version>
+	<version status="beta">1.4.1</version>
 	<administration>
 		<!-- Administration Menu Section -->
 		<menu>Заявки на аренду</menu>

@@ -70,10 +70,13 @@ class Check_Address_Ajax extends SiteBill {
     
 	function get_id_by_value ( $table, $key, $value, $id_key ) {
 	    $query = "select * from ".DB_PREFIX."_".$table." where $key='$value'";
-	    $this->db->exec($query);
-	    $this->db->fetch_assoc();
-	    if ( $this->db->row[$id_key] > 0 ) {
-	        return $this->db->row[$id_key];
+	    $DBC=DBC::getInstance();
+	    $stmt=$DBC->query($query);
+	    if($stmt){
+	    	$ar=$DBC->fetch($stmt);
+	    	if ( $ar[$id_key] > 0 ) {
+	    		return $ar[$id_key];
+	    	}
 	    }
 	    return false;
 	}

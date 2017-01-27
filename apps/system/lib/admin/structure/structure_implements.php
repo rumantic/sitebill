@@ -1,6 +1,6 @@
 <?php
 
-require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/cache/cache.php';
+//require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/cache/cache.php';
 require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php';
 class Structure_Implements extends SiteBill_Krascap {
 
@@ -41,20 +41,22 @@ class Structure_Implements extends SiteBill_Krascap {
     }
     
     function add_topic_url () {
-        
         $query = "alter table ".DB_PREFIX."_".$this->table." add column url text";
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
     }
     
     function upgrade () {
+    	$DBC=DBC::getInstance();
+    	
     	$query = "alter table ".DB_PREFIX."_".$this->table." add column meta_title text";
-    	$this->db->exec($query);
+    	$stmt=$DBC->query($query);
     	
     	$query = "alter table ".DB_PREFIX."_".$this->table." add column meta_keywords text";
-    	$this->db->exec($query);
+    	$stmt=$DBC->query($query);
     	 
     	$query = "alter table ".DB_PREFIX."_".$this->table." add column meta_description text";
-    	$this->db->exec($query);
+    	$stmt=$DBC->query($query);
     }
     
     
@@ -71,6 +73,8 @@ class Structure_Implements extends SiteBill_Krascap {
                 if ( $this->isDemo() ) {
                     return $this->demo_function_disabled();
                 }
+                $DBC=DBC::getInstance();
+                
                 $category_structure = $this->loadCategoryStructure();
                 if ( count($category_structure['childs'][$this->getRequestValue('id')]) > 0 ) {
                     $rs = Multilanguage::_('CATEGORY_HAS_CHILDS','system').'<br>';
@@ -78,9 +82,12 @@ class Structure_Implements extends SiteBill_Krascap {
                     return $rs;
                 }
                 
-                $this->db->exec('SELECT COUNT(*) AS rs FROM '.DB_PREFIX.'_data WHERE topic_id='.$this->getRequestValue('id'));
-                $this->db->fetch_assoc();
-                $c=$this->db->row['rs'];
+                $c=0;
+                $stmt=$DBC->query('SELECT COUNT(*) AS rs FROM '.DB_PREFIX.'_data WHERE topic_id='.$this->getRequestValue('id'));
+                if($stmt){
+                	$ar=$DBC->fetch($stmt);
+                	$c=$ar['rs'];
+                }
                 if($c!=0){
                 	$rs = Multilanguage::_('NOT_EMPTY_CATEGORY','system').'<br>';
                     $rs .= '<a href="?action=structure">'.Multilanguage::_('BACK_TO_LIST','system').'</a>';
@@ -117,24 +124,15 @@ class Structure_Implements extends SiteBill_Krascap {
 			case 'associations':
 				$rs = $this->getTopMenu();
 				if(isset($_POST['submit'])){
-					
-					//echo '<pre>';
-					//print_r($_POST);
 					$this->saveAssociations($_POST['data']);
 					$rs .= $this->getCategoryTreeAssoc(0);
-					//print_r($_POST);
 				}else{
 					$rs .= $this->getCategoryTreeAssoc(0);
 				}
 				
 				break;
 				
-			/*case 'chains':
-				$this->loadCategoriesUrls();
-			
-			break;*/
-            
-            case 'done':
+			case 'done':
                 if ( $this->isDemo() ) {
                     return $this->demo_function_disabled();
                 }
@@ -213,9 +211,11 @@ class Structure_Implements extends SiteBill_Krascap {
 	
 	private function updateAssociations($items=array(),$rules=array()){
 		if(!empty($items)){
+			$DBC=DBC::getInstance();
+			
 			foreach($items as $v){
 				$query='UPDATE '.DB_PREFIX.'_topic SET obj_type_id='.(int)$rules['obj_type_id'].', operation_type_id='.(int)$rules['operation_type'].' WHERE id='.(int)$v;
-				$this->db->exec($query);
+				$stmt=$DBC->query($query);
 			}
 		}
 	}
@@ -236,17 +236,20 @@ class Structure_Implements extends SiteBill_Krascap {
      */
     function get_operation_type_select_box ( $operation_type_id ) {
         $query = "SELECT * FROM ".DB_PREFIX."_operation_type order by `operation_type_id` ";
-        
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query);
         $rs = '<select name="operation_type_id">';
-        while ( $this->db->fetch_assoc() ) {
-            if ( $operation_type_id ==  $this->db->row['operation_type_id'] ) {
-                $selected = 'selected';
-            } else {
-                $selected = '';
-            }
-           	$rs .= '<option value="'.$this->db->row['operation_type_id'].'" '.$selected.'>'.$this->db->row['name'].'</option>';
+        if($stmt){
+        	while ( $ar=$DBC->fetch($stmt) ) {
+        		if ( $operation_type_id ==  $ar['operation_type_id'] ) {
+        			$selected = 'selected';
+        		} else {
+        			$selected = '';
+        		}
+        		$rs .= '<option value="'.$ar['operation_type_id'].'" '.$selected.'>'.$ar['name'].'</option>';
+        	}
         }
+        
         $rs .= '</select>';
         return $rs;
     }
@@ -261,7 +264,7 @@ class Structure_Implements extends SiteBill_Krascap {
         foreach ( $languages as $language_id => $language_title ) {
             $lang_string .= "name_{$language_id}='".$this->escape($this->getRequestValue('name_'.$language_id))."',";
         }
-        
+        $DBC=DBC::getInstance();
     	$query = "update ".DB_PREFIX."_".$this->table." set
         	name='".$this->escape($this->getRequestValue('name'))."',
         	{$lang_string}
@@ -272,15 +275,12 @@ class Structure_Implements extends SiteBill_Krascap {
         	meta_description='".$this->escape($this->getRequestValue('meta_description'))."',
         	description='".$this->getRequestValue('description')."'
         where id=".$id."";
-       
-        //echo $query;
-        $this->db->exec($query);
-        if ( !$this->db->success ) {
-        	echo $this->db->error;
+        	$stmt=$DBC->query($query, array(), $row, $success_mark);
+        if ( !$success_mark ) {
+        	echo $DBC->getLastError();
         }else{
         	$imgs=$this->editImageMulti($this->table, $this->table, 'id', $id);
         }
-        
         return true;
     }
     
@@ -291,22 +291,22 @@ class Structure_Implements extends SiteBill_Krascap {
      */
     function deleteRecord ( $id ) {
     	$imgs_ids=array();
+    	$DBC=DBC::getInstance();
     	if(1==$this->getConfigValue('allow_topic_images')){
     		$query='SELECT image_id FROM '.DB_PREFIX.'_'.$this->table.'_image WHERE id='.$id;
     		 
-    		$this->db->exec($query);
-    		if ($this->db->success) {
-    			while($this->db->fetch_assoc()){
-    				//print_r($this->db->row);
-    				$imgs_ids[]=$this->db->row['image_id'];
+    		$stmt=$DBC->query($query);
+    		if ($stmt) {
+    			while($ar=$DBC->fetch($stmt)){
+    				$imgs_ids[]=$ar['image_id'];
     			}
     		}
     	}
     	
     	$query = "DELETE FROM ".DB_PREFIX."_".$this->table." WHERE id=".$id."";
-        $this->db->exec($query);
-        if ( !$this->db->success ) {
-        	echo $this->db->error;
+        $stmt=$DBC->query($query);
+        if ( !$stmt ) {
+        	echo 'ERROR ON DELETE';
         }
     	if(count($imgs_ids)>0){
     		foreach($imgs_ids as $im){
@@ -336,12 +336,12 @@ class Structure_Implements extends SiteBill_Krascap {
         	meta_keywords='".$this->escape($this->getRequestValue('meta_keywords'))."', 
         	meta_description='".$this->escape($this->getRequestValue('meta_description'))."', 
         	description='".$this->getRequestValue('description')."'";
-        //echo $query;
-        $this->db->exec($query);
-        if ( !$this->db->success ) {
-        	echo $this->db->error;
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query);
+        if ( !$stmt ) {
+        	//echo 'ERROR ON INSERT';
         }else{
-        	$new_record_id = $this->db->last_insert_id();
+        	$new_record_id = $DBC->lastInsertId();
         	$imgs=$this->editImageMulti($this->table, $this->table, 'id', $new_record_id);
         }
         
@@ -499,27 +499,30 @@ class Structure_Implements extends SiteBill_Krascap {
      * @return boolean
      */
     function load ( $record_id ) {
-        
+    	$DBC=DBC::getInstance();
+    	
+    	
         $query = "select * from ".DB_PREFIX."_".$this->table." where id=$record_id";
-        //echo $query;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
+        $stmt=$DBC->query($query);
         
-        $this->setRequestValue('name', $this->db->row['name']);
-        
-        $languages = Multilanguage::foreignLanguages();
-        foreach ( $languages as $language_id => $language_title ) {
-            $this->setRequestValue('name_'.$language_id, $this->db->row['name_'.$language_id]);
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	$this->setRequestValue('name', $ar['name']);
+        	
+        	$languages = Multilanguage::foreignLanguages();
+        	foreach ( $languages as $language_id => $language_title ) {
+        		$this->setRequestValue('name_'.$language_id, $ar['name_'.$language_id]);
+        	}
+        	
+        	
+        	$this->setRequestValue('id', $ar['id']);
+        	$this->setRequestValue('url', $ar['url']);
+        	$this->setRequestValue('description', $ar['description']);
+        	$this->setRequestValue('parent_id', $ar['parent_id']);
+        	$this->setRequestValue('meta_title', $ar['meta_title']);
+        	$this->setRequestValue('meta_keywords', $ar['meta_keywords']);
+        	$this->setRequestValue('meta_description', $ar['meta_description']);
         }
-        
-        
-        $this->setRequestValue('id', $this->db->row['id']);
-        $this->setRequestValue('url', $this->db->row['url']);
-        $this->setRequestValue('description', $this->db->row['description']);
-        $this->setRequestValue('parent_id', $this->db->row['parent_id']);
-        $this->setRequestValue('meta_title', $this->db->row['meta_title']);
-        $this->setRequestValue('meta_keywords', $this->db->row['meta_keywords']);
-        $this->setRequestValue('meta_description', $this->db->row['meta_description']);
     }
     
     /**
@@ -584,19 +587,20 @@ class Structure_Implements extends SiteBill_Krascap {
     	$ret=array();
     	$_ret=array();
     	$query='SELECT id, parent_id, url AS name FROM '.DB_PREFIX.'_'.$this->table;
-    	$this->db->exec($query);
-    	if ( !$this->db->success ) {
-    	    echo $this->db->error.'<br>';
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if ( !$stmt ) {
+    	    return $ret;
     	}
-    	while($this->db->fetch_assoc()){
-    		if($this->db->row['name']==''){
-    			$categories[$this->db->row['id']]='topic'.$this->db->row['id'];
+    	while($ar=$DBC->fetch($stmt)){
+    		if($ar['name']==''){
+    			$categories[$ar['id']]='topic'.$ar['id'];
     		}else{
-    			$categories[$this->db->row['id']]=$this->db->row['name'];
+    			$categories[$ar['id']]=$ar['name'];
     		}
     		
-    		$items[$this->db->row['id']]=$this->db->row['parent_id'];
-    		$points[]=$this->db->row['id'];
+    		$items[$ar['id']]=$ar['parent_id'];
+    		$points[]=$ar['id'];
     	}
     	if(count($points)>0){
     		foreach($points as $p){
@@ -610,7 +614,6 @@ class Structure_Implements extends SiteBill_Krascap {
     			$ret[$k]=implode('/',$r['chain_parts']);
     		}
     	}
-    	//print_r($ret);
     	return $ret;
     }
     
@@ -627,23 +630,25 @@ class Structure_Implements extends SiteBill_Krascap {
 	function createCatalogChains(){
 		$ret=array();
 		$query='SELECT id, parent_id, LOWER(name) AS name FROM '.DB_PREFIX.'_'.$this->table;
-		$this->db->exec($query);
-		while($this->db->fetch_assoc()){
-			$categories[$this->db->row['id']]=$this->db->row['name'];
-			$items[$this->db->row['id']]=$this->db->row['parent_id'];
-			$points[]=$this->db->row['id'];
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				$categories[$ar['id']]=$ar['name'];
+				$items[$ar['id']]=$ar['parent_id'];
+				$points[]=$ar['id'];
+			}
 		}
+		
 		foreach($points as $p){
 			$chain=$categories[$p];
 			$chain_num=$p;
 			$this->findParent($p,$items,$chain,$chain_num,$categories);
 			$ret[$p]=$chain;
 			$ret_num[$p]=$chain_num;
-			//echo $chain.'<br>';
 		}
 		
 		return $rs=array('txt'=>$ret,'num'=>$ret_num);
-		//print_r($chain);
 	}
 	
 	function findParent($child_id,&$items,&$chain,&$chain_num,$categories){
@@ -664,54 +669,18 @@ class Structure_Implements extends SiteBill_Krascap {
     	
     	$query = "SELECT t.* FROM ".DB_PREFIX."_".$this->table." t order by `order` ";
     	
-    	$this->db->exec($query);
-    	while ( $this->db->fetch_assoc() ) {
-    		if ( Multilanguage::get_current_language() != 'ru' and $this->db->row['name_'.Multilanguage::get_current_language()] != '' ) {
-    			$this->db->row['name'] = $this->db->row['name_'.Multilanguage::get_current_language()];
-    		}
-    	
-    		$ret['catalog'][$this->db->row['id']] = $this->db->row;
-    		$ret['childs'][$this->db->row['parent_id']][] = $this->db->row['id'];
-    	}
-    	/*
-    	if($this->getConfigValue('apps.cache.enable')==1){
-    		$Cache=Cache::getInstance();
-	    	if($Cache->isValid($this->table.'_structure','expired')){
-	    		
-	    		$ret=$Cache->getValue($this->table.'_structure');
-		    }else{
-	    		
-	    		$query = "SELECT t.* FROM ".DB_PREFIX."_".$this->table." t order by `order` ";
-		        
-	    		$this->db->exec($query);
-		        while ( $this->db->fetch_assoc() ) {
-		            if ( Multilanguage::get_current_language() != 'ru' and $this->db->row['name_'.Multilanguage::get_current_language()] != '' ) {
-		                $this->db->row['name'] = $this->db->row['name_'.Multilanguage::get_current_language()];
-		            }
-		            
-		            $rs['catalog'][$this->db->row['id']] = $this->db->row;
-		            $rs['childs'][$this->db->row['parent_id']][] = $this->db->row['id'];
-		        }
-		        
-		        $Cache->addValue($this->table.'_structure', $rs, (time()+86400));
-		        $ret=$rs;
-		        
-		       
-	    	}
-	    }else{
-		 	$query = "SELECT t.* FROM ".DB_PREFIX."_".$this->table." t order by `order` ";
-    		
-    		$this->db->exec($query);
-	        while ( $this->db->fetch_assoc() ) {
-	            if ( Multilanguage::get_current_language() != 'ru' and $this->db->row['name_'.Multilanguage::get_current_language()] != '' ) {
-	            	$this->db->row['name'] = $this->db->row['name_'.Multilanguage::get_current_language()];
-	            }
-	             
-	            $ret['catalog'][$this->db->row['id']] = $this->db->row;
-	            $ret['childs'][$this->db->row['parent_id']][] = $this->db->row['id'];
-	        }
-    	}*/
-    	
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+    	if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				if ( Multilanguage::get_current_language() != 'ru' and $ar['name_'.Multilanguage::get_current_language()] != '' ) {
+	    			$ar['name'] = $ar['name_'.Multilanguage::get_current_language()];
+	    		}
+	    	
+	    		$ret['catalog'][$ar['id']] = $ar;
+	    		$ret['childs'][$ar['parent_id']][] = $ar['id'];
+			}
+		}
     	if(1==$this->getConfigValue('apps.seo.level_enable')){
     		$urls=$this->loadCategoriesUrls();
     		if(count($ret['catalog'])>0){
@@ -721,33 +690,23 @@ class Structure_Implements extends SiteBill_Krascap {
     		}
     		
     	}
-    	
-    	
     	if(1==$this->getConfigValue('allow_topic_images')){
 	    	foreach($ret['catalog'] as $k=>$v){
 	    		$query = "select i.* from ".DB_PREFIX."_topic_image as li, ".DB_PREFIX."_image as i where li.id=$k and li.image_id=i.image_id order by li.sort_order";
-	    		$this->db->exec($query);
-	    		while($this->db->fetch_assoc()){
-	    			$ret['catalog'][$k]['images'][]=$this->db->row;
+	    		$stmt=$DBC->query($query);
+	    		if($stmt){
+	    			while($ar=$DBC->fetch($stmt)){
+	    				$ret['catalog'][$k]['images'][]=$ar;
+	    			}
 	    		}
 	    	}
     	}
-    	
-    	
-    	
-    	
     	$current=$this->urlAnalizer();
 		if($current!==FALSE){
 			$this->findCurrent($ret,$current);
 		}
-		/*
-		echo '<pre>';
-		print_r($ret);
-		echo '</pre>';
-		*/
 		return $ret;
-	    
-    }
+	}
     
     
     /**
@@ -774,9 +733,6 @@ class Structure_Implements extends SiteBill_Krascap {
      */
     function load_data_structure ( $user_id, $params = array(), $search_params=array() ) {
         $where_array = array();
-        //echo '<pre>';
-        //print_r($params);
-        //echo '</pre>';
         if ( $user_id == 0 ) {
             if ( $params['active'] == 1 ) {
                 $where_array[] = 're_data.active=1';
@@ -794,27 +750,21 @@ class Structure_Implements extends SiteBill_Krascap {
             		$where_array[]='re_data.'.$v;
             	}
             }
-            /*
-            if(isset($params['realty_type_id'])){
-            	$where_array[] = 're_data.realty_type_id='.(int)$params['realty_type_id'];
-            }
-            */
             if ( count($where_array) > 0 ) {
                 $where = ' WHERE '.implode(' AND ', $where_array);
             }
-            //$query = "SELECT id, topic_id FROM ".DB_PREFIX."_data ".$where;
             $query = "SELECT COUNT(id) as total, topic_id FROM ".DB_PREFIX."_data ".$where." GROUP BY topic_id";
         } else {
-           // $query = "SELECT id, topic_id FROM ".DB_PREFIX."_data  where user_id = $user_id";
         	$query = "SELECT COUNT(id) as total, topic_id FROM ".DB_PREFIX."_data  where user_id = $user_id GROUP BY topic_id";
         }
-        //echo $query.'<br>';
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            //$ret['data'][$user_id][$this->db->row['topic_id']]++;
-            $ret['data'][$user_id][$this->db->row['topic_id']]=$this->db->row['total'];
-        }
-        return $ret;
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while ( $ar=$DBC->fetch($stmt) ) {
+				$ret['data'][$user_id][$ar['topic_id']]=$ar['total'];
+			}
+		}
+		return $ret;
     }
     
 	/**
@@ -824,9 +774,6 @@ class Structure_Implements extends SiteBill_Krascap {
      */
     function load_data_structure_shop ( $user_id, $params = array() ) {
         $where_array = array();
-        //echo '<pre>';
-        //print_r($params);
-        //echo '</pre>';
         $language_id=((int)$this->getRequestValue('language_id')==0 ? 0 : (int)$this->getRequestValue('language_id'));
         
         
@@ -873,12 +820,13 @@ class Structure_Implements extends SiteBill_Krascap {
             //$query = "SELECT product_id, category_id FROM ".DB_PREFIX."_shop_product  where user_id = $user_id";
             $query = "SELECT COUNT(product_id) as total, category_id FROM ".DB_PREFIX."_shop_product LEFT JOIN ".DB_PREFIX."_user ON ".DB_PREFIX."_shop_product.user_id=".DB_PREFIX."_user.user_id   ".$where." GROUP BY category_id";
         }
-        //echo $query.'<br>';
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            //$ret['data'][$user_id][$this->db->row['category_id']]++;
-            $ret['data'][$user_id][$this->db->row['category_id']]=$this->db->row['total'];
-        }
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while ( $ar=$DBC->fetch($stmt) ) {
+				$ret['data'][$user_id][$ar['category_id']]=$ar['total'];
+			}
+		}
         return $ret;
     }
     
@@ -889,26 +837,18 @@ class Structure_Implements extends SiteBill_Krascap {
      */
     function load_data_structure_price ( $user_id, $params = array() ) {
     	$where_array = array();
-    	//echo '<pre>';
-    	//print_r($params);
-    	//echo '</pre>';
     	$language_id=((int)$this->getRequestValue('language_id')==0 ? 0 : (int)$this->getRequestValue('language_id'));
-    
-    
-    		//$enable_publication_limit=$this->getConfigValue('apps.shop.user_limit_enable');
-    		 
-    
-    		if ( count($where_array) > 0 ) {
-    			$where = ' WHERE '.implode(' AND ', $where_array);
-    		}
-    		//$query = "SELECT product_id, category_id FROM ".DB_PREFIX."_shop_product ".$where;
-    		$query = "SELECT COUNT(".DB_PREFIX."_price.price_id) as total, ".DB_PREFIX."_price.category_id FROM ".DB_PREFIX."_price GROUP BY ".DB_PREFIX."_price.category_id";
-    	//echo $query.'<br>';
-    	$this->db->exec($query);
-    	while ( $this->db->fetch_assoc() ) {
-    		//$ret['data'][$user_id][$this->db->row['category_id']]++;
-    		$ret['data'][$user_id][$this->db->row['category_id']]=$this->db->row['total'];
+    	if ( count($where_array) > 0 ) {
+    		$where = ' WHERE '.implode(' AND ', $where_array);
     	}
+    	$query = "SELECT COUNT(".DB_PREFIX."_price.price_id) as total, ".DB_PREFIX."_price.category_id FROM ".DB_PREFIX."_price GROUP BY ".DB_PREFIX."_price.category_id";
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while ( $ar=$DBC->fetch($stmt) ) {
+				$ret['data'][$user_id][$ar['category_id']]=$ar['total'];
+			}
+		}
     	return $ret;
     }
     
@@ -921,10 +861,7 @@ class Structure_Implements extends SiteBill_Krascap {
      * @return string
      */
     function getCategorySelectBox ( $current_category_id, $ajax_function = false ) {
-    	//echo '$current_category_id = '.$current_category_id;
-        $category_structure = $this->loadCategoryStructure();
-        //echo '<pre>';
-        //print_r($category_structure);
+    	$category_structure = $this->loadCategoryStructure();
         $level = 1;
         $rs = '';
         if ( $ajax_function ) {
@@ -935,8 +872,6 @@ class Structure_Implements extends SiteBill_Krascap {
         $rs .= '<option value="0">'.Multilanguage::_('L_CHOOSE_TOPIC').'</option>';
         if(isset($category_structure['childs'][0]) && count($category_structure['childs'][0])>0){
         	foreach ( $category_structure['childs'][0] as $item_id => $categoryID ) {
-        		//echo $categoryID.'<br>';
-        		//echo 'items = '.$items.'<br>';
         		if ( $current_category_id == $categoryID ) {
         			$selected = " selected ";
         		} else {
@@ -1018,31 +953,7 @@ class Structure_Implements extends SiteBill_Krascap {
         $_SESSION['allow_disable_root_structure_select']=false;
         return $rs;
     }
-   /* 
-	function getShopCategorySelectBoxWithName ( $name, $current_category_id, $ajax_function = false ) {
-    	$category_structure = $this->loadShopCategoryStructure();
-        $level = 1;
-        $rs = '';
-        if ( $ajax_function ) {
-            $rs .= '<select name="'.$name.'" id="'.$name.'" onchange="'.$ajax_function.'">';
-        } else {
-            $rs .= '<select name="'.$name.'">';
-        }
-        $rs .= '<option value="0">'.Multilanguage::_('L_CHOOSE_TOPIC').'</option>';
-        foreach ( $category_structure['childs'][0] as $item_id => $categoryID ) {
-            if ( $current_category_id == $categoryID ) {
-        		$selected = " selected ";
-        	} else {
-        		$selected = "";
-        	}
-            
-            $rs .= '<option value="'.$categoryID.'" '.$selected.'>'.str_repeat(' . ', $level).$category_structure['catalog'][$categoryID]['category_name'].'</option>';
-            $rs .= $this->getShopChildNodes($categoryID, $category_structure, $level + 1, $current_category_id);
-        }
-        $rs .= '</select>';
-        return $rs;
-    }
-    */
+  
     /**
      * Load mark structure
      * @param void
@@ -1050,12 +961,14 @@ class Structure_Implements extends SiteBill_Krascap {
      */
     function load_mark_structure () {
         $query = "SELECT * FROM ".DB_PREFIX."_mark order by `name` ";
-        //echo $query;
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            $ret['mark'][$this->db->row['mark_id']] = $this->db->row;
-            $ret['childs'][$this->db->row['parent_id']][] = $this->db->row['mark_id'];
-        }
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while ( $ar=$DBC->fetch($stmt) ) {
+				$ret['mark'][$ar['mark_id']] = $ar;
+            	$ret['childs'][$ar['parent_id']][] = $ar['mark_id'];
+			}
+		}
         return $ret;
     }
     
@@ -1066,12 +979,14 @@ class Structure_Implements extends SiteBill_Krascap {
      */
     function load_coachwork_structure () {
         $query = "SELECT * FROM ".DB_PREFIX."_coachwork order by `name` ";
-        //echo $query;
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            $ret['coachwork'][$this->db->row['coachwork_id']] = $this->db->row;
-            $ret['childs'][$this->db->row['parent_id']][] = $this->db->row['coachwork_id'];
-        }
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while ( $ar=$DBC->fetch($stmt) ) {
+				$ret['coachwork'][$ar['coachwork_id']] = $ar;
+            	$ret['childs'][$ar['parent_id']][] = $ar['coachwork_id'];
+			}
+		}
         return $ret;
     }
 
@@ -1082,12 +997,14 @@ class Structure_Implements extends SiteBill_Krascap {
      */
     function load_model_structure () {
         $query = "SELECT * FROM ".DB_PREFIX."_model order by `name` ";
-        //echo $query;
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            $ret['model'][$this->db->row['model_id']] = $this->db->row;
-            $ret['childs'][$this->db->row['mark_id']][] = $this->db->row['model_id'];
-        }
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while ( $ar=$DBC->fetch($stmt) ) {
+				$ret['model'][$ar['model_id']] = $ar;
+            	$ret['childs'][$ar['mark_id']][] = $ar['model_id'];
+			}
+		}
         return $ret;
     }
     
@@ -1098,12 +1015,14 @@ class Structure_Implements extends SiteBill_Krascap {
      */
     function load_modification_structure () {
         $query = "SELECT * FROM ".DB_PREFIX."_modification order by `name` ";
-        //echo $query;
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            $ret['modification'][$this->db->row['modification_id']] = $this->db->row;
-            $ret['childs'][$this->db->row['model_id']][] = $this->db->row['modification_id'];
-        }
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while ( $ar=$DBC->fetch($stmt) ) {
+				$ret['modification'][$ar['modification_id']] = $ar;
+            	$ret['childs'][$ar['model_id']][] = $ar['modification_id'];
+			}
+		}
         return $ret;
     }
     
@@ -1768,12 +1687,14 @@ class Structure_Implements extends SiteBill_Krascap {
      */
     function load_operation_type_list () {
         $query = "SELECT * FROM ".DB_PREFIX."_operation_type";
-        //echo $query;
         $ret=array();
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            $ret[$this->db->row['operation_type_id']]= $this->db->row;
-        }
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while ( $ar=$DBC->fetch($stmt) ) {
+				$ret[$ar['operation_type_id']]= $ar;
+			}
+		}
         return $ret;
     }
 
@@ -1947,16 +1868,20 @@ class Structure_Implements extends SiteBill_Krascap {
     	$query = "select st1.*
     	from ".$__db_prefix."_service_type as st1
     	where st1.parent_id = ".$parent_id."";
-    	$this->db->exec($query);
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		
     	$arr = array();
-    	$j = 0;
-    	while ( $this->db->fetch_assoc() ) {
-    		$arr[$j]['name'] = $this->db->row['name'];
-    		$arr[$j]['id'] = $this->db->row['service_type_id'];
-    		$arr[$j]['level'] =$level;
-    		$j++;
+    	if($stmt){
+    		$j = 0;
+    		while ( $ar=$DBC->fetch($stmt) ) {
+    			$arr[$j]['name'] = $ar['name'];
+	    		$arr[$j]['id'] = $ar['service_type_id'];
+	    		$arr[$j]['level'] =$level;
+	    		$j++;
+    		}
     	}
-    
+    	
     	foreach ($arr as $key => $value)
     	{
     		$arr[$key]['child'] = $this->getServiceTypeTree_array($arr[$key]['level'] + 1, $arr[$key]['id']);

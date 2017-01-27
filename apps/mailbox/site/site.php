@@ -23,6 +23,11 @@ class mailbox_site extends mailbox_admin {
 		
 		if(preg_match('/^mailbox(\/(.*)?)?$/', $REQUESTURIPATH)){
 			$uid=(int)$_SESSION['user_id'];
+			if ( $uid == 0 or !isset($uid) ) {
+				$this->set_apps_template('mailbox', $this->getConfigValue('theme'), 'main_file_tpl', 'main.tpl.html');
+				$this->set_apps_template('mailbox', $this->getConfigValue('theme'), 'mailbox_inc_file', 'need_login.tpl');
+				return true;
+			}
 			if(preg_match('/^mailbox\/delete\/(\d+)(\/?)$/', $REQUESTURIPATH, $matches)){
 				$DBC=DBC::getInstance();
 				$query='DELETE FROM '.DB_PREFIX.'_'.$this->table_name.' WHERE mailbox_id=? AND reciever_id=?';

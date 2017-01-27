@@ -27,16 +27,43 @@ class sitebill_admin extends Object_Manager {
         $this->apps_dir = SITEBILL_DOCUMENT_ROOT.'/apps';
         $this->SiteBill();
         $this->filesystem = new Sitebill_Filesystem($arg);
+        
     }
     
     function ajax(){
-    	$apps = $this->load_apps();
-    	return json_encode($apps);
+    	if ( $this->getRequestValue('action') == 'ajax_update_app' ) {
+    		$app_name = $this->getRequestValue('app_name');
+    		$secret_key = $this->getRequestValue('secret_key');
+    		$ra = $this->update_app_js($app_name, $secret_key);
+                $this->clear_apps_cache();
+    		return json_encode($ra);
+    	} else {
+    		$apps = $this->load_apps();
+                $this->clear_apps_cache();
+    		return json_encode($apps);
+    	}
     }
     
     function main(){
         if ( $this->getRequestValue('do') == 'update' ) {
             $rs = $this->update_app( $this->getRequestValue('app') );
+        } elseif ( $this->getRequestValue('do') == 'update_all' ) {
+        	$apps = $this->load_apps();
+        	$license_key = $this->getConfigValue('license_key');
+        	 
+        	//$update_info['apps'] = $apps;
+        	$update_info['license_key'] = $license_key;
+        	$update_info['encoding'] = SITE_ENCODING;
+        	$update_info['host'] = 'http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL;
+        	$update_info['apps'] = $this->load_apps();
+        	$update_info['secret_key'] = $this->getRequestValue('secret_key');
+        	$json_string = json_encode($update_info);
+        	$rs = '';
+        	$rs .= '<script type="text/javascript">
+        var update_info_json_string = \''.$json_string.'\';
+</script>';
+        	 
+            $rs .= $this->update_all( $this->getRequestValue('secret_key') );
         } elseif ( $this->getRequestValue('do') == 'install' ) {
             $rs = $this->install_app( $this->getRequestValue('app') );
         } else {
@@ -74,6 +101,7 @@ class sitebill_admin extends Object_Manager {
         }
         $rs_new = $this->get_app_title_bar();
         $rs_new .= $rs;
+        $this->clear_apps_cache();
         return $rs_new;
     }
     
@@ -97,10 +125,35 @@ class sitebill_admin extends Object_Manager {
         return $rs_new;
     }
     
-    function update_app ( $app_name ) {
+    function update_all () {
+    	$rs = $this->template->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/sitebill/admin/template/update_wizard.tpl');
+    	return $rs;
+    }
+    
+    function update_app_js ( $app_name, $secret_key ) {
+    	$this->download($app_name, $secret_key);
+    	if ( $this->getError() ) {
+    		$ra['error'] = $this->GetErrorMessage();
+    	} else {
+    		//run update procedure
+    		if ( is_file(SITEBILL_DOCUMENT_ROOT.'/apps/'.$app_name.'/update.php') ) {
+    			require_once (SITEBILL_DOCUMENT_ROOT.'/apps/'.$app_name.'/update.php');
+    			$update_class_name = $app_name.'_update';
+    			$update_app_class = new $update_class_name;
+    			$update_app_class->main($secret_key);
+    		}
+    		$ra['success'] = 1;
+    	}
+    	return $ra;
+    }
+    
+    function update_app ( $app_name, $secret_key = '' ) {
+    	if ( $secret_key == '' ) {
+    		$secret_key = $this->getRequestValue('secret_key');
+    	}
         $rs .= sprintf(Multilanguage::_('APP_UPDATE','sitebill'), $app_name).'<br>';
         $rs .= sprintf(Multilanguage::_('UPADTES_LOAD','sitebill'), $app_name).'<br>';
-        $this->download($app_name, $this->getRequestValue('secret_key'));
+        $this->download($app_name, $secret_key);
         if ( $this->getError() ) {
         	$rs .= sprintf(Multilanguage::_('ERROR_ON_UPDATE','sitebill'), $this->GetErrorMessage()).'<br>';
         	return $rs;
@@ -110,7 +163,7 @@ class sitebill_admin extends Object_Manager {
                 require_once (SITEBILL_DOCUMENT_ROOT.'/apps/'.$app_name.'/update.php');
                 $update_class_name = $app_name.'_update';
                 $update_app_class = new $update_class_name;
-                $rs .= $update_app_class->main();
+                $rs .= $update_app_class->main($secret_key);
             }
         	$rs .= sprintf(Multilanguage::_('SUCCESS_UPDATE','sitebill'), $app_name).'<br>';
         }
@@ -147,7 +200,7 @@ class sitebill_admin extends Object_Manager {
 
         //download file
         $to_file = fopen($to_file_name,'w');
-        if ( !$this->getCurlContent('http://www.sitebill.ru/update/?app_name='.$app_name.'&secret_key='.$secret_key, $to_file) ) {
+        if ( !$this->getCurlContent('https://www.sitebill.ru/update/?app_name='.$app_name.'&secret_key='.$secret_key, $to_file) ) {
             $this->riseError(Multilanguage::_('ERROR_CANT_LOAD','sitebill'));
             fclose($to_file);
             return false;
@@ -185,6 +238,8 @@ class sitebill_admin extends Object_Manager {
     	curl_setopt($ch, CURLOPT_RETURNTRANSFER,1);
     	curl_setopt ($ch, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)");
     	curl_setopt ($ch, CURLOPT_FAILONERROR,true);
+    	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    	 
     	if (!empty($to_file)){
     		curl_setopt($ch,CURLOPT_BINARYTRANSFER,true);
     		curl_setopt($ch, CURLOPT_FILE,$to_file);
@@ -316,7 +371,14 @@ class sitebill_admin extends Object_Manager {
      * @return array
      */
     function load_apps () {
-    	require_once SITEBILL_DOCUMENT_ROOT.'/third/simple_html_dom/simple_html_dom.php';
+	if (!function_exists('file_get_html')) {
+	    if (file_exists(SITEBILL_APPS_DIR . '/third/simple_html_dom/simple_html_dom.php')) {
+		require_once SITEBILL_APPS_DIR . '/third/simple_html_dom/simple_html_dom.php';
+	    } else {
+		require_once SITEBILL_DOCUMENT_ROOT . '/third/simple_html_dom/simple_html_dom.php';
+	    }
+	}
+	
     	$menu=array();
     
     	if (is_dir($this->apps_dir)) {

@@ -13,6 +13,9 @@
 	<!--  <link rel=stylesheet type="text/css" href="{$estate_folder}/css/style.css"> -->
 	<script type="text/javascript" src="{$estate_folder}/apps/system/js/sitebillcore.js"></script>
 	{literal}
+	<script>
+	var estate_folder='{/literal}{$estate_folder}{literal}';
+	</script>
 	<style>
 		#adminloginform {
 			width: 350px;
@@ -27,6 +30,8 @@
 			var w=$('#adminloginform').width();
 			var c=SitebillCore.getDialogPositionCoords(w, h);
 			$('#adminloginform').css({'margin-top':c[1]+'px', 'margin-left':c[0]+'px'});
+			
+			$('[name=captcha]').addClass('span12');
 		});
 	</script>
 	{/literal}
@@ -38,7 +43,7 @@
 		<div class="well">
 	        <legend>{$L_AUTHORIZATION}{if $ntext!=''}<br />{$ntext}{/if}</legend>
 	        {$formbody}
-	        <!-- <form method="POST" action="">
+	        {if 1==0}<form method="POST" action="">
 	        	<div class="alert alert-error">
 	            	<a class="close" data-dismiss="alert" href="#">x</a>Incorrect Username or Password!
 				</div>      
@@ -48,7 +53,7 @@
 	                <input type="checkbox" name="remember" value="1"> Remember Me
 	            </label>
 	            <button class="btn-info btn" type="submit">{$L_AUTH_ENTER}</button>      
-	        </form>   -->  
+	        </form>{/if}
 		</div>
 	</div>
 </div>

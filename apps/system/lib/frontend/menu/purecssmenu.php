@@ -17,7 +17,7 @@ class PureCSS_Menu extends Structure_Manager {
      * @return
      */
     function get_menu () {
-		$category_structure = $this->loadCategoryStructure();
+		$category_structure = $this->loadCategoryStructure($this->getConfigValue('use_topic_publish_status'));
 		$level = 1;
         $rs = '<ul class="pureCssMenu pureCssMenum" style="border: 0px;">';
         foreach ( $category_structure['childs'][0] as $item_id => $categoryID ) {

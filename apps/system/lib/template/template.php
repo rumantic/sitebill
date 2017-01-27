@@ -8,6 +8,8 @@ class Template {
     var $template_name; // Main screen template name
     var $templateString; // Template string
     var $item = array(); // Items array
+    var $breadcrumbs=array();
+    
 
     /**
     * Constructor of the class
@@ -148,7 +150,6 @@ class Template {
         if ( !is_array($this->item) ) {
             return false;
         }
-        //remplace template set
         foreach ( $this->item as $itemKey => $itemValue ) {
             $this->templateString = str_replace( '{'.$itemKey.'}', $itemValue, $this->templateString );
         }

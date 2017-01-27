@@ -4,7 +4,8 @@
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
 class User_Object_Manager extends Object_Manager {
-    private $user_image_dir; 
+    private $user_image_dir;
+    private $new_user_id; 
     
     /**
      * Constructor
@@ -35,6 +36,14 @@ class User_Object_Manager extends Object_Manager {
         
     }
     
+	private function set_new_user_id ( $user_id ) {
+		$this->new_user_id = $user_id;
+	}
+	
+	function get_new_user_id () {
+		return $this->new_user_id;
+	}
+    
     protected function _edit_doneAction(){
     	
     	$rs='';
@@ -48,10 +57,14 @@ class User_Object_Manager extends Object_Manager {
 		    if ( !$this->check_data( $form_data[$this->table_name] ) ) {
 		        $rs = $this->get_form($form_data[$this->table_name], 'edit');
 		    } else {
+			//$message_array = array('apps_name' => 'user', 'method' => __METHOD__, 'message' => 'Редактирование пользоателя id = '.$form_data[$this->table_name]['user_id']['value'].'<pre>'.var_export($form_data[$this->table_name], true).'</pre>', 'type' => '' );
+			//$this->writeLog($message_array);
 		        $this->edit_data($form_data[$this->table_name]);
 		        if ( $this->getError() ) {
 		            $rs = $this->get_form($form_data[$this->table_name], 'edit');
 		        } else {
+		        	header('location: '.SITEBILL_MAIN_URL.'/admin/?action=user');
+		        	exit();
 		            $rs .= $this->grid();
 		        }
 		    }
@@ -80,7 +93,17 @@ class User_Object_Manager extends Object_Manager {
     		return $this->riseError(implode('<br />',$ans));
     	}
     }
-    
+    /**
+     * Просмотр истории действий пользователя из таблицы logger
+     * По-умолчанию выборка идет по user_id выбранного пользователя
+     * @return string Возвращает таблицу логов сгенерированную через apps.logger.grid()
+     */
+    protected function _viewlogAction(){
+    	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/logger/admin/admin.php');
+        $logger_admin = new logger_admin();
+        $rs = $logger_admin->grid();
+        return $rs;
+    }
     
     protected function _editAction(){
     	$rs='';
@@ -115,8 +138,62 @@ class User_Object_Manager extends Object_Manager {
     	return $rs;
     }
     
+    function external_add_user () {
+    	$rs='';
+    	$DBC=DBC::getInstance();
+    	 
+    	
+    	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+    	$data_model = new Data_Model();
+    	$form_data = $this->data_model;
+    	
+    	$form_data[$this->table_name]['newpass']['required'] = 'on';
+    	$form_data[$this->table_name]['newpass_retype']['required'] = 'on';
+    	
+    	$form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
+    	if ( isset($form_data[$this->table_name]['reg_date']) ) {
+    		$form_data[$this->table_name]['reg_date']['value'] = date('Y-m-d H:i:s');
+    	}
+    	
+    	if ( !$this->check_data( $form_data[$this->table_name] ) ) {
+    		$form_data[$this->table_name]['imgfile']['value'] = '';
+    		return false;
+    	
+    	} else {
+    		$new_user_id=$this->add_data($form_data[$this->table_name], $this->getRequestValue('language_id'));
+    		if ( $this->getError() ) {
+    			return false;
+    		} else {
+    			$this->set_new_user_id($new_user_id);
+    			 
+    			if(1==$this->getConfigValue('use_registration_email_confirm')){
+    				$activation_code=md5(time().'_'.rand(100,999));
+    				$query="UPDATE ".DB_PREFIX."_user SET pass='".$activation_code."' WHERE user_id=".$new_user_id;
+    				$stmt=$DBC->query($query);
+    	
+    				$activation_link='<a href="http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/register?do=activate&activation_code='.$activation_code.'&email='.$form_data[$this->table_name]['email']['value'].'">http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/register?do=activate&activation_code='.$activation_code.'&email='.$form_data[$this->table_name]['email']['value'].'</a>';
+    				$message = sprintf(Multilanguage::_('NEW_REG_EMAILACCEPT_BODY','system'), $activation_link);
+    				$subject = sprintf(Multilanguage::_('NEW_REG_EMAILACCEPT_TITLE','system'), $_SERVER['HTTP_HOST']);
+    				 
+    				$to = $form_data[$this->table_name]['email']['value'];
+    				$from = $this->getConfigValue('order_email_acceptor');
+    				$this->sendFirmMail($to, $from, $subject, $message);
+    				$query = "delete from ".DB_PREFIX."_cache where parameter='{$activation_code}'";
+    				$stmt=$DBC->query($query);
+    				$query = "insert into ".DB_PREFIX."_cache (parameter, `value`) values ('$activation_code', '$password')";
+    				$stmt=$DBC->query($query);
+    				 
+    			}
+    			return $new_user_id;
+    		}
+    	}
+    	//$this->_new_doneAction();
+    }
+    
     protected function _new_doneAction(){
     	$rs='';
+    	$DBC=DBC::getInstance();
+    	
     
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
     	$data_model = new Data_Model();
@@ -140,10 +217,13 @@ class User_Object_Manager extends Object_Manager {
 		            $form_data[$this->table_name]['imgfile']['value'] = '';
 		            $rs = $this->get_form($form_data[$this->table_name], 'new');
 		        } else {
+		        	$this->set_new_user_id($new_user_id);
 		        	
 		        	if(1==$this->getConfigValue('use_registration_email_confirm')){
 		        		$activation_code=md5(time().'_'.rand(100,999));
-		        		$this->db->exec("UPDATE ".DB_PREFIX."_user SET pass='".$activation_code."' WHERE user_id=".$new_user_id);
+		        		$query="UPDATE ".DB_PREFIX."_user SET pass='".$activation_code."' WHERE user_id=".$new_user_id;
+		        		$stmt=$DBC->query($query);
+		        		
 		        		$activation_link='<a href="http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/register?do=activate&activation_code='.$activation_code.'&email='.$form_data[$this->table_name]['email']['value'].'">http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/register?do=activate&activation_code='.$activation_code.'&email='.$form_data[$this->table_name]['email']['value'].'</a>';
 		        		/*require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
 		        		$mailer = new Mailer();*/
@@ -160,11 +240,13 @@ class User_Object_Manager extends Object_Manager {
 		        		$this->sendFirmMail($to, $from, $subject, $message);
 		        		//save tmp password
 		        		$query = "delete from ".DB_PREFIX."_cache where parameter='{$activation_code}'";
-		        		$this->db->exec($query);
+		        		$stmt=$DBC->query($query);
 		        		$query = "insert into ".DB_PREFIX."_cache (parameter, `value`) values ('$activation_code', '$password')";
-		        		$this->db->exec($query);
+		        		$stmt=$DBC->query($query);
 		        			
 		        	}
+		        	header('location: '.SITEBILL_MAIN_URL.'/admin/?action=user');
+		        	exit();
 		        	$rs .= $this->grid();
 		        }
 		    }
@@ -183,7 +265,14 @@ class User_Object_Manager extends Object_Manager {
     	return $rs;
     }
     
-    
+    protected function _showlogAction(){
+    	$rs='';
+    	if ( $this->getConfigValue('apps.logger.enable') and file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/logger/admin/admin.php') ) {
+    		header('location: '.SITEBILL_MAIN_URL.'/admin/?action=logger&user_id='.intval($this->getRequestValue('user_id')));
+    		exit();
+    	}
+    	return 'Функционал недоступен';
+    }
     
     
 	
@@ -197,11 +286,12 @@ class User_Object_Manager extends Object_Manager {
 	function edit_data ( $form_data, $language_id = 0 ) {
 	    require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
 	    $data_model = new Data_Model();
-	    $query = $data_model->get_edit_query(DB_PREFIX.'_'.$this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data, $language_id);
+	    $queryp = $data_model->get_prepared_edit_query(DB_PREFIX.'_'.$this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data, $language_id);
+	    $DBC=DBC::getInstance();
 	    
-	    $this->db->exec($query);
-	    if ( !$this->db->success ) {
-	        $this->riseError($this->db->error);
+	    $stmt=$DBC->query($queryp['q'], $queryp['p'], $row, $success);
+	    if ( !$success ) {
+	        $this->riseError($DBC->getLastError());
 	        return false;
 	    }
 	    
@@ -253,9 +343,13 @@ class User_Object_Manager extends Object_Manager {
 	 */
 	function getGroupIdByName ( $group_name ) {
 		$query = "select group_id from ".DB_PREFIX."_group where system_name='$group_name'";
-		$this->db->exec($query);
-		$this->db->fetch_assoc();
-		return $this->db->row['group_id'];
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			return $ar['group_id'];
+		}
+		return 0;
 	}
 	
 	
@@ -269,15 +363,18 @@ class User_Object_Manager extends Object_Manager {
 	    require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
 	    $data_model = new Data_Model();
 	    
-	    $query = $data_model->get_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data, $language_id);
-	    //echo $query.'<br>';
-	    $this->db->exec($query);
-	    if ( !$this->db->success ) {
-	        $this->riseError($this->db->error);
-	        return false;
+	    //$query = $data_model->get_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data, $language_id);
+	    $queryp = $data_model->get_prepared_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data, $language_id);
+	     
+	    $DBC=DBC::getInstance();
+	     
+	    $stmt=$DBC->query($queryp['q'], $queryp['p'], $row, $success_mark);
+	    if ( !$success_mark ) {
+	    	$this->riseError($DBC->getLastError());
+	    	return false;
 	    }
 	    
-	    $new_record_id = $this->db->last_insert_id();
+	    $new_record_id = $DBC->lastInsertId();
 	    
 	    if ( strlen($form_data['imgfile']['value']) > 0 ) {
 	        //$this->user_image_dir = $form_data['imgfile']['path']; 
@@ -369,11 +466,13 @@ class User_Object_Manager extends Object_Manager {
      */
     function checkLogin ( $login ) {
 		$query = 'select count(*) as cid from '.DB_PREFIX.'_user where login=\''.$login.'\'';
-		//echo $query;
-		$this->db->exec($query);
-		$this->db->fetch_assoc();
-		if ( $this->db->row['cid'] > 0 ) {
-		    return false;
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			if ( $ar['cid'] > 0 ) {
+				return false;
+			}
 		}
 		return true;
     }
@@ -386,11 +485,13 @@ class User_Object_Manager extends Object_Manager {
      */
     function checkDiffLogin ( $login, $user_id ) {
 		$query = 'select count(*) as cid from '.DB_PREFIX.'_user where login=\''.$login.'\' and user_id<>'.$user_id;
-		//echo $query;
-		$this->db->exec($query);
-		$this->db->fetch_assoc();
-		if ( $this->db->row['cid'] > 0 ) {
-		    return false;
+   		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			if ( $ar['cid'] > 0 ) {
+				return false;
+			}
 		}
 		return true;
     }
@@ -445,15 +546,16 @@ class User_Object_Manager extends Object_Manager {
      */
     function editPassword ( $user_id, $password ) {
         $query = "update ".DB_PREFIX."_user set password='".md5($password)."' where user_id=$user_id";
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
         return true;
     }
 	
 	
 	function update_photo ( $user_id ) {
-        if ( SITEBILL_MAIN_URL != '' ) {
+        /*if ( SITEBILL_MAIN_URL != '' ) {
             $add_folder = SITEBILL_MAIN_URL.'/';
-        }
+        }*/
         
 	    
 	    //global $sitebill_document_root;
@@ -462,44 +564,61 @@ class User_Object_Manager extends Object_Manager {
         $this->user_image_dir='/img/data/user/';
 	    $imgfile_directory=$this->user_image_dir;
 	    
-	    $document_root = $_SERVER['DOCUMENT_ROOT'].$add_folder; 
+	    //$document_root = $_SERVER['DOCUMENT_ROOT'].$add_folder; 
+	    
 		
 		$avial_ext=array('jpg', 'jpeg', 'gif', 'png');
 		if(isset($_FILES['imgfile'])){
 			
-			if(($_FILES['imgfile']['error']!=0)OR($_FILES['imgfile']['size']==0)){
+			if(($_FILES['imgfile']['error']!=0) OR ($_FILES['imgfile']['size']==0)){
 				//echo 'Не указан или указан не верно файл для загрузки<br>';
 			}else{
-				//$ret='No errors';
 				$fprts=explode('.',$_FILES['imgfile']['name']);
-				//print_r($fprts,true);
-				
 				if(count($fprts)>1){
 					$ext=strtolower($fprts[count($fprts)-1]);
+					
 					if(in_array($ext,$avial_ext)){
+						
+						$mode=1;
+						if(1==$this->getConfigValue('user_pic_smart')){
+							$mode='f';
+						}
+						
 						$usrfilename=time().'.'.$ext;
-						//echo $imgfile_directory.$usrfilename;
-                        $i = rand(0, 999);
-						$preview_name="img".uniqid().'_'.time()."_".$i.".".$ext;
+						$i = rand(0, 999);
+						if($mode=='f'){
+							$preview_name="usr".uniqid().'_'.time().".png";
+						}else{
+							$preview_name="usr".uniqid().'_'.time().".".$ext;
+						}
+						
                         $preview_name_tmp="_tmp".uniqid().'_'.time()."_".$i.".".$ext;
 						
-						if(! move_uploaded_file($_FILES['imgfile']['tmp_name'], $document_root.'/'.$imgfile_directory.$preview_name_tmp) ){
+						if(! move_uploaded_file($_FILES['imgfile']['tmp_name'], SITEBILL_DOCUMENT_ROOT.$imgfile_directory.$preview_name_tmp) ){
 							
 						}else{
 						    $this->deleteUserpic($user_id);
-                            list($width,$height)=$this->makePreview($document_root.'/'.$imgfile_directory.$preview_name_tmp, $document_root.'/'.$imgfile_directory.$preview_name, $this->getConfigValue('user_pic_width'),$this->getConfigValue('user_pic_height'), $ext,1);
-                            unlink($document_root.'/'.$imgfile_directory.$preview_name_tmp);
+						    
+						   
+						    if($mode=='f'){
+						    	$r=$this->makePreview(SITEBILL_DOCUMENT_ROOT.$imgfile_directory.$preview_name_tmp, SITEBILL_DOCUMENT_ROOT.$imgfile_directory.$preview_name, $this->getConfigValue('user_pic_width'),$this->getConfigValue('user_pic_height'), $ext, $mode, 'png');
+						    }else{
+						    	$r=$this->makePreview(SITEBILL_DOCUMENT_ROOT.$imgfile_directory.$preview_name_tmp, SITEBILL_DOCUMENT_ROOT.$imgfile_directory.$preview_name, $this->getConfigValue('user_pic_width'),$this->getConfigValue('user_pic_height'), $ext, $mode);
+						    }
                             
-							$query='UPDATE '.DB_PREFIX.'_user SET imgfile="'.$preview_name.'" WHERE user_id='.$user_id;
-							//$ret=$query;
-							$this->db->exec($query);
+                            unlink(SITEBILL_DOCUMENT_ROOT.$imgfile_directory.$preview_name_tmp);
+                            if(false!==$r){
+                            	$query='UPDATE '.DB_PREFIX.'_user SET imgfile="'.$preview_name.'" WHERE user_id='.$user_id;
+                            	$DBC=DBC::getInstance();
+                            	$stmt=$DBC->query($query);
+                            }
+							
 						}
 					}
 					
 				}
 			}
 		}
-		//return $ret;
 	}
 	
 	function get_user_model ($ignore_user_group=false) {
@@ -523,12 +642,12 @@ class User_Object_Manager extends Object_Manager {
 	    	$form_data = $this->_get_user_model($ajax);
 	    }
 	    
-	    if ( $this->getConfigValue('use_registration_email_confirm')  ) {
+	    /*if ( $this->getConfigValue('use_registration_email_confirm')  ) {
 	    	$form_data['user']['active']['name'] = 'active';
 	    	$form_data['user']['active']['title'] = 'Активен';
 	    	$form_data['user']['active']['value'] = '';
 	    	$form_data['user']['active']['type'] = 'checkbox';
-	    }
+	    }*/
 	     
 	    return $form_data;
 	}
@@ -584,6 +703,13 @@ class User_Object_Manager extends Object_Manager {
 				$form_user['user']['company_id']['unique'] = 'off';
 			}
 		}
+		
+		$form_user['user']['notify']['name'] = 'notify';
+		$form_user['user']['notify']['title'] = 'Получать уведомления на почту';
+		$form_user['user']['notify']['value'] = 0;
+		$form_user['user']['notify']['type'] = 'checkbox';
+		$form_user['user']['notify']['required'] = 'off';
+		$form_user['user']['notify']['unique'] = 'off';
 		
 		$form_user['user']['login']['name'] = 'login';
 		$form_user['user']['login']['title'] = 'Login';
@@ -698,27 +824,152 @@ class User_Object_Manager extends Object_Manager {
 		
 		return $form_user;
     }
-    /**
-     * Grid
-     * @param void
-     * @return string
-     */
+    
+    function grid_old () {
+    	$srch_p=$this->getRequestValue('srch');
+    	if(isset($srch_p['group_id'])){
+    		if(!is_array($srch_p['group_id'])){
+    			$srch_p['group_id']=(array)$srch_p['group_id'];
+    		}
+    		foreach ($srch_p['group_id'] as $k=>$v){
+    			if(intval($v)==0){
+    				unset($srch_p['group_id'][$k]);
+    			}
+    		}
+    		if(empty($srch_p['group_id'])){
+    			unset($srch_p['group_id']);
+    		}
+    	}
+    	if(isset($srch_p['company_id'])){
+    		if(!is_array($srch_p['company_id'])){
+    			$srch_p['company_id'][]=$srch_p['company_id'];
+    		}
+    		foreach ($srch_p['company_id'] as $k=>$v){
+    			if(intval($v)==0){
+    				unset($srch_p['company_id'][$k]);
+    			}
+    		}
+    		if(empty($srch_p['company_id'])){
+    			unset($srch_p['company_id']);
+    		}
+    	}
+    	if(isset($srch_p['login'])){
+    		$srch_p['login']=trim($srch_p['login']);
+    		if($srch_p['login']==''){
+    			unset($srch_p['login']);
+    		}
+    	}
+    	if(isset($srch_p['email'])){
+    		$srch_p['email']=trim($srch_p['email']);
+    		if($srch_p['email']==''){
+    			unset($srch_p['email']);
+    		}
+    	}
+    	if(isset($srch_p['fio'])){
+    		$srch_p['fio']=trim($srch_p['fio']);
+    		if($srch_p['fio']==''){
+    			unset($srch_p['fio']);
+    		}
+    	}
+    	
+    	
+    	$ret=array();
+    	
+    	$where_parts=array();
+    	$where_vals=array();
+    	foreach ($srch_p as $k=>$value) {
+    		/*if($k=='group_id'){
+    			$where_parts[]='(`group_id` IN ('.implode(',', array_fill(0, count($value), '?')).'))';
+    			$where_vals=array_merge($where_vals, $value);
+    		}
+    		if($k=='company_id'){
+    			$where_parts[]='(`company_id` IN ('.implode(',', array_fill(0, count($value), '?')).'))';
+    			$where_vals=array_merge($where_vals, $value);
+    		}
+    		if($k=='login'){
+    			$where_parts[]='(`login` LIKE ?)';
+    			$where_vals[]='%'.$value.'%';
+    		}
+    		if($k=='email'){
+    			$where_parts[]='(`email` LIKE ?)';
+    			$where_vals[]='%'.$value.'%';
+    		}
+    		if($k=='fio'){
+    			$where_parts[]='(`fio` LIKE ?)';
+    			$where_vals[]='%'.$value.'%';
+    		}*/
+    		if($k=='group_id'){
+    			$where_parts[]='(`group_id` IN ('.implode(',', $value).'))';
+    			$where_vals=array_merge($where_vals, $value);
+    		}
+    		if($k=='company_id'){
+    			$where_parts[]='(`company_id` IN ('.implode(',', $value).'))';
+    			$where_vals=array_merge($where_vals, $value);
+    		}
+    		if($k=='login'){
+    			$where_parts[]='(`login` LIKE \'%'.$value.'%\')';
+    			$where_vals[]='%'.$value.'%';
+    		}
+    		if($k=='email'){
+    			$where_parts[]='(`email` LIKE \'%'.$value.'%\')';
+    			$where_vals[]='%'.$value.'%';
+    		}
+    		if($k=='fio'){
+    			$where_parts[]='(`fio` LIKE \'%'.$value.'%\')';
+    			$where_vals[]='%'.$value.'%';
+    		}
+    		if($k=='reg_date_from'){
+    			$where_parts[]='(`reg_date` >= \''.$value.' 23:59:59'.'\')';
+    			$where_vals[]='%'.$value.'%';
+    		}
+    		if($k=='reg_date_for'){
+    			$where_parts[]='(`reg_date` <= \''.$value.' 23:59:59'.'\')';
+    			$where_vals[]='%'.$value.'%';
+    		}
+    	}
+    	
+    	$query='SELECT `user_id` FROM '.DB_PREFIX.'_user'.(!empty($where_parts) ? ' WHERE '.implode(' AND ', $where_parts) : '');
+    	echo $query;
+    	print_r($where_vals);
+    	$DBC=DBC::getInstance();
+    	$stmt=$DBC->query($query, array($query));
+    	
+    	echo $DBC->getLastError();
+    	if($stmt){
+    		while($ar=$DBC->fetch($stmt)){
+    			$ret[]=$ar['user_id'];
+    		}
+    	}
+    	
+    	print_r($ret);
+    	return;
+    	
+    	$default_params['grid_item'] = array('user_id', 'login', 'fio', 'reg_date', 'group_id', 'email', 'phone');
+    
+    	$where_parts=array();
+    	$group_id=(int)$this->getRequestValue('group_id');
+    	$company_id=(int)$this->getRequestValue('company_id');
+    
+    	$conditions=array();
+    
+    	if($group_id>0){
+    		$where_parts[]='group_id='.$group_id;
+    		$conditions['group_id']=$group_id;
+    	}
+    
+    	if($company_id>0){
+    		$where_parts[]='company_id='.$company_id;
+    		$conditions['company_id']=$company_id;
+    	}
+    	if ( count($conditions) > 0 ) {
+    		$params['grid_conditions'] = $conditions;
+    	}
+    	return parent::grid($params, $default_params);
+    }
+    
     function grid () {
-    	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/grid.php');
-        $common_grid = new Common_Grid($this);
-        $common_grid->set_grid_table($this->table_name);
-        
-        $common_grid->add_grid_item('user_id');
-        $common_grid->add_grid_item('login');
-        $common_grid->add_grid_item('fio');
-        $common_grid->add_grid_item('active');
-        $common_grid->add_grid_item('reg_date');
-        $common_grid->add_grid_item('group_id');
-        $common_grid->add_grid_item('email');
-        
-        $common_grid->add_grid_control('edit');
-        $common_grid->add_grid_control('delete');
-        
+        $default_params['grid_item'] = array('user_id', 'login', 'fio', 'reg_date', 'group_id', 'email', 'phone');
+
         $where_parts=array();
         $group_id=(int)$this->getRequestValue('group_id');
         $company_id=(int)$this->getRequestValue('company_id');
@@ -734,40 +985,17 @@ class User_Object_Manager extends Object_Manager {
         	$where_parts[]='company_id='.$company_id;
         	$conditions['company_id']=$company_id;
         }
-        
-        $common_grid->setPagerParams(array('action'=>$this->action,'page'=>$this->getRequestValue('page'),'per_page'=>$this->getConfigValue('common_per_page')));
-        
-        if(!empty($conditions)){
-        	$common_grid->set_conditions($conditions);
-        }
-        /*if(count($where_parts)>0){
-        	$common_grid->set_grid_query("select * from ".DB_PREFIX."_".$this->table_name." where ".implode(' AND ',$where_parts)." order by user_id asc");
-        	$common_grid->setPagerParams(array('page'=>$this->getRequestValue('page'),'per_page'=>$this->getConfigValue('common_per_page'),'action'=>$this->action, 'group_id'=>$group_id, 'company_id'=>$company_id));
-        }else{
-        	$common_grid->set_grid_query("select * from ".DB_PREFIX."_".$this->table_name." order by user_id asc");
-        	$common_grid->setPagerParams(array('page'=>$this->getRequestValue('page'),'per_page'=>$this->getConfigValue('common_per_page'),'action'=>$this->action, 'group_id'=>'', 'company_id'=>''));
-        }*/
-        
-        /*
-        if($this->getRequestValue('district_id')!=0){
-        	$common_grid->set_conditions(array('district_id'=>(int)$this->getRequestValue('district_id')));
-        	$common_grid->setPagerParams(array('action'=>$this->action,'page'=>$this->getRequestValue('page'),'per_page'=>$this->getConfigValue('common_per_page')));
-        	//$common_grid->set_grid_query("SELECT * FROM ".DB_PREFIX."_".$this->table_name." WHERE district_id=".(int)$this->getRequestValue('district_id')." ORDER BY ".$this->primary_key." ASC");
-        }elseif($this->getRequestValue('city_id')!=0){
-        	$common_grid->set_conditions(array('city_id'=>(int)$this->getRequestValue('city_id')));
-        	$common_grid->setPagerParams(array('action'=>$this->action,'page'=>$this->getRequestValue('page'),'per_page'=>$this->getConfigValue('common_per_page')));
-        	//$common_grid->set_grid_query("SELECT * FROM ".DB_PREFIX."_".$this->table_name." WHERE city_id=".(int)$this->getRequestValue('city_id')." ORDER BY ".$this->primary_key." ASC");
-        }else{
-        	$common_grid->setPagerParams(array('action'=>$this->action,'page'=>$this->getRequestValue('page'),'per_page'=>$this->getConfigValue('common_per_page')));
-        	//$common_grid->set_grid_query("SELECT * FROM ".DB_PREFIX."_".$this->table_name." ORDER BY ".$this->primary_key." ASC");
+        if ( count($conditions) > 0 ) {
+            $params['grid_conditions'] = $conditions;
         }
         
-        */
-        
-        //$common_grid->set_grid_query("select u.*, g.name AS group_id from ".DB_PREFIX."_".$this->table_name." u LEFT JOIN ".DB_PREFIX."_group g ON u.group_id=g.group_id order by user_id asc");
-        $rs = $common_grid->construct_grid();
-        return $rs;
+	$params['grid_controls'] = array('edit', 'delete');
+        if ( $this->getConfigValue('apps.logger.enable') ) {
+            array_push($params['grid_controls'], 'viewlog');
+        }
+        return parent::grid($params, $default_params);
     }
+    
     
 	/**
 	 * Get top menu
@@ -777,9 +1005,6 @@ class User_Object_Manager extends Object_Manager {
 	function getTopMenu () {
 	    $rs = '';
 	    $rs .= '<a href="?action='.$this->action.'&do=new" class="btn btn-primary">'.Multilanguage::_('ADD_USER','system').'</a>';
-	    if ( preg_match('/admin/', $_SERVER['REQUEST_URI']) ) {
-	    	$rs.=$this->getAdditionalSearchForm();
-	    }
 	    
 	    //select * from re_company order by name
 	    
@@ -790,31 +1015,37 @@ class User_Object_Manager extends Object_Manager {
 	
 	function getAdditionalSearchForm(){
 		$query='select * from re_group order by name';
-		$this->db->exec($query);
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
 		$ret.='<form method="post" action="'.SITEBILL_MAIN_URL.'/admin/index.php?action=user">';
 		$ret.='<select name="group_id">';
 		$ret.='<option value="">'.Multilanguage::_('ANY_GROUP','system').'</option>';
-		while($this->db->fetch_assoc()){
-			if($this->getRequestValue('group_id')==$this->db->row['group_id']){
-				$ret.='<option value="'.$this->db->row['group_id'].'" selected="selected">'.$this->db->row['name'].'</option>';
-			}else{
-				$ret.='<option value="'.$this->db->row['group_id'].'">'.$this->db->row['name'].'</option>';
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				if($this->getRequestValue('group_id')==$ar['group_id']){
+					$ret.='<option value="'.$ar['group_id'].'" selected="selected">'.$ar['name'].'</option>';
+				}else{
+					$ret.='<option value="'.$ar['group_id'].'">'.$ar['name'].'</option>';
+				}
+					
 			}
-			
 		}
+		
 		$ret.='</select>';
 		if($this->getConfigValue('apps.company.enable')==1){
 			$query='select * from re_company order by name';
-			$this->db->exec($query);
+			$stmt=$DBC->query($query);
 			$ret.='<select name="company_id">';
 			$ret.='<option value="">'.Multilanguage::_('ANY_COMPANY','system').'</option>';
-			while($this->db->fetch_assoc()){
-				if($this->getRequestValue('company_id')==$this->db->row['company_id']){
-					$ret.='<option value="'.$this->db->row['company_id'].'" selected="selected">'.$this->db->row['name'].'</option>';
-				}else{
-					$ret.='<option value="'.$this->db->row['company_id'].'">'.$this->db->row['name'].'</option>';
+			if($stmt){
+				while($ar=$DBC->fetch($stmt)){
+					if($this->getRequestValue('company_id')==$ar['company_id']){
+						$ret.='<option value="'.$ar['company_id'].'" selected="selected">'.$ar['name'].'</option>';
+					}else{
+						$ret.='<option value="'.$ar['company_id'].'">'.$ar['name'].'</option>';
+					}
+						
 				}
-				
 			}
 			$ret.='</select>';
 		}
@@ -826,4 +1057,3 @@ class User_Object_Manager extends Object_Manager {
 	
 	
 }
-?>

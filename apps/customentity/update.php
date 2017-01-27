@@ -11,8 +11,9 @@ class customentity_update extends SiteBill {
        	$rs = '<h3>'.Multilanguage::_('SQL_NOW','system').'</h3>';
         $DBC=DBC::getInstance();
         foreach ( $query_data as $query ) {
-        	$stmt=$DBC->query($query);
-        	if ( !$stmt ) {
+        	$success=false;
+        	$stmt=$DBC->query($query, array(), $rows, $success);
+        	if ( !$success ) {
         		$rs .= Multilanguage::_('ERROR_ON_SQL_RUN','system').': '.$query.'<br>';
         	} else {
         		$rs .= Multilanguage::_('QUERY_SUCCESS','system').': '.$query.'<br>';

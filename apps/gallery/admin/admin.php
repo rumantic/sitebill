@@ -24,8 +24,12 @@ class gallery_admin extends Object_Manager {
 	    $data_model = new Data_Model();
 	    
 	    $query = $data_model->get_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data);
-	    $this->db->exec($query);
-	    $new_record_id = $this->db->last_insert_id();
+	    $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if(!$stmt){
+			return false;
+		}
+	    $new_record_id = $DBC->lastInsertId();
 	    
 	    foreach ($form_data as $form_item){
 	    	if($form_item['type']=='uploads'){
@@ -54,9 +58,8 @@ class gallery_admin extends Object_Manager {
 		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
 	    $data_model = new Data_Model();
 	    $query = $data_model->get_edit_query(DB_PREFIX.'_'.$this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data);
-	    //echo $query;
-	    
-	    $this->db->exec($query);
+	    $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
 	    
 	    foreach ($form_data as $form_item){
 	    	if($form_item['type']=='uploads'){
@@ -94,7 +97,9 @@ class gallery_admin extends Object_Manager {
     
     
     function install () {
-        //create tables
+        $success_result=true;
+    	$DBC=DBC::getInstance();
+    	
         $query = "
 CREATE TABLE `".DB_PREFIX."_gallery` (
   `gallery_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -108,7 +113,9 @@ CREATE TABLE `".DB_PREFIX."_gallery` (
   PRIMARY KEY (`gallery_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=".DB_ENCODING." ;
         ";
-        $this->db->exec($query);
+        $success=false;
+    	$stmt=$DBC->query($query, array(), $rows, $success);
+        $success_result=$success_result && $success;
         
         $query = "
 CREATE TABLE `".DB_PREFIX."_gallery_image` (
@@ -119,10 +126,15 @@ CREATE TABLE `".DB_PREFIX."_gallery_image` (
   PRIMARY KEY (`gallery_image_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=".DB_ENCODING." ;
         ";
-        $this->db->exec($query);
-        
-        
-        //add admin menu
+        $success=false;
+    	$stmt=$DBC->query($query, array(), $rows, $success);
+        $success_result=$success_result && $success;
+        if(!$success_result){
+        	$rs = Multilanguage::_('L_APPLICATION_INSTALLED_ERROR');
+        }else{
+        	$rs = Multilanguage::_('L_APPLICATION_INSTALLED');
+        }
+        return $rs;
     }
     
     /**

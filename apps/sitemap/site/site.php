@@ -4,47 +4,83 @@
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
 class sitemap_site extends sitemap_admin {
-	/**
-	 * Constructor
-	 */
-	function __construct() {
-		$this->Sitebill();
-	}
-	
+		
 	/**
 	 * Frontend
 	 */
 	function frontend () {
-		if ( !preg_match('/sitemap/', $_SERVER['REQUEST_URI']) ) {
+		$REQUESTURIPATH=Sitebill::getClearRequestURI();
+		
+		if($REQUESTURIPATH=='sitemap.xml'){
+			if(file_exists(SITEBILL_DOCUMENT_ROOT.'/cache/sitemap.xml')){
+				$sitemap_created_at=filemtime(SITEBILL_DOCUMENT_ROOT.'/cache/sitemap.xml');
+				$time_offset=(int)$this->getConfigValue('apps.sitemap.sitemaplivetime');
+				if(($sitemap_created_at+$time_offset)<time()){
+					$this->buildSitemap();
+				}
+			}else{
+				$this->buildSitemap();
+			}
+			$page=(int)$_GET['page'];
+			if($page>0 && file_exists(SITEBILL_DOCUMENT_ROOT.'/cache/sitemap_page'.$page.'.xml')){
+				header("Content-Type: text/xml");
+				echo file_get_contents(SITEBILL_DOCUMENT_ROOT.'/cache/sitemap_page'.$page.'.xml');
+			}else{
+				header("Content-Type: text/xml");
+				echo file_get_contents(SITEBILL_DOCUMENT_ROOT.'/cache/sitemap.xml');
+			}
+			
+			
+			exit();
+		}
+		
+		if ($REQUESTURIPATH!='sitemap') {
 			return false;
 		}
-		//get page list
-		$query = "select * from ".DB_PREFIX."_page order by page_id";
-		$this->db->exec($query);
-		while ( $this->db->fetch_assoc() ) {
-			$map_page[] = $this->db->row;
+		
+		/*if ($REQUESTURIPATH=='sitemap') {
+			$urls=$this->getSitemapItemsHTML();
+			$this->template->assert('grid_items', $urls);
+			$this->set_apps_template($this->action, $this->getConfigValue('theme'), 'main_file_tpl', 'grid.tpl.html');
+			return true;
 		}
+		
+		return false;*/
+		$DBC=DBC::getInstance();
+		
+		$map_page=array();
+		$query = "select * from ".DB_PREFIX."_page order by page_id";
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				$map_page[] = $ar;
+			}
+		}
+		
 		$this->template->assert('map_page', $map_page);
 		
 		//get news list
+		$map_news=array();
 		$query = "select * from ".DB_PREFIX."_news order by news_id";
-		$this->db->exec($query);
-		while ( $this->db->fetch_assoc() ) {
-			$map_news[] = $this->db->row;
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				$map_news[] = $ar;
+			}
 		}
 		$this->template->assert('map_news', $map_news);
 		
 		//get gallery list
+		$map_gallery=array();
 		$query = "select * from ".DB_PREFIX."_gallery order by gallery_id";
-		$this->db->exec($query);
-		while ( $this->db->fetch_assoc() ) {
-			$map_gallery[] = $this->db->row;
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				$map_gallery[] = $ar;
+			}
 		}
 		$this->template->assert('map_gallery', $map_gallery);
 		$this->template->assert('title', 'Карта сайта');
-		
-		
-		
 		$template_full_path = $this->get_apps_template_full_path('sitemap', $this->getConfigValue('theme'), 'grid.tpl.html');
 		$this->template->assert('main_file_tpl', $template_full_path);
 		return true;

@@ -49,14 +49,16 @@ class columns_Model extends Data_Model {
 		$form_data['columns']['type']['title'] = 'Тип записи';
 		$form_data['columns']['type']['value'] = '';
 		$form_data['columns']['type']['type'] = 'select_box';
-		$form_data['columns']['type']['select_data'] = array(
-				'gadres' => 'gadres',
+		
+		$seld=array(
+				/*'avatar' => 'avatar',*/
 				'primary_key' => 'primary_key', 
 				'safe_string' => 'safe_string', 
 				'hidden' => 'hidden', 
 				'checkbox' => 'checkbox', 
 				'select_box_structure' => 'select_box_structure', 
 				'select_by_query' => 'select_by_query', 
+				'select_entity' => 'select_entity',
 				'select_box' => 'select_box', 
 				'auto_add_value' => 'auto_add_value', 
 				'price' => 'price', 
@@ -76,9 +78,19 @@ class columns_Model extends Data_Model {
 				'dtdatetime'=>'dtdatetime',
 				'dtdate'=>'dtdate',
 				'dttime'=>'dttime',
-				'uploads'=>'uploads'/*,
-				'docuploads'=>'docuploads'*/
+				'uploads'=>'uploads',
+				'gadres' => 'gadres',
+				'client_id' => 'client_id',
+				'grade'=>'grade',
+				'docuploads'=>'docuploads',
+				'select_by_query_multi'=>'select_by_query_multi',
+				'separator'=>'separator'
 				);
+		if(defined('DEVMODE')){
+			$seld['destination']='destination';
+		}
+		asort($seld);
+		$form_data['columns']['type']['select_data'] = $seld;
 		$form_data['columns']['type']['required'] = 'off';
 		$form_data['columns']['type']['unique'] = 'off';
 		
@@ -108,6 +120,18 @@ class columns_Model extends Data_Model {
 		$form_data['columns']['active_in_topic']['required'] = 'off';
 		$form_data['columns']['active_in_topic']['unique'] = 'off';
 		
+		if(defined('DEVMODE')){
+			if(1===intval($this->getConfigValue('apps.table.additional_filtering'))){
+				$form_data['columns']['active_in_optype']['name'] = 'active_in_optype';
+				$form_data['columns']['active_in_optype']['title'] = 'Активно в категории 2';
+				$form_data['columns']['active_in_optype']['value'] = '';
+				$form_data['columns']['active_in_optype']['type'] = 'hidden';
+				$form_data['columns']['active_in_optype']['required'] = 'off';
+				$form_data['columns']['active_in_optype']['unique'] = 'off';
+			}
+		}
+		
+		
 		
 		
 		
@@ -118,6 +142,9 @@ class columns_Model extends Data_Model {
 		$form_data['columns']['name']['required'] = 'on';
 		$form_data['columns']['name']['unique'] = 'off';
 		
+		$langs=Multilanguage::availableLanguages();
+		//print_r($langs);
+		
 		$form_data['columns']['title']['name'] = 'title';
 		$form_data['columns']['title']['title'] = 'Название колонки (для человека)';
 		$form_data['columns']['title']['value'] = '';
@@ -125,12 +152,37 @@ class columns_Model extends Data_Model {
 		$form_data['columns']['title']['required'] = 'on';
 		$form_data['columns']['title']['unique'] = 'off';
 		
+		if(count($langs)>0){
+			foreach ($langs as $lang){
+				$form_data['columns']['title_'.$lang]['name'] = 'title_'.$lang;
+				$form_data['columns']['title_'.$lang]['title'] = 'Название колонки (для человека) '.$lang;
+				$form_data['columns']['title_'.$lang]['value'] = '';
+				$form_data['columns']['title_'.$lang]['type'] = 'safe_string';
+				$form_data['columns']['title_'.$lang]['required'] = 'off';
+				$form_data['columns']['title_'.$lang]['unique'] = 'off';
+			}
+		}
+		
+		
+		
+		
 		$form_data['columns']['hint']['name'] = 'hint';
 		$form_data['columns']['hint']['title'] = 'Подсказка (для человека)';
 		$form_data['columns']['hint']['value'] = '';
 		$form_data['columns']['hint']['type'] = 'safe_string';
 		$form_data['columns']['hint']['required'] = 'off';
 		$form_data['columns']['hint']['unique'] = 'off';
+		
+		if(count($langs)>0){
+			foreach ($langs as $lang){
+				$form_data['columns']['hint_'.$lang]['name'] = 'hint_'.$lang;
+				$form_data['columns']['hint_'.$lang]['title'] = 'Подсказка (для человека) '.$lang;
+				$form_data['columns']['hint_'.$lang]['value'] = '';
+				$form_data['columns']['hint_'.$lang]['type'] = 'safe_string';
+				$form_data['columns']['hint_'.$lang]['required'] = 'off';
+				$form_data['columns']['hint_'.$lang]['unique'] = 'off';
+			}
+		}
 		
 		$form_data['columns']['value']['name'] = 'value';
 		$form_data['columns']['value']['title'] = 'Значение по-умолчанию';
@@ -209,6 +261,17 @@ class columns_Model extends Data_Model {
 		$form_data['columns']['title_default']['type'] = 'safe_string';
 		$form_data['columns']['title_default']['required'] = 'off';
 		$form_data['columns']['title_default']['unique'] = 'off';
+		
+		if(count($langs)>0){
+			foreach ($langs as $lang){
+				$form_data['columns']['title_default_'.$lang]['name'] = 'title_default_'.$lang;
+				$form_data['columns']['title_default_'.$lang]['title'] = 'Заголовок строчки в select_box по-умолчанию '.$lang;
+				$form_data['columns']['title_default_'.$lang]['value'] = '';
+				$form_data['columns']['title_default_'.$lang]['type'] = 'safe_string';
+				$form_data['columns']['title_default_'.$lang]['required'] = 'off';
+				$form_data['columns']['title_default_'.$lang]['unique'] = 'off';
+			}
+		}
 
 		$form_data['columns']['value_default']['name'] = 'value_default';
 		$form_data['columns']['value_default']['title'] = 'Значение строчки в select_box по-умолчанию';
@@ -262,9 +325,20 @@ class columns_Model extends Data_Model {
 		$form_data['columns']['select_data']['name'] = 'select_data';
 		$form_data['columns']['select_data']['title'] = 'Набор опций выбора в формате пар {key~~value}';
 		$form_data['columns']['select_data']['value'] = '';
-		$form_data['columns']['select_data']['type'] = 'safe_string';
+		$form_data['columns']['select_data']['type'] = 'textarea';
 		$form_data['columns']['select_data']['required'] = 'off';
 		$form_data['columns']['select_data']['unique'] = 'off';
+		
+		if(count($langs)>0){
+			foreach ($langs as $lang){
+				$form_data['columns']['select_data_'.$lang]['name'] = 'select_data_'.$lang;
+				$form_data['columns']['select_data_'.$lang]['title'] = 'Набор опций выбора в формате пар {key~~value} '.$lang;
+				$form_data['columns']['select_data_'.$lang]['value'] = '';
+				$form_data['columns']['select_data_'.$lang]['type'] = 'textarea';
+				$form_data['columns']['select_data_'.$lang]['required'] = 'off';
+				$form_data['columns']['select_data_'.$lang]['unique'] = 'off';
+			}
+		}
 		
 		$form_data['columns']['table_name']['name'] = 'table_name';
 		$form_data['columns']['table_name']['title'] = 'Uploadify image: имя таблицы';
@@ -272,6 +346,8 @@ class columns_Model extends Data_Model {
 		$form_data['columns']['table_name']['type'] = 'safe_string';
 		$form_data['columns']['table_name']['required'] = 'off';
 		$form_data['columns']['table_name']['unique'] = 'off';
+		
+		
 		
 		$form_data['columns']['primary_key']['name'] = 'primary_key';
 		$form_data['columns']['primary_key']['title'] = 'Uploadify image: имя первичного ключа объекта к которому привязываются изображения';
@@ -323,6 +399,13 @@ class columns_Model extends Data_Model {
 		$form_data['columns']['unique']['required'] = 'off';
 		$form_data['columns']['unique']['unique'] = 'off';
 		
+		/*$form_data['columns']['is_ml']['name'] = 'is_ml';
+		$form_data['columns']['is_ml']['title'] = 'Мультиязычность';
+		$form_data['columns']['is_ml']['value'] = 0;
+		$form_data['columns']['is_ml']['type'] = 'checkbox';
+		$form_data['columns']['is_ml']['required'] = 'off';
+		$form_data['columns']['is_ml']['unique'] = 'off';*/
+		
 		$form_data['columns']['parameters']['name'] = 'parameters';
 		$form_data['columns']['parameters']['title'] = 'Параметры';
 		$form_data['columns']['parameters']['value'] = 0;
@@ -336,6 +419,17 @@ class columns_Model extends Data_Model {
 		$form_data['columns']['tab']['type'] = 'safe_string';
 		$form_data['columns']['tab']['required'] = 'off';
 		$form_data['columns']['tab']['unique'] = 'off';
+		
+		if(count($langs)>0){
+			foreach ($langs as $lang){
+				$form_data['columns']['tab_'.$lang]['name'] = 'tab_'.$lang;
+				$form_data['columns']['tab_'.$lang]['title'] = 'Имя вкладки в форме '.$lang;
+				$form_data['columns']['tab_'.$lang]['value'] = '';
+				$form_data['columns']['tab_'.$lang]['type'] = 'safe_string';
+				$form_data['columns']['tab_'.$lang]['required'] = 'off';
+				$form_data['columns']['tab_'.$lang]['unique'] = 'off';
+			}
+		}
 		
 		
 		return $form_data;

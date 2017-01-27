@@ -21,32 +21,43 @@ class Remind extends User_Object {
        */
       function main () {
       	if(isset($_POST['submit'])){
-      		$user_array=$this->getUserId(trim($this->getRequestValue('login')), trim($this->getRequestValue('email')));
+      		$login=trim($this->getRequestValue('login'));
+      		$email=trim($this->getRequestValue('email'));
       		
-      		if($user_array){
-      			$code=$this->addPasswordRecovery($user_array['user_id']);
-      			/*require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
-				$mailer = new Mailer();*/
-				$message=sprintf(Multilanguage::_('REMIND_PASSWORD_BODY','system'),$_SERVER['HTTP_HOST'],'<a href="http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/remind/?recovery_code='.$code.'">http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/remind/?recovery_code='.$code.'</a>');
-				
-				$subject = sprintf(Multilanguage::_('REMIND_PASSWORD_TITLE','system'),$_SERVER['HTTP_HOST']);
-				//echo '<pre>';
-				//print_r($user_array);
-				//echo '</pre>';
-				$to = trim($user_array['email']);
-				//echo "to = $to<br>";
-				$from = $this->getConfigValue('order_email_acceptor');
-				/*if ( $this->getConfigValue('use_smtp') ) {
-					$mailer->send_smtp($to, $from, $subject, $message, 1);
-				} else {
-					$mailer->send_simple($to, $from, $subject, $message, 1);
-				}*/
-				$this->sendFirmMail($to, $from, $subject, $message);
-				$rs=sprintf(Multilanguage::_('REMIND_INSTRUCTION','system'),trim($this->getRequestValue('email')));
-      		}else{
+      		if($login=='' && $email==''){
       			$rs=Multilanguage::_('NO_SUCH_USER','system');
       			$rs.=$this->getForm();
+      		}else{
+      			$user_array=$this->getUserId($login, $email);
+      			
+      			
+      			if($user_array){
+      				$code=$this->addPasswordRecovery($user_array['user_id']);
+      				$message=sprintf(Multilanguage::_('REMIND_PASSWORD_BODY','system'),$_SERVER['HTTP_HOST'],'<a href="http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/remind/?recovery_code='.$code.'">http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/remind/?recovery_code='.$code.'</a>');
+      			
+      				$subject = sprintf(Multilanguage::_('REMIND_PASSWORD_TITLE','system'),$_SERVER['HTTP_HOST']);
+      				$to = trim($user_array['email']);
+      				$from = $this->getConfigValue('order_email_acceptor');
+      				$this->sendFirmMail($to, $from, $subject, $message);
+      				$fto=array();
+      				$fto=explode('@', $to);
+      				if(isset($fto[0])){
+      					$str11=substr($fto[0], 0, 2);
+      					$str12=substr($fto[0], -1);
+      					$fto[0]=$str11.'***'.$str12;
+      				}
+      				if(isset($fto[1])){
+      					$str11=substr($fto[1], 0, 2);
+      					$str12=substr($fto[1], -1);
+      					$fto[1]=$str11.'***'.$str12;
+      				}
+      				$rs=sprintf(Multilanguage::_('REMIND_INSTRUCTION','system'), implode('@', $fto));
+      			}else{
+      				$rs=Multilanguage::_('NO_SUCH_USER','system');
+      				$rs.=$this->getForm();
+      			}
       		}
+      		
       	}elseif(isset($_REQUEST['recovery_code'])){
       		//echo 'recovery<br>';
       		$user_id=$this->checkRecoveryCode($this->getRequestValue('recovery_code'));
@@ -73,24 +84,27 @@ class Remind extends User_Object {
 					$mailer->send_simple($to, $from, $subject, $message, 1);
 				}*/
 				$this->sendFirmMail($to, $from, $subject, $message);
-				$rs = '<div class="message">'.sprintf(Multilanguage::_('NEW_PASS_ON_POST','system'), $to).'</div>';
+				$this->removePasswordRecovery($user_id, $this->getRequestValue('recovery_code'));
+				$fto=array();
+				$fto=explode('@', $to);
+				if(isset($fto[0])){
+					$str11=substr($fto[0], 0, 2);
+					$str12=substr($fto[0], -1);
+					$fto[0]=$str11.'***'.$str12;
+				}
+				if(isset($fto[1])){
+					$str11=substr($fto[1], 0, 2);
+					$str12=substr($fto[1], -1);
+					$fto[1]=$str11.'***'.$str12;
+				}
+				$rs = '<div class="message">'.sprintf(Multilanguage::_('NEW_PASS_ON_POST','system'), implode('@', $fto)).'</div>';
       		}else{
       			$rs = $this->getForm();
       		}
       	}else{
       		$rs = $this->getForm();
       	}
-      	/*
-          global $init;
-          $user_id = $this->checkData();
-          if ( $user_id ) {
-              $rs = $this->sendPassword( $user_id );
-          } else {
-              $rs = $this->getForm();
-              //$rs = __METHOD__;
-          }
-          */
-          return $rs;
+      	return $rs;
       }
       
       /**
@@ -131,8 +145,9 @@ class Remind extends User_Object {
        * @return mixed
 	   */
       function updatePassword ( $user_id, $password ) {
-          $query = "update ".DB_PREFIX."_user set password='".md5($password)."' where user_id=$user_id";
-          $this->db->exec($query);
+          $query = "UPDATE ".DB_PREFIX."_user SET password=? WHERE user_id=?";
+          $DBC=DBC::getInstance();
+          $stmt=$DBC->query($query, array(md5($password), $user_id));
           return true;
       }
       
@@ -179,7 +194,12 @@ class Remind extends User_Object {
         $rs .= '<table border="0">';
         
         $rs .= '<tr>';
-        $rs .= '<td class="special">'.Multilanguage::_('TYPE_LOGIN_PASS','system').': </td>';
+        if ( 1==$this->getConfigValue('email_as_login') ) {
+        	$rs .= '<td class="special">'.Multilanguage::_('TYPE_LOGIN_PASS_EMAILMODE','system').': </td>';
+        }else{
+        	$rs .= '<td class="special">'.Multilanguage::_('TYPE_LOGIN_PASS','system').': </td>';
+        }
+        
         $rs .= '<td class="special"><input type="text" name="login" id="login"></td>';
         $rs .= '</tr>';
         
@@ -206,58 +226,52 @@ class Remind extends User_Object {
           return $rs;
       }
       
-      /**
-       * Check data
-       * @param void
-       * @return boolean
-       */
-      /*
-      function checkData () {
-          global $init;
-          if ( $init->getValue('email') == '' ) {
-              return;
-          }
-          $user_id = $this->getUserIdByEmail($init->getValue('email'));
-          if ( $user_id ) {
-              return $user_id;
-          }
-          $this->RiseError('Неправильно указан email');
-          return false;
-      }
-      */
+    
       function getUserId($login,$email){
       	$id=0;
-      	$query="SELECT user_id, email FROM ".DB_PREFIX."_user WHERE login='".mysql_real_escape_string($login)."' or email='".mysql_real_escape_string($login)."'";
-      	//echo $query.'<br>';
-      	$this->db->exec($query);
-      	$this->db->fetch_assoc();
-      	 
-      	if($this->db->row['user_id'] > 0){
-      		$id=(int)$this->db->row['user_id'];
-      		$ra['user_id'] = $id;
-      		$ra['email'] = $this->db->row['email'];
-      		return $ra;
+      	if($login==''){
+      		return false;
+      	}
+      	$query="SELECT user_id, email FROM ".DB_PREFIX."_user WHERE login=? OR email=?";
+      	$DBC=DBC::getInstance();
+      	$stmt=$DBC->query($query, array($login, $login));
+      	if($stmt){
+      		$ar=$DBC->fetch($stmt);
+      		if($ar['user_id'] > 0){
+      			$id=(int)$ar['user_id'];
+      			$ra['user_id'] = $id;
+      			$ra['email'] = $ar['email'];
+      			return $ra;
+      		}
       	}
       	return false;
       }
       
       function addPasswordRecovery($user_id){
       	$code=md5(time());
-      	$query="INSERT INTO ".DB_PREFIX."_password_recovery (user_id, recovery_code) VALUES (".$user_id.", '".$code."')";
-      	//echo $query;
-      	$this->db->exec($query);
+      	$query="INSERT INTO ".DB_PREFIX."_password_recovery (user_id, recovery_code) VALUES (?, ?)";
+      	$DBC=DBC::getInstance();
+      	$stmt=$DBC->query($query, array($user_id, $code));
       	return $code;
+      }
+      
+      function removePasswordRecovery($user_id, $code){
+      	$query="DELETE FROM ".DB_PREFIX."_password_recovery WHERE user_id=? AND recovery_code=?";
+      	$DBC=DBC::getInstance();
+      	$stmt=$DBC->query($query, array($user_id, $code));
+      	return;
       }
       
       function checkRecoveryCode($code){
       	$id=0;
-      	$query="SELECT user_id FROM ".DB_PREFIX."_password_recovery WHERE recovery_code='".mysql_real_escape_string($code)."'";
-      	$this->db->exec($query);
-      	if($this->db->success){
-      		$this->db->fetch_assoc();
-      		$id=(int)$this->db->row['user_id'];
+      	$query="SELECT user_id FROM ".DB_PREFIX."_password_recovery WHERE recovery_code=?";
+      	$DBC=DBC::getInstance();
+      	$stmt=$DBC->query($query, array($code));
+      	
+      	if($stmt){
+      		$ar=$DBC->fetch($stmt);
+      		$id=(int)$ar['user_id'];
       	}
       	return $id;
       }
 }
-?>

@@ -46,14 +46,18 @@ class Account extends Login {
     function get_company_profile ( $user_id ) {
         if ( $this->getConfigValue('apps.company.enable') ) {
             //get company ID
-            $query = "select * from ".DB_PREFIX."_user where user_id=$user_id";
-            $this->db->exec($query);
-            $this->db->fetch_assoc();
-            if(isset($this->db->row['company_id'])){
-            	$company_id = $this->db->row['company_id'];
-            }else{
-            	$company_id=0;
-            }
+            $query = 'SELECT * FROM '.DB_PREFIX.'_user WHERE user_id=?';
+            $DBC=DBC::getInstance();
+			$stmt=$DBC->query($query, array($user_id));
+			if($stmt){
+				$ar=$DBC->fetch($stmt);
+				if(isset($ar['company_id'])){
+					$company_id = $ar['company_id'];
+				}else{
+					$company_id=0;
+				}
+			}
+            
             require_once (SITEBILL_DOCUMENT_ROOT.'/apps/company/admin/admin.php');
             $company_admin = new company_admin();
             return $company_admin->load_by_id($company_id);
@@ -62,8 +66,9 @@ class Account extends Login {
     }
     
     function login_main () {
-        global $init;
-        $this->checkLogin(  $init->getValue('login'), $init->getValue('password')  );
+    	$login=$this->getRequestValue('login');
+    	$password=$this->getRequestValue('password');
+        $this->checkLogin($login, $password);
         //echo "error_message = ".$this->error_message."<br>";
         if ( $this->GetError() ){
             $rs = $this->loginForm();
@@ -114,7 +119,7 @@ class Account extends Login {
      */
     function main () {
         $rs = '';
-        global $init;
+       
         
         if ( $this->user_id == 0 ) {
             $rs = $this->login_main();
@@ -122,16 +127,27 @@ class Account extends Login {
                return $rs; 
             }
         }
+        $do=$this->getRequestValue('do');
         
-        switch ( $init->getValue('do', 'default') ) {
+        
+        switch ( $do ) {
             case 'add_bill_done':
-                $bill_sum = $init->getValue('bill');
+                $bill_sum = $this->getRequestValue('bill');
                 $bill_sum=preg_replace('/[^0-9\.,]/', '', $bill_sum);
+                
+                if ( $this->getConfigValue('min_payment_sum') > 0 and $bill_sum < $this->getConfigValue('min_payment_sum') ) {
+                	$this->riseError(sprintf(Multilanguage::_('SUM_MUST_BE_MORE','system'),$this->getConfigValue('min_payment_sum')));
+                	$rs .= $this->getBillForm();
+                	return $rs;
+                }
+                
                 if ( !isset($bill_sum) or $bill_sum == '' ) {
                     $this->riseError(sprintf(Multilanguage::_('SUM_MUST_BE_MORE','system'),'0'));
                     $rs .= $this->getBillForm();
                     return $rs;    
                 }
+                
+                
                 $bill_name='Пополнение счета на '.$bill_sum;
                 if ( $this->getConfigValue('apps.paypal.enable') ) {
                 	$bill_payment_sum=number_format($bill_sum/$this->getConfigValue('apps.paypal.usd_coef'), 2);
@@ -150,6 +166,13 @@ class Account extends Login {
                 	 
                 	$rs .= $clickuz_site->get_pay_button($bill_id, $bill_sum);
                 }
+                if ( $this->getConfigValue('apps.interkassa.enable') ) {
+                	require_once (SITEBILL_DOCUMENT_ROOT.'/apps/interkassa/admin/admin.php');
+                	require_once (SITEBILL_DOCUMENT_ROOT.'/apps/interkassa/site/site.php');
+                	$iterkassa_site = new interkassa_site();
+                
+                	$rs .= $iterkassa_site->get_pay_button($bill_id, $bill_sum);
+                }
                 if ( $this->getConfigValue('apps.paypal.enable') ) {
                 	require_once (SITEBILL_DOCUMENT_ROOT.'/apps/paypal/admin/admin.php');
                 	require_once (SITEBILL_DOCUMENT_ROOT.'/apps/paypal/site/site.php');
@@ -157,7 +180,27 @@ class Account extends Login {
                 
                 	$rs .= $paypal_site->get_pay_button($bill_id, $bill_sum, $bill_payment_sum);
                 }
-                $rs .= $this->jumpToRobokassa($bill_id);
+                if ( $this->getConfigValue('apps.portmanataz.enable') ) {
+                	require_once (SITEBILL_DOCUMENT_ROOT.'/apps/portmanataz/admin/admin.php');
+                	require_once (SITEBILL_DOCUMENT_ROOT.'/apps/portmanataz/site/site.php');
+                	$portmanataz_site = new portmanataz_site();
+                	$rs.=$portmanataz_site->get_pay_button($bill_id);
+                }
+                if ( $this->getConfigValue('apps.woywouz.enable') ) {
+                	require_once (SITEBILL_DOCUMENT_ROOT.'/apps/woywouz/admin/admin.php');
+                	require_once (SITEBILL_DOCUMENT_ROOT.'/apps/woywouz/site/site.php');
+                	$woywouz_site = new woywouz_site();
+                	$rs.=$woywouz_site->get_pay_button($bill_id);
+                }
+                /*if ( $this->getConfigValue('apps.eccgimi.enable') ) {
+                	require_once (SITEBILL_DOCUMENT_ROOT.'/apps/eccgimi/admin/admin.php');
+                	require_once (SITEBILL_DOCUMENT_ROOT.'/apps/eccgimi/site/site.php');
+                	$eccgimi_site = new eccgimi_site();
+                	$rs .= $eccgimi_site->get_pay_button($bill_id);
+                }*/
+        		if ( $this->getConfigValue('robokassa_pay_enable') ) {
+                	$rs .= $this->jumpToRobokassa($bill_id);
+                }
                 return $rs;
             break;
             
@@ -181,6 +224,9 @@ class Account extends Login {
      */
     function jumpToRobokassa ( $bill_id, $bill_sum='' ) {
         //echo "bill_id = $bill_id, bill_sum = $bill_sum";
+        
+    	
+    	
         if($bill_sum==''){
         	$DBC=DBC::getInstance();
         	$query='SELECT * FROM '.DB_PREFIX.'_bill WHERE bill_id=? LIMIT 1';
@@ -193,32 +239,18 @@ class Account extends Login {
         }else{
         	$out_summ = $bill_sum;
         }
-    	
-    	
-        global $config;
-        
-        $mrh_login = $this->getConfigValue('robokassa_login');
+        /*
+    	$mrh_login = $this->getConfigValue('robokassa_login');
         $mrh_pass1 = $this->getConfigValue('robokassa_password1');
-        
-        //echo " mrh_login = $mrh_login, mrh_pass1 = $mrh_pass1";
-
-        // номер заказа
-        // number of order
         $inv_id = $bill_id;
-
-		// формирование подписи
-        // generate signature
-        //$crc  = md5("$mrh_login:$out_summ:$inv_id:$mrh_pass1:Shp_item=$shp_item");
-        //$crc  = md5("$mrh_login:$out_summ:$inv_id:$mrh_pass1");
-        $crc  = md5("$mrh_login:$out_summ:$inv_id:$mrh_pass1");
-        
+		$crc  = md5("$mrh_login:$out_summ:$inv_id:$mrh_pass1");
+        */
         $rs = sprintf(Multilanguage::_('YOU_HAVE_ORDER','system'),(string)$out_summ, $this->getConfigValue('ue_name')).'<br>';
-
-        // http://test.robokassa.ru/Index.aspx
-        $rs .= "<form action=\"".$this->getConfigValue('robokassa_server')."\" method=\"POST\">";
-        //$rs .= "<form action='https://merchant.roboxchange.com/Index.aspx' method=POST>";
-        //$rs .= Multilanguage::_('SELECT_PAYMENT_TYPE','system').': '.$this->getPayMethodsList().'<br>';
-        
+		require_once SITEBILL_DOCUMENT_ROOT.'//apps/system/lib/system/robokassa/robokassa.php';
+		$Robox=new Robox();
+		$rs .= $Robox->getRoboForm($bill_id);
+        /*
+		$rs .= "<form action=\"".$this->getConfigValue('robokassa_server')."\" method=\"POST\">";
         $rs .=
    "<input type=\"hidden\" name=\"MrchLogin\" value=\"$mrh_login\">".
    "<input type=\"hidden\" name=\"OutSum\" value=\"$out_summ\">".
@@ -226,7 +258,7 @@ class Account extends Login {
    "<input type=\"hidden\" name=\"SignatureValue\" value=\"$crc\">".
    "<input type=\"submit\" value=\"".Multilanguage::_('L_TEXT_PAY')."\">";
         $rs .= '</form>';
-        
+        */
         return $rs;        
     }
     
@@ -337,13 +369,11 @@ class Account extends Login {
      * @return boolean
      */
     function addPay ( $user_id, $pay ) {
-        //Get current account value
         $account_value = $this->getAccountValue( $user_id );
-        //Add pay
         $account_value += $pay;
-        //Update account value
-        $query = "update system_user set account='$account_value' where user_id=$user_id";
-        $this->db->exec($query);
+        $query = 'UPDATE `system_user` SET `account`=? WHERE `user_id`=?';
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($account_value, $user_id));
         return true;
     }
     
@@ -374,19 +404,25 @@ class Account extends Login {
      * @return string
      */
     function getAccountValue ( $user_id ) {
-        $query = "select account from ".DB_PREFIX."_user where user_id=$user_id";
-        //echo $query;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        return $this->db->row['account'];
+        $query = 'SELECT `account` FROM '.DB_PREFIX.'_user WHERE `user_id`=?';
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($user_id));
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	return $ar['account'];
+        }
+        return 0;
     }
     
     function get_user_data_count ( $user_id ) {
-    	$query = "select count(id) as total from ".DB_PREFIX."_data where user_id=$user_id";
-    	//echo $query;
-    	$this->db->exec($query);
-    	$this->db->fetch_assoc();
-    	return $this->db->row['total'];
+    	$query = 'SELECT COUNT(id) AS total FROM '.DB_PREFIX.'_data WHERE user_id=?';
+    	$DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($user_id));
+    	if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	return $ar['total'];
+        }
+        return 0;
     }
     
     /**
@@ -523,15 +559,16 @@ class Account extends Login {
      * @return int
      */
     function getServiceCost ( $service_id ) {
-        $query = "select cost from service where service_id = $service_id";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        
-        if ( $this->getDebugMode() ) {
-            echo "Account->getServiceCost(service_id = $service_id, cost = ".$this->db->row['cost'].")<br>";
+        $query = 'SELECT `cost` FROM '.DB_PREFIX.'_service WHERE `service_id` = ?';
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($service_id));
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	if ( $this->getDebugMode() ) {
+        		echo "Account->getServiceCost(service_id = $service_id, cost = ".$ar['cost'].")<br>";
+        	}
+        	return $ar['cost'];
         }
-        
-        return $this->db->row['cost'];
     }
     
     /**
@@ -544,11 +581,10 @@ class Account extends Login {
         if ( $this->getDebugMode() ) {
             //echo "Account->minusMoney(user_id = $user_id, money = $money)<br>";
         }
-        //get previous account value
         $account_status = $this->getAccountValue($user_id);
         $account_status = $account_status - $money;
-        $query = "update ".DB_PREFIX."_user set account = $account_status where user_id = $user_id";
-        $this->db->exec($query);
+        $query = 'UPDATE '.DB_PREFIX.'_user SET `account` = ? WHERE `user_id` = ?';
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($account_status, $user_id));
     }
 }
-?>

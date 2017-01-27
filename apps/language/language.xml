@@ -7,10 +7,10 @@
     <authorUrl>http://www.sitebill.ru</authorUrl>
     <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
     <license>http://www.sitebill.ru/licenses/sitebill.html</license>
-    <backendMenu>false</backendMenu>
-    <version>1.4.6</version>
+    <backendMenu>true</backendMenu>
+    <version>1.6.4</version>
     <administration>
         <!-- Administration Menu Section -->
-        <menu>Языки</menu>
+        <menu>Редактор переводов</menu>
     </administration>   
 </install>

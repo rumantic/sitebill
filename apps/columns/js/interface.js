@@ -26,10 +26,21 @@ $(document).ready(function(){
 		
 		var controls=[];
 		var common_fields=['name','title','value','type','required','unique','dbtype','active_in_topic','active_in_topic[]','tab','hint','parameters[name][]','parameters[value][]', 'uaction'];
+		if(langs !== undefined){
+			for(var i=0, l=langs.length; i<l; i++){
+				common_fields.push('title_'+langs[i]);
+				common_fields.push('hint_'+langs[i]);
+				common_fields.push('tab_'+langs[i]);
+				//common_fields.push('hint_'+list[i]);
+				//common_fields.push('hint_'+list[i]);
+			}
+		}
+		
 		controls['gadres']=common_fields;
+		controls['select_entity']=common_fields;
 		controls['date']=common_fields;
 		controls['uploads']=common_fields.concat(['table_name','primary_key']);
-		//controls['docuploads']=common_fields.concat(['table_name','primary_key']);
+		controls['docuploads']=common_fields.concat(['table_name','primary_key']);
 		controls['captcha']=common_fields;
 		//controls['datetime']=common_fields;
 		controls['dtdatetime']=common_fields;
@@ -42,9 +53,36 @@ $(document).ready(function(){
 		controls['hidden']=common_fields;
 		controls['checkbox']=common_fields;
 		controls['structure']=common_fields.concat(['entity']);
-		controls['select_box_structure']=common_fields.concat(['value_string']);
+		controls['select_box_structure']=common_fields.concat(['value_string','title_default']);
+		if(langs !== undefined){
+			for(var i=0, l=langs.length; i<l; i++){
+				controls['select_box_structure'].push('title_default_'+langs[i]);
+			}
+		}
 		controls['select_by_query']=common_fields.concat(['primary_key_name','primary_key_table','value_string','query','value_name','title_default','value_default','combo']);
+		if(langs !== undefined){
+			for(var i=0, l=langs.length; i<l; i++){
+				controls['select_by_query'].push('title_default_'+langs[i]);
+			}
+		}
 		controls['select_box']=common_fields.concat(['select_data']);
+		if(langs !== undefined){
+			for(var i=0, l=langs.length; i<l; i++){
+				controls['select_box'].push('select_data_'+langs[i]);
+			}
+		}
+		controls['grade']=common_fields.concat(['select_data']);
+		if(langs !== undefined){
+			for(var i=0, l=langs.length; i<l; i++){
+				controls['grade'].push('select_data_'+langs[i]);
+			}
+		}
+		controls['select_by_query_multi']=common_fields.concat(['primary_key_name','primary_key_table','value_string','query','value_name','title_default','value_default']);
+		if(langs !== undefined){
+			for(var i=0, l=langs.length; i<l; i++){
+				controls['select_by_query_multi'].push('title_default_'+langs[i]);
+			}
+		}
 		controls['auto_add_value']=common_fields.concat(['value_table','value_primary_key','value_field','assign_to']);
 		controls['price']=common_fields;
 		controls['textarea']=common_fields;
@@ -60,7 +98,7 @@ $(document).ready(function(){
 		function inArray(needle, haystack) {
 		    var length = haystack.length;
 		    for(var i = 0; i < length; i++) {
-		        if(haystack[i] == needle) return true;
+		    	if(haystack[i] == needle) return true;
 		    }
 		    return false;
 		}
@@ -99,6 +137,7 @@ $(document).ready(function(){
 		var prepare=function(new_val){
 			var inputs=form.find('input').not(':submit').not('input[name=active]');
 			var selects=form.find('select').not('#group_id').not('#table_id');
+			var textareas=form.find('textarea').not('#group_id').not('#table_id');
 			inputs.each(function(){
 				$(this).parents('tr').show();
 				$(this).parents('.form_element').show();
@@ -108,6 +147,15 @@ $(document).ready(function(){
 				}
 			});
 			selects.each(function(){
+				$(this).parents('tr').show();
+				$(this).parents('.form_element').show();
+				//console.log(this);
+				if(!inArray($(this).attr('name'),controls[new_val])){
+					$(this).parents('tr').hide();
+					$(this).parents('.form_element').hide();
+				}
+			});
+			textareas.each(function(){
 				$(this).parents('tr').show();
 				$(this).parents('.form_element').show();
 				//console.log(this);
@@ -148,7 +196,7 @@ $(document).ready(function(){
 		});
 		
 		
-		displayPreview();
+		//displayPreview();
 		return this; 
 	    
 	};

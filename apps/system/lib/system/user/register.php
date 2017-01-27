@@ -17,25 +17,25 @@ class Register extends Login {
      * @return string
      */
     function main () {
-        global $init;
-        global $config;
         global $smarty;
         
         if ( $this->getSessionUserId() > 0 ) {
             $rs = $this->alreadyLogin();
             return $rs;
         }
-        
-        switch ( $init->getValue('do', 'default') ) {
+        $do=$this->getRequestValue('do');
+        switch ( $do ) {
         	case 'activate' : {
+        		$DBC=DBC::getInstance();
         		$activation_code=$this->getRequestValue('activation_code');
         		$email=$this->getRequestValue('email');
-        		$q="SELECT COUNT(*) AS cnt FROM ".DB_PREFIX."_user WHERE email='".$email."' AND pass='".$activation_code."'";
-        		$this->db->exec($q);
-        		$this->db->fetch_assoc();
-        		if($this->db->row['cnt']!=0){
-        			$q="UPDATE ".DB_PREFIX."_user SET active=1 WHERE email='".$email."' AND pass='".$activation_code."'";
-        			$this->db->exec($q);
+        		$query="SELECT COUNT(*) AS cnt FROM ".DB_PREFIX."_user WHERE email=? AND pass=?";
+        		
+        		$stmt=$DBC->query($query, array($email, $activation_code));
+        		$ar=$DBC->fetch($stmt);
+        		if($ar['cnt']!=0){
+        			$query="UPDATE ".DB_PREFIX."_user SET active=1 WHERE email=? AND pass=?";
+        			$stmt=$DBC->query($query, array($email, $activation_code));
         			$rs=Multilanguage::_('ACCOUNT_ACTIVATED','system');
         			
         			if(1==$this->getConfigValue('registration_notice')){
@@ -43,12 +43,12 @@ class Register extends Login {
         				$mailer = new Mailer();*/
         				if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/template/register_email_notify_complete.tpl.html') ) {
         					
-        					$q="SELECT * ".DB_PREFIX."_user WHERE email='".$email."'";
-        					$this->db->exec($q);
-        					$this->db->fetch_assoc();
+        					$q="SELECT * ".DB_PREFIX."_user WHERE email=?";
+        					$stmt=$DBC->query($q, array($email));
+        					$ar=$DBC->fetch($stmt);
         					 
-        					$smarty->assign('user_name', $this->db->row['fio']);
-        					$smarty->assign('login', $this->db->row['login']);
+        					$smarty->assign('user_name', $ar['fio']);
+        					$smarty->assign('login', $ar['login']);
         					$smarty->assign('password', 'тот что указывали при регистрации, из соображений безопасности не отображается');
         					$smarty->assign('email_signature', $this->getConfigValue('email_signature'));
         					 
@@ -58,7 +58,7 @@ class Register extends Login {
         				}
         				$subject = sprintf(Multilanguage::_('NEW_REGISTER_TITLE','system'), $_SERVER['HTTP_HOST']);
         				 
-        				$to = $init->getValue('email');
+        				$to = $this->getRequestValue('email');
         				$from = $this->getConfigValue('order_email_acceptor');
         				/*if ( $this->getConfigValue('use_smtp') ) {
         					$mailer->send_smtp($to, $from, $subject, $message, 1);
@@ -74,38 +74,39 @@ class Register extends Login {
         		return $rs;
         	}
             case 'register':
-            	if(!preg_match('/^([a-zA-Z0-9-_]*)$/', $init->getValue('login'))){
+            	if(!preg_match('/^([a-zA-Z0-9-_]*)$/', $this->getRequestValue('login'))){
             		$rs = 'Логин может содержать только латинские буквы, цифры, подчеркивание, тире';
             		$rs .= $this->getRegisterForm();
             		return $rs;
             		//$this->riseError('Логин может содержать только латинские буквы, цифры, подчеркивание, тире');
             		//return false;
             	}
-            		$new_user_id=$this->addUser($init->getValue('login'),
-            				$init->getValue('password'),
-            				$init->getValue('retype_password'),
-            				$init->getValue('fio'),
-            				$init->getValue('email'),
-            				$init->getValue('captcha_string'),
-            				$init->getValue('captcha_session_key')
+            		$new_user_id=$this->addUser($this->getRequestValue('login'),
+            				$this->getRequestValue('password'),
+            				$this->getRequestValue('retype_password'),
+            				$this->getRequestValue('fio'),
+            				$this->getRequestValue('email'),
+            				$this->getRequestValue('captcha_string'),
+            				$this->getRequestValue('captcha_session_key')
             		);
             		if ( !$new_user_id ) {
             			$rs = $this->getRegisterForm();
             			return $rs;
             		} else {
             			
-            			
+            			$DBC=DBC::getInstance();
             			
             			if(1==$this->getConfigValue('use_registration_email_confirm')){
             				$activation_code=md5(time().'_'.rand(100,999));
-            				$this->db->exec("UPDATE ".DB_PREFIX."_user SET pass='".$activation_code."' WHERE user_id=".$new_user_id);
-            				$activation_link='<a href="http://'.$_SERVER['HTTP_HOST'].'/register?do=activate&activation_code='.$activation_code.'&email='.$init->getValue('email').'">http://'.$_SERVER['HTTP_HOST'].'/register?do=activate&activation_code='.$activation_code.'&email='.$init->getValue('email').'</a>';
+            				$query="UPDATE ".DB_PREFIX."_user SET pass=? WHERE user_id=?";
+            				$stmt=$DBC->query($query, array($activation_code, $new_user_id));
+            				$activation_link='<a href="http://'.$_SERVER['HTTP_HOST'].'/register?do=activate&activation_code='.$activation_code.'&email='.$this->getRequestValue('email').'">http://'.$_SERVER['HTTP_HOST'].'/register?do=activate&activation_code='.$activation_code.'&email='.$this->getRequestValue('email').'</a>';
             				/*require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
             				$mailer = new Mailer();*/
             				$message = sprintf(Multilanguage::_('NEW_REG_EMAILACCEPT_BODY','system'), $activation_link);
             				$subject = sprintf(Multilanguage::_('NEW_REG_EMAILACCEPT_TITLE','system'), $_SERVER['HTTP_HOST']);
             				 
-            				$to = $init->getValue('email');
+            				$to = $this->getRequestValue('email');
             				$from = $this->getConfigValue('order_email_acceptor');
             				/*if ( $this->getConfigValue('use_smtp') ) {
             					$mailer->send_smtp($to, $from, $subject, $message, 1);
@@ -121,10 +122,10 @@ class Register extends Login {
             			if(1==$this->getConfigValue('registration_notice')){
             				/*require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
             				$mailer = new Mailer();*/
-            				$message = sprintf(Multilanguage::_('NEW_REGISTER_BODY','system'), $init->getValue('login'), $init->getValue('password'));
+            				$message = sprintf(Multilanguage::_('NEW_REGISTER_BODY','system'), $this->getRequestValue('login'), $this->getRequestValue('password'));
             				$subject = sprintf(Multilanguage::_('NEW_REGISTER_TITLE','system'), $_SERVER['HTTP_HOST']);
             				 
-            				$to = $init->getValue('email');
+            				$to = $this->getRequestValue('email');
             				$from = $this->getConfigValue('order_email_acceptor');
             				/*if ( $this->getConfigValue('use_smtp') ) {
             					$mailer->send_smtp($to, $from, $subject, $message, 1);
@@ -137,8 +138,8 @@ class Register extends Login {
             			if(1==$this->getConfigValue('notify_admin_about_register')){
             				/*require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
             				$mailer = new Mailer();*/
-            				$message = 'На сайте зарегистрирован новый пользователь '.$init->getValue('login');
-            				$subject = 'Новый пользователь '.$init->getValue('login').' на сайте '.$_SERVER['HTTP_HOST'];
+            				$message = 'На сайте зарегистрирован новый пользователь '.$this->getRequestValue('login');
+            				$subject = 'Новый пользователь '.$this->getRequestValue('login').' на сайте '.$_SERVER['HTTP_HOST'];
             				 
             				$to = $this->getConfigValue('order_email_acceptor');
             				$from = $this->getConfigValue('order_email_acceptor');
@@ -156,7 +157,7 @@ class Register extends Login {
             			 
             			require_once( SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/user/login.php');
             			$Login = new Login;
-            			$Login->checkLogin($init->getValue('login'), $init->getValue('password'));
+            			$Login->checkLogin($this->getRequestValue('login'), $this->getRequestValue('password'));
             		
             			$user_info_string = $Login->getUserInfo($Login->getUserId());
             		
@@ -180,14 +181,18 @@ class Register extends Login {
      * @return boolean
      */
     function checkCaptcha ( $captcha_string, $captcha_session_key ) {
-        $query = "select captcha_string from ".DB_PREFIX."_captcha_session where captcha_session_key='$captcha_session_key'";
-        //echo $query;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        //echo $this->db->row['captcha_string'];
-        if ( $this->db->row['captcha_string'] == $captcha_string ) {
-            return true;
-        }   
+    	if($captcha_session_key==''){
+    		return false;
+    	}
+        $query = "SELECT captcha_string FROM ".DB_PREFIX."_captcha_session WHERE captcha_session_key=?";
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query, array($captcha_session_key));
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			if ( $ar['captcha_string'] == $captcha_string ) {
+				return true;
+			}
+		}
         return false;
     }
     
@@ -230,9 +235,12 @@ class Register extends Login {
         if ( !$this->checkLogin($login) ) {
             $group_id = $this->getGroupIdByName('realtor');
             $query = "insert into ".DB_PREFIX."_user (login, password, fio, email, account, group_id, reg_date) values ('$login', '$password', '$fio', '$email', 0, $group_id, NOW())";
-            //echo $query;
-            $this->db->exec($query);
-            $new_user_id = $this->db->last_insert_id();
+            $DBC=DBC::getInstance();
+			$stmt=$DBC->query($query);
+			if($stmt){
+				$new_user_id = $DBC->lastInsertId();
+			}
+            
             //Add user to quality assurance project
             //$this->addUserToQualityProject($new_user_id);
             
@@ -250,10 +258,14 @@ class Register extends Login {
      * @return integer
      */
     function getGroupIdByName ( $group_name ) {
-        $query = "select group_id from ".DB_PREFIX."_group where system_name='$group_name'";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        return $this->db->row['group_id'];
+        $query = "SELECT group_id FROM ".DB_PREFIX."_group WHERE system_name=?";
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($group_name));
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	return $ar['group_id'];
+        }
+        return 0;
     }
     
     /**
@@ -262,14 +274,16 @@ class Register extends Login {
      * @return boolean
      */
     function checkLogin ( $login ) {
-        $query = "select user_id from ".DB_PREFIX."_user where login='$login'";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['user_id'] > 0 ) {
-            return true;
-        } else {
-            return false;
+        $query = "SELECT user_id FROM ".DB_PREFIX."_user WHERE login=?";
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($login));
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	if ( $ar['user_id'] > 0 ) {
+        		return true;
+        	}
         }
+        return false;
     }
     
     /**
@@ -288,7 +302,7 @@ class Register extends Login {
      * @return string
      */
     function getRegisterForm () {
-    	global $init;
+    	
     	$social_link = false;
     	if ( $this->getConfigValue('apps.socialauth.fb.enable') ) {
 
@@ -314,9 +328,9 @@ class Register extends Login {
         	$rs .= '<tr><td align="right">'.Multilanguage::_('LOGIN_BY','system').':</td><td> '.$social_link.'</td></tr>';
         }
         
-        $rs .= '<tr><td align="right">'.Multilanguage::_('L_REGISTER_FIO').' <span class="error">*</span></td><td> <input class="register_input" type="text" name="fio" value="'.$init->getValue('fio', '').'"></td></tr>';
-        $rs .= '<tr><td align="right">'.Multilanguage::_('L_REGISTER_EMAIL').' <span class="error">*</span></td><td> <input class="register_input" type="text" name="email" value="'.$init->getValue('email', '').'"></td></tr>';
-        $rs .= '<tr><td align="right">'.Multilanguage::_('L_REGISTER_LOGIN').' <span class="error">*</span></td><td> <input class="register_input" type="text" name="login" value="'.$init->getValue('login', '').'"></td></tr>';
+        $rs .= '<tr><td align="right">'.Multilanguage::_('L_REGISTER_FIO').' <span class="error">*</span></td><td> <input class="register_input" type="text" name="fio" value="'.$this->getRequestValue('fio').'"></td></tr>';
+        $rs .= '<tr><td align="right">'.Multilanguage::_('L_REGISTER_EMAIL').' <span class="error">*</span></td><td> <input class="register_input" type="text" name="email" value="'.$this->getRequestValue('email').'"></td></tr>';
+        $rs .= '<tr><td align="right">'.Multilanguage::_('L_REGISTER_LOGIN').' <span class="error">*</span></td><td> <input class="register_input" type="text" name="login" value="'.$this->getRequestValue('login').'"></td></tr>';
         $rs .= '<tr><td align="right">'.Multilanguage::_('L_REGISTER_PASSWORD').' <span class="error">*</span></td><td><input class="register_input" type="password" name="password"></td></tr>';
         $rs .= '<tr><td align="right">'.Multilanguage::_('L_REGISTER_RETYPE_PASSWORD').' <span class="error">*</span></td><td><input class="register_input" type="password" name="retype_password"></td></tr>';
         $rs .= '<tr><td></td><td><img src="'.SITEBILL_MAIN_URL.'/captcha.php?captcha_session_key='.$captcha_session_key.'" width="180" height="80"></td></tr>';

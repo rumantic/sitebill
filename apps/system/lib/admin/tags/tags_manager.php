@@ -31,13 +31,12 @@ class Tags_Manager extends SiteBill {
 			}
 			
 			$query="SELECT * FROM ".DB_PREFIX."_tag WHERE tag_name IN ('".implode('\',\'',$tags)."')";
-			//echo $query;
-			$this->db->exec($query);
-			if($this->db->success){
-				while($row=$this->db->fetch_assoc()){
+			$DBC=DBC::getInstance();
+			$stmt=$DBC->query($query);
+			if($stmt){
+				while($row=$DBC->fetch($stmt)){
 					$tags_id[]=$row['tag_id'];
 				}
-				//return $tagList;
 			}
 		}
 		return $tags_id;
@@ -49,11 +48,11 @@ class Tags_Manager extends SiteBill {
 		$field=$primary_value.'_id';
 		if(count($tagsId)!=0){
 			$query="DELETE FROM ".$table." WHERE ".$field."=".$id;
-			$this->db->exec($query);
+			$DBC=DBC::getInstance();
+			$stmt=$DBC->query($query);
 			foreach($tagsId as $tid){
 				$query="INSERT INTO ".$table." (".$field.",tag_id) VALUES ('".$id."','".$tid."')";
-				//echo $query;
-				$this->db->exec($query);
+				$stmt=$DBC->query($query);
 			}
 		}
 	}
@@ -62,25 +61,28 @@ class Tags_Manager extends SiteBill {
 		$table=DB_PREFIX.'_'.$mode.'_tag';
 		$field=$primary_value.'_id';
 		$query="DELETE FROM ".$table." WHERE ".$field."=".$id;
-		$this->db->exec($query);
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
 	}
 	
 	private function addTag($tagName){
 		$query="INSERT INTO ".DB_PREFIX."_tag (tag_name) VALUES ('".$tagName."')";
-		$this->db->exec($query);
-		if($this->db->success){
-			return $this->db->last_insert_id();
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			return $DBC->lastInsertId();
 		}else{
-		return FALSE;
+			return FALSE;
 		}
 	}
 	
 	private function getTagList(){
 		$tagsList=array();
 		$query="SELECT * FROM ".DB_PREFIX."_tag";
-		$this->db->exec($query);
-		if($this->db->success){
-			while($row=$this->db->fetch_assoc()){
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while($row=$DBC->fetch($stmt)){
 				$tagList[]=$row['tag_name'];
 			}
 			return $tagList;
@@ -92,11 +94,14 @@ class Tags_Manager extends SiteBill {
 	public function getRandomTags($count=2){
 		$tagList=array();
 		$query='SELECT * FROM '.DB_PREFIX.'_tag ORDER BY RAND() LIMIT 0, '.$count;
-		$this->db->exec($query);
-        while($row=$this->db->fetch_assoc()){
-			$tagList[]=$this->db->row;
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while($row=$DBC->fetch($stmt)){
+				$tagList[]=$row;
+			}
 		}
-		return $tagList;
+        return $tagList;
 	}
 	
 	public function getTagGroupMinPrice($tagList){
@@ -106,10 +111,11 @@ class Tags_Manager extends SiteBill {
 				$tags_ids[]=$tl['tag_id'];
 			}
 			$query='SELECT MIN(product_price) AS min_price FROM '.DB_PREFIX.'_shop_product WHERE product_id IN (SELECT DISTINCT shop_product_id FROM '.DB_PREFIX.'_shop_product_tag WHERE tag_id IN('.implode(',',$tags_ids).')) AND active=1';
-			$this->db->exec($query);
-			if($this->db->success){
-				$this->db->fetch_assoc();
-				$ret=(int)$this->db->row['min_price'];
+			$DBC=DBC::getInstance();
+			$stmt=$DBC->query($query);
+			if($stmt){
+				$row=$DBC->fetch($stmt);
+				$ret=(int)$row['min_price'];
 			}
 		}
 		return $ret;
@@ -118,26 +124,26 @@ class Tags_Manager extends SiteBill {
 	public function getNewsTags($id){
 		$tagList=array();
 		$query = "SELECT ".DB_PREFIX."_tag.tag_name, ".DB_PREFIX."_tag.tag_id FROM ".DB_PREFIX."_tag LEFT JOIN ".DB_PREFIX."_news_tag ON ".DB_PREFIX."_news_tag.tag_id=".DB_PREFIX."_tag.tag_id WHERE ".DB_PREFIX."_news_tag.news_id=".$id;
-		//echo $query;
-		//$query = "SELECT tag_name FROM kn_tag WHERE tag_id=(select tag_id from ".$__db_prefix."_news_tag where news_id=$record_id)";
-        //echo $query;
-        $this->db->exec($query);
-        while($row=$this->db->fetch_assoc()){
-			$tagList[]='<a href="javascript:void(0)">'.$row['tag_name'].'</a>';
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while($row=$DBC->fetch($stmt)){
+				$tagList[]='<a href="javascript:void(0)">'.$row['tag_name'].'</a>';
+			}
 		}
-		return $tagList;
+        return $tagList;
 	}
 	
 	public function getTagName($id){
 		$ret='';
 		$query='SELECT tag_name FROM '.DB_PREFIX.'_tag WHERE tag_id='.$id;
-		$this->db->exec($query);
-		if($this->db->success){
-			$this->db->fetch_assoc();
-			$ret=$this->db->row['tag_name'];
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$row=$DBC->fetch($stmt);
+			$ret=$row['tag_name'];
 		}
 		return $ret;
 	}
-
 
 }

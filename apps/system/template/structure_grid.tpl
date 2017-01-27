@@ -1,6 +1,6 @@
 <div class="row-fluid">
 	<div class="span7">
-		<ol id="topic_tree" class="dd-list"></ul>
+		<ol id="topic_tree" class="dd-list"></ol>
 	</div>
 	<div class="span5">
 		<h5>Вспомогательные функции</h5>
@@ -85,23 +85,22 @@
 		<button class="btn" data-dismiss="modal" aria-hidden="true">{$L_CLOSE}</button>
 	</div>
 </div>
-
+<script>
+var structure_grid_allow_drag={$structure_grid_allow_drag};
+</script>
 {literal}
-<style>
-
-
-</style>
-
 <script>
 $(document).ready(function(){
+	if(structure_grid_allow_drag==1){
+		$(".dd-list").sortable({
+			handle: ".dd-handle",
+			connectWith: '.dd-list',
+			stop: function(e, ui){
+				Structure_Control.saveSort(ui);
+			}
+		});
+	}
 	
-	/*$(".dd-list").sortable({
-		handle: ".dd-handle",
-		connectWith: '.dd-list',
-		stop: function(e, ui){
-			Structure_Control.saveSort(ui);
-		}
-	});*/
 	
 	Structure_Control.load_tree();
 	/*
@@ -113,7 +112,7 @@ $(document).ready(function(){
 			if(json.length>0){
 				var tree=$('#topic_tree');
 				for(var i in json){
-					var liel=Structure_Control.fomat_element(json[i]);
+					var liel=Structure_Control.format_element(json[i]);
 					tree.append(liel);
 				}
 			}
@@ -135,18 +134,19 @@ $(document).ready(function(){
 				success: function(json){
 					if(json.length>0){
 						var tree=$('<ol class="dd-list" style=""></ol>')
-						//var tree=$('#topic_tree');
 						for(var i in json){
-							var liel=Structure_Control.fomat_element(json[i]);
+							var liel=Structure_Control.format_element(json[i]);
 							tree.append(liel);
 						}
-						/*tree.sortable({
-							handle: ".dd-handle",
-							connectWith: '.dd-list',
-							stop: function(e, ui){
-								Structure_Control.saveSort(ui);
-							}
-						});*/
+						if(structure_grid_allow_drag==1){
+							tree.sortable({
+								handle: ".dd-handle",
+								connectWith: '.dd-list',
+								stop: function(e, ui){
+									Structure_Control.saveSort(ui);
+								}
+							});
+						}
 						parent.append(tree);
 					}
 				}
@@ -284,20 +284,16 @@ Structure_Control={
 				if(json.length>0){
 					var tree=$('#topic_tree');
 					for(var i in json){
-						var liel=Structure_Control.fomat_element(json[i]);
+						var liel=Structure_Control.format_element(json[i]);
 						tree.append(liel);
 					}
 				}
 			}
 		});
 	},
-	fomat_element: function(json){
+	format_element: function(json){
 		var liel=$('<li class="dd-item" data-id="'+json.id+'"></li>');
 		var buttons_block=$('<div class="pull-right action-buttons"></div>');
-		
-		
-		//buttons_block.append(Structure_Control.format_delete_block(json.id));
-		
 		var a=$('<a class="red structure_control_clear_function" href="'+estate_folder+'/admin/index.php?action=structure&do=delete&id='+json.id+'"></a>');
 		a.append($('<i class="icon-eraser bigger-130"></i>'));
 		buttons_block.append(a);
@@ -313,8 +309,14 @@ Structure_Control={
 		var a=$('<a class="red structure_control_delete_function" href="'+estate_folder+'/admin/index.php?action=structure&do=delete&id='+json.id+'"></a>');
 		a.append($('<i class="icon-trash bigger-130"></i>'));
 		buttons_block.append(a);
-		var ddh=$('<div class="dd-handle"></div>');
-		ddh.text(json.text+' '+json.id);
+		var tmp_element_html;
+		tmp_element_html = '<div class="dd-handle ';
+		if ( json.published == '0' ) {
+			tmp_element_html += ' btn-warning ';
+		}
+		tmp_element_html += '"></div>';
+		var ddh=$(tmp_element_html);
+		ddh.text(json.text+' [ID:'+json.id+'] ['+json.url+']');
 		ddh.append(buttons_block);
 		if(json.state=='closed'){
 			var bt=$('<button data-action="expand" type="button" style="display: block;">Expand</button>');
@@ -354,95 +356,7 @@ Structure_Control={
 				data: {parent_topic_id: parent_id, child_topics: neighbours.join(',')}
 			});
 		}
-		console.log(neighbours);
-		//console.log(super_parent);
-		//console.log(parent_id);
 	}
 }
 </script>
 {/literal}
-
-
-
-
-
-
-<!-- <link rel="stylesheet" type="text/css" href="{$estate_folder}/apps/system/js/easyui/default/easyui.css">
-<script type="text/javascript" src="{$estate_folder}/apps/system/js/easyui/jquery.easyui.min.js"></script>
-
-{literal}
-<style>
-
-.tree-node {
-	height: 32px;
-	margin-top: 10px;
-}
-
-.tree-node .tree-title {
-	line-height: 32px;
-	font-size: 16px;
-	margin: 0 10px;
-}
-
-
-.tree-node .tree-expanded, .tree-node .tree-collapsed, .tree-node .tree-folder, .tree-node .tree-file, .tree-node .tree-checkbox, .tree-node .tree-indent {
-	vertical-align: middle;
-}
-</style>
-
-<script>
-$(document).ready(function(){
-	$('#topic_tree').tree({
-		onClick: function(node){
-			//document.location.href='/admin/index.php?action=company&topic_id='+node.id;
-		},
-		dnd: true,
-		url: "{/literal}{$estate_folder}{literal}/js/ajax.php?action=topic_source",
-		onDrop: function(target, source, point){
-			var id=source.id;
-			var elt=$('#topic_tree').find('[node-id='+id+']').parents('li').eq(0);
-			var parentul=elt.parents('ul').eq(0);
-			var parent_id=parentul.prev('div.tree-node').eq(0).attr('node-id');
-			var ids=[];
-			
-			if(parent_id === undefined){
-				parent_id=0;
-				
-				$('#topic_tree > li > div.tree-node').each(function(){
-					ids.push($(this).attr('node-id'));
-				});
-				console.log(ids);
-			}else{
-				var es=$('#topic_tree').find('[node-id='+parent_id+']').parents('li').eq(0);
-				es.find('ul > li > div.tree-node').each(function(){
-					ids.push($(this).attr('node-id'));
-				});
-			}
-			
-			if(ids.length>0){
-				$.ajax({
-					url: '{/literal}{$estate_folder}{literal}/js/ajax.php?action=save_topic_sort',
-					data: {parent_topic_id: parent_id, child_topics: ids.join(',')}
-				});
-			}
-		},
-		onLoadSuccess: function(){
-			$('#topic_tree .tree-node').each(function(){
-				var nodeid=$(this).attr('node-id');
-				if($(this).find('span.controls').length==0){
-					var span=$('<span class="controls"></span>');
-					span.append('<a href="?action=structure&do=new&parent_id='+nodeid+'" class="btn btn-info btn-mini"><i class="icon-white icon-plus"></i></a>');
-					span.append('&nbsp;');
-					span.append('<a href="?action=structure&do=edit&id='+nodeid+'" class="btn btn-info btn-mini"><i class="icon-white icon-pencil"></i></a>');
-					span.append('&nbsp;');
-					span.append('<a href="?action=structure&do=delete&id='+nodeid+'" onclick="if ( confirm(\'Действительно хотите удалить категорию?\') ) {return true;} else {return false;}" class="btn btn-danger btn-mini"><i class="icon-white icon-remove"></i></a>');
-					$(this).append(span);
-				}
-			});
-		}
-	});
-});
-</script>
-{/literal}
-<ul id="topic_tree">
-</ul> --> 	

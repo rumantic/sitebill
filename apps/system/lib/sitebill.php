@@ -4,58 +4,122 @@
  * @author Kondin Dmitriy <kondin@etown.ru>
  */
 
-if(!defined('DB_PREFIX')){
-	define('DB_PREFIX', $__db_prefix);
+if(!defined('DB_HOST')){
+	define('DB_HOST',$__server);
 }
-if (  !defined('UPLOADIFY_TABLE')  ) 
-{
-    define('UPLOADIFY_TABLE', DB_PREFIX.'_uploadify');
+if(!defined('DB_PORT')){
+	define('DB_PORT',$__db_port);
 }
-if (  !defined('IMAGE_TABLE')  ) 
-{
-    define('IMAGE_TABLE', DB_PREFIX.'_image');
-}
-
-
-//require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_application.php');
-require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_registry.php');
-require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/multilanguage/multilanguage.class.php';
-Multilanguage::start('frontend',$_SESSION['_lang']);
-Multilanguage::appendAppDictionary('system');
-
-require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/debugger.class.php';
-require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/logger.class.php';
-require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/dbc.php';
-require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_datetime.php';
-//require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_router.php';
-//require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_user.php';
-//Sitebill_User::getInstance();
-
-
-if(!defined('DB_DSN')){
-	define('DB_DSN','mysql:host='.$__server.';dbname='.$__db);
-}
-if(!defined('DB_ENCODING')){
-	define('DB_ENCODING','cp1251');
-}
-if(!defined('SITE_ENCODING')){
-	define('SITE_ENCODING','windows-1251');
+if(!defined('DB_BASE')){
+	define('DB_BASE',$__db);
 }
 if(!defined('DB_USER')){
 	define('DB_USER',$__user);
 }
+if(!defined('DB_PREFIX')){
+	define('DB_PREFIX', $__db_prefix);
+}
 if(!defined('DB_PASS')){
 	define('DB_PASS',$__password);
 }
-if(!defined('LOG_ENABLED')){
-	define('LOG_ENABLED',false);
+if(!defined('DB_DSN')){
+	if(defined(DB_PORT) && DB_PORT!=''){
+		define('DB_DSN','mysql:host='.DB_HOST.';port='.DB_PORT.';dbname='.DB_BASE);
+	}else{
+		define('DB_DSN','mysql:host='.DB_HOST.';dbname='.DB_BASE);
+	}
 }
+
+if(!defined('DB_ENCODING')){
+	define('DB_ENCODING', 'cp1251');
+}
+
+if(!defined('SITE_ENCODING')){
+	define('SITE_ENCODING','windows-1251');
+}
+
 if(!defined('DEBUG_ENABLED')){
 	define('DEBUG_ENABLED',false);
 }
-if(!defined('LOGGER_FILE')){
-	define('LOGGER_FILE',SITEBILL_DOCUMENT_ROOT.'/log_000.txt');
+
+if(!defined('LOG_ENABLED')){
+	define('LOG_ENABLED', false);
 }
+
+if (!defined('UPLOADIFY_TABLE')){
+	define('UPLOADIFY_TABLE', DB_PREFIX.'_uploadify');
+}
+
+if (!defined('IMAGE_TABLE')){
+	define('IMAGE_TABLE', DB_PREFIX.'_image');
+}
+
+if (!defined('MEDIA_FOLDER')){
+	define('MEDIA_FOLDER', SITEBILL_DOCUMENT_ROOT.'/img/data');
+}
+
+
+
+if(!defined('ESTATE_FOLDER')){
+	define('ESTATE_FOLDER',$folder);
+}
+if(!defined('SITEBILL_DOCUMENT_ROOT')){
+	define('SITEBILL_DOCUMENT_ROOT',$_SERVER['DOCUMENT_ROOT'].ESTATE_FOLDER);
+}
+
+if (!defined('SITEBILL_APPS_DIR')){
+	define('SITEBILL_APPS_DIR', SITEBILL_DOCUMENT_ROOT.'/apps');
+}
+if(!defined('SITEBILL_MAIN_URL')){
+	define('SITEBILL_MAIN_URL',ESTATE_FOLDER);
+}
+/*if(!defined('SITEBILL_MAIN_FULLURL')){
+	define('SITEBILL_MAIN_FULLURL','http://'.$_SERVER['HTTP_HOST'].ESTATE_FOLDER);
+}*/
+/*
+if(isset($_GET['run_debug'])){
+	define('DEBUG_ENABLED',true);
+	unset($_GET['run_debug']);
+}
+*/
+//require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_application.php');
+
+
+require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/debugger.class.php';
+require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/logger.class.php';
+require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/dbc.php';
+require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sconfig.php';
+require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_datetime.php';
+
+
+
+//require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_router.php';
+//require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_user.php';
+
+$SConfig=SConfig::getInstance();
+if(''!=$SConfig->getConfigValue('default_timezone')){
+	ini_set('date.timezone', $SConfig->getConfigValue('default_timezone'));
+	//date_default_timezone_set($SConfig->getConfigValue('default_timezone'));
+}
+
+
+
+require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_registry.php');
+require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/multilanguage/multilanguage.class.php';
+/*if(isset($_REQUEST['_lang'])){
+	$_SESSION['_lang']=$_REQUEST['_lang'];
+}else{
+	if(!isset($_SESSION['_lang'])){
+		$_SESSION['_lang']=$SConfig->getConfigValue('apps.language.default_lang_code');
+	}
+}*/
+//Multilanguage::start('frontend', $_SESSION['_lang']);
+
+
+
+
+//Sitebill_User::getInstance();
+
 if(isset($_REQUEST['search'])){
 	$_SESSION['rem_page']=1;
 }
@@ -66,6 +130,9 @@ if(isset($_REQUEST['page'])){
 }
 $_POST['page']=$_SESSION['rem_page'];
 
+//Sitebill::setLangSession();
+//Sitebill::parseLocalSettings();
+//Sitebill::initLocalComponents();
 /*
 if(!isset($_SESSION['Sitebill_User']) || !is_array($_SESSION['Sitebill_User'])){
 	$_SESSION['Sitebill_User']=array();
@@ -86,50 +153,285 @@ class SiteBill {
     var $storage_dir = '/img/data/';
     protected static $config_loaded = false;
     protected static $config_array = array();
-    protected static $local_config = false;
+    /*protected static $local_config = false;*/
     private $external_uploadify_image_array = false;
+    
+    
     protected static $storage = array();
+    protected static $Heaps = array();
+    
+    /*Container for local site settings from settings.ini.php*/
+    protected static $localSettings=false;
+    public static $_grid_constructor_local=null;
+    public static $_realty_viewer_local=null;
+    protected $_grid_constructor;
+    public static $_cookiedomain='';
+    public static $_trslashes=null;
+    
+    const MEDIA_SAVE_FOLDER = 1;
    
     /**
      * Constructor
      */
     function SiteBill() {
-        global $__server, $__db, $__user, $__password, $sitebill_document_root;
-		require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/template/template.php';
-		$this->template = new Template();
-		if ( $this->isDemo() ) {
-		    $this->template->assign('show_demo_banners', '1');
-		}
-		$this->db = new Db( $__server, $__db, $__user, $__password );
-		Sitebill_Datetime::setDateFormat($this->getConfigValue('date_format'));
-		//$this->Request=new stdClass();
-		//$this->Request->method=$_SERVER['REQUEST_METHOD'];
-		//$this->Request->path=Sitebill::getClearRequestURI();
-		//$this->Request->getParams=$_GET;
-		//$DB=DBC::getInstance();
-		if(defined('ADMIN_NO_MAP')){
-			$this->template->assign('ADMIN_NO_MAP_PROVIDERS', '1');
-		}else{
-			$this->template->assign('ADMIN_NO_MAP_PROVIDERS', '0');
-		}
-		if(defined(ADMIN_NO_NANOAPI)){
-			$this->template->assign('ADMIN_NO_NANOAPI', '1');
-		}else{
-			$this->template->assign('ADMIN_NO_NANOAPI', '0');
-		}
-		if(false===self::$local_config){
-			if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/configuration/config.yml')){
-				require_once SITEBILL_DOCUMENT_ROOT."/third/spyc/spyc.php";
-				self::$local_config = spyc_load_file(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/configuration/config.yml');
+    	Multilanguage::appendAppDictionary('system');
+    	require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/template/template.php';
+    	if(!self::$localSettings){
+    		$this->parseLocalSettings();
+    		$this->initLocalComponents();
+    	}
+    	    
+    	$this->_grid_constructor=self::$_grid_constructor_local;
+        
+    	$this->template = new Template();
+    	if ( $this->isDemo() ) {
+    		$this->template->assign('show_demo_banners', '1');
+    	}
+    
+    	$this->template->assign('estate_folder', SITEBILL_MAIN_URL);
+    	$this->template->assign('bootstrap_version', trim($this->getConfigValue('bootstrap_version')));
+    
+    	$params_str.='var SitebillVars={};';
+    	$params_str.='SitebillVars.resInc=\''.SITEBILL_MAIN_URL.'\';';
+    	$params_str.='SitebillVars.linkPath=\''.SITEBILL_MAIN_URL.'\';';
+    	$params_str.='SitebillVars.ajaxPath=\''.SITEBILL_MAIN_URL.'/js/ajax.php\';';
+    	$params_str='<script>'.$params_str.'</script>';
+    	$this->template->assign('SitebillVars', $params_str);
+    	/*if(1===(int)$this->getConfigValue('use_heaps')){
+    		if(!isset(self::$Heaps['user'])){
+    			require_once SITEBILL_DOCUMENT_ROOT.'/user_heap.php';
+    			self::$Heaps['user']=$userHeap;
+    		}
+    	}*/
+        
+    	//$this->db = new Db( $__server, $__db, $__user, $__password );
+    	Sitebill_Datetime::setDateFormat($this->getConfigValue('date_format'));
+        
+    	if(defined('ADMIN_NO_MAP')){
+    		$this->template->assign('ADMIN_NO_MAP_PROVIDERS', '1');
+    	}else{
+    		$this->template->assign('ADMIN_NO_MAP_PROVIDERS', '0');
+    	}
+    	if(defined('ADMIN_NO_NANOAPI')){
+    		$this->template->assign('ADMIN_NO_NANOAPI', '1');
+    	}else{
+    		$this->template->assign('ADMIN_NO_NANOAPI', '0');
+    	}
+   
+    	$this->template->assert('estate_folder', SITEBILL_MAIN_URL);
+    	self::setLangSession();
+    	
+    	require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/db/mysql_db_emulator.php';
+    	$this->db = new Mysql_DB_Emulator();
+    	
+    }
+    
+    public static function genPassword($len=8){
+		$array=array('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','0','1','2','3','4','5','6','7','8','9','@','#','%','&','?','!');
+		shuffle($array);
+		$p=array_slice($array, 0, $len);
+		return implode('', $p);
+	}
+    
+    public function getCurrentLang(){
+    	return $_SESSION['_lang'];
+    }
+    
+    public function getUserHREF($rid, $external=false, $params=array()){
+    	$parts=array();
+    	 
+    	$use_html_end=(1===intval($this->getConfigValue('apps.seo.user_html_end')) ? true : false);
+    	$use_slash_divider=(1===intval($this->getConfigValue('apps.seo.user_slash_divider')) ? true : false);
+    	
+    	
+    	 
+    	if(trim($this->getConfigValue('apps.seo.user_alias'))!=''){
+    		$user_alias=trim($this->getConfigValue('apps.seo.user_alias'));
+    	}else{
+    		$user_alias='user';
+    	}
+    	
+    	if($use_slash_divider){
+    		$user_alias=$user_alias.'/'.$rid;
+    	}else{
+    		$user_alias=$user_alias.$rid;
+    	}
+    	 
+    	if($use_html_end){
+    		$user_alias=$user_alias.'.html';
+    	}else{
+    		$user_alias=$user_alias.self::$_trslashes;
+    	}
+    	 
+    	
+    	$href='';
+    	if($external){
+    		$href=$this->getServerFullUrl().'/'.$user_alias;
+    	}else{
+    		$href=SITEBILL_MAIN_URL.'/'.$user_alias;
+    	}
+    	return $href;
+    }
+    
+    public function getRealtyHREF($rid, $external=false, $params=array()){
+    	$parts=array();
+    	
+    	if(isset($params['topic_id'])){
+    		$topic_id=intval($params['topic_id']);
+    	}else{
+    		$topic_id=0;
+    	}
+    	
+    	if(isset($params['alias'])){
+    		$alias=$params['alias'];
+    	}else{
+    		$alias='';
+    	}
+    	
+    	if(trim($this->getConfigValue('apps.seo.realty_alias'))!=''){
+    		$realty_alias=trim($this->getConfigValue('apps.seo.realty_alias'));
+    	}else{
+    		$realty_alias='realty';
+    	}
+    	
+    	
+    	$trailing_slashe='/';
+    	if(1==(int)$this->getConfigValue('apps.seo.no_trailing_slashes')){
+    		$trailing_slashe='';
+    	}
+    	
+    	if(1==$this->getConfigValue('apps.seo.level_enable')){
+    		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
+    		$Structure_Manager = new Structure_Manager();
+    		$category_structure = $Structure_Manager->loadCategoryStructure();
+    		if($category_structure['catalog'][$topic_id]['url']!=''){
+    			$parts[]=$category_structure['catalog'][$topic_id]['url'];
+    		}
+    	}
+    	
+    	if(1==$this->getConfigValue('apps.seo.data_alias_enable') && $alias!=''){
+    		$parts[]=$alias;
+    	}elseif(1==$this->getConfigValue('apps.seo.html_prefix_enable')){
+    		$trailing_slashe='';
+    		$parts[]=$realty_alias.$rid.'.html';
+    	}else{
+    		$parts[]=$realty_alias.$rid;
+    	}
+    	$href='';
+    	if($external){
+    		$href=implode('/', $parts);
+    		if($href!=''){
+    			$href.=$trailing_slashe;
+    		}
+    		$href=$this->getServerFullUrl().'/'.$href;
+    	}else{
+    		array_unshift($parts, SITEBILL_MAIN_URL);
+    		$href=implode('/', $parts);
+    		if($href!=''){
+    			$href.=$trailing_slashe;
+    		}
+    	}
+    	return $href;
+    }
+    
+    /*
+     * return nonslashed full net url
+     */
+    protected function getServerFullUrl($domain_only=false){
+    	return (1===(int)$this->getConfigValue('work_on_https') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].(!$domain_only ? SITEBILL_MAIN_URL : '');
+    }
+    
+    protected function initLocalComponents(){
+    	$SConf=SConfig::getInstance();
+    	//var_dump($SConf->getConfigValue('theme'));
+    	if(self::$_grid_constructor_local===null){
+    		if(self::$localSettings && isset(self::$localSettings['GridConstructor']) && file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').self::$localSettings['GridConstructor']['path'])){
+    			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php';
+    			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/grid/grid_constructor.php';
+    			require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$SConf->getConfigValue('theme').self::$localSettings['GridConstructor']['path'];
+    			$gcname=self::$localSettings['GridConstructor']['name'];
+    			self::$_grid_constructor_local = new $gcname();
+    		}elseif(1==intval($SConf->getConfigValue('classic_local_grid')) && file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/grid/local_grid_constructor.php')){
+    			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php';
+    			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/grid/grid_constructor.php';
+    			require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$SConf->getConfigValue('theme').'/main/grid/local_grid_constructor.php';
+    			$gcname='Local_Grid_Constructor';
+    			self::$_grid_constructor_local = new $gcname();
+    		}else{
+    			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php';
+    			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/grid/grid_constructor.php';
+    			self::$_grid_constructor_local = new Grid_Constructor();
+    		}
+    	}
+    	if(self::$_realty_viewer_local===null){
+    		if(self::$localSettings && isset(self::$localSettings['RealtyView']) && file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').self::$localSettings['RealtyView']['path'])){
+    			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php';
+    			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
+    			require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$SConf->getConfigValue('theme').self::$localSettings['RealtyView']['path'];
+    			$gcname=self::$localSettings['RealtyView']['name'];
+    			self::$_realty_viewer_local = new $gcname();
+    		}elseif(1==intval($SConf->getConfigValue('classic_local_view'))){
+    			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php';
+    			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
+    			require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$SConf->getConfigValue('theme').'/main/view/local_kvartira_view.php';
+    			$gcname='Local_Kvartira_View';
+    			self::$_realty_viewer_local = new $gcname();
+    		}else{
+    			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php';
+    			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
+    			self::$_realty_viewer_local = new Kvartira_View();
+    		}
+    	}
+    	if(1===intval($SConf->getConfigValue('set_cookie_subdomenal'))){
+    		$cd=trim($SConf->getConfigValue('core_domain'));
+    		if($cd!=''){
+    			self::$_cookiedomain='.'.$cd;
+    		}
+    		//self::$_cookiedomain='.'.$SConf->getConfigValue('core_domain');
+    	}/*else{
+    		self::$_cookiedomain='.'.$_SERVER['HTTP_HOST'];
+    	}*/
+    	//self::$_cookiedomain='';
+    	
+    	if(is_null(self::$_trslashes)){
+    		if(1==intval($SConf->getConfigValue('apps.seo.no_trailing_slashes'))){
+    			self::$_trslashes='';
+    		}else{
+    			self::$_trslashes='/';
+    		}
+    	}
+    	
+    }
+    
+    
+   /* function SiteBill() {
+    	//echo 'SiteBill<br>';
+    }*/
+	
+	protected function parseLocalSettings(){
+		//var_dump(self::$localSettings);
+		if(!self::$localSettings){
+			if($settings=parse_ini_file(SITEBILL_DOCUMENT_ROOT.'/settings.ini.php', true)){
+				self::$localSettings=$settings;
 			}else{
-				self::$local_config = array();
+				self::$localSettings=array();
 			}
 		}
-		
-		self::setLangSession();
 	}
 	
+	protected function _setGridConstructor($newGridConstructor){
+		$this->_grid_constructor=$newGridConstructor;
+		self::$_grid_constructor_local=$newGridConstructor;
+	}
 	
+	public function  _getGridConstructor(){
+		return self::$_grid_constructor_local;
+	}
+	
+	public function  _getRealtyViewer(){
+		return self::$_realty_viewer_local;
+	}
+		
 	/*
 	public function USER_isUserAuthorized(){
 		if(isset($_SESSION['Sitebill_User']['user_id']) && (int)$_SESSION['Sitebill_User']['user_id']>0){
@@ -185,11 +487,13 @@ class SiteBill {
     
     function escape($text){
     	if(get_magic_quotes_gpc()){
-    		$text=mysql_real_escape_string(stripcslashes($text));
-    	}else{
-    		$text=mysql_real_escape_string($text);
+    		$text=stripcslashes($text);
     	}
-    	return $text;
+		return $text;
+    }
+    
+    public function getAdminTplFolder(){
+    	return SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template1';
     }
     
 	/**
@@ -229,6 +533,8 @@ class SiteBill {
     	}
     }
     
+    
+    
     /**
      * Get page by URI
      * @param string $uri uri
@@ -237,9 +543,7 @@ class SiteBill {
     function getPageByURI ( $uri ) {
     	$DBC=DBC::getInstance();
     	$query='SELECT * FROM '.DB_PREFIX.'_page WHERE uri=? LIMIT 1';
-    	
-        $uri = mysql_real_escape_string($uri);
-        $uri = str_replace('/', '', $uri);
+    	$uri = str_replace('/', '', $uri);
         $stmt=$DBC->query($query, array($uri));
         if($stmt){
         	$ar=$DBC->fetch($stmt);
@@ -249,6 +553,7 @@ class SiteBill {
         }
     	return false;
     }
+ 
     
     /**
      * Get session key
@@ -278,8 +583,6 @@ class SiteBill {
      * @return int
      */
     function getSessionUserId ( ) {
-        global $init;
-        
         $key = (isset($_SESSION['key']) ? $_SESSION['key'] : '');
         if ( $key != '' ) {
         	$DBC=DBC::getInstance();
@@ -290,7 +593,7 @@ class SiteBill {
         		$user_id = $ar['user_id'];
         		if ( $user_id != '' and $user_id != 0 ) {
         			$this->user_id = $user_id;
-        			$init->setUserId($user_id);
+        			//$init->setUserId($user_id);
         			return $user_id;
         		} else {
         			$this->user_id = 0;
@@ -312,8 +615,8 @@ class SiteBill {
         
         $DBC=DBC::getInstance();
         if($element_name==''){
-        	$query='SELECT * FROM '.UPLOADIFY_TABLE.' WHERE `session_code`=? ORDER BY `uploadify_id`';
-        	$stmt=$DBC->query($query, array((string)$session_code));
+        	$query='SELECT * FROM '.UPLOADIFY_TABLE.' WHERE `session_code`=? AND `element`=? ORDER BY `uploadify_id`';
+        	$stmt=$DBC->query($query, array((string)$session_code, ''));
         }else{
         	$query='SELECT * FROM '.UPLOADIFY_TABLE.' WHERE `session_code`=? AND `element`=? ORDER BY `uploadify_id`';
         	$stmt=$DBC->query($query, array((string)$session_code, $element_name));
@@ -339,7 +642,6 @@ class SiteBill {
      * @return boolean
      */
     function editImageMulti( $action, $table_name, $key, $record_id, $name_template='' ) {
-    	
     	if ( !isset($record_id) or $record_id == 0 ) {
     		return false;
     	}
@@ -382,8 +684,6 @@ class SiteBill {
     			$images=array_slice($images, 0, $avial_count);
     		}
     	}
-    	
-    	
     	
     	foreach ( $images as $image_name ) {
             $i++;
@@ -442,11 +742,45 @@ class SiteBill {
 	                	$preview_height = $this->getConfigValue('news_image_preview_height');
 	                }
 	                
+	                if(defined('STR_MEDIA') && STR_MEDIA==Sitebill::MEDIA_SAVE_FOLDER){
+	                	if(defined('STR_MEDIA_FOLDERFDAYS') && STR_MEDIA_FOLDERFDAYS===1){
+	                		$foldeformat='Ymd';
+	                	}else{
+	                		$foldeformat='Ym';
+	                	}
+	                	$folder_name=date($foldeformat, time());
+	                	$locs=MEDIA_FOLDER.'/'.$folder_name;
+	                	if(!is_dir($locs)){
+	                		mkdir($locs);
+	                	}
+	                	$preview_name=$folder_name.'/'.$preview_name;
+	                	$prv=$folder_name.'/'.$prv;
+	                }
+	                /*if(defined('STR_MEDIA') && STR_MEDIA=='new'){
+	                	$file_name=md5(uniqid().time().rand(1000,999).$i);
+	                	//$folder_name=substr($file_name, 0, 4);
+	                	$folder_name=date('Ym', time());
+	                	
+	                	$locs=MEDIA_FOLDER.'/'.$folder_name;
+	                	if(!is_dir($locs)){
+	                		mkdir($locs);
+	                	}
+	                	
+	                	$preview_name=$folder_name.'/'.$file_name.'.src.'.$ext;
+	                	$prv=$folder_name.'/'.$file_name.'.prv.'.$ext;
+	                		                	
+	                	
+	                }elseif(defined('STR_MEDIA') && STR_MEDIA=='semi'){
+	                	$folder_name=date('Ym', time());
+	                	$locs=MEDIA_FOLDER.'/'.$folder_name;
+	                	if(!is_dir($locs)){
+	                		mkdir($locs);
+	                	}
+	                	$preview_name=$folder_name.'/'.$preview_name;
+	                	$prv=$folder_name.'/'.$prv;
+	                }
 	                
-	                
-	                
-	                
-	                
+	                */
 	                
 	                $rn=$this->makePreview($uploadify_path.$image_name, $path.$preview_name, $big_width,$big_height, $ext,1);
 	                if(1==$this->getConfigValue('apps.realty.preview_smart_resizing') && $action=='data'){
@@ -489,6 +823,116 @@ class SiteBill {
 	function getExternalUploadifyImageArray () {
 		return $this->external_uploadify_image_array;
 	}
+	
+	function appendDocUploads( $table, $field, $pk_field, $record_id ) {
+		$field_name=$field['name'];
+		$parameters=$field['parameters'];
+		$session_key=(string)$this->get_session_key();
+		$action=$table;
+		if ( !isset($record_id) || $record_id == 0 ) {
+			return false;
+		}
+		 
+		$DBC=DBC::getInstance();
+		 
+		$path = SITEBILL_DOCUMENT_ROOT.'/img/mediadocs/';
+		$uploadify_path = SITEBILL_DOCUMENT_ROOT.$this->uploadify_dir;
+		 
+		$ra = array();
+		$uploads = $this->load_uploadify_images($session_key, $field_name);
+		if(!$uploads){
+			return false;
+		}
+		
+		
+		$query='SELECT `'.$field_name.'` FROM '.DB_PREFIX.'_'.$table.' WHERE `'.$pk_field.'`=? LIMIT 1';
+		
+		$stmt=$DBC->query($query, array($record_id));
+		if(!$stmt){
+			return false;
+		}
+		$ar=$DBC->fetch($stmt);
+		
+		if($ar[$field_name]===''){
+			$attached_yet=array();
+		}else{
+			$attached_yet=unserialize($ar[$field_name]);
+		}
+		//print_r($attached_yet);
+		$i=0;
+		$max_filesize=(int)str_replace('M', '', ini_get('upload_max_filesize'));
+		if(isset($parameters['max_file_size']) && (int)$parameters['max_file_size']!=0){
+			$max_filesize=(int)$parameters['max_file_size'];
+		}
+		$av=explode(',',$parameters['accepted']);
+		$allowed_exts=array('doc', 'xls', 'pdf', 'xlsx', 'txt', 'csv');
+		if(!empty($av)){
+			foreach ($av as $k=>$v){
+				$v=trim(ltrim($v, '.'));
+				if($v==''){
+					unset($av[$k]);
+				}else{
+					$av[$k]=$v;
+				}
+			}
+		}
+		if(!empty($av)){
+			$allowed_exts=$av;
+		}
+		//print_r($allowed_exts);
+		foreach ( $uploads as $image_name ) {
+			$i++;
+			
+			if ( !empty($image_name) ) {
+				
+				$arr=explode('.', $image_name);
+				$ext=strtolower(end($arr));
+				
+				if(!in_array($ext, $allowed_exts)){
+					continue;
+				}
+				$filesize=filesize($uploadify_path.$image_name)/(1024*1024);
+				if($filesize>$max_filesize){
+					continue;
+				}
+                                if ( $this->getConfigValue('use_native_file_name_on_uploadify') ) {
+                                    $file_name=$image_name;
+                                } else {
+                                    $file_name="doc".uniqid().'_'.time().'_'.$i.'.'.$ext;
+                                }
+                                $file_index = '';
+                                while ( file_exists($path.$file_name) ) {
+                                    $i++;
+                                    if ( $this->getConfigValue('use_native_file_name_on_uploadify') ) {
+                                        $file_name=$file_index.$file_name;
+                                    } else {
+                                        $file_name="doc".uniqid().'_'.time().'_'.$i.'.'.$ext;
+                                    }
+                                    $file_index++;
+                                }
+                                
+				
+				if(copy($uploadify_path.$image_name, $path.$file_name)){
+					chmod($path.$file_name, 0644);
+					/**/
+					$ra[$i]['preview'] = '';
+					$ra[$i]['normal'] = $file_name;
+					
+					$attached_yet[]=array('preview'=>'', 'normal'=>$file_name, 'type'=>'doc', 'mime'=>$ext);
+				}
+			}
+		}
+		
+		$query='UPDATE '.DB_PREFIX.'_'.$table.' SET `'.$field_name.'`=? WHERE `'.$pk_field.'`=?';
+		if(count($attached_yet)>0){
+			$stmt=$DBC->query($query, array(serialize($attached_yet), $record_id));
+		}else{
+			$stmt=$DBC->query($query, array('', $record_id));
+		}
+		//$this->add_image_records($ra, $table_name, $key, $record_id);
+		$this->delete_uploadify_images($session_key, $field_name);
+		return $ra;
+	}
     
     function appendUploads( $table, $field, $pk_field, $record_id, $name_template='' ) {
     	$field_name=$field['name'];
@@ -506,23 +950,20 @@ class SiteBill {
     	$path = SITEBILL_DOCUMENT_ROOT.'/img/data/';
     	$uploadify_path = SITEBILL_DOCUMENT_ROOT.$this->uploadify_dir;
     	
-    	//$this->writeLog(array('apps_name'=>'apps.system', 'method' => __METHOD__, 'message' => 'before load uploadify'.var_export($field, true), 'type' => NOTICE));
-    	 
-    	 
     	$ra = array();
-    	//update image
     	$uploads = $this->load_uploadify_images($session_key, $field_name);
     	if (!$uploads) {
-    		//Попробуем получить фото из внешнего запроса
     		$uploads = $this->getExternalUploadifyImageArray();
-    		//$this->writeLog(array('apps_name'=>'apps.system', 'method' => __METHOD__, 'message' => 'after get external uploads = '.var_export($uploads, true), 'type' => NOTICE));
     		if (!$uploads) {
     			return false;
     		}
     	}
-    	//$this->writeLog(array('apps_name'=>'apps.system', 'method' => __METHOD__, 'message' => 'uploads = '.var_export($uploads, true), 'type' => NOTICE));
-    	 
     	
+    	if(isset($parameters['max_img_count']) && $parameters['max_img_count']!=''){
+    		$max_img_count=intval($parameters['max_img_count']);
+    	}else{
+    		$max_img_count=-1;
+    	}
     	
     	$query='SELECT `'.$field_name.'` FROM '.DB_PREFIX.'_'.$table.' WHERE `'.$pk_field.'`=? LIMIT 1';
     	
@@ -542,114 +983,172 @@ class SiteBill {
     	if(isset($parameters['max_file_size']) && (int)$parameters['max_file_size']!=0){
     		$max_filesize=(int)$parameters['max_file_size'];
     	}
-    	foreach ( $uploads as $image_name ) {
-    		$i++;
-    		$need_prv=0;
-    		$preview_name='';
-    		$filesize=filesize($uploadify_path.$image_name)/(1024*1024);
-    		if($filesize>$max_filesize){
-    			continue;
+    	
+    	if($max_img_count>-1){
+    		$last_count=$max_img_count-count($attached_yet);
+    		if($last_count>0){
+    			$uploads=array_slice($uploads, 0, $last_count);
+    		}else{
+    			$uploads=array();
     		}
-    		if ( !empty($image_name) ) {
-    			$arr=explode('.',$image_name);
-    			$ext=strtolower(end($arr));
-    			//$ext=strtolower($arr[count($arr)-1]);
-    			if((1==$this->getConfigValue('seo_photo_name_enable')) AND ($name_template!='')){
-    				$name_template=substr($name_template,0,150);
-    				if($i==0){
-    					$preview_name_no_ext=$name_template;
-    					$prv_no_ext=$name_template."_prev";
-    				}else{
-    					$preview_name_no_ext=$name_template."_".$i;
-    					$prv_no_ext=$name_template."_prev".$i;
-    				}
-    					
-    				if(file_exists($path.$preview_name_no_ext.".".$ext)){
-    					$rand=rand(0,1000);
-    					while(file_exists($path.$preview_name_no_ext."_".$rand.".".$ext)){
-    						$rand=rand(0,1000);
+    	}
+    	if(!empty($uploads)){
+    		foreach ( $uploads as $image_name ) {
+    			$i++;
+    			$need_prv=0;
+    			$preview_name='';
+    			$filesize=filesize($uploadify_path.$image_name)/(1024*1024);
+    			if($filesize>$max_filesize){
+    				continue;
+    			}
+    			if ( !empty($image_name) ) {
+    				$arr=explode('.',$image_name);
+    				$ext=strtolower(end($arr));
+    				//$ext=strtolower($arr[count($arr)-1]);
+    				if((1==$this->getConfigValue('seo_photo_name_enable')) AND ($name_template!='')){
+    					$name_template=substr($name_template,0,150);
+    					if($i==0){
+    						$preview_name_no_ext=$name_template;
+    						$prv_no_ext=$name_template."_prev";
+    					}else{
+    						$preview_name_no_ext=$name_template."_".$i;
+    						$prv_no_ext=$name_template."_prev".$i;
     					}
-    					$preview_name=$preview_name_no_ext."_".$rand.".".$ext;
-    					$prv=$prv_no_ext."_".$rand.".".$ext;
+    						
+    					if(file_exists($path.$preview_name_no_ext.".".$ext)){
+    						$rand=rand(0,1000);
+    						while(file_exists($path.$preview_name_no_ext."_".$rand.".".$ext)){
+    							$rand=rand(0,1000);
+    						}
+    						$preview_name=$preview_name_no_ext."_".$rand.".".$ext;
+    						$prv=$prv_no_ext."_".$rand.".".$ext;
+    					}else{
+    						$preview_name=$preview_name_no_ext.".".$ext;
+    						$prv=$prv_no_ext.".".$ext;
+    					}
     				}else{
-    					$preview_name=$preview_name_no_ext.".".$ext;
-    					$prv=$prv_no_ext.".".$ext;
+    					$nm=uniqid().'_'.time().'_'.$i;
+    					$preview_name='img'.$nm.".".$ext;
+    					$prv="prv".$nm.".".$ext;
+    					$preview_name_tmp="_tmp".uniqid().'_'.time()."_".$i.".".$ext;
     				}
-    			}else{
-    				$preview_name="img".uniqid().'_'.time()."_".$i.".".$ext;
-    				$prv="prv".uniqid().'_'.time()."_".$i.".".$ext;
-    				$preview_name_tmp="_tmp".uniqid().'_'.time()."_".$i.".".$ext;
+    				 
+    				if(in_array($ext, array('jpg','jpeg','gif','png'))){
+    					$big_width = $this->getConfigValue($action.'_image_big_width');
+    					if ($big_width == '') {
+    						$big_width = $this->getConfigValue('news_image_big_width');
+    					}
+    					$big_height = $this->getConfigValue($action.'_image_big_height');
+    					if ( $big_height == '' ) {
+    						$big_height = $this->getConfigValue('news_image_big_height');
+    					}
+    					 
+    					$preview_width = $this->getConfigValue($action.'_image_preview_width');
+    					if ( $preview_width == '' ) {
+    						$preview_width = $this->getConfigValue('news_image_preview_width');
+    					}
+    					$preview_height = $this->getConfigValue($action.'_image_preview_height');
+    					if ( $preview_height == '' ) {
+    						$preview_height = $this->getConfigValue('news_image_preview_height');
+    					}
+    		
+    					if(isset($parameters['norm_width']) && (int)$parameters['norm_width']!=0){
+    						$big_width=(int)$parameters['norm_width'];
+    					}
+    		
+    					if(isset($parameters['norm_height']) && (int)$parameters['norm_height']!=0){
+    						$big_height=(int)$parameters['norm_height'];
+    					}
+    		
+    					if(isset($parameters['prev_width']) && (int)$parameters['prev_width']!=0){
+    						$preview_width=(int)$parameters['prev_width'];
+    					}
+    		
+    					if(isset($parameters['prev_height']) && (int)$parameters['prev_height']!=0){
+    						$preview_height=(int)$parameters['prev_height'];
+    					}
+    		
+    					if(defined('STR_MEDIA') && STR_MEDIA==Sitebill::MEDIA_SAVE_FOLDER){
+    						if(defined('STR_MEDIA_FOLDERFDAYS') && STR_MEDIA_FOLDERFDAYS===1){
+    							$foldeformat='Ymd';
+    						}else{
+    							$foldeformat='Ym';
+    						}
+    						$folder_name=date($foldeformat, time());
+    						$locs=MEDIA_FOLDER.'/'.$folder_name;
+    						if(!is_dir($locs)){
+    							mkdir($locs);
+    						}
+    						$preview_name=$folder_name.'/'.$preview_name;
+    						$prv=$folder_name.'/'.$prv;
+    					}
+    					/*
+    					 if(defined('STR_MEDIA') && STR_MEDIA=='new'){
+    					$file_name=md5(uniqid().time().rand(1000,999).$i);
+    					$folder_name=date('Ym', time());
+    		
+    					$locs=MEDIA_FOLDER.'/'.$folder_name;
+    					if(!is_dir($locs)){
+    					mkdir($locs);
+    					}
+    		
+    					$preview_name=$folder_name.'/'.$file_name.'.src.'.$ext;
+    					$prv=$folder_name.'/'.$file_name.'.prv.'.$ext;
+    					}elseif(defined('STR_MEDIA') && STR_MEDIA=='semi'){
+    					$folder_name=date('Ym', time());
+    					$locs=MEDIA_FOLDER.'/'.$folder_name;
+    					if(!is_dir($locs)){
+    					mkdir($locs);
+    					}
+    					$preview_name=$folder_name.'/'.$preview_name;
+    					$prv=$folder_name.'/'.$prv;
+    					}*/
+    					if(intval($parameters['normal_smart_resizing'])==1){
+    						$rn=$this->makePreview($uploadify_path.$image_name, $path.$preview_name, $big_width,$big_height, $ext, 'smart');
+    					}else{
+    						$rn=$this->makePreview($uploadify_path.$image_name, $path.$preview_name, $big_width,$big_height, $ext, 1);
+    					}
+    					
+    					if(1==$this->getConfigValue('apps.realty.preview_smart_resizing') && $action=='data'){
+    						$rp=$this->makePreview($uploadify_path.$image_name, $path.$prv, $preview_width, $preview_height, $ext,'smart');
+    					}elseif(isset($parameters['preview_smart_resizing']) && (int)$parameters['preview_smart_resizing']!=0){
+    						$rp=$this->makePreview($uploadify_path.$image_name, $path.$prv, $preview_width, $preview_height, $ext,'smart');
+    					}else{
+    						$rp=$this->makePreview($uploadify_path.$image_name, $path.$prv, $preview_width, $preview_height, $ext,'width');
+    					}
+    					
+    					
+    					 
+    					
+    					if($rn && $rp){
+    						/* На случай, если сервер выставляет на загруженные файлы права 0600*/
+    						chmod($path.$preview_name, 0644);
+    						chmod($path.$prv, 0644);
+    						/**/
+    						$ra[$i]['preview'] = $prv;
+    						$ra[$i]['normal'] = $preview_name;
+    					}
+    					
+    				}
+    				if($rn && $rp){
+    					$attached_yet[]=array('preview'=>$prv, 'normal'=>$preview_name, 'type'=>'graphic', 'mime'=>$ext);
+    				}
+    				
     			}
-    	
-    			if(in_array($ext, array('jpg','jpeg','gif','png'))){
-    				$big_width = $this->getConfigValue($action.'_image_big_width');
-    				if ($big_width == '') {
-    					$big_width = $this->getConfigValue('news_image_big_width');
-    				}
-    				$big_height = $this->getConfigValue($action.'_image_big_height');
-    				if ( $big_height == '' ) {
-    					$big_height = $this->getConfigValue('news_image_big_height');
-    				}
-    	
-    				$preview_width = $this->getConfigValue($action.'_image_preview_width');
-    				if ( $preview_width == '' ) {
-    					$preview_width = $this->getConfigValue('news_image_preview_width');
-    				}
-    				$preview_height = $this->getConfigValue($action.'_image_preview_height');
-    				if ( $preview_height == '' ) {
-    					$preview_height = $this->getConfigValue('news_image_preview_height');
-    				}
-    				
-    				if(isset($parameters['norm_width']) && (int)$parameters['norm_width']!=0){
-    					$big_width=(int)$parameters['norm_width'];
-    				}
-    				
-    				if(isset($parameters['norm_height']) && (int)$parameters['norm_height']!=0){
-    					$big_height=(int)$parameters['norm_height'];
-    				}
-    				
-    				if(isset($parameters['prev_width']) && (int)$parameters['prev_width']!=0){
-    					$preview_width=(int)$parameters['prev_width'];
-    				}
-    				
-    				if(isset($parameters['prev_height']) && (int)$parameters['prev_height']!=0){
-    					$preview_height=(int)$parameters['prev_height'];
-    				}
-    	
-    				list($width,$height)=$this->makePreview($uploadify_path.$image_name, $path.$preview_name, $big_width,$big_height, $ext,1);
-    				if(1==$this->getConfigValue('apps.realty.preview_smart_resizing') && $action=='data'){
-    					list($w,$h)=$this->makePreview($uploadify_path.$image_name, $path.$prv, $preview_width, $preview_height, $ext,'smart');
-    				}elseif(isset($parameters['preview_smart_resizing']) && (int)$parameters['preview_smart_resizing']!=0){
-    					list($w,$h)=$this->makePreview($uploadify_path.$image_name, $path.$prv, $preview_width, $preview_height, $ext,'smart');
-    				}else{
-    					list($w,$h)=$this->makePreview($uploadify_path.$image_name, $path.$prv, $preview_width, $preview_height, $ext,'width');
-    				}
-    	
-    				/* На случай, если сервер выставляет на загруженные файлы права 0600*/
-    				chmod($path.$preview_name, 0644);
-    				chmod($path.$prv, 0644);
-    				/**/
-    				$ra[$i]['preview'] = $prv;
-    				$ra[$i]['normal'] = $preview_name;
-    			}
-    			$attached_yet[]=array('preview'=>$prv, 'normal'=>$preview_name, 'type'=>'graphic', 'mime'=>$ext);
-    			
-    	
     		}
+    		
+    		$query='UPDATE '.DB_PREFIX.'_'.$table.' SET `'.$field_name.'`=? WHERE `'.$pk_field.'`=?';
+    		if(count($attached_yet)>0){
+    			$stmt=$DBC->query($query, array(serialize($attached_yet), $record_id));
+    		}else{
+    			$stmt=$DBC->query($query, array('', $record_id));
+    		}
+    		
     	}
-    	 
-    	$query='UPDATE '.DB_PREFIX.'_'.$table.' SET `'.$field_name.'`=? WHERE `'.$pk_field.'`=?';
-    	if(count($attached_yet)>0){
-    		$stmt=$DBC->query($query, array(serialize($attached_yet), $record_id));
-    	}else{
-    		$stmt=$DBC->query($query, array('', $record_id));
-    	}
-    	//$this->add_image_records($ra, $table_name, $key, $record_id);
+    	
     	$this->delete_uploadify_images($session_key, $field_name);
     	return $ra;
     }
-    
-    
     
     /**
      * Edit file
@@ -664,8 +1163,6 @@ class SiteBill {
     	$uploadify_path = SITEBILL_DOCUMENT_ROOT.$this->uploadify_dir;
     	
     	$ra = array();
-    	
-    	//update image
     	$images = $this->load_uploadify_images($this->get_session_key());
     	if(!$images){
     		return;
@@ -693,7 +1190,19 @@ class SiteBill {
         return $ra;
     }
     
-    function clear_uploadify_table($session_code=''){
+    function clear_uploadify_table($session_code='', $anyway=false){
+    	if(1==(int)$this->getConfigValue('dontclean_uploadify_table') && !$anyway){
+    		return true;
+    	}
+    	
+    	$postloaded=array();
+    	if(isset($_POST['_formpostloaded']) && is_array($_POST['_formpostloaded']) && count($_POST['_formpostloaded'])>0){
+    		$_postloaded=$_POST['_formpostloaded'];
+    		foreach($_postloaded as $list){
+    			$postloaded=array_merge($postloaded, $list);
+    		}
+    	}
+    	
     	$uploadify_path = SITEBILL_DOCUMENT_ROOT.$this->uploadify_dir;
         $DBC=DBC::getInstance();
         $ra = array();
@@ -705,10 +1214,11 @@ class SiteBill {
         	$stmt=$DBC->query($query, array($session_code));
         }
         
-        
         if($stmt){
         	while ($ar=$DBC->fetch($stmt)){
-        		$ra[] = $ar['file_name'];
+        		if(!in_array($ar['file_name'], $postloaded)){
+        			$ra[] = $ar['file_name'];
+        		}
         	}
         }
         
@@ -724,8 +1234,15 @@ class SiteBill {
         	$query = "TRUNCATE TABLE ".UPLOADIFY_TABLE;
         	$stmt=$DBC->query($query);
         }else{
-        	$query = "DELETE FROM ".UPLOADIFY_TABLE.' WHERE session_code=?';
-        	$stmt=$DBC->query($query, array($session_code));
+        	if(!empty($postloaded)){
+        		$query = 'DELETE FROM '.UPLOADIFY_TABLE.' WHERE `session_code`=? AND `file_name` NOT IN ('.implode(',', array_fill(0, count($postloaded), '?')).')';
+        		array_unshift($postloaded, $session_code);
+        		$stmt=$DBC->query($query, $postloaded);
+        	}else{
+        		$query = 'DELETE FROM '.UPLOADIFY_TABLE.' WHERE `session_code`=?';
+        		$stmt=$DBC->query($query, array($session_code));
+        	}
+        	
         }
         
         return true;
@@ -856,9 +1373,6 @@ class SiteBill {
             $add_folder = '/'.SITEBILL_MAIN_URL;
         }
         
-        
-        
-        
         if($this->getConfigValue('theme')=='albostar'){
         	$rs .= '<form method="post" action="'.SITEBILL_MAIN_URL.$action.'">';
 	        $rs .= '';
@@ -890,6 +1404,23 @@ class SiteBill {
 	        $rs .= '</form>';
         }else{
         	
+        	if($action=='/admin/' && 1===intval($this->getConfigValue('use_captcha_admin_entry'))){
+        		$c['captcha']['name'] = 'captcha';
+        		$c['captcha']['title'] = Multilanguage::_('CAPTCHA_TITLE', 'system');
+        		$c['captcha']['value'] = '';
+        		$c['captcha']['length'] = 40;
+        		$c['captcha']['type'] = 'captcha';
+        		$c['captcha']['required'] = 'on';
+        		$c['captcha']['unique'] = 'off';
+        		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/form/form_generator.php');
+        		$form_generator = new Form_Generator();
+        		 
+        		$el = $form_generator->compile_form_elements($c);
+        		$el=$el['hash']['captcha']['html'];
+        	}else{
+        		$el='';
+        	}
+        	
         	$rs .= '<form method="post" action="'.SITEBILL_MAIN_URL.$action.'">';
         	if ( $this->getError() and $this->GetErrorMessage() != 'not login' ) {
         		$rs .= '<div class="alert alert-error" style="display:block;">';
@@ -899,6 +1430,7 @@ class SiteBill {
         	
         	$rs .= '<input class="span12" placeholder="'.Multilanguage::_('L_AUTH_LOGIN').'" type="text" name="login" id="login" />';
         	$rs .= '<input class="span12" placeholder="'.Multilanguage::_('L_AUTH_PASSWORD').'" type="password" name="password" id="password" />';
+        	$rs .= $el;
         	$rs .= '<label class="checkbox">';
         	$rs .= '<input type="checkbox" name="rememberme" value="1"> Запомнить меня';
         	$rs .= '</label>';
@@ -915,7 +1447,6 @@ class SiteBill {
 	        }
 	        
         }
-        
         return $rs;
     }
     
@@ -1009,8 +1540,8 @@ class SiteBill {
      * @return string
      */
     function getUploadifyPlugin ( $session_code, $params=array() ) {
-    	//echo $session_code;
     	$this->clear_uploadify_table($session_code);
+    	$uploaded_images=$this->load_uploadify_images($session_code);
         global $folder;
         $rs = '';
         $rs .= '
@@ -1084,13 +1615,11 @@ function addFileInCollector ( filePath ) {
 
 $(document).ready(function() {
 	$(document).on(\'click\', \'a.kill_upl\',function(){
-	//$(\'a.kill_upl\').live(\'click\',function(){
+	
 		var imgs_count=$("div.preview_admin").length+$("#filecollector img").length;
 		var max_item_count='.((int)$this->getConfigValue('photo_per_data')>0 ? (int)$this->getConfigValue('photo_per_data') : 1000).';
 		var url=\'/js/ajax.php?action=delete_uploadify_image&img_name=\'+$(this).attr(\'alt\');
-		$.getJSON(url,{},function(data){
-		
-		});
+		$.getJSON(url,{},function(data){});
 		var parent=$(this).parent(\'div\');
 		parent.html(\'\');
 		parent.remove();
@@ -1099,27 +1628,38 @@ $(document).ready(function() {
     		$(\'#file_uploadUploader\').show();
 		}
 	});
-	//$.getJSON(\'/js/ajax.php?action=delete_uploadify_image&img_name=\'+file,{},function(data){
+	
 		
 });
-
-
-
-
-
 
 </script>
 <input id="file_upload" name="file_upload" type="file" />
 <div id="filenotify"></div>
-<div id="filecollector"></div>
-        ';
+<div id="filecollector">';
+if(false!==$uploaded_images){
+			foreach ($uploaded_images as $uplim){
+				$p=array();
+				$p=explode('.', $uplim);
+				if(in_array(strtolower(end($p)), array('jpg', 'jpeg', 'png', 'gif'))){
+					$rs.='<div><img src="'.SITEBILL_MAIN_URL.'/cache/upl/'.$uplim.'"><a class="kill_upl btn btn-mini btn-danger" href="javascript:void(0)" alt="'.$uplim.'">X</a></div>';
+				}
+				
+			}
+		}
+		
+		$rs.='</div>';
+      
         return $rs;
     }
     
     function getDropzonePlugin ( $session_code, $params=array() ) {
-    	$element=$params['element'];
-    	    	
+    	$element=$params['element']['name'];
+    	$type=$params['element']['type'];
+    	 
+    	
     	$this->clear_uploadify_table($session_code);
+    	
+    	$uploaded_images=$this->load_uploadify_images($session_code, $element);
     	$id='dz_'.md5(time().rand(100, 999));
     	$Dropzone_name='Dropzone_'.md5(time().rand(100, 999));
     	
@@ -1139,29 +1679,48 @@ $(document).ready(function() {
     	$rs.='<script>
     			
     			$(document).ready(function(){
+    			//var prevbuttonstatus_'.$Dropzone_name.';
     				var '.$Dropzone_name.' = new Dropzone("div#'.$id.'", 
     				{ 
     					maxFilesize: '.$params['max_file_size'].',
-						url: "'.SITEBILL_MAIN_URL.'/apps/system/js/uploadify/uploadify.php?uploader_type=dropzone&session='.$session_code.'&element='.$element.'",
-	    				addRemoveLinks: true
-					}); 
+						url: "'.SITEBILL_MAIN_URL.'/apps/system/js/uploadify/uploadify.php?uploader_type=dropzone&session='.$session_code.'&element='.$element.'&model='.$params['element']['table_name'].'&primary_key_value='.$params['element']['primary_key_value'].'&primary_key='.$params['element']['primary_key'].'",
+	    				'.($params['element']['parameters']['accepted']!='' ? 'acceptedFiles: \''.$params['element']['parameters']['accepted'].'\',' : '').'
+						addRemoveLinks: true
+					});
+					$("div#'.$id.' .dz-remove").click(function(){
+							var _this=$(this);
+							var url="'.SITEBILL_MAIN_URL.'/js/ajax.php?action=delete_uploadify_image&img_name="+$(this).attr("alt");
+								$("#'.$id.' .postloaded[value=\'"+$(this).attr("alt")+"\']").remove();
+								$.getJSON(url,{},function(data){_this.parents(".dz-preview").eq(0).remove()});
+    						});
 					'.$src.' 
 					'.$Dropzone_name.'.on("complete", function(){
     						if(this.getQueuedFiles().length==0 && this.getUploadingFiles().length==0){
     							var form=$(this.element).parents("form");
-    							form.find("[name=submit]").prop("disabled", false);	
-										
-    						}
+								form.find("[name=submit]").show();	
+    							//form.find("[name=submit]").prop("disabled", false);	
+								//form.find("[name=submit]").prop("disabled", prevbuttonstatus'.$Dropzone_name.');
+							}
     
     				}).on("success", function(file, responce) {
 							if(responce.status=="error"){
 								$(file.previewElement).remove();
+							if(typeof '.$Dropzone_name.'_quenue !=\'undefined\' ){
 								'.$Dropzone_name.'_quenue--;
+										}
+										var form=$(this.element).parents("form");
+										
+										//form.find("[name=submit]").prop("disabled", false);	
+										//form.find("[name=submit]").prop("disabled", prevbuttonstatus'.$Dropzone_name.');
+												//console.log(prevbuttonstatus'.$Dropzone_name.');
 							}else{
+								var form=$(this.element).parents("form");
+														
 								var rem=$(file.previewElement).find(".dz-remove");
 								var temp=new Array();
 								temp=responce.msg.split(\'/\');
 								var file_name=temp[temp.length-1];
+														$("#'.$id.'").append($("<input class=\'postloaded\' name=\'_formpostloaded['.$element.'][]\' type=\'hidden\' value=\'"+file_name+"\'>"));
 								rem.attr("alt", file_name);
 								rem.on("click", function(){
     								var url="'.SITEBILL_MAIN_URL.'/js/ajax.php?action=delete_uploadify_image&img_name="+$(this).attr("alt");
@@ -1171,12 +1730,58 @@ $(document).ready(function() {
     						
     				}).on("addedfile", function(file){
     					var form=$(this.element).parents("form");
-    					form.find("[name=submit]").prop("disabled", true);	
-    											
+    					//prevbuttonstatus'.$Dropzone_name.'=form.find("[name=submit]").prop("disabled");
+    					form.find("[name=submit]").hide();	
+    					//form.find("[name=submit]").prop("disabled", true);		
     				});
 				});
 				</script>';
-    	$rs.='<div class="dropzone_outer"><div id="'.$id.'" class="dropzone_inner"><div class="dz-default dz-message"><span><span class="bigger-50 bolder"><i class="icon-caret-right red"></i> Переместите сюда файлы</span> для загрузки 				<span class="smaller-80 grey">(или кликните)</span> <br> 				<i class="upload-icon icon-cloud-upload blue icon-3x"></i></span></div></div></div>';
+    	$rs.='<div class="dropzone_outer"><div id="'.$id.'" class="dropzone_inner"><div class="dz-default dz-message"><span><span class="bigger-50 bolder"><i class="icon-caret-right red"></i> '.($type=='docuploads' ? Multilanguage::_('L_DOCUPLOADS_FILE') : Multilanguage::_('L_UPLOADS_FILE')).'</span> <br>	<i class="upload-icon icon-cloud-upload blue icon-3x"></i></span></div>';
+    	if(false!==$uploaded_images){
+    		foreach($uploaded_images as $uplim){
+    			
+    			$p=array();
+    			$p=explode('.', $uplim);
+    			if(($type=='uploads' && in_array(strtolower(end($p)), array('jpg', 'jpeg', 'png', 'gif'))) || $type=='docuploads'){
+    				$rs.='<input class="postloaded" name="_formpostloaded['.$element.'][]" type="hidden" value="'.$uplim.'">';
+    			}
+    		}
+    		
+    	}
+    	
+    	if(false!==$uploaded_images){
+    		foreach($uploaded_images as $uplim){
+    			
+    			$p=array();
+    			$p=explode('.', $uplim);
+    			
+    				if(($type=='uploads' && in_array(strtolower(end($p)), array('jpg', 'jpeg', 'png', 'gif'))) || $type=='docuploads'){
+    					$rs.='<div class="dz-preview dz-processing dz-image-preview dz-success">';
+    					$rs.='<div class="dz-details">';
+    					$rs.='<div class="dz-filename">';
+    					$rs.='<span data-dz-name="">'.$uplim.'</span></div>';
+    					$rs.='<div class="dz-size" data-dz-size="">';
+    					$rs.='<strong>0.1</strong> MiB</div>';
+    					if($type=='uploads'){
+    						$rs.='<img data-dz-thumbnail="" alt="'.$uplim.'" src="'.SITEBILL_MAIN_URL.'/cache/upl/'.$uplim.'">';
+    					}
+    					
+    					$rs.='</div>  <div class="dz-progress">';
+    					$rs.='<span class="dz-upload" data-dz-uploadprogress="" style="width: 100%;">';
+    					$rs.='</span>';
+    					$rs.='</div>';
+    					$rs.='<div class="dz-success-mark"><span>✔</span></div>  <div class="dz-error-mark"><span>✘</span></div>  <div class="dz-error-message">';
+    					$rs.='<span data-dz-errormessage="">';
+    					$rs.='</span>';
+    					$rs.='</div>';
+    					$rs.='<a class="dz-remove" href="javascript:undefined;" data-dz-remove="" alt="'.$uplim.'">Удалить</a>';
+    					$rs.='</div>';
+    				}
+    		}
+    		
+    	}
+    	$rs.='</div>';
+    	$rs.='</div>';
     	
     	return $rs;
     }
@@ -1270,20 +1875,14 @@ function addFileNotify ( queueSize ) {
      * @return
      */
     function loadConfig () {
-    	self::$config_array['per_page'] = 25;
+    	if(!self::$config_loaded){
+    		$SConfig=SConfig::getInstance();
+    		self::$config_array=$SConfig->getConfig();
+    		self::$config_loaded = true;
+    	}
+    	
+    	/*self::$config_array['per_page'] = 25;
     	self::$config_array['site_title'] = 'Агентство недвижимости';
-    	 
-    	self::$config_array['news_image_big_width'] = 350;
-    	self::$config_array['news_image_big_height'] = 350;
-    	 
-    	self::$config_array['news_image_preview_width'] = 200;
-    	self::$config_array['news_image_preview_height'] = 200;
-    
-    	self::$config_array['gallery_image_big_width'] = 800;
-    	self::$config_array['gallery_image_big_height'] = 600;
-    	 
-    	self::$config_array['gallery_image_preview_width'] = 200;
-    	self::$config_array['gallery_image_preview_height'] = 200;
     	 
     	self::$config_array['auto_image_big_width'] = 800;
     	self::$config_array['auto_image_big_height'] = 600;
@@ -1348,7 +1947,7 @@ function addFileNotify ( queueSize ) {
     			self::$config_array['theme'] = $_SESSION['user_domain_owner']['theme'];
     		}
     		
-    	}
+    	}*/
     }
     
     
@@ -1360,14 +1959,11 @@ function addFileNotify ( queueSize ) {
      */
     function deleteImage ( $table_name, $image_id ) {
     	$DBC=DBC::getInstance();
-    	//delete records from land_image
     	$query = 'DELETE FROM '.DB_PREFIX.'_'.$table_name.'_image WHERE image_id=?';
     	$DBC->query($query, array($image_id));
     	
-    	//delete image files
     	$this->deleteImageFiles( $image_id );
     	
-    	//delete image records
     	$query = 'DELETE FROM '.IMAGE_TABLE.' WHERE image_id=?';
     	$DBC->query($query, array($image_id));
     	return true;    	
@@ -1395,6 +1991,249 @@ function addFileNotify ( queueSize ) {
     			$DBC->query($query, array($k+1, $v));
     		}
     	}
+    }
+    
+    function rotateImage2($thisimage, $isWatermark, $degree, $parameters){
+    	    	
+    	if($thisimage['normal']==''){
+    		return '';
+    	}
+    	
+    	$arr=explode('.', $thisimage['normal']);
+    	$ext=end($arr);
+    	
+    	if($isWatermark && file_exists(SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/'.$thisimage['normal'])){
+    		$source_image=SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/'.$thisimage['normal'];
+    	}elseif(file_exists(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'])){
+    		$source_image=SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'];
+    	}else{
+    		$source_image='';
+    	}
+    	
+    	if($source_image==''){
+    		return '';
+    	}
+    	
+    	$source_preview=SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['preview'];
+    	
+    	$big_sizes=getimagesize($source_image);
+    	$prev_sizes=getimagesize($source_preview);
+    	
+    	if($ext=='jpg' || $ext=='jpeg'){
+    		$source_image_res=imagecreatefromjpeg($source_image);
+    	}elseif($ext=='png'){
+    		$source_image_res=imagecreatefrompng($source_image);
+    	}elseif($ext=='gif'){
+    		$source_image_res=imagecreatefromgif($source_image);
+    	}
+    	
+    	/*$preview_width = $this->getConfigValue($action.'_image_preview_width');
+    	if ( $preview_width == '' ) {
+    		$preview_width = $this->getConfigValue('news_image_preview_width');
+    	}
+    	$preview_height = $this->getConfigValue($action.'_image_preview_height');
+    	if ( $preview_height == '' ) {
+    		$preview_height = $this->getConfigValue('news_image_preview_height');
+    	}
+    	if(1==$this->getConfigValue('apps.realty.preview_smart_resizing') && $action=='data'){
+    		$preview_mode='smart';
+    	}else{
+    		$preview_mode='width';
+    	}*/
+    	
+    	 
+    	/*$DBC=DBC::getInstance();
+    	$query = 'SELECT normal, preview FROM '.DB_PREFIX.'_image WHERE `image_id`=? LIMIT 1';
+    	$normal='';
+    	$stmt=$DBC->query($query, array($image_id));
+    	$imgs=array();
+    	if($stmt){
+    		$ar=$DBC->fetch($stmt);
+    		$thisimage=$ar;
+    	}
+    	 
+    	if($thisimage['normal']==''){
+    		return '';
+    	}*/
+    	 
+    	/*$arr=explode('.', $thisimage['normal']);
+    	$ext=end($arr);
+    	 
+    	$hasWatermark=false;
+    	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/'.$thisimage['normal'])){
+    		$source_image=SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/'.$thisimage['normal'];
+    		$hasWatermark=true;
+    	}elseif(file_exists(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'])){
+    		$source_image=SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'];
+    	}else{
+    		$source_image='';
+    	}
+    	 
+    	if($source_image==''){
+    		return '';
+    	}*/
+    	 
+    	/*$source_preview=SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['preview'];
+    	 
+    	$big_sizes=getimagesize($source_image);
+    	$prev_sizes=getimagesize($source_preview);
+    	 
+    	if($ext=='jpg' || $ext=='jpeg'){
+    		$source_image_res=imagecreatefromjpeg($source_image);
+    	}elseif($ext=='png'){
+    		$source_image_res=imagecreatefrompng($source_image);
+    	}elseif($ext=='gif'){
+    		$source_image_res=imagecreatefromgif($source_image);
+    	}*/
+    	
+    	
+    	/*$parameters['norm_width']=$big_width;
+    	$parameters['norm_height']=$big_height;
+    	$parameters['prev_width']=$preview_width;
+    	$parameters['prev_height']=$preview_height;
+    	$parameters['preview_smart_resizing']=1;*/
+    		
+    	$preview_width=$parameters['prev_width'];
+    	$preview_height=$parameters['prev_height'];
+    	
+    	if(1==$parameters['preview_smart_resizing']){
+    		$preview_mode='smart';
+    	}else{
+    		$preview_mode='width';
+    	}
+    		
+    	 
+    	
+    	 
+    	if($isWatermark){
+    		if($ext=='jpg' || $ext=='jpeg'){
+    			$im=imagerotate ($source_image_res, $degree, 0);
+    			imagejpeg($im, SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/'.$thisimage['normal'], (int)$this->getConfigValue('jpeg_quality'));
+    			imagejpeg($im, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'], (int)$this->getConfigValue('jpeg_quality'));
+    		}elseif($ext=='png'){
+    			$im=imagerotate ($source_image_res, $degree, 0);
+    			imagepng($im, SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/'.$thisimage['normal'], (int)$this->getConfigValue('png_quality'));
+    			imagepng($im, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'], (int)$this->getConfigValue('png_quality'));
+    		}elseif($ext=='gif'){
+    			$im=imagerotate ($source_image_res , $degree, 0);
+    			imagegif($im, SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/'.$thisimage['normal']);
+    			imagegif($im, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal']);
+    		}
+    
+    		$rp=$this->makePreview($source_image, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['preview'], $preview_width, $preview_height, $ext, $preview_mode);
+    	}else{
+    		if($ext=='jpg' || $ext=='jpeg'){
+    			$im=imagerotate ($source_image_res, $degree, 0);
+    			imagejpeg($im, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'], (int)$this->getConfigValue('jpeg_quality'));
+    		}elseif($ext=='png'){
+    			$im=imagerotate ($source_image_res, $degree, 0);
+    			imagepng($im, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'], (int)$this->getConfigValue('png_quality'));
+    		}elseif($ext=='gif'){
+    			$im=imagerotate ($source_image_res, $degree, 0);
+    			imagegif($im, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal']);
+    		}
+    		$rp=$this->makePreview($source_image, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['preview'], $preview_width, $preview_height, $ext, $preview_mode);
+    	}
+    	 
+    	return true;
+    }
+    
+    function rotateImage($action, $image_id, $key, $key_value, $rot_dir){
+    	if($rot_dir=='ccw'){
+    		$degree=90;
+    	}else{
+    		$degree=-90;
+    	}
+    	
+    	$DBC=DBC::getInstance();
+    	$query = 'SELECT normal, preview FROM '.DB_PREFIX.'_image WHERE `image_id`=? LIMIT 1';
+    	$normal='';
+    	$stmt=$DBC->query($query, array($image_id));
+    	$imgs=array();
+    	if($stmt){
+    		$ar=$DBC->fetch($stmt);
+    		$thisimage=$ar;
+    	}
+    	
+    	if($thisimage['normal']==''){
+    		return '';
+    	}
+    	
+    	$arr=explode('.', $thisimage['normal']);
+    	$ext=end($arr);
+    	
+    	$hasWatermark=false;
+    	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/'.$thisimage['normal'])){
+    		$source_image=SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/'.$thisimage['normal'];
+    		$hasWatermark=true;
+    	}elseif(file_exists(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'])){
+    		$source_image=SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'];
+    	}else{
+    		$source_image='';
+    	}
+    	
+    	if($source_image==''){
+    		return '';
+    	}
+    	
+    	$source_preview=SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['preview'];
+    	
+    	$big_sizes=getimagesize($source_image);
+    	$prev_sizes=getimagesize($source_preview);
+    	
+    	if($ext=='jpg' || $ext=='jpeg'){
+    		$source_image_res=imagecreatefromjpeg($source_image);
+    	}elseif($ext=='png'){
+    		$source_image_res=imagecreatefrompng($source_image);
+    	}elseif($ext=='gif'){
+    		$source_image_res=imagecreatefromgif($source_image);
+    	}
+    	
+    	$preview_width = $this->getConfigValue($action.'_image_preview_width');
+    	if ( $preview_width == '' ) {
+    		$preview_width = $this->getConfigValue('news_image_preview_width');
+    	}
+    	$preview_height = $this->getConfigValue($action.'_image_preview_height');
+    	if ( $preview_height == '' ) {
+    		$preview_height = $this->getConfigValue('news_image_preview_height');
+    	}
+    	if(1==$this->getConfigValue('apps.realty.preview_smart_resizing') && $action=='data'){
+    		$preview_mode='smart';
+    	}else{
+    		$preview_mode='width';
+    	}
+    	
+    	if($hasWatermark){
+    		if($ext=='jpg' || $ext=='jpeg'){
+    			$im=imagerotate ($source_image_res, $degree, 0);
+    			imagejpeg($im, SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/'.$thisimage['normal'], (int)$this->getConfigValue('jpeg_quality'));
+    			imagejpeg($im, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'], 100);
+    		}elseif($ext=='png'){
+    			$im=imagerotate ($source_image_res, $degree, 0);
+    			imagepng($im, SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/'.$thisimage['normal'], (int)$this->getConfigValue('png_quality'));
+    			imagepng($im, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'], (int)$this->getConfigValue('png_quality'));
+    		}elseif($ext=='gif'){
+    			$im=imagerotate ($source_image_res , $degree, 0);
+    			imagegif($im, SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/'.$thisimage['normal']);
+    			imagegif($im, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal']);
+    		}
+    		
+    		$rp=$this->makePreview(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'], SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['preview'], $preview_width, $preview_height, $ext,'smart');
+    	}else{
+    		if($ext=='jpg' || $ext=='jpeg'){
+    			$im=imagerotate ($source_image_res, $degree, 0);
+    			imagejpeg($im, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'], (int)$this->getConfigValue('jpeg_quality'));
+    		}elseif($ext=='png'){
+    			$im=imagerotate ($source_image_res, $degree, 0);
+    			imagepng($im, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'], (int)$this->getConfigValue('png_quality'));
+    		}elseif($ext=='gif'){
+    			$im=imagerotate ($source_image_res, $degree, 0);
+    			imagegif($im, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal']);
+    		}
+    		$rp=$this->makePreview(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['normal'], SITEBILL_DOCUMENT_ROOT.'/img/data/'.$thisimage['preview'], $preview_width, $preview_height, $ext,'smart');
+    	}
+    	
+    	return;
     }
     
     /**
@@ -1540,10 +2379,42 @@ function addFileNotify ( queueSize ) {
     	$stmt=$DBC->query($query, array((int)$image_id));
     	if($stmt){
     		while($ar=$DBC->fetch($stmt)){
-    			$preview = $ar['preview'];
-    			$normal = $ar['normal'];
-    			@unlink($path.$preview);
-    			@unlink($path.$normal);
+    			if(defined('STR_MEDIA') && STR_MEDIA==Sitebill::MEDIA_SAVE_FOLDER){
+    				$preview = $ar['preview'];
+    				$normal = $ar['normal'];
+    				@unlink(MEDIA_FOLDER.'/'.$preview);
+    				@unlink(MEDIA_FOLDER.'/'.$normal);
+    				@unlink(MEDIA_FOLDER.'/nowatermark/'.$normal);
+    			}else{
+    				$preview = $ar['preview'];
+    				$normal = $ar['normal'];
+    				@unlink($path.$preview);
+    				@unlink($path.$normal);
+    				@unlink($path.'nowatermark/'.$normal);
+    			}
+    			/*if(defined('STR_MEDIA') && STR_MEDIA=='new'){
+    				$preview = $ar['preview'];
+    				$normal = $ar['normal'];
+    				@unlink(MEDIA_FOLDER.'/'.$preview);
+    				@unlink(MEDIA_FOLDER.'/'.$normal);
+    				$file_name_parts=explode('/', $normal);
+    				$file_name=end($file_name_parts);
+    				$file_name=preg_replace('/\.src\./', '.wtr.', $file_name);
+    				array_pop($file_name_parts);
+    				@unlink(MEDIA_FOLDER.'/'.implode('/', $file_name_parts));
+    			}elseif(defined('STR_MEDIA') && STR_MEDIA=='semi'){
+    				$preview = $ar['preview'];
+    				$normal = $ar['normal'];
+    				@unlink(MEDIA_FOLDER.'/'.$preview);
+    				@unlink(MEDIA_FOLDER.'/'.$normal);
+    				@unlink(MEDIA_FOLDER.'/nowatermark/'.$normal);
+    			}else{
+    				$preview = $ar['preview'];
+    				$normal = $ar['normal'];
+    				@unlink($path.$preview);
+    				@unlink($path.$normal);
+    				@unlink($path.'nowatermark/'.$normal);
+    			}*/
     		}
     	}
     	return true;
@@ -1555,14 +2426,11 @@ function addFileNotify ( queueSize ) {
      * @return string
      */
     function getConfigValue ( $key ) {
-        //echo '<b>need config key = '.$key.'</b><br>';
-    	if ( !self::$config_loaded ) {
-    	    //echo '<b>load config</b><br>';
-    		$this->loadConfig();
+        if ( !self::$config_loaded ) {
+    	    $this->loadConfig();
     	}
     	if ( isset(self::$config_array[$key]) ) {
-    	    //echo "cfg: $key = ".$this->config_array[$key]."<br>";
-    		return self::$config_array[$key];
+    	    return self::$config_array[$key];
     	}
     	return false;
     }
@@ -1606,19 +2474,47 @@ function addFileNotify ( queueSize ) {
     				if(is_array($av)){
     					$value[$ak]=$this->htmlspecialchars($av);
     				}else{
-    					$value[$ak]=htmlspecialchars($av, $flags, SITE_ENCODING);
+    					$value[$ak]=$this->escape(htmlspecialchars($av, $flags, SITE_ENCODING));
     				}
     			}
     		}
     	}else{
-    		$value=htmlspecialchars($value, $flags, SITE_ENCODING);
+    		$value=$this->escape(htmlspecialchars($value, $flags, SITE_ENCODING));
     	}
     	return $value;
     }
     
+    protected function restoreFavorites($user_id){
+    	
+    	if(isset($_COOKIE['user_favorites']) && $_COOKIE['user_favorites']!=''){
+    		$cc=unserialize($_COOKIE['user_favorites']);
+    	}else{
+    		$cc=array();
+    	}
+    	$cc[$user_id]=array();
+    	$DBC=DBC::getInstance();
+    	$query='SELECT id FROM '.DB_PREFIX.'_userlists WHERE user_id=? AND lcode=?';
+    	$stmt=$DBC->query($query, array($user_id, 'fav'));
+    	
+    	if($stmt){
+    		while($ar=$DBC->fetch($stmt)){
+    			$cc[$user_id][$ar['id']]=$ar['id'];
+    		}
+    	}
+    	
+    	setcookie('user_favorites', '', time()-7*24*3600, '/', self::$_cookiedomain);
+    	setcookie('user_favorites', serialize($cc), time()+7*24*3600, '/', self::$_cookiedomain);
+    	$_SESSION['favorites']=$cc[$user_id];
+    	unset($cc);
+    }
+    
     function htmlspecialchars_decode($value, $flags=''){
     	if($flags==''){
-    		$flags=ENT_COMPAT | ENT_HTML401;
+    		if(defined('ENT_HTML401')){
+    			$flags=ENT_COMPAT | ENT_HTML401;
+    		}else{
+    			$flags=ENT_COMPAT;
+    		}
     	}
     	if(is_array($value)){
     		if(count($value)>0){
@@ -1646,14 +2542,14 @@ function addFileNotify ( queueSize ) {
     	switch($from){
     		case 'get' : {
     			if(isset($_GET[$key])){
-    				$value=$_GET[$key];
+    				$value=$this->escape($_GET[$key]);
     				$value=htmlspecialchars($_GET[$key]);
     			}
     			break;
     		}
     		case 'post' : {
     			if(isset($_POST[$key])){
-    				$value=$_POST[$key];
+    				$value=$this->escape($_POST[$key]);
     			}
     			break;
     		}
@@ -1668,10 +2564,13 @@ function addFileNotify ( queueSize ) {
     						$value[$k]=htmlspecialchars($v);
     					}*/
     				}else{
-    					$value=htmlspecialchars($value);
+    					
+    					$value=htmlspecialchars($this->escape($value));
+    					
     				}
     				
     			}elseif(isset($_POST[$key])){
+    				
     				$value=$_POST[$key];
     				//echo '<pre>';
     				//echo $key;
@@ -1681,8 +2580,10 @@ function addFileNotify ( queueSize ) {
     						$value[$k]=htmlspecialchars($v);
     					}*/
     					$value=$this->htmlspecialchars($value);
+    					
     				}else{
-    					$value=htmlspecialchars($value);
+    					$value=htmlspecialchars($this->escape($value));
+    					
     				}
     				//echo '</pre>';
     			}
@@ -1692,9 +2593,6 @@ function addFileNotify ( queueSize ) {
     	if($value===NULL){
     		return $value;
     	}
-    	
-    	//$value=preg_replace('/<script>/', '', $value);
-    	
     	
     	if ( !is_array($value) ) {
     		$value=trim($value);
@@ -1716,8 +2614,6 @@ function addFileNotify ( queueSize ) {
     				}
     			}
     			return $value;
-    			//return $this->getSafeValue($value);
-    			//return str_replace('\'', '', $value);
     		}elseif(is_array($value)){
     			$values=$value;
     			foreach($values as $k=>$v){
@@ -1797,6 +2693,11 @@ function addFileNotify ( queueSize ) {
         $this->error_state = true;
     }
     
+    function clearError () {
+    	$this->error_message = '';
+    	$this->error_state = false;
+    }
+    
     /**
      * Get error 
      * @param void
@@ -1821,7 +2722,7 @@ function addFileNotify ( queueSize ) {
      * @return void
      */
     function writeLog ( $message ) {
-    	if ( $this->getConfigValue('apps.logger.enable') ) {
+    	if ( $this->getConfigValue('apps.logger.enable') and file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/logger/admin/admin.php') ) {
     		require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php');
     		require_once (SITEBILL_DOCUMENT_ROOT.'/apps/logger/admin/admin.php');
     		if ( is_array($message) ) {
@@ -1832,21 +2733,7 @@ function addFileNotify ( queueSize ) {
     		}
     		return;
     	}
-        global $debug_log;
-        if ( !preg_match('/Z:\/home/',SITEBILL_DOCUMENT_ROOT) ) {
-            return;
-        }
-        if (!$handle = @fopen($debug_log, 'a')) {
-            //echo "Cannot open error log file ($debug_log)";
-            return;
-        }
-        $error_message = date("Y-m-d H:i:s ").$message."\n";
-        if (fwrite($handle, $error_message) === FALSE) {
-            //echo "Cannot write to erro log file ($debug_log)";
-            return;
-        }
-        fclose($handle);
-        return;
+    	return;
     }
     
     /**
@@ -1857,8 +2744,8 @@ function addFileNotify ( queueSize ) {
      * @param int $record_id record id
      * @return string
      */
-	function getImageListAdmin ( $action, $table_name, $key, $record_id, &$callback_count=NULL ) {
-		global $__db_prefix;
+	function getImageListAdmin ( $action, $table_name, $key, $record_id, &$callback_count=NULL, $no_controls=false ) {
+		
     	if ( SITEBILL_MAIN_URL != '' ) {
     	    $url = SITEBILL_MAIN_URL.'/'.$this->storage_dir;
     	} else {
@@ -1866,6 +2753,10 @@ function addFileNotify ( queueSize ) {
     	}
     	
     	$record_id=(int)$record_id;
+    	
+    	if($record_id==0){
+    		return '';
+    	}
     	
     	
     	//$query = "SELECT i.* FROM ".DB_PREFIX."_".$table_name."_image AS li, ".IMAGE_TABLE." AS i WHERE li.".$key."=$record_id AND li.image_id=i.image_id ORDER BY li.sort_order";
@@ -1882,12 +2773,16 @@ function addFileNotify ( queueSize ) {
 	margin-bottom: 5px;}
     
     			</style>';
-    		$rs .= '<script type="text/javascript" src="'.SITEBILL_MAIN_URL.'/apps/system/js/dataimagelist.js"></script>';
-    		$rs .= '<script type="text/javascript">DataImagelist.attachDblclick();</script>';
+    		
+    			$rs .= '<script type="text/javascript" src="'.SITEBILL_MAIN_URL.'/apps/system/js/dataimagelist.js"></script>';
+    			$rs .= '<script type="text/javascript">DataImagelist.attachDblclick();</script>';
+    		
+    		
     		while($ar=$DBC->fetch($stmt)){
     			
     			$rs .= '<div class="preview_admin">
     		<table border="0" id="data_gallery">';
+    			
     			if(isset($ar['title'])){
     				$rs .= '<tr><td class="field_tab" style="height:20px; border: 1px solid gray;" alt="'.$ar['image_id'].'">'.$ar['title'].'<td></tr>';
     			}
@@ -1895,21 +2790,26 @@ function addFileNotify ( queueSize ) {
     				$rs .= '<tr><td class="field_tab_description" style="height:20px; border: 1px solid gray;" alt="'.$ar['image_id'].'">'.$ar['description'].'<td></tr>';
     			}
     		
+    		
     			$rs .= '<tr>
     		<td>
     		<br />
     		<img src="'.$url.''.$ar['preview'].'" border="0" align="left"/><br>
     		</td>';
     			$rs.='</tr>';
+    		
     			$rs.='<tr>';
     			$rs.='<td>';
     			$rs .= '<a href="javascript:void(0);" onClick="DataImagelist.deleteImage(this,'.$ar['image_id'].','.$record_id.',\''.$table_name.'\',\''.$key.'\')"><img src="'.SITEBILL_MAIN_URL.'/apps/admin/admin/template/img/delete.png" width="16" border="0" alt="удалить" title="удалить"></a>
     		<a href="javascript:void(0);" onClick="DataImagelist.upImage(this,'.$ar['image_id'].','.$record_id.',\''.$table_name.'\',\''.$key.'\')"><img src="'.SITEBILL_MAIN_URL.'/img/up.gif" border="0" alt="наверх" title="наверх"></a>
     		<a href="javascript:void(0);" onClick="DataImagelist.downImage(this,'.$ar['image_id'].','.$record_id.',\''.$table_name.'\',\''.$key.'\')"><img src="'.SITEBILL_MAIN_URL.'/img/down1.gif" border="0" alt="вниз" title="вниз"></a>
     		<a href="javascript:void(0);" onClick="DataImagelist.makeMain(this,'.$ar['image_id'].','.$record_id.',\''.$table_name.'\',\''.$key.'\')">Сделать главной</a>
-    		</td>
-    		</tr>
-    		</table>
+    		<!--<a href="javascript:void(0);" onClick="DataImagelist.rotateImage(this,'.$ar['image_id'].','.$record_id.',\''.$table_name.'\',\''.$key.'\', \'ccw\')"><img src="'.SITEBILL_MAIN_URL.'/apps/admin/admin/template/img/rotccw.png" border="0" alt="наверх" title="Повернуть против часовой стрелки"></a>
+    		<a href="javascript:void(0);" onClick="DataImagelist.rotateImage(this,'.$ar['image_id'].','.$record_id.',\''.$table_name.'\',\''.$key.'\', \'cw\')"><img src="'.SITEBILL_MAIN_URL.'/apps/admin/admin/template/img/rotcw.png" border="0" alt="наверх" title="Повернуть по часовой стрелке"></a>-->
+    				</td>
+    		</tr>';
+    		
+    		$rs .= '</table>
     		</div>';
     			//$rs .= '<div style="clear: both;"></div>';
     			$i++;
@@ -1988,8 +2888,6 @@ function addFileNotify ( queueSize ) {
 	    }else{
 	    	$url='';
 	    }
-	    
-	    //print_r($params);
 	    $pairs = array();
 	    unset($params['page']);
 	    if(count($params)>0){
@@ -2007,10 +2905,7 @@ function addFileNotify ( queueSize ) {
 		        }
 		    }
 	    }
-	    //print_r($pairs);
-	    //$url='';
-	    
-		if(count($pairs)>0){
+	    if(count($pairs)>0){
 	    	$url= $url.'?'.implode('&', $pairs);
 	    }else{
 	    	$url= $url;
@@ -2114,7 +3009,7 @@ function addFileNotify ( queueSize ) {
     	$ra=array();
     	$record_id=(int)$record_id;
     	$query = 'SELECT i.* FROM '.DB_PREFIX.'_'.$table_name.'_image AS li, '.IMAGE_TABLE.' AS i WHERE li.'.$key.'=? AND li.image_id=i.image_id ORDER BY li.sort_order';
-    	
+    
     	if ( $limit > 0 ) {
     		$query .= ' LIMIT ?';
     	}
@@ -2145,6 +3040,8 @@ function addFileNotify ( queueSize ) {
     }
     
     
+    
+    
     /**
      * Get category breadcrumbs
      * @param array $params
@@ -2155,14 +3052,23 @@ function addFileNotify ( queueSize ) {
     function get_category_breadcrumbs( $params, $category_structure, $url = '' ) {
         $rs = '';
         
+        
         if ( !isset($params['topic_id']) || is_array($params['topic_id']) ) {
             return $rs;
         }
+        
+        if((int)$params['topic_id']==0){
+        	return $rs;
+        }
+        if(!isset($category_structure['catalog'][$params['topic_id']])){
+        	return $rs;
+        }
+        
         //foreach ( $category_structure['childs'][0] as $item_id => $catalog_id ) {
         if($category_structure['catalog'][$params['topic_id']]['url']!=''){
-        	$ra[] = '<a rel="nofollow" href="'.rtrim($url,'/').'/'.$category_structure['catalog'][$params['topic_id']]['url'].'">'.$category_structure['catalog'][$params['topic_id']]['name'].'</a>';
+        	$ra[] = '<a href="'.rtrim($url,'/').'/'.$category_structure['catalog'][$params['topic_id']]['url'].'">'.$category_structure['catalog'][$params['topic_id']]['name'].'</a>';
         }else{
-        	$ra[] = '<a rel="nofollow" href="'.rtrim($url,'/').'/topic'.$params['topic_id'].'.html">'.$category_structure['catalog'][$params['topic_id']]['name'].'</a>';
+        	$ra[] = '<a href="'.rtrim($url,'/').'/topic'.$params['topic_id'].'.html">'.$category_structure['catalog'][$params['topic_id']]['name'].'</a>';
         }
         
         $parent_category_id = $category_structure['catalog'][$params['topic_id']]['parent_id'];
@@ -2171,20 +3077,25 @@ function addFileNotify ( queueSize ) {
                 return;
             }
 	        if($category_structure['catalog'][$parent_category_id]['url']!=''){
-	        	$ra[] = '<a rel="nofollow" href="'.rtrim($url,'/').'/'.$category_structure['catalog'][$parent_category_id]['url'].'">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
+	        	$ra[] = '<a href="'.rtrim($url,'/').'/'.$category_structure['catalog'][$parent_category_id]['url'].'">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
 	        }else{
-	        	$ra[] = '<a rel="nofollow" href="'.rtrim($url,'/').'/topic'.$parent_category_id.'.html">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
+	        	$ra[] = '<a href="'.rtrim($url,'/').'/topic'.$parent_category_id.'.html">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
 	        }
             $parent_category_id = $category_structure['catalog'][$parent_category_id]['parent_id'];
         }
         if ( $category_structure['catalog'][$parent_category_id]['name'] != '' ) {
        	 	if($category_structure['catalog'][$parent_category_id]['url']!=''){
-	        	$ra[] = '<a rel="nofollow" href="'.rtrim($url,'/').'/'.$category_structure['catalog'][$parent_category_id]['url'].'">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
+	        	$ra[] = '<a href="'.rtrim($url,'/').'/'.$category_structure['catalog'][$parent_category_id]['url'].'">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
 	        }else{
-	        	$ra[] = '<a rel="nofollow" href="'.rtrim($url,'/').'/topic'.$parent_category_id.'.html">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
+	        	$ra[] = '<a href="'.rtrim($url,'/').'/topic'.$parent_category_id.'.html">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
 	        }
         }
-      	$ra[]='<a rel="nofollow" href="'.SITEBILL_MAIN_URL.'/">'.Multilanguage::_('L_HOME').'</a>';
+        if(Multilanguage::is_set('LT_BC_HOME', '_template')){
+        	$ra[]='<a href="'.SITEBILL_MAIN_URL.'/">'.Multilanguage::_('LT_BC_HOME', '_template').'</a>';
+        }else{
+        	$ra[]='<a href="'.SITEBILL_MAIN_URL.'/">'.Multilanguage::_('L_HOME').'</a>';
+        }
+      	//$ra[]='<a href="'.SITEBILL_MAIN_URL.'/">'.Multilanguage::_('L_HOME').'</a>';
         $rs = implode(' / ', array_reverse($ra));
         return $rs;
     }
@@ -2210,16 +3121,38 @@ function addFileNotify ( queueSize ) {
         if ( isset($category_structure['catalog'][$parent_category_id]['name']) && $category_structure['catalog'][$parent_category_id]['name'] != '' ) {
             $ra[] = ''.$category_structure['catalog'][$parent_category_id]['name'].'';
         }
+        $this->set_breadcrumbs_array(array_reverse($ra));
         $rs = implode(' / ', array_reverse($ra));
         return $rs;
     }
+    
+    function set_breadcrumbs_array( $breadcrumbs_array = array() ) {
+    	$this->breadcrumbs_array = $breadcrumbs_array;
+    }
+    
+    function get_breadcrumbs_array( ) {
+    	return $this->breadcrumbs_array;
+    }
+    
+    public function go301($new_location){
+    	$sapi_name = php_sapi_name();
+    	if ($sapi_name == 'cgi' || $sapi_name == 'cgi-fcgi') {
+    		header('Status: 301 Moved Permanently');
+    	} else {
+    		header($_SERVER['SERVER_PROTOCOL'].' 301 Moved Permanently');
+    	}
+    	header('Location: '.$new_location);
+    	exit();
+    }
+    
+    
     
     /**
      * Make preview
      * @param
      * @return
      */
-    function makePreview ( $src, $dst, $width, $height, $ext='jpg', $md=0 ) {
+    function makePreview ( $src, $dst, $width, $height, $ext='jpg', $md=0, $final_ext='' ) {
     	
         if ($ext=='jpg' || $ext=='jpeg'){
         	$source_img=@ImageCreateFromJPEG($src);
@@ -2290,21 +3223,21 @@ function addFileNotify ( queueSize ) {
         	$equal_width=$source_width/$common_proportion;
         	$equal_height=$source_height/$common_proportion;
         	 
-        	/*echo $source_width, '=', $source_height, '<br>';
-        	echo $dest_width, '=', $dest_height, '<br>';
-        	echo $width_proportion, '=', $height_proportion, '<br>';
-        	echo $equal_width, '=', $equal_height, '<br>';*/
-        	 
         	$width_offset=intval(($dest_width-$equal_width)/2);
         	$height_offset=intval(($dest_height-$equal_height)/2);
         	 
         	$tmp_img=imageCreateTrueColor($dest_width, $dest_height);
         	imageAlphaBlending($tmp_img, false);
-        	imageSaveAlpha($tmp_img, true);
-        	$trans_colour = imagecolorallocate($tmp_img, 255, 255, 255);
+        	
+        	//$white = imagecolorallocate($f, 255,255,255);
+        	//imagecolortransparent($f, $white);
+        	
+        	
+        	//$trans_colour = imagecolorallocate($tmp_img, 255, 255, 255);
+        	$trans_colour = imagecolorallocatealpha($tmp_img, 255, 255, 255, 127);
         	imagefill($tmp_img, 0, 0, $trans_colour);
         	imageCopyResampled($tmp_img, $source_img, $width_offset, $height_offset, 0, 0, $equal_width, $equal_height, $source_width, $source_height);
-        	 
+        	imageSaveAlpha($tmp_img, true);
         }else{
         	$ratio=1;
         	if ($mode=='width') {
@@ -2321,14 +3254,24 @@ function addFileNotify ( queueSize ) {
         	imageCopyResampled($tmp_img, $source_img, 0, 0, 0, 0, $width_tmp, $height_tmp, $w_src, $h_src);
         }
         
+        if($final_ext!=''){
+        	if ($final_ext=='jpg' || $final_ext=='jpeg'){
+        		imagejpeg($tmp_img, $dst, (int)$this->getConfigValue('jpeg_quality'));
+        	}elseif($final_ext=='png'){
+        		imagepng($tmp_img, $dst, (int)$this->getConfigValue('png_quality'));
+        	}elseif($final_ext=='gif'){
+        		imagegif($tmp_img,$dst);
+        	}
+        }else{
+        	if ($ext=='jpg' || $ext=='jpeg'){
+        		imagejpeg($tmp_img, $dst, (int)$this->getConfigValue('jpeg_quality'));
+        	}elseif($ext=='png'){
+        		imagepng($tmp_img, $dst, (int)$this->getConfigValue('png_quality'));
+        	}elseif($ext=='gif'){
+        		imagegif($tmp_img,$dst);
+        	}
+        }
         
-        if ($ext=='jpg' || $ext=='jpeg'){
-        	imagejpeg($tmp_img, $dst, (int)$this->getConfigValue('jpeg_quality'));
-        }elseif($ext=='png'){
-        	imagepng($tmp_img, $dst, (int)$this->getConfigValue('png_quality'));
-        }elseif($ext=='gif'){
-        	imagegif($tmp_img,$dst);
-        } 
         ImageDestroy($source_img);
         ImageDestroy($tmp_img);
         // ImageDestroy($preview_img);
@@ -2403,14 +3346,21 @@ function addFileNotify ( queueSize ) {
     	if(1==$this->getConfigValue('use_realty_view_counter')){
     		if(!isset($_SESSION['realty_views'][$primary_key_value])){
     			$DBC=DBC::getInstance();
-    			$query='UPDATE '.DB_PREFIX.'_'.$table_name.' SET view_count=view_count+1 WHERE '.$primary_key_name.'=?';
+    			$ocount=0;
+    			$query='SELECT `view_count` FROM '.DB_PREFIX.'_'.$table_name.' WHERE '.$primary_key_name.'=? LIMIT 1';
     			$stmt=$DBC->query($query, array($primary_key_value));
+    			if($stmt){
+    				$ar=$DBC->fetch($stmt);
+    				$ocount=intval($ar['view_count']);
+    			}
+    			$ocount++;
+    			$query='UPDATE '.DB_PREFIX.'_'.$table_name.' SET view_count=? WHERE '.$primary_key_name.'=?';
+    			$stmt=$DBC->query($query, array($ocount, $primary_key_value));
     		}
 			$_SESSION['realty_views'][$primary_key_value]=time();
     	}
     }
-    
-	
+    	
 	function validateEmailFormat($email){
 		if(preg_match('/^[0-9a-z]+[-\._0-9a-z]*@[0-9a-z]+[-\._^0-9a-z]*[0-9a-z]+[\.]{1}[a-z]{2,6}$/',strtolower($email))){
 			return true;
@@ -2440,8 +3390,6 @@ function addFileNotify ( queueSize ) {
 				return TRUE;
 			}
 		}
-		
-		
 	}
 	
 	public static function getAttachmentsBlock(){
@@ -2450,17 +3398,20 @@ function addFileNotify ( queueSize ) {
 	}
 	
 	public static function modelSimplification($model){
-		foreach($model as $mkey=>$melement){
-			foreach($melement as $k=>$v){
-				if($k=='type' && ($v!='select_by_query' && $v!='select_box' && $v!='select_box_structure' && $v!='structure' && $v!='date')){
-					$model[$mkey]['value_string']=$model[$mkey]['value'];
+		if(!empty($model)){
+			foreach($model as $mkey=>$melement){
+				foreach($melement as $k=>$v){
+					if($k=='type' && ($v!='select_by_query' && $v!='select_box' && $v!='select_box_structure' && $v!='structure' && $v!='date' && $v!='tlocation' && $v!='client_id')){
+						$model[$mkey]['value_string']=$model[$mkey]['value'];
+					}
+					if(!in_array($k, array('name','title','value','value_string','type','image_array'))){
+						unset($model[$mkey][$k]);
+					}
+			
 				}
-				if(!in_array($k, array('name','title','value','value_string','type','image_array'))){
-					unset($model[$mkey][$k]);
-				}
-				
 			}
 		}
+		
 		return $model;
 	}
 	
@@ -2516,10 +3467,17 @@ function addFileNotify ( queueSize ) {
 				"Ц"=>"ts","Ч"=>"ch","Ш"=>"sh","Щ"=>"sch","Ъ"=>"y",
 				"Ы"=>"i","Ь"=>"","Э"=>"e","Ю"=>"yu","Я"=>"ya",
 	
-				" "=> "-"
+				" "=> "-",  'Š'=>'S', 'š'=>'s', 'Ž'=>'Z', 'ž'=>'z', 'À'=>'A', 'Á'=>'A', 'Â'=>'A', 'Ã'=>'A', 'Ä'=>'A', 'Å'=>'A', 'Æ'=>'A', 'Ç'=>'C', 'È'=>'E', 'É'=>'E',
+				'Ê'=>'E', 'Ë'=>'E', 'Ì'=>'I', 'Í'=>'I', 'Î'=>'I', 'Ï'=>'I', 'Ñ'=>'N', 'Ò'=>'O', 'Ó'=>'O', 'Ô'=>'O', 'Õ'=>'O', 'Ö'=>'O', 'Ø'=>'O', 'Ù'=>'U',
+				'Ú'=>'U', 'Û'=>'U', 'Ü'=>'U', 'Ý'=>'Y', 'Þ'=>'B', 'ß'=>'Ss', 'à'=>'a', 'á'=>'a', 'â'=>'a', 'ã'=>'a', 'ä'=>'a', 'å'=>'a', 'æ'=>'a', 'ç'=>'c',
+				'è'=>'e', 'é'=>'e', 'ê'=>'e', 'ë'=>'e', 'ì'=>'i', 'í'=>'i', 'î'=>'i', 'ï'=>'i', 'ð'=>'o', 'ñ'=>'n', 'ò'=>'o', 'ó'=>'o', 'ô'=>'o', 'õ'=>'o',
+				'ö'=>'o', 'ø'=>'o', 'ù'=>'u', 'ú'=>'u', 'û'=>'u', 'ý'=>'y', 'þ'=>'b', 'ÿ'=>'y'
 		);
-		//preg_replace
-		return strtr(mb_strtolower($str, SITE_ENCODING),$tr);
+		
+		$str=strtr(mb_strtolower($str, SITE_ENCODING), $tr);
+		$str=preg_replace('/([^a-z0-9-_])/', '', $str);
+		$str=preg_replace('/(-+)/', '-', $str);
+		return $str;
 	}
 	
 	public static function setLangSession(){
@@ -2530,21 +3488,38 @@ function addFileNotify ( queueSize ) {
 			}
 		}
 		if(!isset($_SESSION['_lang']) || $_SESSION['_lang']==''){
-			$_SESSION['_lang']='ru';
+			$C=SConfig::getInstance();
+			if(''==trim($C->getConfigValue('apps.language.default_lang_code'))){
+				$_SESSION['_lang']='ru';
+			}else{
+				$_SESSION['_lang']=trim($C->getConfigValue('apps.language.default_lang_code'));
+			}
 		}
+		/*if(!isset($_SESSION['_lang']) || $_SESSION['_lang']==''){
+			if(trim($this->getConfigValue('apps.language.default_lang_code'))==''){
+				$_SESSION['_lang']='ru';
+			}else{
+				$_SESSION['_lang']=trim($this->getConfigValue('apps.language.default_lang_code'));
+			}
+			
+		}*/
 	}
 	
 	public static function getClearRequestURI(){
+		$url=urldecode($_SERVER['REQUEST_URI']);
+		$url=str_replace('\\', '/', $url);
+		if(preg_match('/(\/(\/+))/', $url)){
+			return $url;
+		}
+		$REQUESTURIPATH=parse_url($url, PHP_URL_PATH);
 		
-		$REQUESTURIPATH=parse_url(urldecode($_SERVER['REQUEST_URI']), PHP_URL_PATH);
-		
-		if(false===$REQUESTURIPATH){
-			return '';
+		if($REQUESTURIPATH==false){
+			$REQUESTURIPATH=urldecode($_SERVER['REQUEST_URI']);
 		}
 		if('/'===$REQUESTURIPATH){
 			return '';
 		}
-		$REQUESTURIPATH=str_replace('\\', '/', $REQUESTURIPATH);
+		//$REQUESTURIPATH=str_replace('\\', '/', $REQUESTURIPATH);
 		if(substr($REQUESTURIPATH, 0, 1)==='/'){
 			$REQUESTURIPATH=substr($REQUESTURIPATH, 1);
 		}
@@ -2578,141 +3553,70 @@ function addFileNotify ( queueSize ) {
 			$mailer->send_simple($to, $from, $subject, $body, 1);
 		}
 	}
-	
-	
-	/********************************************************/
-	/**
-	 * Get category breadcrumbs
-	 * @param array $params
-	 * @param array $category_structure
-	 * @param string $url
-	 * @return string
-	 */
-	
-	/*
-	function get_category_breadcrumbs( $params, $category_structure, $url = '' ) {
-		$rs = '';
-		$url1=$url;
-		if ( !isset($params['topic_id']) || is_array($params['topic_id']) ) {
-			return $rs;
-		}
-		//foreach ( $category_structure['childs'][0] as $item_id => $catalog_id ) {
-		$town='';
-	
-		if(isset($params['city_id'])){
-			$DBC=DBC::getInstance();
-			$stmt=$DBC->query('SELECT name,url FROM '.DB_PREFIX.'_city WHERE city_id=?',array((int)$params['city_id']));
-			if($stmt){
-				$ar=$DBC->fetch($stmt);
-				$town='<a href="'.SITEBILL_MAIN_URL.'/'.$ar['url'].'/">'.$ar['name'].'</a>';
-				if($this->getConfigValue('apps.seo.city_url_enable')==1)$url=SITEBILL_MAIN_URL.'/'.$url1.$ar['url'].'/';
-			}
-			 
-		}
-		if($category_structure['catalog'][$params['topic_id']]['url']!=''){
-			$ra[] = '<a href="'.rtrim($url,'/').'/'.$category_structure['catalog'][$params['topic_id']]['url'].'">'.$category_structure['catalog'][$params['topic_id']]['name'].'</a>';
-		}else{
-			$ra[] = '<a href="'.rtrim($url,'/').'/topic'.$params['topic_id'].'.html">'.$category_structure['catalog'][$params['topic_id']]['name'].'</a>';
-		}
-	
-		$parent_category_id = $category_structure['catalog'][$params['topic_id']]['parent_id'];
-		while ( $category_structure['catalog'][$parent_category_id]['parent_id'] != 0 ) {
-			if ( $j++ > 100 ) {
-				return;
-			}
-			if($category_structure['catalog'][$parent_category_id]['url']!=''){
-				$ra[] = '<a href="'.rtrim($url,'/').'/'.$category_structure['catalog'][$parent_category_id]['url'].'">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
-			}else{
-				$ra[] = '<a href="'.rtrim($url,'/').'/topic'.$parent_category_id.'.html">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
-			}
-			$parent_category_id = $category_structure['catalog'][$parent_category_id]['parent_id'];
-		}
-		if ( $category_structure['catalog'][$parent_category_id]['name'] != '' ) {
-			if($category_structure['catalog'][$parent_category_id]['url']!=''){
-				$ra[] = '<a href="'.rtrim($url,'/').'/'.$category_structure['catalog'][$parent_category_id]['url'].'">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
-			}else{
-				$ra[] = '<a href="'.rtrim($url,'/').'/topic'.$parent_category_id.'.html">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
-			}
-		}
-	
-		if(!empty($town))$ra[]=$town;
-		$ra[]='<a href="'.SITEBILL_MAIN_URL.'/">'.Multilanguage::_('L_HOME').'</a>';
-		$rs = implode(' / ', array_reverse($ra));
-		return $rs;
+    /**
+     * Проверка владельца записи в таблице по USER_ID, если владелец совпадает с $table_name.user_id тогда возвращаем TRUE иначе FALSE
+     * @param type $table_name - название таблицы
+     * @param type $user_id - идентификатор пользователя для проверки
+     * @param type $control_name - тип действия (edit, delete...)
+     * @param type $primary_key_name - название PRIMARY KEY в таблице
+     * @param type $primary_key_value - значение PRIMARY KEY
+     * @return boolean
+     */
+    function check_access($table_name, $user_id, $control_name, $primary_key_name, $primary_key_value ) {
+        if ( !$user_id ) {
+            return true;
+        }
+        $DBC = DBC::getInstance();
+        $query = "SELECT `".$primary_key_name."` FROM `".DB_PREFIX."_".$table_name."` WHERE `user_id`=? and `".$primary_key_name."`=?";
+        $stmt = $DBC->query($query, array($user_id, $primary_key_value));
+        if (!$stmt) {
+            return false;
+        }
+        $ar = $DBC->fetch($stmt);
+        if ( $ar[$primary_key_name] > 0 ) {
+            return true;
+        }
+        return false;
+    }
+    
+    function need_check_access ( $table_name ) {
+        return $_SESSION['politics'][$table_name]['check_access'];
+    }
+
+    function get_check_access_user_id ( $table_name ) {
+        return $_SESSION['politics'][$table_name]['user_id'];
+    }
+    
+    /**
+     * Перенаправляем неавторизованного пользователя на форму авторизации
+     */
+    function go_to_login () {
+	header('location: '.SITEBILL_MAIN_URL.'/login/');
+	exit();	
+    }
+    
+    /**
+     * Ищем в таблице emailtemplates шаблон с именем $name
+     * Если находим, то делаем smarty fetch для subject и message 
+     * Предварительно все переменные должны быть assign-нуты в smarty
+     * @param type $name - системное название шаблона
+     * @return mixed (массив с готовый с subject и message, если шаблон найдет. false - если шаблон не найден)
+     */
+    function fetch_email_template ( $name ) {
+	global $smarty;
+	$ra = array();
+	if ( $this->getConfigValue('apps.emailtemplates.enable') ) {
+	    require_once (SITEBILL_DOCUMENT_ROOT.'/apps/emailtemplates/admin/admin.php');
+	    $emailtemplates_admin = new emailtemplates_admin();
+	    return $emailtemplates_admin->compile_template($name);
 	}
-	
-	
-	function get_current_town(){
-		static $currtown=null;
-		if($currtown)return $currtown;
-		$DBC=DBC::getInstance();
-	
-		$REQUESTURIPATH=trim(Sitebill::getClearRequestURI(),'/');
-		if ( $REQUESTURIPATH != '' ) {
-			//echo $REQUESTURIPATH.'<br>';
-			$url=explode('/',$REQUESTURIPATH);
-			$query='SELECT * FROM '.DB_PREFIX.'_city WHERE url=? LIMIT 1';
-			$stmt=$DBC->query($query, array($url[0]));
-			if($stmt){
-				$ar=$DBC->fetch($stmt);
-				if((int)$ar['city_id']!=0){
-					$city_url_catched=true;
-					$city_info=$ar;
-				}
-			}
-	
-			if ( $city_info['city_id'] > 0 ) {
-				$currtown = $city_info['city_id'];
-				$this->template->assign('select_city_id', $currtown);
-				$this->template->assign('select_city_name', $city_info['name']);
-				$this->template->assign('select_city_url', $city_info['url']);
-	
-			}
-		}
-		return $currtown;
-	
-	}
-	
-	function GetCityUrls(){
-		static $city_urls =array();
-		if(count($city_urls)>0) return $city_urls;
-		$DBC=DBC::getInstance();
-		$stmt=$DBC->query('SELECT city_id,url FROM '.DB_PREFIX.'_city');
-		if($stmt){
-			while($ar=$DBC->fetch($stmt)){
-				$city_urls[$ar['city_id']]=$ar['url'];
-			}
-		}
-		return $city_urls;
-	
-	}
-	
-	public function getrealval($key,$v,$new=false){
-		static $res=array();
-		$val=mb_strtoupper(trim($v));
-		if(empty($val))return false;
-	
-		$key=mb_strtoupper(trim($key));
-		if(empty($key))return false;
-		if(isset($res[$key][$val]))return $res[$key][$val];
-		$query="SELECT * FROM ".DB_PREFIX."_data_aliases WHERE `key`=? AND `alias`=? LIMIT 1";
-		$this->db->exec($query, array($key, $val));
-		$this->db->fetch_assoc();
-		if(($this->db->row)){
-			$res[$key][$val]=$this->db->row['value'];
-		}else
-			if($new){
-			$query="INSERT INTO ".DB_PREFIX."_data_aliases (`key`,`alias`,`value`)values(?,?,?)";
-			$this->db->exec($query, array($key, $val, $v));
-			$res[$key][$val]=$v;
-		}
-		
-	
-		return $res[$key][$val];
-	}
-	*/
-	
+	return false;
+    }
+    
+    function clear_apps_cache () {
+        //Очищаем кэш apps
+        $DBC = DBC::getInstance();
+        $query = "TRUNCATE TABLE ".DB_PREFIX."_apps";
+        $stmt = $DBC->query($query, array(), $rows, $success);
+    }
 }
-
-
-?>

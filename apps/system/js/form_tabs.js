@@ -87,11 +87,70 @@ $(document).ready(function(){
 		checkFormFieldsVisibility(current_topic_id,form_field_view_topic,parent);
 	})
 	
-	
-	
-	
+	$('.leveled').each(function(){
+		$(this).StructureLvl();
+	});
+	//console.log($('.leveled'));
+	//$('.leveled').StructureLvl();
 	
 });
+
+
+
+(function($){
+	if (typeof StructureLvl === 'undefined' || !$.isFunction(StructureLvl)) {
+		jQuery.fn.StructureLvl = function(){
+			var el = $(this);
+			if(el.length==0){
+				return;
+			}
+			if(el.data('leveled')=='leveled'){
+				return el;
+			}
+			el.data('leveled', 'leveled');
+			var inp=el.find('input[type=hidden]');
+			el.find('select').change(function(){
+				reset($(this));
+			});
+			initEl();
+			
+			function initEl(){
+				el.find('select').each(function(){
+					var tid=parseInt($(this).find('option:selected').attr('value'), 10);
+					if(tid>0){
+						$(this).show();
+						el.find('select#t_'+tid).show();
+					}else{
+						el.find('select#t_0').show();
+					}
+				});
+			};
+			function reset(sel){
+				var tid=parseInt(sel.val(), 10);
+				if(isNaN(tid)){
+					tid=0;
+				}
+				var level=sel.parents('.level').eq(0);
+				level.nextAll('.level').find('select').val(0).hide();
+				if(tid>0){
+					el.find('select#t_'+tid).show();
+					setVal(tid);
+				}else{
+					var prev_el=parseInt(sel.attr('id').replace('t_', ''), 10);
+					setVal(prev_el);
+				}
+				
+			};
+			function setVal(val){
+				inp.val(val);
+				inp.trigger('change');
+			};
+			
+			return el;
+		};
+	}
+	
+})(jQuery);
 
 function checkFormFieldsVisibility(current_topic_id,topic_array,context){
 	if(current_topic_id!='' && current_topic_id!=0){

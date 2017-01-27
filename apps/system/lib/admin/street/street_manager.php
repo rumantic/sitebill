@@ -24,154 +24,7 @@ class Street_Manager extends Object_Manager {
      * @param void
      * @return string
      */
-    /*function main () {
-	    require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
-	    $data_model = new Data_Model();
-	    $form_data = $this->data_model;
-	    
-		$rs = $this->getTopMenu();
-
-		switch( $this->getRequestValue('do') ){
-			case 'edit_done' : {
-	            $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
-			    if ( !$this->check_data( $form_data[$this->table_name] ) ) {
-			        $rs = $this->get_form($form_data[$this->table_name], 'edit');
-			    } else {
-			        $this->edit_data($form_data[$this->table_name]);
-			        $rs .= $this->grid();
-			    }
-				break;
-			}
-		    
-			case 'edit' : {
-                $form_data[$this->table_name] = $data_model->init_model_data_from_db ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name] );
-                //echo '<pre>';
-                //print_r($form_data[$this->table_name]);			    
-			    $rs = $this->get_form($form_data[$this->table_name], 'edit');
-				
-			    break;
-			}
-			case 'delete' : {
-		        $this->delete_data($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key));
-		        if ( $this->getError() ) {
-			        $rs .= '<div align="center">'.Multilanguage::_('L_ERROR_ON_DELETE').': '.$this->GetErrorMessage().'<br>';
-			        $rs .= '<a href="?action='.$this->action.'">ОК</a>';
-			        $rs .= '</div>';
-			    } else {
-		            $rs .= $this->grid();
-			    }	
-		        
-			    
-				break;
-			}
-			case 'export' : {
-				$rs.=$this->getExportForm();
-				break;
-			}
-			
-			case 'export_done' : {
-			    if ( $this->isDemo() ) {
-			        $rs = $this->demo_function_disabled();
-			        return $rs;
-			    }
-				$ret='';
-				$city_id=(int)$_REQUEST['city_id'];
-				if($city_id!=0){
-					if($this->getConfigValue('link_street_to_city')){
-						$query='SELECT s.*, d.name AS district FROM '.DB_PREFIX.'_street s LEFT JOIN '.DB_PREFIX.'_district d ON s.district_id=d.id WHERE s.city_id='.(int)$_REQUEST['city_id'].' ORDER BY s.name';
-					}else{
-						$query='SELECT s.*, d.name AS district FROM '.DB_PREFIX.'_street s LEFT JOIN '.DB_PREFIX.'_district d ON s.district_id=d.id WHERE s.district_id IN (SELECT id FROM '.DB_PREFIX.'_district WHERE city_id='.(int)$_REQUEST['city_id'].') ORDER BY s.name';
-					}
-					
-				}else{
-					$query='SELECT s.*, d.name AS district FROM '.DB_PREFIX.'_street s LEFT JOIN '.DB_PREFIX.'_district d ON s.district_id=d.id ORDER BY s.name';
-				}
-				$this->db->exec($query);
-				while($this->db->fetch_assoc()){
-					if(isset($_REQUEST['need_districts'])){
-						$ret.=$this->db->row['name'].';'.$this->db->row['district']."\r\n";
-					}else{
-						$ret.=$this->db->row['name']."\r\n";
-					}
-					
-				}
-				$f=fopen(SITEBILL_DOCUMENT_ROOT.'/street_export.csv','w');
-				fwrite($f,$ret);
-				fclose($f);
-				$rs.=Multilanguage::_('L_MESSAGE_EXPORT_DONE').'<a href="/street_export.csv">street_export.csv</a>';
-				//echo $query;
-				//print_r($_REQUEST);
-				break;
-			}
-			
-            case 'load_form':
-                $rs = $this->getTopMenu();
-                $rs .= $this->getLoadForm();
-            break;
-            
-            case 'load_done':
-                if ( $this->isDemo() ) {
-                	$rs = $this->demo_function_disabled();
-                	return $rs;
-                }
-                
-                $rs = $this->getTopMenu();
-                
-                $csv_strings = $this->loadData();
-                if ( !$csv_strings ) {
-                    $rs .= $this->getLoadForm();
-                } else {
-                    $rs .= '<p>&nbsp;</p>';
-                    $rs .= $this->importData( $csv_strings );
-                    if ( $this->getError() ) {
-                        $rs .= $this->getLoadForm();
-                    }
-                }
-            break;
-            
-			case 'new_done' : {
-        		
-	            $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
-	            
-	            if ( !$this->check_data( $form_data[$this->table_name] ) ) {
-			        $rs = $this->get_form($form_data[$this->table_name], 'new');
-			        
-			    } else {
-			        $this->add_data($form_data[$this->table_name]);
-			        $rs .= $this->grid();
-			    }
-				break;
-			}
-			
-			case 'new' : {
-			    $rs = $this->get_form($form_data[$this->table_name]);
-				break;
-			}
-			case 'mass_delete' : {
-				$id_array=array();
-				$ids=trim($this->getRequestValue('ids'));
-				if($ids!=''){
-					$id_array=explode(',',$ids);
-				}
-				$rs.=$this->mass_delete_data($this->table_name, $this->primary_key, $id_array);
-				break;
-			}
-			default : {
-				$rs .= $this->grid($user_id);
-			}
-		}
-		$rs_new = '<div class="apps_path">'.Multilanguage::_('L_ADMIN_MENU_APPLICATIONS').' / ';
-		if ( !empty($this->app_title) ) {
-			$rs_new .= '<a href="?action='.$this->action.'">'.$this->app_title.'</a>';
-		} else {
-			$rs_new .= '<a href="?action='.$this->action.'">'.$this->action.'</a>';
-		}
-		$rs_new .= '</div>';
-		$rs_new .= '<div class="clear"></div>';
-		$rs_new .= $rs;
-		
-		return $rs_new;
-    }*/
+    
     
     protected function _new_doneAction(){
     	$rs='';
@@ -215,7 +68,7 @@ class Street_Manager extends Object_Manager {
     	return $rs;
     }
     
-    protected function _export_doneAction(){
+    protected function _export_old_doneAction(){
     	$rs='';
     	if ( $this->isDemo() ) {
 	        $rs = $this->demo_function_disabled();
@@ -233,15 +86,18 @@ class Street_Manager extends Object_Manager {
 		}else{
 			$query='SELECT s.*, d.name AS district FROM '.DB_PREFIX.'_street s LEFT JOIN '.DB_PREFIX.'_district d ON s.district_id=d.id ORDER BY s.name';
 		}
-		$this->db->exec($query);
-		while($this->db->fetch_assoc()){
-			if(isset($_REQUEST['need_districts'])){
-				$ret.=$this->db->row['name'].';'.$this->db->row['district']."\r\n";
-			}else{
-				$ret.=$this->db->row['name']."\r\n";
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				if(isset($_REQUEST['need_districts'])){
+					$ret.=$ar['name'].';'.$ar['district']."\r\n";
+				}else{
+					$ret.=$ar['name']."\r\n";
+				}
 			}
-			
 		}
+		
 		$f=fopen(SITEBILL_DOCUMENT_ROOT.'/street_export.csv','w');
 		fwrite($f,$ret);
 		fclose($f);
@@ -249,7 +105,7 @@ class Street_Manager extends Object_Manager {
 		return $rs;
     }
     
-    protected function _exportAction(){
+    protected function _export_oldAction(){
     	$rs='';
     	$rs.=$this->getExportForm();
     	return $rs;
@@ -427,9 +283,13 @@ class Street_Manager extends Object_Manager {
      * @return string
      */
     function add_record_and_get_id ( $name ) {
-        
-        $query = "insert into ".DB_PREFIX."_street (name) values ('$name')";
-        $record_id = $this->db->exec($query);
+    	$record_id = 0;
+        $query = "insert into ".DB_PREFIX."_street (name) values (?)";
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($name));
+        if($stmt){
+        	$record_id = $DBC->lastInsertId();
+        }
         return $record_id;
     }
     
@@ -447,9 +307,8 @@ class Street_Manager extends Object_Manager {
         }else{
         	$query = "INSERT INTO ".DB_PREFIX."_street (name) VALUES ('".$value."')";
         }
-        //$query = "insert into re_street (name) values ('$value')";
-        //echo "$query<br>";
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query);
         return true;
     }
     
@@ -461,47 +320,50 @@ class Street_Manager extends Object_Manager {
      */
     function getTopMenu () {
         $rs = '<a href="?action=street&do=new" class="btn btn-primary">'.Multilanguage::_('L_TEXT_ADD_STREET').'</a>';
-        $rs .= ' <a href="?action=street&do=load_form" class="btn btn-primary">'.Multilanguage::_('L_TEXT_LOAD_STREETS_FROM_FILE').'</a>';
-        $rs .= ' <a href="?action=street&do=export" class="btn btn-primary">'.Multilanguage::_('L_TEXT_EXPORT').'</a>';
-        $rs.=$this->getAdditionalSearchForm();
+        //$rs.=$this->getAdditionalSearchForm();
         return $rs;
     }
     
 	function getAdditionalSearchForm(){
 		$ret='';
+		$DBC=DBC::getInstance();
+		
 		if($this->getConfigValue('link_street_to_city')){
 			$query='select * from '.DB_PREFIX.'_city order by name';
-			$this->db->exec($query);
+			$stmt=$DBC->query($query);
 			$ret.='<form method="post" action="'.SITEBILL_MAIN_URL.'/admin/">';
 			$ret.='<select name="city_id">';
 			$ret.='<option value="">'.Multilanguage::_('L_TEXT_ANY_CITY').'</option>';
-			while($this->db->fetch_assoc()){
-				if($this->getRequestValue('city_id')==$this->db->row['city_id']){
-					$ret.='<option value="'.$this->db->row['city_id'].'" selected="selected">'.$this->db->row['name'].'</option>';
-				}else{
-					$ret.='<option value="'.$this->db->row['city_id'].'">'.$this->db->row['name'].'</option>';
-				}
+			if($stmt){
+				while($ar=$DBC->fetch($stmt)){
+					if($this->getRequestValue('city_id')==$ar['city_id']){
+						$ret.='<option value="'.$ar['city_id'].'" selected="selected">'.$ar['name'].'</option>';
+					}else{
+						$ret.='<option value="'.$ar['city_id'].'">'.$ar['name'].'</option>';
+					}
 				
+				}
 			}
+			
 			$ret.='</select>';
 		}else{
 			$query='select * from '.DB_PREFIX.'_district order by name';
-			$this->db->exec($query);
+			$stmt=$DBC->query($query);
 			$ret.='<form method="post">';
 			$ret.='<select name="district_id">';
 			$ret.='<option value="">'.Multilanguage::_('L_TEXT_ANY_DISTRICT').'</option>';
-			while($this->db->fetch_assoc()){
-				if($this->getRequestValue('district_id')==$this->db->row['id']){
-					$ret.='<option value="'.$this->db->row['id'].'" selected="selected">'.$this->db->row['name'].'</option>';
-				}else{
-					$ret.='<option value="'.$this->db->row['id'].'">'.$this->db->row['name'].'</option>';
-				}
+			if($stmt){
+				while($ar=$DBC->fetch($stmt)){
+					if($this->getRequestValue('district_id')==$ar['id']){
+						$ret.='<option value="'.$ar['id'].'" selected="selected">'.$ar['name'].'</option>';
+					}else{
+						$ret.='<option value="'.$ar['id'].'">'.$ar['name'].'</option>';
+					}
 				
+				}
 			}
 			$ret.='</select>';
 		}
-		
-		
 		
 		$ret.='<input type="hidden" name="action" value="'.$this->action.'">';
 		$ret .= '<input type="submit" name="submit" value="'.Multilanguage::_('L_TEXT_SELECT').'">';
@@ -518,7 +380,7 @@ class Street_Manager extends Object_Manager {
 		$ret.='<tr><td>'.Multilanguage::_('L_TEXT_ADD_DISTRICTS').'?</td><td><input type="checkbox" name="need_districts"></td></tr>';
 		$ret.='<tr><td colspan="2"><input type="submit" name="submit" value="'.Multilanguage::_('L_TEXT_EXPORT').'"></td></tr>';
 		$ret.='<input type="hidden" name="action" value="'.$this->action.'">';
-		$ret.='<input type="hidden" name="do" value="export_done">';
+		$ret.='<input type="hidden" name="do" value="export_old_done">';
 		$ret .= '';
 		$ret.='</table>';
 		$ret.='</form>';
@@ -528,11 +390,14 @@ class Street_Manager extends Object_Manager {
 	function getCitySelectBox(){
 		$ret='';
 		$query='select * from '.DB_PREFIX.'_city order by name';
-		$this->db->exec($query);
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
 		$ret.='<select name="city_id">';
 		$ret.='<option value="">'.Multilanguage::_('L_TEXT_ANY_CITY').'</option>';
-		while($this->db->fetch_assoc()){
-			$ret.='<option value="'.$this->db->row['city_id'].'">'.$this->db->row['name'].'</option>';
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				$ret.='<option value="'.$ar['city_id'].'">'.$ar['name'].'</option>';
+			}
 		}
 		$ret.='</select>';
 		return $ret;
@@ -541,44 +406,22 @@ class Street_Manager extends Object_Manager {
 	function getDistrictSelectBox(){
 		$ret='';
 		$query='select * from '.DB_PREFIX.'_district order by name';
-		$this->db->exec($query);
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
 		$ret.='<select name="district_id">';
 		$ret.='<option value="">'.Multilanguage::_('L_TEXT_ANY_DISTRICT').'</option>';
-		while($this->db->fetch_assoc()){
-			$ret.='<option value="'.$this->db->row['id'].'">'.$this->db->row['name'].'</option>';
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				$ret.='<option value="'.$ar['id'].'">'.$ar['name'].'</option>';
+			}
 		}
 		$ret.='</select>';
 		return $ret;
 	}
 	
 	function grid () {
-		
-        require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/grid.php');
-        $common_grid = new Common_Grid($this);
-        $common_grid->set_grid_table($this->table_name);
-        
-        $common_grid->add_grid_item($this->primary_key);
-        $common_grid->add_grid_item('name');
-        
-        $common_grid->add_grid_control('edit');
-        $common_grid->add_grid_control('delete');
-        
-        
-		if($this->getRequestValue('district_id')!=0){
-			$common_grid->set_conditions(array('district_id'=>(int)$this->getRequestValue('district_id')));
-			$common_grid->setPagerParams(array('action'=>$this->action,'page'=>$this->getRequestValue('page'),'per_page'=>$this->getConfigValue('common_per_page')));
-			//$common_grid->set_grid_query("SELECT * FROM ".DB_PREFIX."_".$this->table_name." WHERE district_id=".(int)$this->getRequestValue('district_id')." ORDER BY ".$this->primary_key." ASC");
-		}elseif($this->getRequestValue('city_id')!=0){
-			$common_grid->set_conditions(array('city_id'=>(int)$this->getRequestValue('city_id')));
-			$common_grid->setPagerParams(array('action'=>$this->action,'page'=>$this->getRequestValue('page'),'per_page'=>$this->getConfigValue('common_per_page')));
-			//$common_grid->set_grid_query("SELECT * FROM ".DB_PREFIX."_".$this->table_name." WHERE city_id=".(int)$this->getRequestValue('city_id')." ORDER BY ".$this->primary_key." ASC");
-		}else{
-			$common_grid->setPagerParams(array('action'=>$this->action,'page'=>$this->getRequestValue('page'),'per_page'=>$this->getConfigValue('common_per_page')));
-			//$common_grid->set_grid_query("SELECT * FROM ".DB_PREFIX."_".$this->table_name." ORDER BY ".$this->primary_key." ASC");
-		}
-        
-        $rs = $common_grid->construct_grid();
-        return $rs;
+        $default_params['grid_item'] = array('street_id', 'name', 'district_id', 'city_id');
+        return parent::grid(array(), $default_params);
     }
     
 	/**
@@ -592,12 +435,14 @@ class Street_Manager extends Object_Manager {
 			Multilanguage::_('TABLE_ADS','system')=>'SELECT COUNT(*) AS rs FROM '.DB_PREFIX.'_data WHERE street_id=?',
 		);
 		$ans=array();
+		$DBC=DBC::getInstance();
+		
 		foreach($search_queries as $k=>$v){
 			$query=str_replace('?', $primary_key_value, $v);
-			$this->db->exec($query);
-		    if ($this->db->success) {
-		    	$this->db->fetch_assoc();
-		    	$rs=$this->db->row['rs'];
+			$stmt=$DBC->query($query);
+		    if ($stmt) {
+		    	$ar=$DBC->fetch($stmt);
+		    	$rs=$ar['rs'];
 		        if($rs!=0){
 		        	$ans[]=sprintf(Multilanguage::_('MESSAGE_CANT_DELETE','system'), $k);
 		        }
@@ -612,4 +457,3 @@ class Street_Manager extends Object_Manager {
 	}
     
 }
-?>

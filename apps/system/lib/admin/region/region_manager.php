@@ -23,6 +23,12 @@ class Region_Manager extends Object_Manager {
         }
         $this->data_model = $data_model->get_region_model();
     }
+	
+	function grid () {
+        $default_params['grid_item'] = array('region_id', 'name', 'country_id');
+        return parent::grid(array(), $default_params);
+    }
+	
     
 	/**
 	 * Delete data
@@ -31,17 +37,22 @@ class Region_Manager extends Object_Manager {
 	 * @param int $primary_key_value
 	 */
 	function delete_data($table_name, $primary_key, $primary_key_value ) {
+		$DBC=DBC::getInstance();
+		
 		$search_queries=array(
 			Multilanguage::_('TABLE_CITY','system')=>'SELECT COUNT(*) AS rs FROM '.DB_PREFIX.'_city WHERE region_id=?',
 			Multilanguage::_('TABLE_ADS','system')=>'SELECT COUNT(*) AS rs FROM '.DB_PREFIX.'_data WHERE region_id=?'
 		);
 		$ans=array();
+		$DBC=DBC::getInstance();
+		
+		
 		foreach($search_queries as $k=>$v){
 			$query=str_replace('?', $primary_key_value, $v);
-			$this->db->exec($query);
-		    if ($this->db->success) {
-		    	$this->db->fetch_assoc();
-		    	$rs=$this->db->row['rs'];
+			$stmt=$DBC->query($query);
+		    if ($stmt) {
+		    	$ar=$DBC->fetch($stmt);
+		    	$rs=$ar['rs'];
 		        if($rs!=0){
 		        	$ans[]=sprintf(Multilanguage::_('MESSAGE_CANT_DELETE','system'), $k);
 		        }
@@ -55,4 +66,3 @@ class Region_Manager extends Object_Manager {
 		
 	}
 }
-?>

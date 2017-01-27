@@ -48,7 +48,7 @@ class Menu_Manager extends Object_Manager {
     private function check_table () {
     	$DBC=DBC::getInstance();
         $table = "
-CREATE TABLE `".DB_PREFIX."_menu` (
+CREATE IF NOT EXIST TABLE `".DB_PREFIX."_menu` (
   `menu_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL DEFAULT '',
   `sort_order` int(11) NOT NULL DEFAULT '0',
@@ -61,7 +61,7 @@ CREATE TABLE `".DB_PREFIX."_menu` (
        
         
         $table = "
-CREATE TABLE `".DB_PREFIX."_menu_structure` (
+CREATE IF NOT EXIST TABLE `".DB_PREFIX."_menu_structure` (
   `menu_structure_id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL DEFAULT '',
   `url` text,
@@ -97,6 +97,26 @@ CREATE TABLE `".DB_PREFIX."_menu_structure` (
 		$form_menu['menu']['name']['type'] = 'safe_string';
 		$form_menu['menu']['name']['required'] = 'on';
 		$form_menu['menu']['name']['unique'] = 'off';
+		
+    	
+		if(1==$this->getConfigValue('apps.language.use_langs')){
+			$langs=Multilanguage::availableLanguages();
+			
+			foreach($langs as $ln){
+				$form_menu['menu']['name_'.$ln]['name'] = 'name_'.$ln;
+				$form_menu['menu']['name_'.$ln]['title'] = Multilanguage::_('L_TEXT_MENU_NAME').' ('.$ln.')';
+				$form_menu['menu']['name_'.$ln]['value'] = '';
+				$form_menu['menu']['name_'.$ln]['length'] = 40;
+				$form_menu['menu']['name_'.$ln]['type'] = 'safe_string';
+				$form_menu['menu']['name_'.$ln]['required'] = 'on';
+				$form_menu['menu']['name_'.$ln]['unique'] = 'off';
+			}
+			/*if($current_lang=='ru' || $current_lang==''){
+				$lang_prefix='';
+			}else{
+				$lang_prefix='_'.$current_lang;
+			}*/
+		}
 		
 		$form_menu['menu']['tag']['name'] = 'tag';
 		$form_menu['menu']['tag']['title'] = Multilanguage::_('L_TEXT_MENU_TAG');

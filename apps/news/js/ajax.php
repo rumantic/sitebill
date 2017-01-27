@@ -14,7 +14,7 @@ $folder='/'.$settings['Settings']['estate_folder'];
 }else{
 $folder='';
 }
-$sitebill_document_root = $_SERVER['DOCUMENT_ROOT'].$folder;
+$sitebill_document_root = rtrim($_SERVER['DOCUMENT_ROOT'], '/').$folder;
 
 define('SITEBILL_DOCUMENT_ROOT', $sitebill_document_root);
 define('SITEBILL_MAIN_URL', $folder);
@@ -32,9 +32,7 @@ require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/multilanguage/multi
 $smarty = new Smarty;
 $smarty->cache_dir    = SITEBILL_DOCUMENT_ROOT.'/cache/smarty';
 $smarty->compile_dir  = SITEBILL_DOCUMENT_ROOT.'/cache/compile';
-if(isset($_GET['_lang'])){
-	$_SESSION['_lang']=$_GET['_lang'];
-}
+Sitebill::setLangSession();
 Multilanguage::start('backend',$_SESSION['_lang']);
 
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/news/admin/admin.php');

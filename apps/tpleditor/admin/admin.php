@@ -61,7 +61,10 @@ class tpleditor_admin extends Object_Manager {
 	    			if(!in_array($file, $this->filelist)){
 	    				$f=fopen($this->path.$file,'w');
 	    				$content=$_POST['content'];
-	    				fwrite($f, stripslashes($content));
+						if(get_magic_quotes_gpc()){
+	    					$content=stripslashes($content);
+	    				}
+	    				fwrite($f, $content);
 	    				fclose($f);
 	    			}
 	    			$this->filelist=$this->getFileList();
@@ -79,7 +82,10 @@ class tpleditor_admin extends Object_Manager {
 	    				}
 	    				//$f=fopen($this->path.$file,'w');
 	    				$content=$_POST['content'];
-	    				fwrite($f, stripslashes($content));
+	    				if(get_magic_quotes_gpc()){
+	    					$content=stripslashes($content);
+	    				}
+	    				fwrite($f, $content);
 	    				fclose($f);
 	    			}
     			}

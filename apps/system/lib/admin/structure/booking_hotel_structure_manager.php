@@ -22,11 +22,12 @@ class Booking_Hotel_Structure_Manager extends Structure_Implements {
 			$where=' WHERE user_id='.$user_id;
 		}
 		$query = "SELECT COUNT(hotel_id) as total, booking_hotel_topic_id FROM ".DB_PREFIX."_booking_hotel ".$where." GROUP BY booking_hotel_topic_id";
-		//echo $query;
-		$this->db->exec($query);
-		while ( $this->db->fetch_assoc() ) {
-			$ret['data'][$user_id][$this->db->row['booking_hotel_topic_id']]=$this->db->row['total'];
-			//$ret['data'][$this->db->row['company_topic_id']]=$this->db->row['total'];
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while ( $ar=$DBC->fetch($stmt) ) {
+				$ret['data'][$user_id][$ar['booking_hotel_topic_id']]=$ar['total'];
+			}
 		}
 		return $ret;
 	}
@@ -123,12 +124,12 @@ class Booking_Hotel_Structure_Manager extends Structure_Implements {
 	function reorderTopics($orderArray){
 		//print_r($orderArray);
 		if(count($orderArray)>0){
+			$DBC=DBC::getInstance();
 			foreach($orderArray as $k=>$v){
 				$query='UPDATE '.DB_PREFIX.'_'.$this->table.' SET `order`='.((int)$v).' WHERE id='.((int)$k);
-				$this->db->exec($query);
+				$stmt=$DBC->query($query);
 			}
 		}
-		 
 	}
 	
 }

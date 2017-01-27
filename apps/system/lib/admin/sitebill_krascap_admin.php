@@ -52,8 +52,8 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
      */
     function clearItems ( $topic_id ) {
         $query = "delete from re_data where topic_id=$topic_id and hot <> 1 and img1 = '' and img2 = '' and img3 = '' and img4 = '' and img5 = ''";
-        //echo $query;
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+    	$stmt=$DBC->query($query);
     }
     
     /**
@@ -104,14 +104,15 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
      */
     function getDistrictIdByName ( $name ) {
         $query = "select id from re_district where name like '%$name%'";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['id'] > 0 ) {
-            return $this->db->row['id'];
-        } else {
-            //$this->riseError('Район не определен');
-            return false;
-        }
+        $DBC=DBC::getInstance();
+    	$stmt=$DBC->query($query);
+    	if($stmt){
+			$ar=$DBC->fetch($stmt);
+			if ( $ar['id'] > 0 ) {
+				return $ar['id'];
+			}
+		}
+		return false;
     }
     
     /**
@@ -215,10 +216,9 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
                         (`type_id`, `topic_id`, `sub_id1`,  `sub_id2`,  `district_id`, `price`, `text`,         `contact`,  `agent_tel`,  `room_count`,  `street`, `elite`, `session_id`, `active`, `date_added`, `hot`, `floor`,  `floor_count`,  `balcony`,  `square_all`,  `square_live`,  `square_kitchen`,  `bathroom`,  `walls`)
                 values  ($type_id,  $topic_id,  $topic_id1, $topic_id2, $distr,        $price, '$description', '$contact', '$agent_tel','$room_count', '$street', $elite, '$sessid',     $active,   now(),       $hot, '$floor', '$floor_count', '$balcony', '$square_all', '$square_live', '$square_kitchen', '$bathroom', '$walls')
             ";
-        //echo $query."<br>";
-        $this->db->exec($query);
-        
-        return true;
+        $DBC=DBC::getInstance();
+    	$stmt=$DBC->query($query);
+    	return true;
     }
     
     /**
@@ -388,11 +388,14 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
      */
     function getTypeIDByRoomCount ($topic_id, $room_count ) {
         $query = "select id from re_topic where parent_id=$topic_id and sql_where = 'room_count = $room_count'";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['id'] > 0 ) {
-            return $this->db->row['id']; 
-        }
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			if ( $ar['id'] > 0 ) {
+				return $ar['id'];
+			}
+		}
         return false;
     }
     
@@ -453,22 +456,21 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
                         (`type_id`, `topic_id`, `sub_id1`, `sub_id2`,  `district_id`, `price`, `text`,         `contact`,  `agent_tel`, `room_count`,  `street`, `elite`, `session_id`, `active`, `date_added`, `hot`, `walls`,  `floor`,  `floor_count`,  `balcony`,  `square_all`,  `square_live`,  `square_kitchen`,  `bathroom`)
                 values  ($type_id,  $topic_id,  $topic_id1, $topic_id2, $distr,       $price, '$description', '$contact', '$agent_tel', '$room_count', '$street', $elite, '$sessid',     $active,   now(),       $hot, '$walls', '$floor', '$floor_count', '$balcony', '$square_all', '$square_live', '$square_kitchen', '$bathroom')
             ";
-        //echo $query."<br>";
-        $this->db->exec($query);
-        //exit;
-        return true;
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		return true;
     }
     
     //-----------------------------------------------------------------------------
-    function gramm_correct ($txt) {
+    /*function gramm_correct ($txt) {
         $txt = preg_replace("/([\w]+)([\s]*)([,.!:)]+)/", "\$1\$3 ", $txt);
         $txt = preg_replace("/([\d]+)([\s]*)([,]+)([\s]*)([\d]+)/", "\$1\$3\$5", $txt);
         $txt = preg_replace("/([\s]+)/", " ", $txt);
         return($txt);
-    }
+    }*/
 
     //-----------------------------------------------------------------------------
-    function add_info($active = 1) {
+    /*function add_info($active = 1) {
         global $topic_id, $topic_id1, $topic_id2, $jump_page;   
 
         $id = $_REQUEST['id'];
@@ -531,7 +533,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         {
             $id = $_REQUEST['id'] = mysql_insert_id();
         }
-    }
+    }*/
     
     
     

@@ -1,15 +1,28 @@
-<h1>Здравствуйте</h1>
-Вам пришло личное сообщение связанное с объявлением <a href="http://{$server_name}{$estate_folder}{$realty_href}">ID={$realty_id}</a>
+Приветствуем, {$n_fio}!<br/><br/>
 
-<table cellpadding="5" style="border: 1px solid gray;">
+Вам пришло личное сообщение по объявлению на сайте <a href="http://{$server_name}{$estate_folder}{$realty_href}">ID={$realty_id}</a>
+<br/><br/>
+<table cellpadding="2">
 	<tr>
 		<td>Тема</td><td>{$theme}</td>
 	</tr>
 	<tr>
-		<td>Содержание</td><td>{$message}</td>
+		<td colspan="2"><hr/></td>
+	</tr>
+	<tr>
+		<td>Текст сообщения</td><td>{$message}</td>
     </tr>
+	<tr>
+		<td colspan="2"><hr/></td>
+	</tr>
     <tr>
-		<td>Контакты</td><td>Имя: {$name}<br> Email: {$email}<br> Телефон:{$phone}</td>
+		<td>Контакты отправителя</td><td>Имя: {$name}<br/> Email: {$email}<br/> Телефон:{$phone}</td>
+	</tr>
+	<tr>
+		<td colspan="2"><hr/></td>
 	</tr>
 </table>
+<br/>
+Посмотреть все сообщения можно в <a href="http://{$server_name}{$estate_folder}/mailbox/">своем личном кабинете</a><br/>
+<br/> 
 {$email_signature}

@@ -36,10 +36,9 @@ class Rent_Order extends Sitebill_Data_Get_Rent {
      * @return boolean
      */
     function deleteRecord ( $record_id ) {
-        global $__db_prefix;
-        
-        $query = "delete from ".$__db_prefix."_data_get_rent where data_get_rent_id=$record_id";
-        $this->db->exec($query);
+        $query = "delete from ".DB_PREFIX."_data_get_rent where data_get_rent_id=$record_id";
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
         return true;
     }
     
@@ -50,13 +49,16 @@ class Rent_Order extends Sitebill_Data_Get_Rent {
      */
     function grid () {
         global $_SESSION;
-        global $__db_prefix;
+        $ra=array();
+        $query = "select * from ".DB_PREFIX."_data_get_rent order by date_added desc";
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while ( $ar=$DBC->fetch($stmt) ) {
+				$ra[] = $ar;
+			}
+		}
         
-        $query = "select * from ".$__db_prefix."_data_get_rent order by date_added desc";
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            $ra[] = $this->db->row;
-        }
         if ( count($ra) < 1 ) {
             return Multilanguage::_('NO_RENT_APPLICATIONS','system');
         }
@@ -97,4 +99,3 @@ class Rent_Order extends Sitebill_Data_Get_Rent {
         return $rs;
     }
 }
-?>

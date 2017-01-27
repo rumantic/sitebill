@@ -36,12 +36,14 @@ class Sitebill_Auth extends SiteBill {
     function checkAuth ( $login, $password ) {
         $password = md5($password);
         
-        $sql = "SELECT user_id FROM ".DB_PREFIX."_user WHERE login='$login' and password='$password' and group_id = ".$this->getGroupID('admin');
-        
-        $this->db->exec($sql);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['user_id'] > 0 ) {
-            return true;
+        $sql = "SELECT user_id FROM ".DB_PREFIX."_user WHERE login=? and password=? and group_id = ?";
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($sql, array($login, $password, $this->getGroupID('admin')));
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	if ( $ar['user_id'] > 0 ) {
+        		return true;
+        	}
         }
         return false;
     }

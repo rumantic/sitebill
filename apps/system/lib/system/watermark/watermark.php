@@ -51,26 +51,26 @@ class Watermark extends SiteBill {
 		$count=count($offsets_array);
 		switch($count){
 			case '1' : {
-				$this->watermark_offset_bottom=$this->watermark_offset_left=$this->watermark_offset_right=$this->watermark_offset_top=$offsets_array[0];
+				$this->watermark_offset_bottom=$this->watermark_offset_left=$this->watermark_offset_right=$this->watermark_offset_top=intval($offsets_array[0]);
 				break;
 			}
 			case '2' : {
-				$this->watermark_offset_left=$this->watermark_offset_right=$offsets_array[0];
-				$this->watermark_offset_bottom=$this->watermark_offset_top=$offsets_array[1];
+				$this->watermark_offset_left=$this->watermark_offset_right=intval($offsets_array[0]);
+				$this->watermark_offset_bottom=$this->watermark_offset_top=intval($offsets_array[1]);
 				break;
 			}
 			case '3' : {
-				$this->watermark_offset_left=$this->watermark_offset_right=$offsets_array[0];
-				$this->watermark_offset_top=$offsets_array[1];
-				$this->watermark_offset_bottom=$offsets_array[2];
+				$this->watermark_offset_left=$this->watermark_offset_right=intval($offsets_array[0]);
+				$this->watermark_offset_top=intval($offsets_array[1]);
+				$this->watermark_offset_bottom=intval($offsets_array[2]);
 				
 				break;
 			}
 			case '4' : {
-				$this->watermark_offset_left=$offsets_array[0];
-				$this->watermark_offset_top=$offsets_array[1];
-				$this->watermark_offset_right=$offsets_array[2];
-				$this->watermark_offset_bottom=$offsets_array[3];
+				$this->watermark_offset_left=intval($offsets_array[0]);
+				$this->watermark_offset_top=intval($offsets_array[1]);
+				$this->watermark_offset_right=intval($offsets_array[2]);
+				$this->watermark_offset_bottom=intval($offsets_array[3]);
 				break;
 			}
 		}
@@ -97,6 +97,7 @@ class Watermark extends SiteBill {
 		
 		$parts=explode('.',$this->watermark_image);
 		$ext=strtolower($parts[count($parts)-1]);
+		$wext=$ext;
 		switch($ext){
 			case 'jpg' : {
 				$watermark = imagecreatefromjpeg($this->watermark_image);
@@ -108,6 +109,7 @@ class Watermark extends SiteBill {
 			}
 			case 'png' : {
 				$watermark = imagecreatefrompng($this->watermark_image);
+				//$watermark = imagecreatetruecolor($this->watermark_image);
 				break;
 			}
 			case 'jpeg' : {
@@ -136,6 +138,7 @@ class Watermark extends SiteBill {
 			}
 			case 'png' : {
 				$image = imagecreatefrompng($image_destination);
+				//$image = ($image_destination);
 				break;
 			}
 			case 'jpeg' : {
@@ -180,13 +183,41 @@ class Watermark extends SiteBill {
 		}
 		
 		
-		imagealphablending($image, true);
-		imagealphablending($watermark, true);
+		
+		
+		
+		//imagealphablending($image, true);
+		//imagealphablending($watermark, false);
+		//imageSaveAlpha($watermark, true);
+		
 		$pct=$this->getConfigValue('apps.watermark.opacity');
 		if($pct==''){
 			$pct=50;
 		}
-		imagecopymerge($image, $watermark, $dest_x, $dest_y, 0, 0, $watermark_width, $watermark_height, $pct);
+		
+		if($wext=='png'){
+			$this->imagecopymerge_alpha($image, $watermark, $dest_x, $dest_y, 0, 0, $watermark_width, $watermark_height, $pct);
+		}else{
+			imagecopymerge($image, $watermark, $dest_x, $dest_y, 0, 0, $watermark_width, $watermark_height, $pct);
+		}
+		
+		
+		/*
+		$wm = imagecreatetruecolor($watermark_width, $watermark_height);
+		imagealphablending($wm, false);
+		imagesavealpha($wm, true);
+		
+		imagecopymerge($wm,$watermark,0,0,0,0,$watermark_width,$watermark_height,$pct);
+		
+		imagecopymerge($image, $wm, $dest_x, $dest_y, 0, 0, $watermark_width, $watermark_height, $pct);
+		
+		*/
+		
+		
+		
+		
+		
+		//imagecopymerge($image, $watermark, $dest_x, $dest_y, 0, 0, $watermark_width, $watermark_height, $pct);
 		
 		switch($ext){
 		case 'jpg' : {
@@ -207,12 +238,46 @@ class Watermark extends SiteBill {
 			}
 		}
 		
-		imagejpeg($image,$image_destination);
+		//imagejpeg($image,$image_destination);
 		
 		imagedestroy($image);
 		imagedestroy($watermark);
 		return TRUE;
 	}
+	
+	private function imagecopymerge_alpha($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h, $pct){
+	if(!isset($pct)){
+		return false;
+	}
+	$pct /= 100;
+	$w = imagesx( $src_im );
+	$h = imagesy( $src_im );
+	imagealphablending( $src_im, false );
+	$minalpha = 127;
+	for( $x = 0; $x < $w; $x++ )
+		for( $y = 0; $y < $h; $y++ ){
+		$alpha = ( imagecolorat( $src_im, $x, $y ) >> 24 ) & 0xFF;
+		if( $alpha < $minalpha ){
+			$minalpha = $alpha;
+		}
+	}
+	for( $x = 0; $x < $w; $x++ ){
+		for( $y = 0; $y < $h; $y++ ){
+			$colorxy = imagecolorat( $src_im, $x, $y );
+			$alpha = ( $colorxy >> 24 ) & 0xFF;
+			if( $minalpha !== 127 ){
+				$alpha = 127 + 127 * $pct * ( $alpha - 127 ) / ( 127 - $minalpha );
+			} else {
+				$alpha += 127 * $pct;
+			}
+			$alphacolorxy = imagecolorallocatealpha( $src_im, ( $colorxy >> 16 ) & 0xFF, ( $colorxy >> 8 ) & 0xFF, $colorxy & 0xFF, $alpha );
+			if( !imagesetpixel( $src_im, $x, $y, $alphacolorxy ) ){
+				return false;
+			}
+		}
+	}
+	imagecopy($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h);
+}
 	
 	public function loadSettings(){
 		$settings=simplexml_load_file(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/watermark/watermark.xml');

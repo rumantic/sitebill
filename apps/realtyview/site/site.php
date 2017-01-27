@@ -176,6 +176,9 @@ class realtyview_site extends realtyview_admin {
 			$this->template->assign('map_type', 'google');
 		}
 		
+		$DBC=DBC::getInstance();
+		
+		
 		$this->loadSharedModel();
 		$this->setAdvAuthor();
 		
@@ -271,15 +274,16 @@ class realtyview_site extends realtyview_admin {
 		if ( $this->getConfigValue('apps.company.timelimit') ) {
 			$current_time = time();
 			$query = "select re_data.* from re_data, re_user u, re_company c where re_data.id=$realty_id and re_data.user_id=u.user_id and u.company_id=c.company_id and c.start_date <= $current_time and c.end_date >= $current_time";
-			$this->db->exec($query);
-			$this->db->fetch_assoc();
-			if ( $this->db->row['id'] == '' ) {
-				header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
-				$this->template->assign('error_message', 'Страница не найдена. 404 not found');
-				$this->template->assign('main_file_tpl', 'error_message.tpl');
-				return false;
+			$stmt=$DBC->query($query);
+			if($stmt){
+				$ar=$DBC->fetch($stmt);
+				if ( $ar['id'] == '' ) {
+					header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
+					$this->template->assign('error_message', 'Страница не найдена. 404 not found');
+					$this->template->assign('main_file_tpl', 'error_message.tpl');
+					return false;
+				}
 			}
-	
 		}
 		
 	
@@ -514,6 +518,7 @@ class realtyview_site extends realtyview_admin {
 	}
 	
 	protected function setSimilar(){
+		$DBC=DBC::getInstance();
 		
 		$simparams=array(
 				'id'=>(int)$this->form_data_shared['id']['value'],
@@ -552,22 +557,28 @@ class realtyview_site extends realtyview_admin {
 			}
 			$q='SELECT id FROM '.DB_PREFIX.'_data'.(!empty($where) ? ' WHERE '.implode(' AND ',$where) : '').' LIMIT '.$similar_items_count;
 	
-			$this->db->exec($q);
-			while($this->db->fetch_assoc()){
-				$ret[]=$this->db->row['id'];
-				$ids[]=$this->db->row['id'];
+			$stmt=$DBC->query($q);
+			if($stmt){
+				while($ar=$DBC->fetch($stmt)){
+					$ret[]=$ar['id'];
+					$ids[]=$ar['id'];
+				}
 			}
+	
+			
 	
 			if(count($ret)<$similar_items_count){
 				unset($where['district_id']);
 				unset($where['street_id']);
 				$where['id']='id NOT IN ('.implode(',',$ids).')';
 				$q='SELECT id FROM '.DB_PREFIX.'_data'.(!empty($where) ? ' WHERE '.implode(' AND ',$where) : '').' LIMIT '.$similar_items_count;
-		   
-				$this->db->exec($q);
-				while($this->db->fetch_assoc()){
-					$ret[]=$this->db->row['id'];
-					$ids[]=$this->db->row['id'];
+			   
+				$stmt=$DBC->query($q);
+				if($stmt){
+					while($ar=$DBC->fetch($stmt)){
+						$ret[]=$ar['id'];
+						$ids[]=$ar['id'];
+					}
 				}
 			}
 			if(count($ret)<$similar_items_count){
@@ -575,10 +586,12 @@ class realtyview_site extends realtyview_admin {
 				//unset($where['street_id']);
 				$where['id']='id NOT IN ('.implode(',',$ids).')';
 				$q='SELECT id FROM '.DB_PREFIX.'_data'.(!empty($where) ? ' WHERE '.implode(' AND ',$where) : '').' LIMIT '.$similar_items_count;
-				$this->db->exec($q);
-				while($this->db->fetch_assoc()){
-					$ret[]=$this->db->row['id'];
-					$ids[]=$this->db->row['id'];
+				$stmt=$DBC->query($q);
+				if($stmt){
+					while($ar=$DBC->fetch($stmt)){
+						$ret[]=$ar['id'];
+						$ids[]=$ar['id'];
+					}
 				}
 			}
 			if(count($ret)<$similar_items_count){
@@ -586,10 +599,12 @@ class realtyview_site extends realtyview_admin {
 				unset($where['topic_id']);
 				$where['id']='id NOT IN ('.implode(',',$ids).')';
 				$q='SELECT id FROM '.DB_PREFIX.'_data'.(!empty($where) ? ' WHERE '.implode(' AND ',$where) : '').' LIMIT '.$last;
-				$this->db->exec($q);
-				while($this->db->fetch_assoc()){
-					$ret[]=$this->db->row['id'];
-					$ids[]=$this->db->row['id'];
+				$stmt=$DBC->query($q);
+				if($stmt){
+					while($ar=$DBC->fetch($stmt)){
+						$ret[]=$ar['id'];
+						$ids[]=$ar['id'];
+					}
 				}
 			}
 	

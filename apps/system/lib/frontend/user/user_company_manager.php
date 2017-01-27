@@ -74,36 +74,6 @@ class User_Company_Manager extends User_Object_Manager {
         $rs = $common_grid->construct_grid();
         
         return $rs;
-        
-
-        /*
-        global $_SESSION;
-        global $__db_prefix;
-        
-        $query = "select * from ".DB_PREFIX."_".$this->table_name." where company_id=".$this->get_user_company_id()." order by user_id asc";
-        $this->db->exec($query);
-
-        $rs = '<div align="left"><table border="0" width="20%">';
-        $rs .= '<td ><b>ФИО</b></td>';
-        $rs .= '<td></td>';
-        $rs .= '</tr>';
-        while ( $this->db->fetch_assoc() ) {
-            $j++;
-            if ( ceil($j/2) > floor($j/2)  ) {
-                $row_class = "row1";
-            } else {
-                $j = 0;
-                $row_class = "row2";
-            }
-            $rs .= '<tr>';
-            $rs .= '<td class="'.$row_class.'" nowrap width="99%">'.$this->db->row['fio'].'</td>';
-            $rs .= '<td width="10%" nowrap><a href="?action='.$this->action.'&do=edit&'.$this->primary_key.'='.$this->db->row[$this->primary_key].'"><img src="'.SITEBILL_MAIN_URL.'/img/edit.gif" border="0"></a> <a href="?action='.$this->action.'&do=delete&'.$this->primary_key.'='.$this->db->row[$this->primary_key].'" onclick="if ( confirm(\'Уверены что хотите удалить?\') ) {return true;} else {return false;}"><img src="'.SITEBILL_MAIN_URL.'/img/delete.gif" border="0"></a></td>';
-            $rs .= '</tr>';
-        }
-        $rs .= '</table></div>';
-        return $rs;
-        */
-    }
+     }
     
 }
-?>

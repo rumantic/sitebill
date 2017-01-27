@@ -19,13 +19,18 @@ class api_update extends SiteBill {
 				) ENGINE=MyISAM  DEFAULT CHARSET=".DB_ENCODING." ;";
         
         
-        $rs = '<h3>'.Multilanguage::_('SQL_NOW','system').'</h3>';
+        //$rs = '<h3>'.Multilanguage::_('SQL_NOW','system').'</h3>';
+        
+        $DBC=DBC::getInstance();
+        
+        
         foreach ( $query_data as $query ) {
-        	$this->db->exec($query);
-        	if ( !$this->db->success ) {
-        		$rs .= Multilanguage::_('ERROR_ON_SQL_RUN','system').': '.$query.', <b>'.$this->db->error.'</b><br>';
+        	$success=false;
+        	$stmt=$DBC->query($query, array(), $rows, $success);
+        	if ( !$success ) {
+        		//$rs .= Multilanguage::_('ERROR_ON_SQL_RUN','system').': '.$query.'<br>';
         	} else {
-        		$rs .= Multilanguage::_('QUERY_SUCCESS','system').': '.$query.'<br>';
+        		//$rs .= Multilanguage::_('QUERY_SUCCESS','system').': '.$query.'<br>';
         	}
         }
         return $rs;

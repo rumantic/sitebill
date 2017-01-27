@@ -34,6 +34,10 @@ td {
                         {if $data_item.value_string!=''}
                             {include file="wg_viewport_selectbox.tpl" wg_item=$data_item}
                         {/if}
+                    {elseif $data_item.type eq "select_by_query_multiple"}
+                    	{$data_item.value_string}
+                    {elseif $data_item.type eq "date"}
+                    	<tr><td><b>{$data_item.title}</b></td><td>{$data_item.value|date_format:"d-m-Y"}</td></tr>
                     {else}
                         {if $data_item.value!=''}
                             {if $data_item.name eq "text"}

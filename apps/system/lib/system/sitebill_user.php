@@ -4,19 +4,27 @@ class Sitebill_User {
 	
 	private static $instance=NULL;
 	private $id=0;
+	private $name='Гость';
 	private $login='';
-	private $name='';
 	private $group_id=0;
-	private $group_name='';
-	private $group_system_name='';
+	private $group_name='Гость';
+	private $group_system_name='guest';
 	//private $default_group_system_name='_guest';
 	private $session_key='';
+	private $_user_data=array('id'=>0, 'group_id'=>0, 'login'=>'', 'login'=>'', 'group_name'=>'', 'group_system_name'=>'', 'role_id'=>'', 'role_name'=>'');
 	
 	public static function getInstance(){
 		if(self::$instance==NULL){
 			self::$instance=new self();
 		}
 		return self::$instance;
+	}
+	
+	public function __get($value){
+		if(isset($this->_user_data[$value])){
+			return $this->_user_data[$value];
+		}
+		return '';
 	}
 
 	public function isAuthorised(){

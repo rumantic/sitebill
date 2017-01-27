@@ -1,8 +1,10 @@
+{if $blogRecords|count>0}
 {foreach from=$blogRecords item=blogRecord}
 	<h2><a href="{$blogRecord.href}">{$blogRecord.title}</a></h2>
 	<p>{$blogRecord.body}</p>
 {/foreach}
 
+{if $blog_pager_array.pages|count>1}
 {foreach from=$blog_pager_array.pages item=pager_page}
 	{if $pager_page.current==1}
 		{assign var=__curpagenr value=$pager_page.text}
@@ -44,3 +46,5 @@
 		<li><a href="{$blog_pager_array.npn.href}">&rsaquo;</a></li>
 	</ul>
 </div>
+{/if}
+{/if}

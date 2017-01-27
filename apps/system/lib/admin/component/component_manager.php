@@ -39,7 +39,8 @@ CREATE TABLE `".DB_PREFIX."_component_function` (
   PRIMARY KEY (`component_function_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=".DB_ENCODING." ;
         ";
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
     }
     
     function create_table () {
@@ -51,7 +52,8 @@ CREATE TABLE `".DB_PREFIX."_component` (
   PRIMARY KEY (`component_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=".DB_ENCODING." ;
         ";
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
     }
     
     /**
@@ -178,7 +180,7 @@ CREATE TABLE `".DB_PREFIX."_component` (
 	 */
 	function getTopMenu () {
 	    $rs = '';
-	    $rs .= '<a href="?action='.$this->action.'&do=new" class="btn btn-primary">Добавить компонент</a>';
+	    //$rs .= '<a href="?action='.$this->action.'&do=new" class="btn btn-primary">Добавить компонент</a>';
 	    return $rs;
 	}
 	
@@ -190,11 +192,10 @@ CREATE TABLE `".DB_PREFIX."_component` (
      */
     function addFunctionToComponent ( $component_id, $function_id ) {
         $query = "insert into ".DB_PREFIX."_component_function (component_id, function_id) values ($component_id, $function_id)";
-        
-        //echo $query;
-        $this->db->exec($query);
-        if ( $this->db->error ) {
-        	$this->riseError($this->db->error);
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query);
+        if ( !$stmt ) {
+        	$this->riseError('ERROR ON INSERT');
         }
     }
     
@@ -205,9 +206,13 @@ CREATE TABLE `".DB_PREFIX."_component` (
      */
     function getName ( $component_id ) {
         $query = "select * from ".DB_PREFIX."_component where component_id=$component_id";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        return $this->db->row['name'];
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query);
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	return $ar['name'];
+        }
+        return '';
     }
     
     /**
@@ -216,21 +221,25 @@ CREATE TABLE `".DB_PREFIX."_component` (
      * @return string
      */
     function getFunctionList ( $component_id ) {
+    	$DBC=DBC::getInstance();
+    	$rs='';
         $query = "select a.* from ".DB_PREFIX."_component_function ma, ".DB_PREFIX."_function a where ma.component_id=$component_id and a.function_id=ma.function_id";
-        $this->db->exec($query);
-        $rs .= '<table border="0" width="50%">';
-        $rs .= '<tr><td class="row_title" nowrap colspan="2">'.Multilanguage::_('AVIAL_FUNCTION_LIST','system').'</td></tr>';
-        $rs .= '<tr>
-        <td class="row_title">'.Multilanguage::_('SYSTEM_NAME','system').'</td>
-        <td class="row_title">'.Multilanguage::_('DESCRIPTION','system').'</td>
-        </tr>';
-        while ( $this->db->fetch_assoc() ) {
-            $rs .= '<tr class="row3">';
-            $rs .= '<td>'.$this->db->row['name'].'</td>';
-            $rs .= '<td>'.$this->db->row['description'].'</td>';
-            $rs .= '</tr>'; 
+        $stmt=$DBC->query($query);
+        if($stmt){
+        	$rs .= '<table  class="table table-hover">';
+        	$rs .= '<tr><td class="row_title" nowrap colspan="2">'.Multilanguage::_('AVIAL_FUNCTION_LIST','system').'</td></tr>';
+        	$rs .= '<tr>';
+	        $rs .= '<td class="row_title">'.Multilanguage::_('SYSTEM_NAME','system').'</td>';
+	        $rs .= '<td class="row_title">'.Multilanguage::_('DESCRIPTION','system').'</td>';
+	        $rs .= '</tr>';
+        	while($ar=$DBC->fetch($stmt)){
+        		$rs .= '<tr>';
+	            $rs .= '<td>'.$ar['name'].'</td>';
+	            $rs .= '<td>'.$ar['description'].'</td>';
+	            $rs .= '</tr>'; 
+        	}
+        	$rs .= '</table>';
         }
-        $rs .= '</table>';
         return $rs;
     }
     
@@ -240,11 +249,14 @@ CREATE TABLE `".DB_PREFIX."_component` (
      * @return
      */
     function getFunctionSelectBox () {
-        $query = "select * from ".DB_PREFIX."_function";
-        $this->db->exec($query);
+    	$DBC=DBC::getInstance();
+    	$query = "select * from ".DB_PREFIX."_function";
+        $stmt=$DBC->query($query);
         $rs = '<select name="function_id">';
-        while ( $this->db->fetch_assoc() ) {
-            $rs .= '<option value="'.$this->db->row['function_id'].'">'.$this->db->row['description'].' | '.$this->db->row['name'].'</option>';
+        if($stmt){
+        	while($ar=$DBC->fetch($stmt)){
+				$rs .= '<option value="'.$ar['function_id'].'">'.$ar['description'].' | '.$ar['name'].'</option>';
+        	}
         }
         $rs .= '</select>';
         return $rs;
@@ -285,34 +297,35 @@ CREATE TABLE `".DB_PREFIX."_component` (
     function grid () {
         global $_SESSION;
         global $__db_prefix;
+        $DBC=DBC::getInstance();
+        $rs='';
         
         $query = "select * from ".DB_PREFIX."_".$this->table_name." order by '".$this->grid_key."'";
         //echo $query;
         
-        $this->db->exec($query);
-        
-        $rs = '<table class="table table-hover">';
-        $rs .= '<thead>';
-        $rs .= '<tr>';
-        $rs .= '<th>'.Multilanguage::_('L_TEXT_TITLE').'</th>';
-        $rs .= '<th></th>';
-        $rs .= '</tr>';
-        $rs .= '<thead>';
-        $rs .= '<tbody>';
-        while ( $this->db->fetch_assoc() ) {
+        $stmt=$DBC->query($query);
+        if($stmt){
+        	$rs .= '<table class="table table-hover">';
+        	$rs .= '<thead>';
         	$rs .= '<tr>';
-        	$rs .= '<td>'.$this->db->row[$this->grid_key].'</td>';
-        	$rs .= '<td>
-            <a class="btn btn-info" href="?action='.$this->action.'&do=edit&'.$this->primary_key.'='.$this->db->row[$this->primary_key].'"><i class="icon-white icon-pencil"></i></a>
-            <a class="btn btn-danger" href="?action='.$this->action.'&do=delete&'.$this->primary_key.'='.$this->db->row[$this->primary_key].'" onclick="if ( confirm(\''.Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE').'\') ) {return true;} else {return false;}"><i class="icon-white icon-remove"></i></a>
-			<a href="?action='.$this->action.'&do=structure&'.$this->primary_key.'='.$this->db->row[$this->primary_key].'" class="btn btn-info">структура</a>
-            </td>';
+        	$rs .= '<th>'.Multilanguage::_('L_TEXT_TITLE').'</th>';
+        	$rs .= '<th></th>';
         	$rs .= '</tr>';
+        	$rs .= '<thead>';
+        	$rs .= '<tbody>';
+        	while($ar=$DBC->fetch($stmt)){
+        		$rs .= '<tr>';
+	        	$rs .= '<td>'.$ar[$this->grid_key].'</td>';
+	        	$rs .= '<td>';
+	            //$rs .= '<a class="btn btn-info" href="?action='.$this->action.'&do=edit&'.$this->primary_key.'='.$ar[$this->primary_key].'"><i class="icon-white icon-pencil"></i></a>';
+	            //$rs .= '<a class="btn btn-danger" href="?action='.$this->action.'&do=delete&'.$this->primary_key.'='.$ar[$this->primary_key].'" onclick="if ( confirm(\''.Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE').'\') ) {return true;} else {return false;}"><i class="icon-white icon-remove"></i></a>';
+				$rs .= '<a href="?action='.$this->action.'&do=structure&'.$this->primary_key.'='.$ar[$this->primary_key].'" class="btn btn-info">структура</a>';
+	            $rs .= '</td>';
+	        	$rs .= '</tr>';
+        	}
+        	$rs .= '</tbody>';
+        	$rs .= '</table>';
         }
-        $rs .= '</tbody>';
-        $rs .= '</table>';
-
-       
         return $rs;
     }
     
@@ -337,8 +350,8 @@ CREATE TABLE `".DB_PREFIX."_component` (
         $rs .= Multilanguage::_('COMPONENT_NAME','system').' <b>'.$this->getName($component_id).'</b>';
         
         $rs .= $this->getFunctionList( $component_id );
-        $rs .= Multilanguage::_('INC_FUNCTIONS_TO_COMPONENT','system');
-        $rs .= $this->includeFunctionForm($component_id);
+        //$rs .= Multilanguage::_('INC_FUNCTIONS_TO_COMPONENT','system');
+        //$rs .= $this->includeFunctionForm($component_id);
         
         $rs_new = $this->get_app_title_bar();
         $rs_new .= $rs;
@@ -358,12 +371,14 @@ CREATE TABLE `".DB_PREFIX."_component` (
 			Multilanguage::_('TABLE_COMP_FUNC','system')=>'SELECT COUNT(*) AS rs FROM '.DB_PREFIX.'_component_function WHERE component_id=?'
 		);
 		$ans=array();
+		$DBC=DBC::getInstance();
+		
 		foreach($search_queries as $k=>$v){
 			$query=str_replace('?', $primary_key_value, $v);
-			$this->db->exec($query);
-		    if ($this->db->success) {
-		    	$this->db->fetch_assoc();
-		    	$rs=$this->db->row['rs'];
+			$stmt=$DBC->query($query);
+		    if ($stmt) {
+		    	$ar=$DBC->fetch($stmt);
+		    	$rs=$ar['rs'];
 		        if($rs!=0){
 		        	$ans[]=sprintf(Multilanguage::_('MESSAGE_CANT_DELETE','system'), $k);
 		        }
@@ -375,6 +390,6 @@ CREATE TABLE `".DB_PREFIX."_component` (
 			$this->riseError(implode('<br />',$ans));
 		}
 	}
+	
     
 }
-?>

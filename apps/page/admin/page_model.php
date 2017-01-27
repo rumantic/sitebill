@@ -75,6 +75,15 @@ class Page_Model extends Data_Model {
 		$form_data['page']['is_service']['required'] = 'off';
 		$form_data['page']['is_service']['unique'] = 'off';
 		
+		$form_data['page']['template']['name'] = 'template';
+		$form_data['page']['template']['title'] = 'Шаблон';
+		$form_data['page']['template']['value'] = '';
+		$form_data['page']['template']['length'] = 40;
+		$form_data['page']['template']['type'] = 'safe_string';
+		$form_data['page']['template']['required'] = 'off';
+		$form_data['page']['template']['unique'] = 'off';
+		
+		
 		return $form_data;
 	}
 }

@@ -11,20 +11,29 @@ class Login_Email extends Login {
 	 * @return string
 	 */
 	function main () {
-		global $init;
+		
+		if(isset($_SESSION['go_after_login']) && $_SESSION['go_after_login']!=''){
+			$back_url=$_SESSION['go_after_login'];
+		
+		}else{
+			$back_url=$_SERVER['HTTP_REFERER'];
+			$_SESSION['go_after_login']=$back_url;
+		}
 		if ( $this->getSessionUserId() > 0 ) {
 			$rs = $this->wellcomePage();
 			return $rs;
 		}
-	
-		switch ( $init->getValue('do', 'default') ) {
+		$do=$this->getRequestValue('do');
+		switch ( $do ) {
 			case 'login_vk':
 				require_once (SITEBILL_DOCUMENT_ROOT . '/apps/socialauth/lib/vk/vk_logger.php');
 				$VK = Vk_Logger::getInstance();
 				$VK->login();
 				break;
 			case 'login':
-				$this->checkLogin(  $init->getValue('email'), $init->getValue('password')  );
+				$email=$this->getRequestValue('email');
+				$password=$this->getRequestValue('password');
+				$this->checkLogin(  $email, $password );
 				//echo "error_message = ".$this->error_message."<br>";
 				if ( $this->GetError() ){
 					$rs = $this->loginForm();
@@ -58,21 +67,27 @@ class Login_Email extends Login {
 			return false;
 		} else {
 			if ( $email != '' and $password != '' ) {
-				$query = "SELECT user_id, fio FROM ".DB_PREFIX."_user WHERE email='".$email."' and password='".md5($password)."'".(1==$this->getConfigValue('use_registration_email_confirm') ? ' AND active=1' : '');
-				//echo $query;
-				$this->db->exec($query);
-				$this->db->fetch_assoc();
-				if ( $this->db->row['user_id'] != '' ) {
-					$session_key = $this->GenerateSessionKey($this->db->row['user_id']);
-					$this->setSessionKey( $session_key );
-					$this->setUserId($this->db->row['user_id']);
-					$_SESSION['user_id']=$this->db->row['user_id'];
-					$_SESSION['current_user_name']=$this->db->row['fio'];
-					$this->db->exec('SELECT system_name FROM '.DB_PREFIX.'_group WHERE group_id=(SELECT group_id FROM '.DB_PREFIX.'_user WHERE login=\''.$login.'\')');
-					$this->db->fetch_assoc();
-					$_SESSION['current_user_group_name']=$this->db->row['system_name'];
-						
-					return true;
+				$query = "SELECT user_id, fio, group_id FROM ".DB_PREFIX."_user WHERE email=? AND password=?".(1==$this->getConfigValue('use_registration_email_confirm') ? ' AND active=1' : '');
+				$DBC=DBC::getInstance();
+				$stmt=$DBC->query($query, array($email, md5($password)));
+				if($stmt){
+					$ar=$DBC->fetch($stmt);
+					$usid=(int)$ar['user_id'];
+					if ( $usid != 0 ) {
+						$session_key = $this->GenerateSessionKey($usid);
+						$this->setSessionKey( $session_key );
+						$this->setUserId($usid);
+						$_SESSION['user_id']=$usid;
+						$_SESSION['current_user_name']=$ar['fio'];
+						$group_id=$ar['group_id'];
+						$query='SELECT system_name FROM '.DB_PREFIX.'_group WHERE group_id=?';
+						$stmt=$DBC->query($query, array($group_id));
+						if($stmt){
+							$ar=$DBC->fetch($stmt);
+							$_SESSION['current_user_group_name']=$ar['system_name'];
+						}
+						return true;
+					}
 				}
 				$this->riseError(Multilanguage::_('L_ERROR_EMAIL_PASS'));
 				return false;

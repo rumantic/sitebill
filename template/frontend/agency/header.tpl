@@ -26,7 +26,8 @@ var estate_folder = '{$estate_folder}';
 
 <script type="text/javascript" src="http://www.sitebill.ru/js/nanoapi_beta.js"></script>
 <script type="text/javascript" src="http://api-maps.yandex.ru/2.0-stable/?load=package.standard&lang=ru-RU"></script>
-<script type="text/javascript" src="https://maps.google.com/maps/api/js?sensor=true"></script>
+<script src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=drawing,places,geometry"></script>
+
 
 {literal}
 <!--[if lte IE 7]>
@@ -52,4 +53,3 @@ var arrowimages={literal}{{/literal}down:['downarrowclass', '{$estate_folder}/im
 <!-- <script type="text/javascript" src="{$estate_folder}/apps/partsimporter/js/partsimporter.js"></script> -->
 
 </head>
-

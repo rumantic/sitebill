@@ -1,0 +1,119 @@
+.sInformer-slider-vert .brief {
+width: 100%;
+height: 200px;
+vertical-align: middle;
+margin: 10px 10px 10px 0;
+position: relative;
+overflow: hidden;
+}
+.sInformer-slider-vert .brief .image img {
+width: 200px;
+height: 200px;
+}
+.sInformer-slider-vert .brief .text {
+font-family: tahoma, arial;
+position: absolute;
+bottom: 0;
+left: 0;
+right: 0;
+background: rgba(0, 0, 0, 0.2);
+color: white;
+padding: 5px 15px;
+}
+.sInformer-slider-vert .brief .text a {
+color: white;
+}
+.sInformer-slider-vert .prev {
+width: 100%;
+background-color: #2d7db8;
+display: block;
+height: 30px;
+line-height: 30px;
+text-align: center;
+background-image: url('arrow-top.png');
+background-repeat: no-repeat;
+background-position: 50% 50%;
+}
+.sInformer-slider-vert .next {
+width: 100%;
+background-color: #2d7db8;
+display: block;
+height: 30px;
+line-height: 30px;
+text-align: center;
+background-image: url('arrow-bottom.png');
+background-repeat: no-repeat;
+background-position: 50% 50%;
+}
+.sInformer-slider-hor {
+padding: 0 40px;
+position: relative;
+}
+.sInformer-slider-hor .brief {
+/*width: 200px;
+height: 200px;*/
+vertical-align: middle;
+/*margin: 0 10px 0 10px;*/
+position: relative;
+overflow: hidden;
+ /* margin-right: 10px;*/
+}
+.sInformer-slider-hor .brief .image img {
+width: 100%;
+}
+.sInformer-slider-hor .brief .text {
+font-family: tahoma, arial;
+position: absolute;
+bottom: 0;
+left: 0;
+right: 0;
+background: rgba(0, 0, 0, 0.2);
+color: white;
+padding: 5px 15px;  
+}
+.sInformer-slider-hor .brief .text a {
+color: white;
+}
+.sInformer-slider-hor-container {
+margin: 0;
+position: relative;
+overflow: hidden;
+}
+.sInformer-slider-hor .prev {
+width: 40px;
+position: absolute;
+left: 0;
+top: 0;
+background-color: #2d7db8;
+display: block;
+height: 100%;
+line-height: 30px;
+text-align: center;
+background-image: url('arrow-left.png');
+background-repeat: no-repeat;
+background-position: 50% 50%;
+}
+.sInformer-slider-hor .next {
+width: 40px;
+position: absolute;
+right: 0;
+top: 0;
+background-color: #2d7db8;
+display: block;
+height: 100%;
+line-height: 30px;
+text-align: center;
+background-image: url('arrow-right.png');
+background-repeat: no-repeat;
+background-position: 50% 50%;
+}
+/*
+.sInformer-carousel ul {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+}
+*/
+.sInformer-carousel ul li {
+	margin-right: 5px;
+}

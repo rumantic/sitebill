@@ -8,7 +8,7 @@
     <copyright>Copyright (C) 2012-2013 Sitebill Team. All rights reserved.</copyright>
     <license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>true</backendMenu>
-    <version>1.0.11</version>
+    <version>1.3.2</version>
     <administration>
         <!-- Administration Menu Section -->
         <menu>Клиенты</menu>

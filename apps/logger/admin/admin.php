@@ -56,7 +56,7 @@ class logger_admin extends Object_Manager {
 			while ($ar=$DBC->fetch($stmt)){
 				$select.='<option'.($current_apps_name==$ar['apps_name'] ? ' selected="selected"' : '').' value="'.$ar['apps_name'].'">'.$ar['apps_name'].'</option>';
 			}
-			$select.='</select><input type="hidden" name="action" value="logger" /> <input class="btn" type="submit" value="Фильтровать" /></form>';
+			$select.='</select><input type="text" name="user_id" value="'.$this->getRequestValue('user_id').'" placeholder="ID пользователя" /><input type="hidden" name="action" value="logger" /> <input class="btn" type="submit" value="Фильтровать" /></form>';
 		}
 		return $select;
 	}
@@ -94,6 +94,16 @@ class logger_admin extends Object_Manager {
 		$form_data['logger']['type']['value'] = '';
 		$form_data['logger']['type']['type'] = 'safe_string';
 		
+		$form_data['logger']['ipaddr']['name'] = 'ipaddr';
+		$form_data['logger']['ipaddr']['title'] = 'IP';
+		$form_data['logger']['ipaddr']['value'] = '';
+		$form_data['logger']['ipaddr']['type'] = 'safe_string';
+		
+		$form_data['logger']['user_id']['name'] = 'user_id';
+		$form_data['logger']['user_id']['title'] = 'User ID';
+		$form_data['logger']['user_id']['value'] = '';
+		$form_data['logger']['user_id']['type'] = 'safe_string';
+		
 		return $form_data;
 	}
 	
@@ -112,9 +122,7 @@ class logger_admin extends Object_Manager {
 		return $rs;
 	}*/
 	
-	protected function _installAction(){
-		return $this->install();
-	}
+	
 	
 	protected function _defaultAction(){
 		if ( !$this->check_table_exist('logger') ) {
@@ -136,19 +144,28 @@ class logger_admin extends Object_Manager {
 		$common_grid->add_grid_item('apps_name');
 		$common_grid->add_grid_item('method');
 		$common_grid->add_grid_item('type');
+		$common_grid->add_grid_item('ipaddr');
+		$common_grid->add_grid_item('user_id');
 	
 		$common_grid->setPagerParams(array('action'=>$this->action,'page'=>$this->getRequestValue('page'),'per_page'=>$this->getConfigValue('apps.logger.per_page')));
+		$conds=array();
 		if(''!=$this->getRequestValue('apps_name')){
-			$common_grid->set_conditions(array('apps_name'=>$this->getRequestValue('apps_name')));
-		}
 			
+			$conds['apps_name']=$this->getRequestValue('apps_name');
+		}
+		if(0!=intval($this->getRequestValue('user_id'))){
+			$conds['user_id']=intval($this->getRequestValue('user_id'));
+		}
+		if(!empty($conds)){
+			$common_grid->set_conditions($conds);
+		}	
 		//$common_grid->set_grid_query("select * from ".DB_PREFIX."_".$this->table_name." order by logger_id desc");
 		$rs = $common_grid->construct_grid();
 		return $rs;
 	}
 	
 	
-	private function install () {
+	function install () {
 		$query = "CREATE TABLE IF NOT EXISTS `".DB_PREFIX."_logger` (
           `logger_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
           `log_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -158,20 +175,20 @@ class logger_admin extends Object_Manager {
           `type` int(11) not null default 0,
 		  PRIMARY KEY (`logger_id`)
         ) ENGINE=MyISAM  DEFAULT CHARSET=".DB_ENCODING." AUTO_INCREMENT=1 ;";
-		$this->db->exec($query);
-		if ( !$this->db->success ) {
-			$rs = $this->db->error.'<br>';
-		} else {
-			$rs = 'Установка успешна';
-		}
-		return $rs;
+		$DBC=DBC::getInstance();
+		$success=false;
+    	$stmt=$DBC->query($query, array(), $rows, $success);
+        if(!$success){
+        	$rs = Multilanguage::_('L_APPLICATION_INSTALLED_ERROR');
+        }else{
+        	$rs = Multilanguage::_('L_APPLICATION_INSTALLED');
+        }
+        return $rs;
 	}
 	
 	public function clean_log () {
-		//echo 'clean_log<br>';
 		$max_limit_id = 0;
 		$DBC=DBC::getInstance();
-		//get max ID
 		$query='SELECT MAX(logger_id) as max_id FROM '.DB_PREFIX.'_logger';
 		$stmt=$DBC->query($query);
 		if($stmt){
@@ -191,13 +208,13 @@ class logger_admin extends Object_Manager {
 	 */
 	public function write_log ( $message_array = array() ) {
 		self::clean_log();
-		//echo '<pre>';
-		//print_r( $message_array);
-		//echo '</pre>';
 		$DBC=DBC::getInstance();
-		$query='INSERT INTO '.DB_PREFIX.'_logger (`apps_name`, `method`, `message`, `type`) VALUES (?, ?, ?, ?)';
-		//echo $query.'<br>';
-		$stmt=$DBC->query($query, array($message_array['apps_name'], $message_array['method'], $message_array['message'], $message_array['type']));
-		//print_r($stmt);
+		$ip=getenv(HTTP_X_FORWARDED_FOR);
+		if($ip==''){
+			$ip=$_SERVER['REMOTE_ADDR'];
+		}
+		$user_id=intval($_SESSION['user_id']);
+		$query='INSERT INTO '.DB_PREFIX.'_logger (`apps_name`, `method`, `message`, `type`, `ipaddr`, `user_id`) VALUES (?, ?, ?, ?, ?, ?)';
+		$stmt=$DBC->query($query, array($message_array['apps_name'], $message_array['method'], $message_array['message'], $message_array['type'], $ip, $user_id));
 	}
 }

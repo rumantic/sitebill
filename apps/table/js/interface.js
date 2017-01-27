@@ -204,6 +204,62 @@ $(document).ready(function(){
 		}
 		return false;
 	});
+	
+	$('.columns_list .show_groups').click(function(e){
+		e.preventDefault();
+		var cid=$(this).data('cid');
+		var _this=$(this);
+		$.ajax({
+			url: estate_folder + '/apps/table/js/ajax.php',
+			type: 'POST',
+			dataType: 'json',
+			data: 'action=show_groups&columns_id='+cid,
+			success: function(json) {
+				if(typeof json != 'object'){
+					return;
+				}
+				$('#group_ed input[name=cid]').val(cid);
+				$('#group_ed .group_ed_ch input').each(function(){
+					var val=$(this).val();
+					
+					if(json.indexOf(val)===-1){
+						$(this).prop('checked', false);
+					}else{
+						$(this).prop('checked', true);
+					}
+					$('#group_ed').modal('show');
+				});
+			}
+		});
+	});
+	
+	$('#group_ed .ok').click(function(e){
+		e.preventDefault();
+		var ids=[];
+		$('#group_ed .group_ed_ch input:checked').each(function(){
+			ids.push($(this).val());
+		});
+		var data={};
+		data.ids=ids;
+		data.action='change_groups';
+		data.columns_id=$('#group_ed input[name=cid]').val();
+		$.ajax({
+			url: estate_folder + '/apps/table/js/ajax.php',
+			type: 'POST',
+			dataType: 'json',
+			data: data,
+			success: function(json) {
+				
+			}
+		});
+	});
+	
+	$('#group_ed').on('hide', function () {
+		$('#group_ed input[name=cid]').val('');
+		$('#group_ed .group_ed_ch input').each(function(){
+			$(this).prop('checked', false);
+		});
+	})
 });
 
 function changeStateToNotactive(a){

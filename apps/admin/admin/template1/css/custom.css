@@ -16,4 +16,31 @@
 	margin-top: 3px;
 }
 
+div.custom_modal {
+    width: 90%;
+    left: 5%;
+   
+    margin-left: 0;
+}
+
+div.custom_modal .modal-body {
+	overflow-y: scroll;
+}
+
+div.custom_modal .modal-body ul {
+    list-style: none;
+        margin: 10px;
+}
+div.custom_modal .modal-body ul li {
+    display: inline-block;
+    width: 250px;
+    margin: 5px 0;
+}
+div.custom_modal .modal-body ul li.letter {
+	display: block;
+    font-size: 120%;
+    font-weight: 700;
+    border-bottom: 1px solid #eee;
+    width: 100%;
+}
 .ait_bc {margin-left: 15px;} .checkbox_collection {width: 210px;height: 200px;overflow-y: scroll;border: 1px solid silver;padding: 10px 5px;}

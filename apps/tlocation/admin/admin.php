@@ -32,7 +32,9 @@ class tlocation_admin extends Object_Manager {
 				break;
 			}
 			case 'get_geolist' : {
-				echo $this->_getGeolist($this->getRequestValue('from'), SiteBill::iconv('utf-8', SITE_ENCODING, $this->getRequestValue('term')));
+				$dep_key=$this->getRequestValue('depelkey');
+				$dep_val=$this->getRequestValue('dep_val');
+				echo $this->_getGeolist($this->getRequestValue('from'), SiteBill::iconv('utf-8', SITE_ENCODING, $this->getRequestValue('term')), $dep_key, $dep_val);
 				//echo $this->_getRegions(SiteBill::iconv('utf-8', SITE_ENCODING, $this->getRequestValue('term')));
 				break;
 			}
@@ -142,25 +144,25 @@ class tlocation_admin extends Object_Manager {
 		}
 	}
 	*/
-	private function _getGeolist($from, $term){
+	private function _getGeolist($from, $term, $dep_key='', $dep_val=0){
 		switch($from){
 			case 'country' : {
-				return $this->_getCountries($term);
+				return $this->_getCountries($term, $dep_key, $dep_val);
 			}
 			case 'district' : {
-				return $this->_getDistricts($term);
+				return $this->_getDistricts($term, $dep_key, $dep_val);
 			}
 			case 'region' : {
-				return $this->_getRegions($term);
+				return $this->_getRegions($term, $dep_key, $dep_val);
 			}
 			case 'city' : {
-				return $this->_getCities($term);
+				return $this->_getCities($term, $dep_key, $dep_val);
 			}
 			case 'street' : {
-				return $this->_getStreets($term);
+				return $this->_getStreets($term, $dep_key, $dep_val);
 			}
 			case 'metro' : {
-				return $this->_getMetros($term);
+				return $this->_getMetros($term, $dep_key, $dep_val);
 			}
 			default : {
 				
@@ -201,21 +203,51 @@ class tlocation_admin extends Object_Manager {
 		return json_encode($ret);
 	}
 	
-	private function _getStreets($term){
+	private function _getStreets($term, $dep_key='', $dep_val=0){
 		$ret=array();
 		$DBC=DBC::getInstance();
-		$query='SELECT street_id, name FROM '.DB_PREFIX.'_street WHERE name LIKE \'%'.$term.'%\' ORDER BY name ASC LIMIT 50';
+		if(1===intval($this->getConfigValue('apps.language.use_langs'))){
+			$lang=$this->getCurrentLang();
+			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+			$data_model = new Data_Model();
+			$data_model_shared = $data_model->get_kvartira_model(false, true);
+			$lang_key = 'name';
+			if(isset($data_model_shared['data']) && 0==intval($data_model_shared['data']['street_id']['parameters']['no_ml'])){
+				if($lang!='ru'){
+					$lang_key = 'name_'.$lang;
+				}else{
+					$lang_key = 'name';
+				}
+			}elseif(isset($data_model_shared['data']) && 1==intval($data_model_shared['data']['street_id']['parameters']['no_ml'])){
+				$lang_key = 'name';
+			}
+		}else{
+			$lang_key = 'name';
+		}
+		
+		
+		
+		if($dep_key!='' && $dep_val!=0){
+			$query='SELECT street_id, `'.$lang_key.'` AS name FROM '.DB_PREFIX.'_street WHERE `'.$lang_key.'` LIKE \'%'.$term.'%\' AND `'.$dep_key.'`=? ORDER BY name ASC LIMIT 50';
+			$stmt=$DBC->query($query, array($dep_val));
+		}else{
+			$query='SELECT street_id, `'.$lang_key.'` AS name FROM '.DB_PREFIX.'_street WHERE `'.$lang_key.'` LIKE \'%'.$term.'%\' ORDER BY name ASC LIMIT 50';
+			$stmt=$DBC->query($query);
+		}
+		
 		//echo $query;
-		$stmt=$DBC->query($query);
+		
 		if($stmt){
 			while($ar=$DBC->fetch($stmt)){
+				
+				if($ar['lname']!=''){
+					$ar['name']=$ar['lname'];
+				}
 				$pos=strpos(mb_strtolower($ar['name'], SITE_ENCODING), mb_strtolower($term, SITE_ENCODING));
 				$ret[]=array('street_id'=>$ar['street_id'], 'name'=>SiteBill::iconv(SITE_ENCODING, 'utf-8', $ar['name']), 'pos'=>$pos);
 			}
 		}
 		usort($ret, array($this, 'sortByPosition'));
-		
-		
 		return json_encode($ret);
 	}
 	
@@ -227,7 +259,7 @@ class tlocation_admin extends Object_Manager {
 		}
 	}
 	
-	private function _getMetros($term){
+	private function _getMetros($term, $dep_key='', $dep_val=0){
 		$ret=array();
 		$DBC=DBC::getInstance();
 		$query='SELECT metro_id, name FROM '.DB_PREFIX.'_metro WHERE name LIKE \'%'.$term.'%\' ORDER BY name ASC LIMIT 50';
@@ -241,7 +273,7 @@ class tlocation_admin extends Object_Manager {
 		return json_encode($ret);
 	}
 	
-	private function _getCountries($term){
+	private function _getCountries($term, $dep_key='', $dep_val=0){
 		$ret=array();
 		$DBC=DBC::getInstance();
 		$query='SELECT country_id, name FROM '.DB_PREFIX.'_country WHERE name LIKE \'%'.$term.'%\' ORDER BY name ASC';
@@ -255,7 +287,7 @@ class tlocation_admin extends Object_Manager {
 		return json_encode($ret);
 	}
 	
-	private function _getDistricts($term){
+	private function _getDistricts($term, $dep_key='', $dep_val=0){
 		$ret=array();
 		$DBC=DBC::getInstance();
 		$query='SELECT id, name FROM '.DB_PREFIX.'_district WHERE name LIKE \'%'.$term.'%\' ORDER BY name ASC';
@@ -269,7 +301,7 @@ class tlocation_admin extends Object_Manager {
 		return json_encode($ret);
 	}
 	
-	private function _getRegions($term){
+	private function _getRegions($term, $dep_key='', $dep_val=0){
 		$ret=array();
 		$DBC=DBC::getInstance();
 		$query='SELECT region_id, name FROM '.DB_PREFIX.'_region WHERE name LIKE \'%'.$term.'%\' ORDER BY name ASC';
@@ -283,7 +315,7 @@ class tlocation_admin extends Object_Manager {
 		return json_encode($ret);
 	}
 	
-	private function _getCities($term){
+	private function _getCities($term, $dep_key='', $dep_val=0){
 		$ret=array();
 		$DBC=DBC::getInstance();
 		$query='SELECT city_id, name FROM '.DB_PREFIX.'_city WHERE name LIKE \'%'.$term.'%\' ORDER BY name ASC';

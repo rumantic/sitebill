@@ -1,4 +1,8 @@
 <?php
+/*
+ * DEPRECATED CLASS
+ * WILL BE REMOVED SOON
+ */
 /**
 * @Filename: init.php
 * @Author: Kondin Dmitry <dmn@newod.ru>

@@ -4,9 +4,9 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * Excel admin backend
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
-set_include_path(SITEBILL_DOCUMENT_ROOT.'/apps/excelfree/lib/phpexcel/');
+//set_include_path(SITEBILL_DOCUMENT_ROOT.'/apps/excelfree/lib/phpexcel/');
 class excelfree_admin extends Object_Manager {
-    private $data_manager_export;
+    protected $data_manager_export;
     /**
      * Constructor
      */
@@ -20,8 +20,11 @@ class excelfree_admin extends Object_Manager {
         if ( !$config_admin->check_config_item('apps.excelfree.geodata_strategy') ) {
         	$config_admin->addParamToConfig('apps.excelfree.geodata_strategy','','Стратегия обработки географических данных');
         }
+        
         require_once SITEBILL_DOCUMENT_ROOT.'/apps/excelfree/admin/data_manager_export.php';
         $this->data_manager_export = new Data_Manager_Export();
+        $this->action = 'excelfree';
+        $this->app_title = Multilanguage::_('APPLICATION_NAME','excelfree');
         
     }
     
@@ -31,14 +34,20 @@ class excelfree_admin extends Object_Manager {
     }
     
     function check_table_exist ( $table_name ) {
-    	$query = "select * from ".DB_PREFIX."_{$table_name} LIMIT 1";
-    	$this->db->exec($query);
-    	return $this->db->success;
+    	$query = 'SHOW TABLES LIKE ?';
+    	$DBC=DBC::getInstance();
+    	$stmt=$DBC->query($query, array(DB_PREFIX.'_'.$table_name));
+    	if(!$stmt){
+    		return false;
+    	}
+    	return true;
     }
     
     
     
     function main () {
+    	
+    	
         if ( $this->getRequestValue('do') == 'install' ) {
         	$rs = $this->install();
         	return $rs;
@@ -61,10 +70,11 @@ class excelfree_admin extends Object_Manager {
     	}
     	//$this->load_xls();
     	
-    	$rs_new = '<div class="apps_path">'.Multilanguage::_('L_ADMIN_MENU_APPLICATIONS').' / ';
-   		$rs_new .= '<a href="?action=excelfree">Excel</a>';
-    	$rs_new .= '</div>';
-    	$rs_new .= '<div class="clear"></div>';
+    	$rs_new = $this->get_app_title_bar();
+    	//$rs_new = '<div class="apps_path">'.Multilanguage::_('L_ADMIN_MENU_APPLICATIONS').' / ';
+   		//$rs_new .= '<a href="?action=excelfree">Excel</a>';
+    	//$rs_new .= '</div>';
+    	//$rs_new .= '<div class="clear"></div>';
     	$rs_new .= $rs;
     	 
     	return $rs_new;
@@ -72,7 +82,7 @@ class excelfree_admin extends Object_Manager {
    
     
     function get_export_form () {
-    	include 'PHPExcel/IOFactory.php';
+    	require_once SITEBILL_APPS_DIR.'/third/phpexcel/PHPExcel/IOFactory.php';
     	require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/grid/grid_constructor.php';
     	$grid_constructor = new Grid_Constructor();
     	
@@ -118,123 +128,143 @@ class excelfree_admin extends Object_Manager {
     		}
     	}
     	
-    	$data_a = $this->data_manager_export->grid_array($params, $exported_fields);
-    	$objPHPExcel = new PHPExcel();
-    	$styleArray = array(
-    			'font' => array(
-    					'bold' => true,
-    			),
-    			'alignment' => array(
-    					'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_LEFT,
-    			),
-    			'borders' => array(
-    					'top' => array(
-    							'style' => PHPExcel_Style_Border::BORDER_THIN,
-    					),
-    					'left' => array(
-    							'style' => PHPExcel_Style_Border::BORDER_THIN,
-    					),
-    					'right' => array(
-    							'style' => PHPExcel_Style_Border::BORDER_THIN,
-    					),
-    					'bottom' => array(
-    							'style' => PHPExcel_Style_Border::BORDER_THIN,
-    					),
-    			),
-    			'fill' => array(
-    					'type' => PHPExcel_Style_Fill::FILL_GRADIENT_LINEAR,
-    					'rotation' => 90,
-    					'startcolor' => array(
-    							'argb' => 'FFA0A0A0',
-    					),
-    					'endcolor' => array(
-    							'argb' => 'FFFFFFFF',
-    					),
-    			),
-    	);
+    	$cycle_per_page = intval($this->getRequestValue('per_page'));
+    	$current_page = 0;
     	
-    	$objPHPExcel->getActiveSheet()->getStyle('A1:AN1')->applyFromArray($styleArray);
-
-    	 
-    	$column = 0;
+    	$query_count = $this->data_manager_export->get_search_query($params, true);
     	
-    	foreach($exported_fields as $ef){
-    		$objPHPExcel->getActiveSheet()->setCellValueByColumnAndRow($column, 1, SiteBill::iconv(SITE_ENCODING, 'utf-8', $_model[$ef]['title']));
-    		$column++;
+    	$DBC=DBC::getInstance();
+    	$stmt=$DBC->query($query_count);
+    	if($stmt){
+    		$ar=$DBC->fetch($stmt);
     	}
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('A')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('B')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('C')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('D')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('E')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('F')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('G')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('H')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('I')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('J')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('K')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('L')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('M')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('N')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('O')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('P')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('Q')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('R')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('S')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('T')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('U')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('V')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('W')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('X')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('Y')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('Z')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('AA')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('AB')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('AC')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('AD')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('AE')->setAutoSize(true);
-
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('AF')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('AG')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('AC')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('AH')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('AI')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('AJ')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('AK')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('AL')->setAutoSize(true);
-    	$objPHPExcel->getActiveSheet()->getColumnDimension('AM')->setAutoSize(true);
+    	$cycle_total = $ar['total'];
+    			 
     	 
-    	foreach ( $data_a as $item_id => $data_item_a ) {
-    		$row = $item_id + 2;
+    	for ( $i = 0; $i<=$cycle_total; $i+=$cycle_per_page ) {
+    		$current_page++;
+    		
+    		$data_a = $this->data_manager_export->grid_array($params, $exported_fields, $this->getRequestValue('per_page'), $current_page);
+    		$objPHPExcel = new PHPExcel();
+    		$styleArray = array(
+    				'font' => array(
+    						'bold' => true,
+    				),
+    				'alignment' => array(
+    						'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_LEFT,
+    				),
+    				'borders' => array(
+    						'top' => array(
+    								'style' => PHPExcel_Style_Border::BORDER_THIN,
+    						),
+    						'left' => array(
+    								'style' => PHPExcel_Style_Border::BORDER_THIN,
+    						),
+    						'right' => array(
+    								'style' => PHPExcel_Style_Border::BORDER_THIN,
+    						),
+    						'bottom' => array(
+    								'style' => PHPExcel_Style_Border::BORDER_THIN,
+    						),
+    				),
+    				'fill' => array(
+    						'type' => PHPExcel_Style_Fill::FILL_GRADIENT_LINEAR,
+    						'rotation' => 90,
+    						'startcolor' => array(
+    								'argb' => 'FFA0A0A0',
+    						),
+    						'endcolor' => array(
+    								'argb' => 'FFFFFFFF',
+    						),
+    				),
+    		);
+    		 
+    		$objPHPExcel->getActiveSheet()->getStyle('A1:AN1')->applyFromArray($styleArray);
+    		
+    		
     		$column = 0;
-    		foreach ( $data_item_a as $key => $value ) {
-    			if ( is_array($value) ) {
-    				$value = $value['value_string'];
-    			}
-    			$objPHPExcel->getActiveSheet()->setCellValueByColumnAndRow($column, $row, SiteBill::iconv(SITE_ENCODING, 'utf-8', $value));
+    		 
+    		foreach($exported_fields as $ef){
+    			$objPHPExcel->getActiveSheet()->setCellValueByColumnAndRow($column, 1, SiteBill::iconv(SITE_ENCODING, 'utf-8', $_model[$ef]['title']));
     			$column++;
     		}
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('A')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('B')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('C')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('D')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('E')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('F')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('G')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('H')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('I')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('J')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('K')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('L')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('M')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('N')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('O')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('P')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('Q')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('R')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('S')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('T')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('U')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('V')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('W')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('X')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('Y')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('Z')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('AA')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('AB')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('AC')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('AD')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('AE')->setAutoSize(true);
+    		
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('AF')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('AG')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('AC')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('AH')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('AI')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('AJ')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('AK')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('AL')->setAutoSize(true);
+    		$objPHPExcel->getActiveSheet()->getColumnDimension('AM')->setAutoSize(true);
+    		
+    		foreach ( $data_a as $item_id => $data_item_a ) {
+    			$row = $item_id + 2;
+    			$column = 0;
+    			foreach ( $data_item_a as $key => $value ) {
+    				if ( is_array($value) ) {
+    					$value = $value['value_string'];
+    				}
+    				$objPHPExcel->getActiveSheet()->setCellValueByColumnAndRow($column, $row, SiteBill::iconv(SITE_ENCODING, 'utf-8', $value));
+    				$column++;
+    			}
+    		}
+    		 
+    		$objWriter = new PHPExcel_Writer_Excel2007($objPHPExcel);
+    		$xlsx_file_name = "data".date('Y-m-d_H_i')."_page".$current_page.".xlsx";
+    		$xlsx_output_file = SITEBILL_DOCUMENT_ROOT."/cache/upl/".$xlsx_file_name;
+    		$objWriter->save($xlsx_output_file);
+    		 
+    		$handle = fopen($xlsx_output_file, "r");
+    		$contents = fread($handle, filesize($xlsx_output_file));
+    		fclose($handle);
+    		if ( $cycle_per_page == 0 ) {
+    			header("Content-type: application/octet-stream");
+    			header("Content-disposition: attachment; filename=".$xlsx_file_name."");
+    			echo $contents;
+    			exit;
+    		} else {
+    			$rs.= '<a href="'.SITEBILL_MAIN_URL.'/cache/upl/'.$xlsx_file_name.'" download="'.$xlsx_file_name.'">'.$xlsx_file_name.'</a><br>';
+    		} 
     	}
-    	
-    	$objWriter = new PHPExcel_Writer_Excel2007($objPHPExcel);
-    	$xlsx_file_name = "data".date('Y-m-d_H_i').".xlsx";
-    	$xlsx_output_file = SITEBILL_DOCUMENT_ROOT."/cache/upl/".$xlsx_file_name;
-    	$objWriter->save($xlsx_output_file);
-    	
-    	$handle = fopen($xlsx_output_file, "r");
-    	$contents = fread($handle, filesize($xlsx_output_file));
-    	fclose($handle);
-    	
-    	header("Content-type: application/octet-stream");
-    	header("Content-disposition: attachment; filename=".$xlsx_file_name."");
-    	echo $contents;
-    	exit;
     	 
     	 
     	//$sheetData = $objPHPExcel->getActiveSheet()->toArray(null,true,true,true);
-    	 
+    	$rsr = '<h3>Скачать готовые файлы</h3><br/>'.$rs.'';
     	
-    	return 'export';
+    	return $rsr;
     }
     
     function get_form ( $content = '' ) {
@@ -379,6 +409,7 @@ class excelfree_admin extends Object_Manager {
         
     function get_key_by_title_only_model ( $title ) {
     	foreach ( $this->data_manager_export->get_model(true) as $key => $item ) {
+    		//echo 'title = '.$title.', mtitle = '.$item['title'].'<br>';
     		if ( $title == $item['title'] ) {
     			return $item['name'];
     		}
@@ -466,8 +497,8 @@ class excelfree_admin extends Object_Manager {
                 }
         	}
     		$tempFile = $_FILES[$file_container_name]['tmp_name'];
-    		$targetPath = $_SERVER['DOCUMENT_ROOT'] .'/'.SITEBILL_MAIN_URL.'/cache/upl' . '/';
-    	
+    		$targetPath = SITEBILL_DOCUMENT_ROOT.'/cache/upl/';
+    		
     		$path_parts = pathinfo($_FILES[$file_container_name]['name']);
     		
     		$ext = $path_parts['extension'];
@@ -493,11 +524,11 @@ class excelfree_admin extends Object_Manager {
     			$preview_name_tmp="jpg_".uniqid().'_'.time()."_".$i.".".$ext;
     			$targetFile =  str_replace('//','/',$targetPath) . $preview_name_tmp;
     		}
-    		echo str_replace($_SERVER['DOCUMENT_ROOT'],'',$targetFile);
+    		echo str_replace(SITEBILL_DOCUMENT_ROOT, '', $targetFile);
     	
     		move_uploaded_file($tempFile,$targetFile);
     	}
-    	$this->clear_uploadify_table();
+    	$this->clear_uploadify_table($this->get_session_key(), true);
     	$this->addFile($_REQUEST['session'], $preview_name_tmp);
     }
     
@@ -509,7 +540,8 @@ class excelfree_admin extends Object_Manager {
      */
     function addFile ( $session_code, $targetFile ) {
     	$query = "insert into ".UPLOADIFY_TABLE." (session_code, file_name) values ('$session_code', '$targetFile')";
-    	$this->db->exec($query);
+    	$DBC=DBC::getInstance();
+    	$stmt=$DBC->query($query);
     	return true;
     }
     
@@ -655,6 +687,13 @@ EOF;
     	return $rs;
     }
     
+    private static function clearUndecodedXmlEntities($row){
+    	foreach($row as $k=>$v){
+    		$row[$k]=str_replace('_x000D_', ' ', $v);
+    	}
+    	return $row;
+    }
+    
     private static function is_empty_xls_row($row){
     	$count=count($row);
     	$empty=0;
@@ -672,13 +711,15 @@ EOF;
     
     function load_xls ( $xls_file ) {
     	$ret_data=array();
-    	include 'PHPExcel/IOFactory.php';
+    	require_once SITEBILL_APPS_DIR.'/third/phpexcel/PHPExcel/IOFactory.php';
+		//require_once SITEBILL_APPS_DIR.'/excelfree/lib/phpexcel/PHPExcel/IOFactory.php';
     	$inputFileName = SITEBILL_DOCUMENT_ROOT.'/cache/upl/'.$xls_file;
     	
     	$objPHPExcel = PHPExcel_IOFactory::load($inputFileName);
     	$sheetData = $objPHPExcel->getActiveSheet()->toArray(null,true,true,true);
     	 
     	foreach($sheetData as $k=>$v){
+    		$v=self::clearUndecodedXmlEntities($v);
     		if(!self::is_empty_xls_row($v)){
     			$ret_data[$k]=$v;
     		}

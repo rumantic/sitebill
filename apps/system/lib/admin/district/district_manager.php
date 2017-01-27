@@ -26,15 +26,17 @@ class District_Manager extends Object_Manager {
      */
     function getDataByDistrict ( $district_id ) {
 		global $__db_prefix;
-
+		$DBC=DBC::getInstance();
+		
 		$query = "select count(*) as cid from ".$__db_prefix."_data where district_id=$district_id";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['cid'] > 0 ) {
-        	return true;
+        $stmt=$DBC->query($query);
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	if ( $ar['cid'] > 0 ) {
+        		return true;
+        	}
         }
         return false;
-    	
     }
     
     /**
@@ -43,9 +45,13 @@ class District_Manager extends Object_Manager {
      * @return string
      */
     function add_record_and_get_id ( $name ) {
-        
+    	$DBC=DBC::getInstance();
         $query = "insert into ".DB_PREFIX."_district (name) values ('$name')";
-        $district_id = $this->db->exec($query);
+        $stmt=$DBC->query($query);
+        $district_id=0;
+        if($stmt){
+        	$district_id=$DBC->lastInsertId();
+        }
         return $district_id;
     }
     
@@ -55,13 +61,15 @@ class District_Manager extends Object_Manager {
      * @return boolean
      */
     function load ( $record_id ) {
-        
+    	$DBC=DBC::getInstance();
         $query = "select * from re_district where id=$record_id";
         //echo $query;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        
-        $this->setRequestValue('name', $this->db->row['name']);
+        $stmt=$DBC->query($query);
+        $ar=array();
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        }
+        $this->setRequestValue('name', $ar['name']);
     }
     
 	/**
@@ -71,6 +79,7 @@ class District_Manager extends Object_Manager {
 	 * @param int $primary_key_value
 	 */
 	function delete_data($table_name, $primary_key, $primary_key_value ) {
+		$DBC=DBC::getInstance();
 		$search_queries=array(
 			Multilanguage::_('TABLE_ADS','system')=>'SELECT COUNT(*) AS rs FROM '.DB_PREFIX.'_data WHERE district_id=?',
 		);
@@ -80,10 +89,10 @@ class District_Manager extends Object_Manager {
 		$ans=array();
 		foreach($search_queries as $k=>$v){
 			$query=str_replace('?', $primary_key_value, $v);
-			$this->db->exec($query);
-		    if ($this->db->success) {
-		    	$this->db->fetch_assoc();
-		    	$rs=$this->db->row['rs'];
+			$stmt=$DBC->query($query);
+		    if ($stmt) {
+		    	$ar=$DBC->fetch($stmt);
+		    	$rs=$ar['rs'];
 		        if($rs!=0){
 		        	$ans[]=sprintf(Multilanguage::_('MESSAGE_CANT_DELETE','system'), $k);
 		        }
@@ -97,4 +106,3 @@ class District_Manager extends Object_Manager {
 		
 	}
 }
-?>

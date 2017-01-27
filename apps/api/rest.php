@@ -15,7 +15,7 @@ if(isset($settings['Settings']['estate_folder'])AND($settings['Settings']['estat
 }else{
 	$folder='';
 }
-$sitebill_document_root = $_SERVER['DOCUMENT_ROOT'].$folder;
+$sitebill_document_root = rtrim($_SERVER['DOCUMENT_ROOT'], '/').$folder;
 
 define('SITEBILL_DOCUMENT_ROOT', $sitebill_document_root);
 define('SITEBILL_MAIN_URL', $folder);
@@ -32,8 +32,6 @@ require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php')
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/multilanguage/multilanguage.class.php');
 $smarty = new Smarty;
 
-$init = new Init();
-$init->initGlobals();
 $sitebill = new SiteBill();
 
 $smarty->template_dir = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme');

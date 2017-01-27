@@ -4,18 +4,52 @@
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
 class Ajax_Server extends SiteBill {
+	
+	protected $ajax_user_mode;
+	protected $ajax_controller_user_id;
     /**
      * Construct
      */
     function __construct() {
         $this->SiteBill();
         Multilanguage::appendTemplateDictionary($this->getConfigValue('theme'));
+        
     }
     
-    private function _getOptionsData($key, $field, $table, $fieldby, $value){
+    private function _getOptionsData($key, $field, $table, $fieldby, $value, $parameters=array()){
+    	/*var_dump($key);
+    	var_dump($field);
+    	var_dump($table);
+    	var_dump($fieldby);
+    	var_dump($value);*/
+    	//var_dump($params);
     	$ret=array();
     	$DBC=DBC::getInstance();
-    	$query='SELECT `'.$key.'` AS id, `'.$field.'` AS name FROM '.DB_PREFIX.'_'.$table.' WHERE `'.$fieldby.'` = ? ORDER BY `'.$field.'` ASC';
+    	$query='SELECT `'.$key.'` AS id, `'.$field.'` AS name FROM '.DB_PREFIX.'_'.$table.' WHERE `'.$fieldby.'` = ?';
+    	
+    	$sorts=array();
+    	if(isset($parameters['sort']) && $parameters['sort']!=''){
+    		if(isset($parameters['sort_dir']) && $parameters['sort_dir']=='desc'){
+    			$sorts[]='`'.$parameters['sort'].'` DESC';
+    		}else{
+    			$sorts[]='`'.$parameters['sort'].'` ASC';
+    		}
+    	}
+    	if(isset($parameters['sort2']) && $parameters['sort2']!=''){
+    		if(isset($parameters['sort_dir2']) && $parameters['sort_dir2']=='desc'){
+    			$sorts[]='`'.$parameters['sort2'].'` DESC';
+    		}else{
+    			$sorts[]='`'.$parameters['sort2'].'` ASC';
+    		}
+    	}
+    	
+    	if(!empty($sorts)){
+    		$query=$query.' ORDER BY '.implode(',', $sorts);
+    	}else{
+    		$query=$query.' ORDER BY `'.$field.'` ASC';
+    	}
+    		 
+    	
     	$stmt=$DBC->query($query, array($value));
     	if($stmt){
     		while($ar=$DBC->fetch($stmt)){
@@ -25,12 +59,21 @@ class Ajax_Server extends SiteBill {
     	return json_encode($ret);
     }
     
+    
+    
     /**
      * Main
      * @param void
      * @return string
      */
     function main () {
+    	
+    	/*$ajax_action=$this->getRequestValue('action');
+    	$_ajax_action=$this->getRequestValue('_action');
+    	$controller_action='_'.$ajax_action.'AjaxAction';
+    	if(!method_exists($this, $action)){
+    		$controller_action='_defaultAjaxAction';
+    	}*/
     	
     	if(1==$this->getConfigValue('is_underconstruction')){
     		$ip=$_SERVER['REMOTE_ADDR'];
@@ -58,11 +101,13 @@ class Ajax_Server extends SiteBill {
 	    $kvartira_model = $data_model->get_kvartira_model(true);
 	    
 	    $ajax_controller_user_id=(int)$_SESSION['user_id'];
-	    $ajax_user_mode='guest';
+	    $this->ajax_user_mode='guest';
 	    	    
 	    if($ajax_controller_user_id==0){
 	    	$ajax_controller_user_id=(int)$_SESSION['user_id_value'];
 	    }
+	    
+	    $this->ajax_controller_user_id=$ajax_controller_user_id;
 	    
 	    
 	    if($ajax_controller_user_id!=0){
@@ -72,17 +117,29 @@ class Ajax_Server extends SiteBill {
 	    	if($stmt){
 		    	$ar=$DBC->fetch($stmt);
 		    	if($ar['system_name']=='admin'){
-		    		$ajax_user_mode='admin';
+		    		$this->ajax_user_mode='admin';
 		    	}else{
-		    		$ajax_user_mode='user';
+		    		$this->ajax_user_mode='user';
 		    	}
 	    	}
 	    }
 	    
+	    if($this->getRequestValue('_app')!==NULL){
+	    	$app=trim($this->getRequestValue('_app'));
+	    	$app_class=$app.'_admin';
+	    	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/'.$app.'/admin/admin.php');
+	    	$app_ajax = new $app_class();
+	    	if(method_exists($app_ajax, 'ajax')){
+	    		return $app_ajax->ajax();
+	    	}
+	    	exit();
+	    }
+	    
         if($this->getRequestValue('_action')!=''){
         	switch($this->getRequestValue('_action')){
+        		
         		case 'save_changes' : {
-        			if( $ajax_user_mode=='guest' ){
+        			if( $this->ajax_user_mode=='guest' ){
         				return 'error';
         			}
         			
@@ -109,7 +166,7 @@ class Ajax_Server extends SiteBill {
         			$table=$DM->table_name;
         			$form_data[$table] = $Model->init_model_data_from_request($form_data[$table]);
         			
-        			if($ajax_user_mode=='user'){
+        			if($this->ajax_user_mode=='user'){
         				$DBC=DBC::getInstance();
         				$query='SELECT COUNT(id) AS _cnt FROM '.DB_PREFIX.'_data WHERE id=? AND user_id=?';
         				$stmt=$DBC->query($query, array($form_data[$table]['id']['value'], $ajax_controller_user_id));
@@ -119,7 +176,7 @@ class Ajax_Server extends SiteBill {
         						$allow_edit=true;
         					}
         				}
-        			}elseif($ajax_user_mode=='admin'){
+        			}elseif($this->ajax_user_mode=='admin'){
         				$allow_edit=true;
         			}
         			
@@ -162,6 +219,223 @@ class Ajax_Server extends SiteBill {
         
         switch ( $this->getRequestValue('action') ) {
         	
+        	case 'city_load_data' : {
+				//EXPERIMENTAL
+        		if($this->ajax_user_mode=='admin'){
+        			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/city/city_manager.php';
+        			$CA=new city_manager();
+        			return $CA->ajax();
+        		}else{
+        			return '';
+        		}
+        		
+        		break;
+        	}
+        	
+        	case 'markers' : {
+        		$lb=$this->getRequestValue('lb');
+        		$rt=$this->getRequestValue('rt');
+        		$ret=array();
+        		
+        		$DBC=DBC::getInstance();
+        		$query='SELECT geo_lat, geo_lng FROM '.DB_PREFIX.'_data WHERE (geo_lat BETWEEN ? AND ?) AND (geo_lng BETWEEN ? AND ?) LIMIT 1000';
+        		$stmt=$DBC->query($query, array($lb[0], $rt[0], $lb[1], $rt[1]));
+        		if($stmt){
+        			while($ar=$DBC->fetch($stmt)){
+        				$ret[]=$ar;
+        			}
+        		}
+        		return json_encode($ret);
+        		break;
+        	}
+        	
+        	case 'iframe_map' : {
+        		echo $this->_iframe_mapAjaxAction();
+        		exit();
+        		break;
+        	}
+        	
+        	case 'get_courses' : {
+        		require_once SITEBILL_DOCUMENT_ROOT.'/apps/currency/admin/admin.php';
+        		$CA=new currency_admin();
+        		$currencies=$CA->getActiveCurrencies();
+        		$from_curid=intval($this->getRequestValue('curid'));
+        		
+        		/*$DBC=DBC::getInstance();
+        		$query='SELECT currency_id, course, name FROM '.DB_PREFIX.'_currency';
+        		$stmt=$DBC->query($query);
+        		if($stmt){
+        			while($ar=$DBC->fetch($stmt)){
+        				$currencies[$ar['currency_id']]=$ar;
+        			}
+        		}*/
+        		
+        		$koef=1;
+        		$koef=$koef/$currencies[$from_curid]['course'];
+        		
+        		foreach($currencies as $k=>$v){
+        			$currencies[$k]['course']=$koef*$v['course'];
+        			$currencies[$k]['name']=$v['name'];
+        		}
+        		
+        		return json_encode($currencies);
+        		break;
+        	}
+        	
+        	case 'change_element_name' : {
+        		
+        		$ret=array('status'=>0);
+        	
+        		if($this->ajax_user_mode!=='admin'){
+        			return json_encode($ret);
+        		}
+        		
+        		$table=preg_replace('/[^a-zA-Z0-9_]/', '', $this->getRequestValue('table'));
+        		$key=preg_replace('/[^a-zA-Z0-9_]/', '', $this->getRequestValue('key'));
+        		$target_id=intval($this->getRequestValue('target_id'));
+        		$value=$this->getRequestValue('value');
+        		
+        		
+        		
+        	
+        		$DBC=DBC::getInstance();
+        		$query='UPDATE '.DB_PREFIX.'_'.$table.' SET `name`=? WHERE '.$key.'=?';
+        		//echo $query;
+        		$stmt=$DBC->query($query, array($value, $target_id));
+        		if($stmt){
+        			$ret['status']=1;
+        			$ret['text']=$value;
+        		}
+        		return json_encode($ret);
+        		break;
+        	}
+        	
+        	case 'fast_preview' : {
+        		if($this->ajax_user_mode=='admin'){
+        			$fields=array();
+        			if(''!==trim($this->getConfigValue('apps.realty.admin_fast_view'))){
+        				$matches=array();
+        				preg_match_all('/([^,\s]+)/i', trim($this->getConfigValue('apps.realty.admin_fast_view')), $matches);
+        				if(!empty($matches[1])){
+        					$fields=$matches[1];
+        				}
+        			}
+        			$id=intval($this->getRequestValue('id'));
+	        		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+	        		$data_model = new Data_Model();
+	        		$form_data_shared = $data_model->get_kvartira_model(false, true);
+	        		
+	        		if(!empty($fields)){
+	        			foreach($form_data_shared['data'] as $item=>$v){
+	        				if(!in_array($item, $fields)){
+	        					unset($form_data_shared['data'][$item]);
+	        				}
+	        			}
+	        		}
+	        		
+	        		
+	        		$form_data_shared = $data_model->init_model_data_from_db ( 'data', 'id', $id, $form_data_shared['data'], true );
+	        		        		
+	        		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/view.php');
+	        		$table_view = new Table_View();
+	        		$order_table = '';
+	        		$order_table .= '<table class="table">';
+	        		$order_table .= $table_view->compile_view($form_data_shared);
+	        		$order_table .= '</table>';
+	        		
+	        		$notes=array();
+	        		$DBC=DBC::getInstance();
+	        		$query='SELECT dn.*, u.fio FROM '.DB_PREFIX.'_data_note dn LEFT JOIN '.DB_PREFIX.'_user u USING(user_id) WHERE dn.id=? ORDER BY dn.added_at ASC';
+	        		$stmt=$DBC->query($query, array($id));
+	        		if($stmt){
+	        			while($ar=$DBC->fetch($stmt)){
+	        				$notes[]=$ar;
+	        			}
+	        		}
+	        		if(count($notes)>0){
+	        			$order_table .= '<h4>Заметки</h4>';
+	        			$order_table .= '<table class="table">';
+	        			foreach($notes as $note){
+	        				$order_table .= '<tr><td>';
+	        			
+	        				$order_table .= '<b>'.$note['fio'].' ('.$note['added_at'].')</b><br>';
+	        				$order_table .= nl2br($note['message']);
+	        				$order_table .= '</td></tr>';
+	        			}
+	        			$order_table .= '</table>';
+	        		}
+	        		
+	        		
+	        		
+	        		return $order_table;
+        		}else{
+        			return '';
+        		}
+        		exit();
+        		 break;
+        	}
+        	
+        	case 'fast_preview_public' : {
+        		$fields=array();
+        			if(''!==trim($this->getConfigValue('apps.realty.admin_fast_view'))){
+        				$matches=array();
+        				preg_match_all('/([^,\s]+)/i', trim($this->getConfigValue('apps.realty.admin_fast_view')), $matches);
+        				if(!empty($matches[1])){
+        					$fields=$matches[1];
+        				}
+        			}
+        			$id=intval($this->getRequestValue('id'));
+        			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+        			$data_model = new Data_Model();
+        			$form_data_shared = $data_model->get_kvartira_model(false, true);
+        			 
+        			if(!empty($fields)){
+        				foreach($form_data_shared['data'] as $item=>$v){
+        					if(!in_array($item, $fields)){
+        						unset($form_data_shared['data'][$item]);
+        					}
+        				}
+        			}
+        			 
+        			 
+        			$form_data_shared = $data_model->init_model_data_from_db ( 'data', 'id', $id, $form_data_shared['data'], true );
+        				
+        			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/view.php');
+        			$table_view = new Table_View();
+        			$order_table = '';
+        			$order_table .= '<table class="table">';
+        			$order_table .= $table_view->compile_view($form_data_shared);
+        			$order_table .= '</table>';
+        			 
+        			$notes=array();
+        			$DBC=DBC::getInstance();
+        			$query='SELECT dn.*, u.fio FROM '.DB_PREFIX.'_data_note dn LEFT JOIN '.DB_PREFIX.'_user u USING(user_id) WHERE dn.id=? ORDER BY dn.added_at ASC';
+        			$stmt=$DBC->query($query, array($id));
+        			if($stmt){
+        				while($ar=$DBC->fetch($stmt)){
+        					$notes[]=$ar;
+        				}
+        			}
+        			if(count($notes)>0){
+        				$order_table .= '<h4>Заметки</h4>';
+        				$order_table .= '<table class="table">';
+        				foreach($notes as $note){
+        					$order_table .= '<tr><td>';
+        	
+        					$order_table .= '<b>'.$note['fio'].' ('.$note['added_at'].')</b><br>';
+        					$order_table .= nl2br($note['message']);
+        					$order_table .= '</td></tr>';
+        				}
+        				$order_table .= '</table>';
+        			}
+        			 
+        			 
+        			 
+        			return $order_table;
+        		exit();
+        		break;
+        	}
+        	
         	case 'voter' : {
         		$user_identity=md5($_SERVER['HTTP_USER_AGENT'].'_'.$_SERVER['REMOTE_ADDR']);
         		$resultcode=(int)$_POST['resultcode'];
@@ -195,25 +469,19 @@ class Ajax_Server extends SiteBill {
         	}
         	
         	case 'get_options' : {
-        		$elname=$this->getRequestValue('frommodelfield');
-        		$datavalue=$this->getRequestValue('value');
-        		$byfield=$this->getRequestValue('byfield');
+        		$elname=trim($this->getRequestValue('frommodelfield'));
+        		$datavalue=trim($this->getRequestValue('value'));
+        		$byfield=trim($this->getRequestValue('byfield'));
+        		$model=trim($this->getRequestValue('model'));
         		
-        		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
-        		$data_model = new Data_Model();
-        		$data_model_shared = $data_model->get_kvartira_model(false, true);
-        		foreach($data_model_shared['data'] as $key=>$value){
-        			if($value['type']=='select_by_query' && $value['name']==$elname){
-        				return $this->_getOptionsData($value['primary_key_name'], $value['value_name'], $value['primary_key_table'], $byfield, $datavalue);
+        		require_once SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/helper.php';
+        		$ATH=new Admin_Table_Helper();
+        		$form_data=$ATH->load_model($model, false);
+        		if(!empty($form_data)){
+        			if(isset($form_data[$model][$elname]) && $form_data[$model][$elname]['type']=='select_by_query'){
+        				return $this->_getOptionsData($form_data[$model][$elname]['primary_key_name'], $form_data[$model][$elname]['value_name'], $form_data[$model][$elname]['primary_key_table'], $byfield, $datavalue, $form_data[$model][$elname]['parameters']);
         			}
         		}
-        		break;
-        		$array=array(
-        			array('id'=>11, 'name'=>'Ahdshsfd'),
-        			array('id'=>13, 'name'=>'ewqweqe'),
-        			array('id'=>14, 'name'=>'2weweffwef')
-        		);
-        		return json_encode($array);
         		break;
         	}
         	
@@ -267,115 +535,37 @@ class Ajax_Server extends SiteBill {
         		
         	}
         	
+        	case 'add_note' : {
+        		return $this->_add_noteAjaxAction();
+        		break;
+        	}
+        	
+        	case 'delete_note' : {
+        		return $this->_delete_noteAjaxAction();
+        		break;
+        	}
+        	
         	case 'save_topic_sort' : {
-        		if($ajax_user_mode=='admin'){
-        			$ids=array();
-        			$parent_id=(int)$this->getRequestValue('parent_topic_id');
-        			$ids=explode(',', $this->getRequestValue('child_topics'));
-        			if(!empty($ids) && !in_array($parent_id, $ids)){
-        				$DBC=DBC::getInstance();
-        				$query='UPDATE '.DB_PREFIX.'_topic SET `parent_id`=?, `order`=? WHERE `id`=?';
-        				foreach($ids as $k=>$id){
-        					$stmt=$DBC->query($query, array($parent_id, $k, $id));
-        				}
-        			}
-        		}
-        		
-        		exit();
+        		return $this->_save_topic_sortAjaxAction();
+        		break;
+        	}
+        	case 'save_rubric_sort' : {
+        		return $this->_save_rubric_sortAjaxAction();
+        		break;
         	}
         	case 'set_realty_status' : {
-        		
-        		$id=(int)$this->getRequestValue('id');
-        		$status=(int)$this->getRequestValue('status');
-        		
-        		
-        		$DBC=DBC::getInstance();
-        		if($ajax_user_mode=='admin'){
-        			$query='UPDATE '.DB_PREFIX.'_data SET `active`=? WHERE `id`=?';
-        			$stmt=$DBC->query($query, array($status, $id));
-        		}elseif($ajax_user_mode=='user'){
-        			$query='UPDATE '.DB_PREFIX.'_data SET `active`=? WHERE `id`=? AND user_id=?';
-        			$stmt=$DBC->query($query, array($status, $id, $ajax_controller_user_id));
-        		}else{
-        			return 'ERROR';
-        		}
-        		
-        		
-        		if($stmt){
-        			return 'OK';
-        		}else{
-        			return 'ERROR';
-        		}
-        		exit();
+        		return $this->_set_realty_statusAjaxAction();
+        		break;
         	} 
         	case 'topic_source' : {
-        	
-        		require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php';
-        		$id=(int)$this->getRequestValue('id');
-        		$DBC=DBC::getInstance();
-        		$result=array();
-        	
-        		$query='SELECT `name`, `id` FROM '.DB_PREFIX.'_topic WHERE `parent_id`=? ORDER BY `order` ASC, `name` ASC';
-        		$stmt=$DBC->query($query, array($id));
-        		if($stmt){
-        			while($ar=$DBC->fetch($stmt)){
-        				$node = array();
-        				$node['id'] = $ar['id'];
-        				$node['text'] = SiteBill::iconv(SITE_ENCODING, 'utf-8', $ar['name']);
-        				$node['state'] = Structure_Manager::has_child($ar['id']) ? 'closed' : 'open';
-        				array_push($result, $node);
-        			}
-        		}
-        	
-        		echo json_encode($result);
-        	
-        		exit();
+        		//echo 1;
+        		return $this->_topic_sourceAjaxAction();
+        		break;
         	}
         	
         	case 'topic_delete' : {
-        		if($ajax_user_mode!='admin'){
-        			echo json_encode(array('status'=>'error', 'message'=>'have no access'));
-        			exit();
-        		}
-        		$clear_option=(string)$this->getRequestValue('clear_option');
-        		$clear_advs=(string)$this->getRequestValue('clear_advs');
-        		$id=(int)$this->getRequestValue('id');
-        		
-        		if($clear_option==='' && $clear_advs===''){
-        			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php';
-        			$Structure_Manager=new Structure_Manager();
-        			
-        			$message='';
-        			$status='ok';
-        			$DBC=DBC::getInstance();
-        			
-        			$category_structure = $Structure_Manager->loadCategoryStructure();
-        			if ( count($category_structure['childs'][$id]) > 0 ) {
-        				$message.=Multilanguage::_('CATEGORY_HAS_CHILDS','system').'<br>';
-        				$status='error';
-        			}
-        			
-        			$query='SELECT COUNT(*) AS rs FROM '.DB_PREFIX.'_data WHERE topic_id=?';
-        			$stmt=$DBC->query($query, array($id));
-        			$ar=$DBC->fetch($stmt);
-        			if($ar['rs']!=0){
-        				$message.=Multilanguage::_('NOT_EMPTY_CATEGORY','system').'<br>';
-        				$status='error';
-        			}
-        			if($status=='ok'){
-        				$Structure_Manager->deleteRecord($id);
-        			}
-        			$result=array('status'=>$status, 'message'=>$message);
-        		}else{
-        			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php';
-        			$Structure_Manager=new Structure_Manager();
-        			$Structure_Manager->deleteTopicItem($id, $clear_option, $clear_advs);
-        			$message='';
-        			$status='ok';
-        			$result=array('status'=>$status, 'message'=>$message);
-        		}
-        		echo json_encode($result);
-        		exit();
+        		return $this->_topic_deleteAjaxAction();
+        		break;
         	}
         	
         	case 'get_grid_data' : {
@@ -389,7 +579,45 @@ class Ajax_Server extends SiteBill {
         		return $grid_constructor->main($params);
         		break;
         	}
-        	
+        	case 'admin_data_getter' : {
+        		
+        		global $smarty;
+	    		$params=$this->getRequestValue('params');
+	    		$USER_ID=$this->this_user;
+	    		$params['_collect_user_info']=1;
+	    		
+	    	
+	    		
+	    		if(isset($params['topic_id']) && !is_array($params['topic_id'])){
+	    			$params['topic_id']=(array)$params['topic_id'];
+	    		}
+	    		
+	    		
+	    		
+	    		
+	    		require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/grid/grid_constructor.php';
+        		$grid_constructor = new Grid_Constructor();
+	    		
+	    		
+	    		
+	    		$res = $grid_constructor->get_sitebill_adv_ext_base_ajax( $params );
+	    		
+	    		
+	    		
+	    		$smarty->assign('items_in_memory', $items_in_memory);
+	    		
+	    		$tpl=SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template/data/datagrid_grid.tpl';
+	    		$smarty->assign('grid_items', $res['data']);
+	    		$grid=$smarty->fetch($tpl);
+	    		
+	    		$tpl=SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template/data/datagrid_pager.tpl';
+	    		$smarty->assign('pager_array', $res['paging']);
+	    		//print_r($res['paging']);
+	    		$pager=$smarty->fetch($tpl);
+	    		
+	    		return json_encode(array('grid'=>$grid, 'pager'=>$pager, '_total_records'=>$res['_total_records'], 'order'=>$res['order']));
+	    		
+        	}
         	case 'collect_data' : {
         		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/data_collector.php')){
         			require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/data_collector.php';
@@ -414,12 +642,26 @@ class Ajax_Server extends SiteBill {
 				$date=date('Y-m-d H:i:s', time());
 				$answer=date('d.m',time());
 				$DBC=DBC::getInstance();
-				if($ajax_user_mode=='admin'){
+				if($this->ajax_user_mode=='admin'){
 					$query='UPDATE '.DB_PREFIX.'_data SET date_added=? WHERE id=?';
 					$stmt=$DBC->query($query, array($date, $id));
-				}elseif($ajax_user_mode=='user'){
-					$query='UPDATE '.DB_PREFIX.'_data SET date_added=? WHERE id=? AND user_id=?';
-					$stmt=$DBC->query($query, array($date, $id, $ajax_controller_user_id));
+				}elseif($this->ajax_user_mode=='user'){
+					$access_allow=false;
+					if ( $this->getConfigValue('check_permissions') && (1!=(int)$this->getConfigValue('data_adv_share_access'))) {
+						require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/permission/permission.php');
+						$permission = new Permission();
+						if ($permission->get_access($_SESSION['user_id_value'], 'data', 'access')) {
+							$access_allow=true;
+						}
+					}
+					
+					if($access_allow){
+						$query='UPDATE '.DB_PREFIX.'_data SET date_added=? WHERE id=?';
+						$stmt=$DBC->query($query, array($date, $id));
+					}else{
+						$query='UPDATE '.DB_PREFIX.'_data SET date_added=? WHERE id=? AND user_id=?';
+						$stmt=$DBC->query($query, array($date, $id, $ajax_controller_user_id));
+					}
 				}else{
 					$body = '';
 				}
@@ -443,10 +685,11 @@ class Ajax_Server extends SiteBill {
 				$table=$DM->table_name;
 				$r=array();
 				if(!empty($form_data[$table])){
+					
 					foreach($form_data[$table] as $k=>$v){
 						if(isset($v['active_in_topic']) && $v['active_in_topic']!=0){
-							$topics=explode(',',$v['active_in_topic']);
-							$active_array_ids = explode(',',$v['active_in_topic']);
+							//$topics=explode(',', $v['active_in_topic']);
+							$active_array_ids = explode(',', $v['active_in_topic']);
 							$r[$k] = $active_array_ids;
 						}else{
 							$r[$k][]='all';
@@ -476,7 +719,7 @@ class Ajax_Server extends SiteBill {
 					foreach($form_data[$table] as $k=>$v){
 						if(isset($v['active_in_topic']) && $v['active_in_topic']!=0){
 								
-							$topics=explode(',',$v['active_in_topic']);
+							$topics=explode(',', $v['active_in_topic']);
 								
 							$active_array_ids = explode(',',$v['active_in_topic']);
 								
@@ -502,6 +745,30 @@ class Ajax_Server extends SiteBill {
 				return print_r($form_data,true);
 				break;
 			}
+			
+			case 'avatar' : {
+				$what=$this->getRequestValue('what');
+				$table=$this->getRequestValue('table_name');
+				$id=(int)$this->getRequestValue('id');
+				$id_key=$this->getRequestValue('key');
+				$field_name=$this->getRequestValue('field_name');
+				
+				$DBC=DBC::getInstance();
+				$query='SELECT `'.$field_name.'` FROM '.DB_PREFIX.'_'.$table.' WHERE `'.$id_key.'`=?';
+				//echo $query;
+				$stmt=$DBC->query($query, array($id));
+				//var_dump($stmt);
+				if($stmt){
+					$ar=$DBC->fetch($stmt);
+					
+					@unlink(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$ar[$field_name]);
+					$query='UPDATE '.DB_PREFIX.'_'.$table.' SET `'.$field_name.'`=? WHERE `'.$id_key.'`=?';
+					$stmt=$DBC->query($query, array('', $id));
+					$body='ok';
+				}
+				return $body;
+				break;
+			}
 				
 			case 'delete_image' : {
 				$table=$this->getRequestValue('table_name');
@@ -512,7 +779,7 @@ class Ajax_Server extends SiteBill {
 				if($table=='' || $image_id==0 || $data_id==0){
 					
 				}else{
-					if($_SESSION['user_id']==='true'){
+					if($_SESSION['user_id']==='true' || $this->ajax_user_mode='admin'){
 						$this->deleteImage($table, $image_id);
 						$body='ok';
 					}elseif((int)$_SESSION['user_id']>0){
@@ -551,6 +818,19 @@ class Ajax_Server extends SiteBill {
 				$key=$this->getRequestValue('key');
 				$key_value=(int)$this->getRequestValue('key_value');
 				$this->makeImageMain($table, $image_id, $key, $key_value);
+				break;
+			}
+			case 'rotate_image' : {
+				$table=$this->getRequestValue('table_name');
+				$image_id=(int)$this->getRequestValue('image_id');
+				$key=$this->getRequestValue('key');
+				$key_value=(int)$this->getRequestValue('key_value');
+				$rot_dir=$this->getRequestValue('rot_dir');
+				if($rot_dir!='ccw' && $rot_dir!='cw'){
+					$rot_dir='cw';
+				}
+				
+				$this->rotateImage($table, $image_id, $key, $key_value, $rot_dir);
 				break;
 			}
 			case 'dz_imagework' : {
@@ -620,12 +900,219 @@ class Ajax_Server extends SiteBill {
 						return 'error';
 						break;
 					}
+					case 'rotate' : {
+						
+						$table=$this->getRequestValue('table_name');
+						$field_name=$this->getRequestValue('field_name');
+						$current_position=(int)$this->getRequestValue('current_position');
+						$key=$this->getRequestValue('key');
+						$key_value=(int)$this->getRequestValue('key_value');
+						$rot_dir=$this->getRequestValue('rot_dir');
+						
+						
+						$DBC=DBC::getInstance();
+						$query='SELECT * FROM '.DB_PREFIX.'_columns WHERE `name`=? AND `type`=? AND `table_id`=(SELECT `table_id` FROM '.DB_PREFIX.'_table WHERE `name`=? LIMIT 1)';
+						$stmt=$DBC->query($query, array($field_name, 'uploads', $table));
+						
+						if(!$stmt){
+							return 'error';
+						}
+						$ar=$DBC->fetch($stmt);
+						if($ar['parameters']!=''){
+							$parameters=unserialize($ar['parameters']);
+						}else{
+							$parameters=array();
+						}
+						
+						if(!isset($parameters['norm_width'])){
+							$big_width = $this->getConfigValue($table.'_image_big_width');
+							if ($big_width == '') {
+								$big_width = $this->getConfigValue('news_image_big_width');
+							}
+							$parameters['norm_width']=$big_width;
+						}
+						
+						if(!isset($parameters['norm_height'])){
+							$big_height = $this->getConfigValue($table.'_image_big_height');
+							if ( $big_height == '' ) {
+								$big_height = $this->getConfigValue('news_image_big_height');
+							}
+							$parameters['norm_height']=$big_height;
+						}
+						
+						if(!isset($parameters['prev_width'])){
+							$preview_width = $this->getConfigValue($table.'_image_preview_width');
+							if ( $preview_width == '' ) {
+								$preview_width = $this->getConfigValue('news_image_preview_width');
+							}
+							$parameters['prev_width']=$preview_width;
+						}
+						
+						if(!isset($parameters['prev_height'])){
+							$preview_height = $this->getConfigValue($table.'_image_preview_height');
+							if ( $preview_height == '' ) {
+								$preview_height = $this->getConfigValue('news_image_preview_height');
+							}
+							$parameters['prev_height']=$preview_height;
+						}
+						
+						if(!isset($parameters['preview_smart_resizing'])){
+							if(1===intval($this->getConfigValue('apps.realty.preview_smart_resizing')) && $table=='data'){
+								$parameters['preview_smart_resizing']=1;
+							}
+						}
+						
+						/*if(!empty($parameters)){
+							
+						}else{
+							$big_width = $this->getConfigValue($table.'_image_big_width');
+							if ($big_width == '') {
+								$big_width = $this->getConfigValue('news_image_big_width');
+							}
+							$big_height = $this->getConfigValue($table.'_image_big_height');
+							if ( $big_height == '' ) {
+								$big_height = $this->getConfigValue('news_image_big_height');
+							}
+							
+							$preview_width = $this->getConfigValue($table.'_image_preview_width');
+							if ( $preview_width == '' ) {
+								$preview_width = $this->getConfigValue('news_image_preview_width');
+							}
+							$preview_height = $this->getConfigValue($table.'_image_preview_height');
+							if ( $preview_height == '' ) {
+								$preview_height = $this->getConfigValue('news_image_preview_height');
+							}
+							
+							$parameters['norm_width']=$big_width;
+							$parameters['norm_height']=$big_height;
+							$parameters['prev_width']=$preview_width;
+							$parameters['prev_height']=$preview_height;
+							if(1===intval($this->getConfigValue('apps.realty.preview_smart_resizing')) && $table=='data'){
+								$parameters['preview_smart_resizing']=1;
+							}
+						}*/
+						
+						
+	    					    				
+	    				
+						
+	    				
+						//print_r($parameters);
+						//exit();
+						
+						//$DBC=DBC::getInstance();
+					
+						if($admin_mode){
+							$query='SELECT `'.$field_name.'` FROM `'.DB_PREFIX.'_'.$table.'` WHERE `'.$key.'`=? LIMIT 1';
+							$stmt=$DBC->query($query, array($key_value));
+						}else{
+							$query='SELECT `'.$field_name.'` FROM `'.DB_PREFIX.'_'.$table.'` WHERE `'.$key.'`=? AND user_id=? LIMIT 1';
+							$stmt=$DBC->query($query, array($key_value, $user_id));
+						}
+					
+					
+						if(!$stmt){
+							return 'error';
+						}
+						$ar=$DBC->fetch($stmt);
+						if($ar[$field_name]==''){
+							return 'error';
+						}
+						$uploads=unserialize($ar[$field_name]);
+						if(!isset($uploads[$current_position])){
+							return 'error';
+						}
+						
+						
+						$rot_image=$uploads[$current_position];
+						
+						if($rot_dir=='ccw'){
+							$degree=90;
+						}else{
+							$degree=-90;
+						}
+						
+						$is_watermark=false;
+						if($table=='data' && $this->getConfigValue('is_watermark')){
+							$is_watermark=true;
+						}
+						
+						$res=$this->rotateImage2($rot_image, $is_watermark, $degree, $parameters);
+						if($res){
+							return 'ok';
+						}
+						return 'error';
+						
+						$arr=explode('.', $thisimage['normal']);
+						$ext=end($arr);
+					
+						if(defined('STR_MEDIA') && STR_MEDIA==Sitebill::MEDIA_SAVE_FOLDER){
+							$preview = $uploads[$current_position]['preview'];
+							$normal = $uploads[$current_position]['normal'];
+							@unlink(MEDIA_FOLDER.'/'.$preview);
+							@unlink(MEDIA_FOLDER.'/'.$normal);
+							@unlink(MEDIA_FOLDER.'/nowatermark/'.$normal);
+						}else{
+							$path = SITEBILL_DOCUMENT_ROOT.$this->storage_dir;
+							$preview = $uploads[$current_position]['preview'];
+							$normal = $uploads[$current_position]['normal'];
+							@unlink($path.$preview);
+							@unlink($path.$normal);
+							@unlink($path.'nowatermark/'.$normal);
+						}
+						/*
+						 if(defined('STR_MEDIA') && STR_MEDIA=='new'){
+						$preview = $uploads[$current_position]['preview'];
+						$normal = $uploads[$current_position]['normal'];
+						@unlink(MEDIA_FOLDER.'/'.$preview);
+						@unlink(MEDIA_FOLDER.'/'.$normal);
+						$file_name_parts=explode('/', $normal);
+						$file_name=end($file_name_parts);
+						$file_name=preg_replace('/\.src\./', '.wtr.', $file_name);
+						array_pop($file_name_parts);
+						@unlink(MEDIA_FOLDER.'/'.implode('/', $file_name_parts));
+						}elseif(defined('STR_MEDIA') && STR_MEDIA=='semi'){
+						$preview = $uploads[$current_position]['preview'];
+						$normal = $uploads[$current_position]['normal'];
+						@unlink(MEDIA_FOLDER.'/'.$preview);
+						@unlink(MEDIA_FOLDER.'/'.$normal);
+						@unlink(MEDIA_FOLDER.'/nowatermark/'.$normal);
+						}else{
+						$path = SITEBILL_DOCUMENT_ROOT.$this->storage_dir;
+						$preview = $uploads[$current_position]['preview'];
+						$normal = $uploads[$current_position]['normal'];
+						@unlink($path.$preview);
+						@unlink($path.$normal);
+						@unlink($path.'nowatermark/'.$normal);
+						}
+						*/
+					
+					
+							
+					
+						unset($uploads[$current_position]);
+						$uploads=array_values($uploads);
+						if(count($uploads)==0){
+							$nuploads='';
+						}else{
+							$nuploads=serialize($uploads);
+						}
+						$query='UPDATE `'.DB_PREFIX.'_'.$table.'` SET `'.$field_name.'`=? WHERE `'.$key.'`=?';
+						$stmt=$DBC->query($query, array($nuploads, $key_value));
+						if($stmt){
+							return 'ok';
+						}
+						return 'error';
+						break;
+					}
 					case 'delete' : {
 						$table=$this->getRequestValue('table_name');
 						$field_name=$this->getRequestValue('field_name');
 						$current_position=(int)$this->getRequestValue('current_position');
 						$key=$this->getRequestValue('key');
 						$key_value=(int)$this->getRequestValue('key_value');
+						$doc_mode=(int)$this->getRequestValue('doc_mode')==1 ? true : false;
+						
 						$DBC=DBC::getInstance();
 						
 						if($admin_mode){
@@ -648,11 +1135,57 @@ class Ajax_Server extends SiteBill {
 						if(!isset($uploads[$current_position])){
 							return 'error';
 						}
-						$path = SITEBILL_DOCUMENT_ROOT.$this->storage_dir;
-						$preview = $uploads[$current_position]['preview'];
-						$normal = $uploads[$current_position]['normal'];
-						@unlink($path.$preview);
-						@unlink($path.$normal);
+						
+						if($doc_mode){
+							@unlink(SITEBILL_DOCUMENT_ROOT.'/img/mediadocs/'.$uploads[$current_position]['normal']);
+						}else{
+							if(defined('STR_MEDIA') && STR_MEDIA==Sitebill::MEDIA_SAVE_FOLDER){
+								$preview = $uploads[$current_position]['preview'];
+								$normal = $uploads[$current_position]['normal'];
+								@unlink(MEDIA_FOLDER.'/'.$preview);
+								@unlink(MEDIA_FOLDER.'/'.$normal);
+								@unlink(MEDIA_FOLDER.'/nowatermark/'.$normal);
+							}else{
+								$path = SITEBILL_DOCUMENT_ROOT.$this->storage_dir;
+								$preview = $uploads[$current_position]['preview'];
+								$normal = $uploads[$current_position]['normal'];
+								@unlink($path.$preview);
+								@unlink($path.$normal);
+								@unlink($path.'nowatermark/'.$normal);
+							}
+						}
+						
+						
+						/*
+						if(defined('STR_MEDIA') && STR_MEDIA=='new'){
+							$preview = $uploads[$current_position]['preview'];
+							$normal = $uploads[$current_position]['normal'];
+							@unlink(MEDIA_FOLDER.'/'.$preview);
+							@unlink(MEDIA_FOLDER.'/'.$normal);
+							$file_name_parts=explode('/', $normal);
+							$file_name=end($file_name_parts);
+							$file_name=preg_replace('/\.src\./', '.wtr.', $file_name);
+							array_pop($file_name_parts);
+							@unlink(MEDIA_FOLDER.'/'.implode('/', $file_name_parts));
+						}elseif(defined('STR_MEDIA') && STR_MEDIA=='semi'){
+							$preview = $uploads[$current_position]['preview'];
+							$normal = $uploads[$current_position]['normal'];
+							@unlink(MEDIA_FOLDER.'/'.$preview);
+							@unlink(MEDIA_FOLDER.'/'.$normal);
+							@unlink(MEDIA_FOLDER.'/nowatermark/'.$normal);
+						}else{
+							$path = SITEBILL_DOCUMENT_ROOT.$this->storage_dir;
+							$preview = $uploads[$current_position]['preview'];
+							$normal = $uploads[$current_position]['normal'];
+							@unlink($path.$preview);
+							@unlink($path.$normal);
+							@unlink($path.'nowatermark/'.$normal);
+						}
+						*/
+						
+						
+						 
+						
 						unset($uploads[$current_position]);
 						$uploads=array_values($uploads);
 						if(count($uploads)==0){
@@ -673,6 +1206,8 @@ class Ajax_Server extends SiteBill {
 						$field_name=$this->getRequestValue('field_name');
 						$key=$this->getRequestValue('key');
 						$key_value=(int)$this->getRequestValue('key_value');
+						$doc_mode=(int)$this->getRequestValue('doc_mode')==1 ? true : false;
+						
 						$DBC=DBC::getInstance();
 						
 						if($admin_mode){
@@ -691,14 +1226,65 @@ class Ajax_Server extends SiteBill {
 							return 'ok';
 						}
 						
+						
+						
+						
 						$uploads=unserialize($ar[$field_name]);
-						foreach($uploads as $upl){
-							$path = SITEBILL_DOCUMENT_ROOT.$this->storage_dir;
-							$preview = $upl['preview'];
-							$normal = $upl['normal'];
-							@unlink($path.$preview);
-							@unlink($path.$normal);
+						
+						if($doc_mode){
+							foreach($uploads as $upl){
+								@unlink(SITEBILL_DOCUMENT_ROOT.'/img/mediadocs/'.$upl['normal']);
+							}	
+						}else{
+							foreach($uploads as $upl){
+								if(defined('STR_MEDIA') && STR_MEDIA==Sitebill::MEDIA_SAVE_FOLDER){
+									$preview = $upl['preview'];
+									$normal = $upl['normal'];
+									@unlink(MEDIA_FOLDER.'/'.$preview);
+									@unlink(MEDIA_FOLDER.'/'.$normal);
+									@unlink(MEDIA_FOLDER.'/nowatermark/'.$normal);
+								}else{
+									$path = SITEBILL_DOCUMENT_ROOT.$this->storage_dir;
+									$preview = $upl['preview'];
+									$normal = $upl['normal'];
+									@unlink($path.$preview);
+									@unlink($path.$normal);
+									@unlink($path.'nowatermark/'.$normal);
+								}
+								/*
+								 if(defined('STR_MEDIA') && STR_MEDIA=='new'){
+								$preview = $upl['preview'];
+								$normal = $upl['normal'];
+								@unlink(MEDIA_FOLDER.'/'.$preview);
+								@unlink(MEDIA_FOLDER.'/'.$normal);
+								$file_name_parts=explode('/', $normal);
+								$file_name=end($file_name_parts);
+								$file_name=preg_replace('/\.src\./', '.wtr.', $file_name);
+								array_pop($file_name_parts);
+								@unlink(MEDIA_FOLDER.'/'.implode('/', $file_name_parts));
+								}elseif(defined('STR_MEDIA') && STR_MEDIA=='semi'){
+								$preview = $upl['preview'];
+								$normal = $upl['normal'];
+								@unlink(MEDIA_FOLDER.'/'.$preview);
+								@unlink(MEDIA_FOLDER.'/'.$normal);
+								@unlink(MEDIA_FOLDER.'/nowatermark/'.$normal);
+								}else{
+								$path = SITEBILL_DOCUMENT_ROOT.$this->storage_dir;
+								$preview = $upl['preview'];
+								$normal = $upl['normal'];
+								@unlink($path.$preview);
+								@unlink($path.$normal);
+								@unlink($path.'nowatermark/'.$normal);
+								}
+								*/
+								/*$preview = $upl['preview'];
+								 $normal = $upl['normal'];
+								@unlink($path.$preview);
+								@unlink($path.$normal);*/
+							}	
 						}
+						
+						
 					
 						if($admin_mode){
 							$query='UPDATE `'.DB_PREFIX.'_'.$table.'` SET `'.$field_name.'`=\'\' WHERE `'.$key.'`=? LIMIT 1';
@@ -782,6 +1368,7 @@ class Ajax_Server extends SiteBill {
 						if($stmt){
 							return $title;
 						}
+						exit();
 						break;
 					}
 				}
@@ -810,7 +1397,7 @@ class Ajax_Server extends SiteBill {
 				if($image_id!=0){
 					$DBC=DBC::getInstance();
 					$query='UPDATE '.DB_PREFIX.'_image SET title=? WHERE image_id=?';
-					$DBC->query($query, array(mysql_real_escape_string($title), $image_id));
+					$DBC->query($query, array($title, $image_id));
 				}
 				return '';
 			}
@@ -825,8 +1412,8 @@ class Ajax_Server extends SiteBill {
 				$description=SiteBill::iconv('utf-8', SITE_ENCODING, $description);
 				if($image_id!=0){
 					$DBC=DBC::getInstance();
-					$query='UPDATE '.DB_PREFIX.'_image SET description=\''.mysql_real_escape_string($description).'\' WHERE image_id='.$image_id;
-					$DBC->query($query, array(mysql_real_escape_string($description), $image_id));
+					$query='UPDATE '.DB_PREFIX.'_image SET description=? WHERE image_id=?';
+					$DBC->query($query, array($description, $image_id));
 				}
 				return '';
 			}
@@ -834,7 +1421,7 @@ class Ajax_Server extends SiteBill {
 			case 'show_contact':
         		$body = '';
         		$id=(int)$this->getRequestValue('id');
-        		if($id!=0 && $ajax_user_mode=='admin'){
+        		if($id!=0 && $this->ajax_user_mode=='admin'){
         			$DBC=DBC::getInstance();
         			$query='UPDATE '.DB_PREFIX.'_data SET show_contact=1 WHERE id=?';
         			$stmt=$DBC->query($query, array($id));
@@ -895,7 +1482,7 @@ class Ajax_Server extends SiteBill {
             case 'hide_contact':
         		$body = '';
         		$id=(int)$this->getRequestValue('id');
-        		if($id!=0 && $ajax_user_mode=='admin'){
+        		if($id!=0 && $this->ajax_user_mode=='admin'){
         			$DBC=DBC::getInstance();
         			$query='UPDATE '.DB_PREFIX.'_data SET show_contact=0 WHERE id=?';
         			$stmt=$DBC->query($query, array($id));
@@ -909,26 +1496,34 @@ class Ajax_Server extends SiteBill {
             	$user_id=(int)$this->getSessionUserId();
             	
             	if($user_id!=0){
-            		if(isset($_COOKIE['user_favorites']) && $_COOKIE['user_favorites']!=''){
-            			$cc=unserialize($_COOKIE['user_favorites']);
-            		}else{
-            			$cc=array();
-            		}
+            		
             		
             		if($id!=0){
+            			
+            			$DBC=DBC::getInstance();
+            			$query='INSERT INTO '.DB_PREFIX.'_userlists (user_id, id, lcode) VALUES (?, ?, ?)';
+            			$stmt=$DBC->query($query, array($user_id, $id, 'fav'));
+            			
+            			if(isset($_COOKIE['user_favorites']) && $_COOKIE['user_favorites']!=''){
+            				$cc=unserialize($_COOKIE['user_favorites']);
+            			}else{
+            				$cc=array();
+            			}
+            			
             			if(!isset($cc[$user_id][$id])){
             				$cc[$user_id][$id]=$id;
             				$body = 'OK';
             			}else{
             				$body = '';
             			}
-            			setcookie("user_favorites", serialize($cc), time()+7*24*3600, '/');
+            			setcookie("user_favorites", serialize($cc), time()+7*24*3600, '/', self::$_cookiedomain);
             			$_SESSION['favorites']=$cc[$user_id];
             		}
             		//echo 1;
             		
             		//$body = 'OK';
             	}else{
+            		
             		if($id!=0){
             			if(!isset($_SESSION['favorites'][$id])){
             				$_SESSION['favorites'][$id] = $id;
@@ -953,19 +1548,26 @@ class Ajax_Server extends SiteBill {
             	$id=(int)$this->getRequestValue('id');
             	$user_id=(int)$this->getSessionUserId();
             	if($user_id!=0){
+            		
             		if(isset($_COOKIE['user_favorites']) && $_COOKIE['user_favorites']!=''){
             			$cc=unserialize($_COOKIE['user_favorites']);
             		}else{
             			$cc=array();
             		}
+            		
+            		$DBC=DBC::getInstance();
+            		$query='DELETE FROM '.DB_PREFIX.'_userlists WHERE user_id=? AND id=? AND lcode=?';
+            		$stmt=$DBC->query($query, array($user_id, $id, 'fav'));
+            		
             		if($id!=0 && isset($cc[$user_id][$id])){
+            			
             			unset($cc[$user_id][$id]);
             			$body = 'OK';
             			
             		}else{
             			$body = '';
             		}
-            		setcookie("user_favorites", serialize($cc), time()+7*24*3600, '/');
+            		setcookie("user_favorites", serialize($cc), time()+7*24*3600, '/', self::$_cookiedomain);
             		$_SESSION['favorites']=$cc[$user_id];
             		
             	}else{
@@ -980,7 +1582,22 @@ class Ajax_Server extends SiteBill {
             	}
         		
         	break;
+        	case 'clear_favorites':
+        		$user_id=(int)$this->getSessionUserId();
+        		if($user_id!=0){
+        			setcookie("user_favorites", '', time()-1000, '/', self::$_cookiedomain);
+        			unset($_SESSION['favorites']);
         	
+        			$DBC=DBC::getInstance();
+        			$query='DELETE FROM '.DB_PREFIX.'_userlists WHERE user_id=? AND lcode=?';
+        			$stmt=$DBC->query($query, array($user_id, 'fav'));
+        			
+        	
+        		}else{
+        			unset($_SESSION['favorites']);
+        		}
+        		$body = 'OK';
+        		break;
         	case 'get_specialoffers':
         		global $smarty;
         	
@@ -1045,8 +1662,9 @@ class Ajax_Server extends SiteBill {
         		
         		
         		require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php';
-        		require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/grid/grid_constructor.php';
-        		$GC=new Grid_Constructor();
+        		$GC=$this->_getGridConstructor();
+        		//require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/grid/grid_constructor.php';
+        		//$GC=new Grid_Constructor();
         		if ( count($_SESSION['favorites']) == 0 ) {
         			$rs = '<h2>'.Multilanguage::_('L_NO_FAVORITES').'</h2>';
         		} else {
@@ -1063,14 +1681,14 @@ class Ajax_Server extends SiteBill {
         		//$body=$rs;
 	        	
         	break;
-            case 'remove_from_favorites':
+            /*case 'remove_from_favorites':
             	if((int)$this->getRequestValue('id')!=0){
             		if(isset($_SESSION['favorites'][(int)$this->getRequestValue('id')])){
             			unset($_SESSION['favorites'][(int)$this->getRequestValue('id')]);
             		}
         		}
         		$body = 'OK';
-            break;
+            break;*/
         	case 'add_my_city':
         		if($this->getRequestValue('city_id')==''){
         			unset($_SESSION['city_id']);
@@ -1170,7 +1788,8 @@ class Ajax_Server extends SiteBill {
             	/*$userlogin=SiteBill::iconv('utf-8', SITE_ENCODING, $_GET['login']);
             	$userpassword=SiteBill::iconv('utf-8', SITE_ENCODING, $_GET['password']);*/
             	$userlogin=preg_replace('/([^a-zA-Z-_0-9\.@])/', '', $_GET['login']);
-            	$userpassword=$_GET['password'];
+            	
+            	$userpassword=trim($_GET['password']);
             	$rememberme=(int)$_GET['rememberme'];
             	
             	if(TRUE===$Login->checkLogin($userlogin, $userpassword, $rememberme)){
@@ -1188,6 +1807,7 @@ class Ajax_Server extends SiteBill {
             break;
             
             case 'ajax_register':
+            	
             	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php');
             	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/users/user_object_manager.php');
             	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/user/register_using_model.php');
@@ -1202,7 +1822,21 @@ class Ajax_Server extends SiteBill {
             	$rs1 = $Register->ajaxRegister();
             	return $rs1;
             	break;
-            
+           	case 'ajax_activate_sms':
+            		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php');
+            		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/users/user_object_manager.php');
+            		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/user/register_using_model.php');
+            		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/register/local_register_using_model.php')){
+            			require_once(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/register/local_register_using_model.php');
+            			$Register = new Local_Register_Using_Model();
+            		}else{
+            			$Register = new Register_Using_Model();
+            		}
+            		 
+            		//$this->setRequestValue('do', 'new_done');
+            		$rs1 = $Register->ajax_activate_sms();
+            		return $rs1;
+            		break;
             case 'login':
                 $_SESSION['user_id'] = $this->getRequestValue('user_id');
                 $_SESSION['group'] = $this->getRequestValue('group');
@@ -1305,6 +1939,20 @@ class Ajax_Server extends SiteBill {
             	break;
             }
             
+            case 'dropzone_xls': {
+            	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/components/dropzone_xls/dropzone.php');
+            	$dropzone = new DropZone();
+            	return $dropzone->ajax();
+            	break;
+            }
+            
+            case 'get_tags': {
+            	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/components/model_tags/model_tags.php');
+            	$model_tags = new model_tags();
+            	return $model_tags->ajax();
+            	break;
+            }
+            
             case 'get_vip_cost':
             	echo $this->getConfigValue('vip_cost');
             	exit;
@@ -1367,72 +2015,122 @@ class Ajax_Server extends SiteBill {
             			$html='Недостаточно денег на вашем счету. <a href="'.SITEBILL_MAIN_URL.'/account/balance/?do=add_bill">Пополнить счет</a>';
             		}else{
             			if($payment_type=='vip'){
+            				
+            				$query='SELECT id, vip_status_end FROM '.DB_PREFIX.'_data WHERE id=? AND active=1';
+            				$stmt=$DBC->query($query, array($realty_id));
+            				
+            				if(!$stmt){
+            					return 'error';
+            				}
+            				
+            				$ar=$DBC->fetch($stmt);
+            				$prev_status_end=$ar['vip_status_end'];
+            				
             				$query='INSERT INTO '.DB_PREFIX.'_bill (`user_id`, `sum`, `date`, `description`, `status`) VALUES (?, ?, ?, ?, 1)';
             				$stmt=$DBC->query($query, array((int)$user_id, $sum, time(), 'Оплата VIP состояния объявления ID='.$realty_id.' на срок '.$days.' дней'));
             				
             				
             				if(!$stmt){
-            					echo 'error';
+            					return 'error';
             				} 
             				           				
             				$query='UPDATE '.DB_PREFIX.'_user SET account=? WHERE user_id=?';
             				$stmt=$DBC->query($query, array($last_account, $user_id));
 
             				if(!$stmt){
-            					echo 'error';
+            					return 'error';
             				}
             				 
+            				if($prev_status_end<time()){
+            					$new_status_end=time()+$days*86400;
+            				}else{
+            					$new_status_end=$prev_status_end+$days*86400;
+            				}
             				$query='UPDATE '.DB_PREFIX.'_data SET vip_status_end=? WHERE id=?';
-            				$stmt=$DBC->query($query, array(time()+$days*86400, $realty_id));
+            				$stmt=$DBC->query($query, array($new_status_end, $realty_id));
 
             				if(!$stmt){
-            					echo 'error';
+            					return 'error';
             				}
             				 
             				$html='Статус VIP присвоен';
             			}elseif($payment_type=='premium'){
+            				
+            				$query='SELECT id, `premium_status_end` FROM '.DB_PREFIX.'_data WHERE id=? AND active=1';
+            				$stmt=$DBC->query($query, array($realty_id));
+            				
+            				if(!$stmt){
+            					return 'error';
+            				}
+            				
+            				$ar=$DBC->fetch($stmt);
+            				$prev_status_end=$ar['premium_status_end'];
+            				
             				$query='INSERT INTO '.DB_PREFIX.'_bill (`user_id`, `sum`, `date`, `description`, `status`) VALUES (?, ?, ?, ?, 1)';
             				$stmt=$DBC->query($query, array((int)$user_id, $sum, time(), 'Оплата Премиум состояния объявления ID='.$realty_id.' на срок '.$days.' дней'));
 
             				if(!$stmt){
-            					echo 'error';
+            					return 'error';
             				}
             				 
             				$query='UPDATE '.DB_PREFIX.'_user SET account=? WHERE user_id=?';
             				$stmt=$DBC->query($query, array($last_account, $user_id));
 
             				if(!$stmt){
-            					echo 'error';
+            					return 'error';
+            				}
+            				
+            				if($prev_status_end<time()){
+            					$new_status_end=time()+$days*86400;
+            				}else{
+            					$new_status_end=$prev_status_end+$days*86400;
             				}
             				             				
             				$query='UPDATE '.DB_PREFIX.'_data SET premium_status_end=? WHERE id=?';
-            				$stmt=$DBC->query($query, array(time()+$days*86400, $realty_id));
+            				$stmt=$DBC->query($query, array($new_status_end, $realty_id));
 
             				if(!$stmt){
-            					echo 'error';
+            					return 'error';
             				}
             				 
             				$html='Премиум статус присвоен';
             			}elseif($payment_type=='bold'){
+            				
+            				$query='SELECT id, `bold_status_end` FROM '.DB_PREFIX.'_data WHERE id=? AND active=1';
+            				$stmt=$DBC->query($query, array($realty_id));
+            				
+            				if(!$stmt){
+            					return 'error';
+            				}
+            				
+            				$ar=$DBC->fetch($stmt);
+            				$prev_status_end=$ar['bold_status_end'];
+            				
             				$query='INSERT INTO '.DB_PREFIX.'_bill (`user_id`, `sum`, `date`, `description`, `status`) VALUES (?, ?, ?, ?, 1)';
             				$stmt=$DBC->query($query, array((int)$user_id, $sum, time(), 'Оплата выделенного состояния объявления ID='.$realty_id.' на срок '.$days.' дней'));
 
             				if(!$stmt){
-            					echo 'error';
+            					return 'error';
             				}
             				 
             				$query='UPDATE '.DB_PREFIX.'_user SET account=? WHERE user_id=?';
             				$stmt=$DBC->query($query, array($last_account, $user_id));
 
             				if(!$stmt){
-            					echo 'error';
+            					return 'error';
+            				}
+            				
+            				if($prev_status_end<time()){
+            					$new_status_end=time()+$days*86400;
+            				}else{
+            					$new_status_end=$prev_status_end+$days*86400;
             				}
             				             				
             				$query='UPDATE '.DB_PREFIX.'_data SET bold_status_end=? WHERE id=?';
-            				$stmt=$DBC->query($query, array(time()+$days*86400, $realty_id));
+            				$stmt=$DBC->query($query, array($new_status_end, $realty_id));
 
             				if(!$stmt){
-            					echo 'error';
+            					return 'error';
             				}
             				 
             				
@@ -1612,4 +2310,303 @@ class Ajax_Server extends SiteBill {
         return false;
     }
     
+    protected function _save_topic_sortAjaxAction(){
+    	if($this->ajax_user_mode=='admin'){
+    		$ids=array();
+    		$parent_id=(int)$this->getRequestValue('parent_topic_id');
+    		$ids=explode(',', $this->getRequestValue('child_topics'));
+    		if(!empty($ids) && !in_array($parent_id, $ids)){
+    			$DBC=DBC::getInstance();
+    			$query='UPDATE '.DB_PREFIX.'_topic SET `parent_id`=?, `order`=? WHERE `id`=?';
+    			foreach($ids as $k=>$id){
+    				$stmt=$DBC->query($query, array($parent_id, $k, $id));
+    			}
+    		}
+    	}
+    	exit();
+    }
+    
+    protected function _save_rubric_sortAjaxAction(){
+    	if($this->ajax_user_mode=='admin'){
+    		$ids=array();
+    		$parent_id=(int)$this->getRequestValue('parent_topic_id');
+    		$ids=explode(',', $this->getRequestValue('child_topics'));
+    		if(!empty($ids) && !in_array($parent_id, $ids)){
+    			$DBC=DBC::getInstance();
+    			$query='UPDATE '.DB_PREFIX.'_rubricator_point SET `parent_point_id`=?, `sort_order`=? WHERE `rubricator_point_id`=?';
+    			foreach($ids as $k=>$id){
+    				$stmt=$DBC->query($query, array($parent_id, $k, $id));
+    			}
+    		}
+    	}
+    	exit();
+    }
+    
+    protected function _iframe_mapAjaxAction(){
+        $DBC=DBC::getInstance();
+	
+    	if($this->getConfigValue('use_google_map')){
+    		$this->template->assign('map_type', 'google');
+    	}else{
+    		$this->template->assign('map_type', 'yandex');
+    	}
+    	$w=$this->getRequestValue('w');
+    	if($w==''){
+    		$w='100%';
+    	}
+    	$h=$this->getRequestValue('h');
+    	if($h==''){
+    		$h='100%';
+    	}
+    	$this->template->assign('map_w', $w);
+    	$this->template->assign('map_h', $h);
+    	$tpl=SITEBILL_DOCUMENT_ROOT.'/apps/system/template/iframe_map.tpl';
+    	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/iframe_map.tpl')){
+    		$tpl=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/iframe_map.tpl';
+    	}
+	if ( $this->getConfigValue('apps.geodata.map_cache_time') > 0 ) {
+	    //Попробуем получить данные карты из кэша
+	    $query='SELECT `value` FROM '.DB_PREFIX.'_cache WHERE `parameter`=? and valid_for > ?';
+	    $stmt=$DBC->query($query, array('map_cache', time()));
+	    if($stmt){
+    		$ar=$DBC->fetch($stmt);
+		if ( $ar['value'] != '' ) {
+		    return $ar['value'];
+		}
+	    } else {
+		echo $DBC->getLastError();
+	    }
+	}
+    	$grid_constructor = $this->_getGridConstructor();
+		$params['no_portions']=1;
+		$res=$grid_constructor->get_sitebill_adv_core( $params, false, false, false, true );
+		$this->template->assign('iframe_grid_data', json_encode($res['geoobjects_collection_clustered']));
+		$html=$this->template->fetch($tpl);
+		if ( $this->getConfigValue('apps.geodata.map_cache_time') > 0 ) {
+		    //очистим предудущий кэш
+		    $query='delete FROM '.DB_PREFIX.'_cache WHERE `parameter`=?';
+		    $stmt=$DBC->query($query, array('map_cache'));
+		    if ( !$stmt ) {
+			echo $DBC->getLastError();
+		    }
+		    //создадим новую запись кэша
+		    $query = "insert into ".DB_PREFIX."_cache (`parameter`, `value`, `created_at`, `valid_for`) values (?, ?, ?, ?)";
+		    $stmt=$DBC->query($query, array('map_cache', $html, time(), time()+$this->getConfigValue('apps.geodata.map_cache_time')));
+		    if ( !$stmt ) {
+			echo $DBC->getLastError();
+		    }
+		}
+		return $html;
+    }
+    
+    protected function _topic_sourceAjaxAction(){
+    	require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php';
+    	$id=(int)$this->getRequestValue('id');
+    	$DBC=DBC::getInstance();
+    	$result=array();
+    	if ( $this->getConfigValue('use_topic_publish_status') ) {
+    		$query='SELECT `name`, `id`, `published`, `url` FROM '.DB_PREFIX.'_topic WHERE `parent_id`=? ORDER BY `order` ASC, `name` ASC';
+    	} else {
+    		$query='SELECT `name`, `id`, `url` FROM '.DB_PREFIX.'_topic WHERE `parent_id`=? ORDER BY `order` ASC, `name` ASC';
+    	}
+    	
+    	$stmt=$DBC->query($query, array($id));
+    	if($stmt){
+    		while($ar=$DBC->fetch($stmt)){
+    			$node = array();
+    			$node['id'] = $ar['id'];
+    			$node['text'] = SiteBill::iconv(SITE_ENCODING, 'utf-8', $ar['name']);
+    			if($ar['url']!=''){
+    				$node['url'] = SiteBill::iconv(SITE_ENCODING, 'utf-8', $ar['url']);
+    			}else{
+    				$node['url'] = '';
+    			}
+    			
+    			$node['state'] = Structure_Manager::has_child($ar['id']) ? 'closed' : 'open';
+    			if ( $this->getConfigValue('use_topic_publish_status') ) {
+    				$node['published'] = $ar['published'];
+    			}
+    			array_push($result, $node);
+    		}
+    	}
+    	 
+    	echo json_encode($result);
+    	exit();
+    }
+    
+    protected function _set_realty_statusAjaxAction(){
+    	$id=(int)$this->getRequestValue('id');
+      	$status=(int)$this->getRequestValue('status');
+
+      	$need_send_message=0;
+      	
+      	if(1===(int)$this->getConfigValue('notify_about_publishing') || 1===(int)$this->getConfigValue('apps.twitter.enable')){
+      		$DBC=DBC::getInstance();
+      		$query='SELECT active, email, user_id, fio FROM '.DB_PREFIX.'_data WHERE `id`=?';
+      	
+      		$stmt=$DBC->query($query, array($id));
+      		if($stmt){
+      			$ar=$DBC->fetch($stmt);
+      			$current_active_status=$ar['active'];
+      			$email=$ar['email'];
+      			$phone=$ar['phone'];
+      			$fio=$ar['fio'];
+      			$owner_id=$ar['user_id'];
+      		}
+      		
+      		if($current_active_status==0 AND $status==1){
+      			$need_send_message=1;
+      		}
+      	}
+        		
+   		$DBC=DBC::getInstance();
+        if($this->ajax_user_mode=='admin'){
+        	$query='UPDATE '.DB_PREFIX.'_data SET `active`=? WHERE `id`=?';
+        	$stmt=$DBC->query($query, array($status, $id));
+        }elseif($this->ajax_user_mode=='user'){
+        	$query='UPDATE '.DB_PREFIX.'_data SET `active`=? WHERE `id`=? AND user_id=?';
+        	$stmt=$DBC->query($query, array($status, $id, $this->ajax_controller_user_id));
+        }else{
+        	return 'ERROR';
+        }
+        
+        if($stmt){
+        	if($need_send_message==1 && $email!=''){
+        		if($owner_id>0){
+        			$DBC=DBC::getInstance();
+        			$query='SELECT email, user_id, fio, group_id, login FROM '.DB_PREFIX.'_user WHERE user_id=?';
+        			$stmt=$DBC->query($query, array($owner_id));
+        			if($stmt){
+        				$ar=$DBC->fetch($stmt);
+        				if($ar['login']!='_unregistered'){
+        					$email=$ar['email'];
+        					$phone=$ar['phone'];
+        					$fio=$ar['fio'];
+        				}
+        			}
+        		}
+        		require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/data/data_manager.php';
+        		$DM=new Data_Manager();
+        		$DM->notifyEmailAboutActivation($id, $email, array('fio'=>$fio));
+        	}
+        	return 'OK';
+        }else{
+        	return 'ERROR';
+        }
+        exit();
+    }
+    
+	protected function _topic_deleteAjaxAction(){
+		if($this->ajax_user_mode!='admin'){
+			echo json_encode(array('status'=>'error', 'message'=>'have no access'));
+			exit();
+		}
+		$clear_option=(string)$this->getRequestValue('clear_option');
+		$clear_advs=(string)$this->getRequestValue('clear_advs');
+		$id=(int)$this->getRequestValue('id');
+		
+		if($clear_option==='' && $clear_advs===''){
+			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php';
+			$Structure_Manager=new Structure_Manager();
+			
+			$message='';
+			$status='ok';
+			$DBC=DBC::getInstance();
+			
+			$category_structure = $Structure_Manager->loadCategoryStructure();
+			if ( count($category_structure['childs'][$id]) > 0 ) {
+				$message.=Multilanguage::_('CATEGORY_HAS_CHILDS','system').'<br>';
+				$status='error';
+			}
+			
+			$query='SELECT COUNT(*) AS rs FROM '.DB_PREFIX.'_data WHERE topic_id=?';
+			$stmt=$DBC->query($query, array($id));
+			$ar=$DBC->fetch($stmt);
+			if($ar['rs']!=0){
+				$message.=Multilanguage::_('NOT_EMPTY_CATEGORY','system').'<br>';
+				$status='error';
+			}
+			if($status=='ok'){
+				$Structure_Manager->deleteRecord($id);
+			}
+			$result=array('status'=>$status, 'message'=>$message);
+		}else{
+			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php';
+			$Structure_Manager=new Structure_Manager();
+			$Structure_Manager->deleteTopicItem($id, $clear_option, $clear_advs);
+			$message='';
+			$status='ok';
+			$result=array('status'=>$status, 'message'=>$message);
+		}
+		echo json_encode($result);
+		exit();
+	}
+    
+	protected function _add_noteAjaxAction(){
+		$id=(int)$this->getRequestValue('id');
+		$note=trim(strip_tags($this->getRequestValue('note')));
+	
+	
+		$DBC=DBC::getInstance();
+		if($this->ajax_user_mode=='admin'){
+			$query='INSERT INTO '.DB_PREFIX.'_data_note (id, added_at, message, user_id) VALUES (?,?,?,?)';
+			$stmt=$DBC->query($query, array($id, date('Y-m-d H:i:s', time()), $note, $this->ajax_controller_user_id));
+		}else{
+			return json_encode(array('status'=>0));
+		}
+	
+		if($stmt){
+			$note_id=$DBC->lastInsertId();
+			$ret='<div class="itemdiv commentdiv">
+									<div class="body">
+										<div class="name">
+											<a href="#">Я</a>
+										</div>
+
+										<div class="time">
+											<i class="ace-icon fa fa-clock-o"></i>
+											<span class="green">'.date('Y-m-d H:i:s', time()).'</span>
+										</div>
+
+										<div class="text">
+											<i class="ace-icon fa fa-quote-left"></i>'.nl2br($note).'
+										</div>
+									</div>
+
+									<div class="tools">
+										<div class="action-buttons bigger-125">
+											<a href="#" class="delete_note" data-id="'.$note_id.'">
+												<i class="ace-icon fa fa-trash-o red"></i>
+											</a>
+										</div>
+									</div>
+								</div>';
+			return json_encode(array('status'=>1, 'note'=>$note, 'note_id'=>$note_id, 'html'=>$ret));
+		}else{
+			return json_encode(array('status'=>0));
+		}
+		exit();
+	}
+	
+	protected function _delete_noteAjaxAction(){
+		$note_id=(int)$this->getRequestValue('note_id');
+		//$note=trim(strip_tags($this->getRequestValue('note')));
+	
+	
+		$DBC=DBC::getInstance();
+		if($this->ajax_user_mode=='admin'){
+			$query='DELETE FROM '.DB_PREFIX.'_data_note WHERE data_note_id=?';
+			$stmt=$DBC->query($query, array($note_id));
+		}else{
+			$query='DELETE FROM '.DB_PREFIX.'_data_note WHERE data_note_id=? AND user_id=?';
+			$stmt=$DBC->query($query, array($note_id, $this->ajax_controller_user_id));
+		}
+	
+		if($stmt){
+			return json_encode(array('status'=>1));
+		}else{
+			return json_encode(array('status'=>0));
+		}
+		exit();
+	}
 }

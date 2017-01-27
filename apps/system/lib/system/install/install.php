@@ -78,10 +78,11 @@ class Install_Manager extends SiteBill {
     	$query_data[] = "INSERT INTO re_user (login,fio,group_id, reg_date, email) VALUES ('_unregistered','Незарегистрированный',4, '".date('Y-m-d H:i:s').".', 'ne-udalyat@etot-account.ru');";
     	
     	echo '<h3>'.Multilanguage::_('SQL_NOW','system').'</h3>';
+    	$DBC=DBC::getInstance();
     	foreach ( $query_data as $query ) {
-    		$this->db->exec($query);
-    		if ( !$this->db->success ) {
-    		    echo Multilanguage::_('ERROR_ON_SQL_RUN','system').': '.$query.', <b>'.$this->db->error.'</b><br>';
+    		$stmt=$DBC->query($query);
+    		if ( !$stmt ) {
+    		    echo Multilanguage::_('ERROR_ON_SQL_RUN','system').': '.$query.'<br>';
     		} else {
     		    echo Multilanguage::_('QUERY_SUCCESS','system').': '.$query.'<br>';
     		}
@@ -125,8 +126,6 @@ class Install_Manager extends SiteBill {
         if ( !$this->install_default_data() ) {
             return false;
         }
-        //$this->db->exec($sql);
-        //echo $sql;
         return true;
     }
     
@@ -136,140 +135,127 @@ class Install_Manager extends SiteBill {
      * @return
      */
     function install_default_data ( $main_url = '' ) {
-        
-        /*
-        $query = "select count(user_id) as cid from ".DB_PREFIX."_user";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['cid'] == 0 ) {
-            $query = "INSERT INTO `".DB_PREFIX."_user` (`user_id`, `login`, `pass`, `active`, `reg_date`, `password`, `fio`, `email`, `account`, `group_id`, `phone`, `site`, `imgfile`) VALUES
-        	(1, 'admin', '', 0, NULL, '21232f297a57a5a743894a0e4a801fc3', 'Super admin', 'admin@etown.ru', '0', 0, '234-34-34', 'http://www.sitebill.ru', 'img5504_1313724442_997.jpg')";
-            $this->db->exec($query);
-        }
-        */
-        
+    	$DBC=DBC::getInstance();
         $query = "select count(id) as cid from ".DB_PREFIX."_type";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['cid'] == 0 ) {
-            $install_default = 1;
-            $query = "INSERT INTO `re_type` (`id`, `name`, `short_name1`) VALUES
-(1, 'дом', '\$type_sh = ''дом'';'),
-(2, 'квартира', '\$type_sh = $rc . ''-комн.'';'),
-(3, 'комната', '\$type_sh = ''комната'';'),
-(4, 'гостинка', '\$type_sh = ''гостинка'';'),
-(5, 'секционка', '\$type_sh = ''секция'';'),
-(8, 'гараж', '\$type_sh = ''гараж'';'),
-(9, 'офис', '\$type_sh = ''офис'';'),
-(10, 'торговая площадь', '\$type_sh = ''торг.пл.'';'),
-(11, 'магазин', '\$type_sh = ''магазин'';'),
-(12, 'коттедж', '\$type_sh = ''коттедж'';'),
-(13, 'дача', '\$type_sh = ''дача'';'),
-(14, 'земельный участок', '\$type_sh = ''зем.уч.'';'),
-(15, 'землеотвод', '\$type_sh = ''землеотвод'';')";
-            $this->db->exec($query);
-        }
+        
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			if ( $ar['cid'] == 0 ) {
+				$install_default = 1;
+				$query = "INSERT INTO `re_type` (`id`, `name`, `short_name1`) VALUES
+				(1, 'дом', '\$type_sh = ''дом'';'),
+				(2, 'квартира', '\$type_sh = $rc . ''-комн.'';'),
+				(3, 'комната', '\$type_sh = ''комната'';'),
+				(4, 'гостинка', '\$type_sh = ''гостинка'';'),
+				(5, 'секционка', '\$type_sh = ''секция'';'),
+				(8, 'гараж', '\$type_sh = ''гараж'';'),
+				(9, 'офис', '\$type_sh = ''офис'';'),
+				(10, 'торговая площадь', '\$type_sh = ''торг.пл.'';'),
+				(11, 'магазин', '\$type_sh = ''магазин'';'),
+				(12, 'коттедж', '\$type_sh = ''коттедж'';'),
+				(13, 'дача', '\$type_sh = ''дача'';'),
+				(14, 'земельный участок', '\$type_sh = ''зем.уч.'';'),
+				(15, 'землеотвод', '\$type_sh = ''землеотвод'';')";
+				$stmt=$DBC->query($query);
+			}
+		}
+		
+       
+        
         
         $query = "select count(id) as cid from ".DB_PREFIX."_topic";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['cid'] == 0 ) {
-            $query = "
-INSERT INTO `".DB_PREFIX."_topic` (`id`, `name`, `active`, `parent_id`, `order`, `sql_where`, `obj_type_id`, `def_id1`, `def_id2`, `operation_type_id`) VALUES
-(1, 'Аренда квартир', 1, 0, 10, NULL, 0, 0, 0, 0),
-(2, 'Продажа квартир', 1, 0, 20, NULL, 0, 0, 0, 0),
-(3, 'Новостройки', 1, 0, 30, NULL, 0, 0, 0, 0),
-(4, 'Коммерческая', 1, 0, 40, NULL, 0, 40, 4010, 0),
-(5, 'Дома-участки', 1, 0, 50, NULL, 0, 0, 0, 0),
-(6, 'Гаражи', 1, 0, 60, NULL, 8, 61, 0, 0),
-(10, 'Комнаты', 2, 11, 10, 'type_id = 3', 0, 0, 0, 1),
-(11, 'Секционки', 2, 1, 20, 'type_id = 5', 0, 0, 0, 1),
-(12, 'Гостинки', 2, 1, 30, 'type_id = 4', 0, 0, 0, 0),
-(13, '1-комн.', 2, 1, 40, 'room_count = 1', 0, 0, 0, 0),
-(14, '2-комн.', 2, 1, 50, 'room_count = 2', 0, 0, 0, 0),
-(15, '3-комн.', 2, 1, 60, 'room_count = 3', 0, 0, 0, 0),
-(16, '4-комн.', 2, 1, 70, 'room_count = 4', 0, 0, 0, 0),
-(17, 'Элитное жилье', 2, 1, 80, 'elite = 1', 0, 0, 0, 1),
-(20, 'Комнаты', 2, 2, 10, 'type_id = 3', 0, 0, 0, 0),
-(21, 'Секционки', 2, 2, 20, 'type_id = 5', 0, 0, 0, 0),
-(22, 'Гостинки', 2, 2, 30, 'type_id = 4', 0, 0, 0, 0),
-(23, '1-комн.', 2, 2, 40, 'room_count = 1', 0, 0, 0, 0),
-(24, '2-комн.', 2, 2, 50, 'room_count = 2', 0, 0, 0, 0),
-(25, '3-комн.', 2, 2, 60, 'room_count = 3', 0, 0, 0, 0),
-(26, '4-комн.', 2, 2, 70, 'room_count = 4', 0, 0, 0, 0),
-(27, 'Элитное жилье', 2, 2, 80, 'elite = 1', 0, 0, 0, 0),
-(30, 'Комнаты', 2, 3, 10, 'type_id = 3', 0, 0, 0, 0),
-(31, 'Секционки', 2, 3, 20, 'type_id = 5', 0, 0, 0, 0),
-(32, 'Гостинки', 2, 3, 30, 'type_id = 4', 0, 0, 0, 0),
-(33, '1-комн.', 2, 3, 40, 'room_count = 1', 0, 0, 0, 0),
-(34, '2-комн.', 2, 3, 50, 'room_count = 2', 0, 0, 0, 0),
-(35, '3-комн.', 2, 3, 60, 'room_count = 3', 0, 0, 0, 0),
-(36, '4-комн.', 2, 3, 70, 'room_count = 4', 0, 0, 0, 0),
-(37, 'Элитное жилье', 2, 3, 80, 'elite = 1', 0, 0, 0, 0),
-(40, 'Аренда', 2, 4, 10, NULL, 0, 0, 4010, 0),
-(41, 'Продажа', 2, 4, 20, NULL, 0, 0, 4110, 0),
-(4010, 'Офисы', 3, 40, 10, 'sub_id2 = 4010', 0, 0, 0, 0),
-(4020, 'Торговые площади', 3, 40, 20, 'sub_id2 = 4020', 0, 0, 0, 0),
-(4110, 'Офисы', 3, 41, 10, 'sub_id2 = 4110', 0, 0, 0, 0),
-(4120, 'Магазины', 3, 41, 20, 'sub_id2 = 4120', 0, 0, 0, 0),
-(4130, 'Торговые площади', 3, 41, 30, 'sub_id2 = 4130', 0, 0, 0, 0),
-(50, 'Дома', 2, 5, 10, '((sub_id1 = 50) or (type_id=1))', 0, 0, 0, 0),
-(51, 'Коттеджи', 2, 5, 20, '((sub_id1 = 51) or (type_id=12))', 0, 0, 0, 0),
-(52, 'Дачи', 2, 5, 30, '((sub_id1 = 52) or (type_id=13))', 0, 0, 0, 0),
-(53, 'Землеотводы', 2, 5, 40, '((sub_id1 = 53) or (type_id=15))', 0, 0, 0, 0),
-(54, 'Участки', 2, 5, 50, '((sub_id1 = 54) or (type_id=14))', 0, 0, 0, 0),
-(60, 'Аренда', 2, 6, 10, 'sub_id1 = 60', 0, 0, 0, 0),
-(61, 'Продажа', 2, 6, 20, 'sub_id1 = 61', 0, 0, 0, 0),
-(6010, 'Гараж', 3, 60, 10, 'sub_id2 = 6010', 0, 0, 0, 0),
-(6020, 'Автобокс', 3, 60, 20, 'sub_id2 = 6020', 0, 0, 0, 0),
-(6110, 'Гараж', 3, 61, 10, 'sub_id2 = 6110', 0, 0, 0, 0),
-(6120, 'Автобокс', 3, 61, 20, 'sub_id2 = 6120', 0, 0, 0, 0)            
-            ";
-            $this->db->exec($query);
-        }
+        $stmt=$DBC->query($query);
+    	if($stmt){
+			$ar=$DBC->fetch($stmt);
+			if ( $ar['cid'] == 0 ) {
+				$install_default = 1;
+				$query = "
+					INSERT INTO `".DB_PREFIX."_topic` (`id`, `name`, `active`, `parent_id`, `order`, `sql_where`, `obj_type_id`, `def_id1`, `def_id2`, `operation_type_id`) VALUES
+					(1, 'Аренда квартир', 1, 0, 10, NULL, 0, 0, 0, 0),
+					(2, 'Продажа квартир', 1, 0, 20, NULL, 0, 0, 0, 0),
+					(3, 'Новостройки', 1, 0, 30, NULL, 0, 0, 0, 0),
+					(4, 'Коммерческая', 1, 0, 40, NULL, 0, 40, 4010, 0),
+					(5, 'Дома-участки', 1, 0, 50, NULL, 0, 0, 0, 0),
+					(6, 'Гаражи', 1, 0, 60, NULL, 8, 61, 0, 0),
+					(10, 'Комнаты', 2, 11, 10, 'type_id = 3', 0, 0, 0, 1),
+					(11, 'Секционки', 2, 1, 20, 'type_id = 5', 0, 0, 0, 1),
+					(12, 'Гостинки', 2, 1, 30, 'type_id = 4', 0, 0, 0, 0),
+					(13, '1-комн.', 2, 1, 40, 'room_count = 1', 0, 0, 0, 0),
+					(14, '2-комн.', 2, 1, 50, 'room_count = 2', 0, 0, 0, 0),
+					(15, '3-комн.', 2, 1, 60, 'room_count = 3', 0, 0, 0, 0),
+					(16, '4-комн.', 2, 1, 70, 'room_count = 4', 0, 0, 0, 0),
+					(17, 'Элитное жилье', 2, 1, 80, 'elite = 1', 0, 0, 0, 1),
+					(20, 'Комнаты', 2, 2, 10, 'type_id = 3', 0, 0, 0, 0),
+					(21, 'Секционки', 2, 2, 20, 'type_id = 5', 0, 0, 0, 0),
+					(22, 'Гостинки', 2, 2, 30, 'type_id = 4', 0, 0, 0, 0),
+					(23, '1-комн.', 2, 2, 40, 'room_count = 1', 0, 0, 0, 0),
+					(24, '2-комн.', 2, 2, 50, 'room_count = 2', 0, 0, 0, 0),
+					(25, '3-комн.', 2, 2, 60, 'room_count = 3', 0, 0, 0, 0),
+					(26, '4-комн.', 2, 2, 70, 'room_count = 4', 0, 0, 0, 0),
+					(27, 'Элитное жилье', 2, 2, 80, 'elite = 1', 0, 0, 0, 0),
+					(30, 'Комнаты', 2, 3, 10, 'type_id = 3', 0, 0, 0, 0),
+					(31, 'Секционки', 2, 3, 20, 'type_id = 5', 0, 0, 0, 0),
+					(32, 'Гостинки', 2, 3, 30, 'type_id = 4', 0, 0, 0, 0),
+					(33, '1-комн.', 2, 3, 40, 'room_count = 1', 0, 0, 0, 0),
+					(34, '2-комн.', 2, 3, 50, 'room_count = 2', 0, 0, 0, 0),
+					(35, '3-комн.', 2, 3, 60, 'room_count = 3', 0, 0, 0, 0),
+					(36, '4-комн.', 2, 3, 70, 'room_count = 4', 0, 0, 0, 0),
+					(37, 'Элитное жилье', 2, 3, 80, 'elite = 1', 0, 0, 0, 0),
+					(40, 'Аренда', 2, 4, 10, NULL, 0, 0, 4010, 0),
+					(41, 'Продажа', 2, 4, 20, NULL, 0, 0, 4110, 0),
+					(4010, 'Офисы', 3, 40, 10, 'sub_id2 = 4010', 0, 0, 0, 0),
+					(4020, 'Торговые площади', 3, 40, 20, 'sub_id2 = 4020', 0, 0, 0, 0),
+					(4110, 'Офисы', 3, 41, 10, 'sub_id2 = 4110', 0, 0, 0, 0),
+					(4120, 'Магазины', 3, 41, 20, 'sub_id2 = 4120', 0, 0, 0, 0),
+					(4130, 'Торговые площади', 3, 41, 30, 'sub_id2 = 4130', 0, 0, 0, 0),
+					(50, 'Дома', 2, 5, 10, '((sub_id1 = 50) or (type_id=1))', 0, 0, 0, 0),
+					(51, 'Коттеджи', 2, 5, 20, '((sub_id1 = 51) or (type_id=12))', 0, 0, 0, 0),
+					(52, 'Дачи', 2, 5, 30, '((sub_id1 = 52) or (type_id=13))', 0, 0, 0, 0),
+					(53, 'Землеотводы', 2, 5, 40, '((sub_id1 = 53) or (type_id=15))', 0, 0, 0, 0),
+					(54, 'Участки', 2, 5, 50, '((sub_id1 = 54) or (type_id=14))', 0, 0, 0, 0),
+					(60, 'Аренда', 2, 6, 10, 'sub_id1 = 60', 0, 0, 0, 0),
+					(61, 'Продажа', 2, 6, 20, 'sub_id1 = 61', 0, 0, 0, 0),
+					(6010, 'Гараж', 3, 60, 10, 'sub_id2 = 6010', 0, 0, 0, 0),
+					(6020, 'Автобокс', 3, 60, 20, 'sub_id2 = 6020', 0, 0, 0, 0),
+					(6110, 'Гараж', 3, 61, 10, 'sub_id2 = 6110', 0, 0, 0, 0),
+					(6120, 'Автобокс', 3, 61, 20, 'sub_id2 = 6120', 0, 0, 0, 0)            
+					            ";
+				$stmt=$DBC->query($query);
+			}
+		}
+//echo 'запуск install_manager sql<br>';        
         
         if ($install_default) {
+		//echo 'список sql<br>';        
             $query_data = array();
-            $query_data[] = "INSERT INTO re_city (city_id,name,region_id) VALUES (1,'Москва',4)";
-            $query_data[] = "INSERT INTO re_city (city_id,name,region_id) VALUES (2,'Киев',5)";
+            $query_data[] = "INSERT INTO re_city (city_id,name,region_id) VALUES (1,'Москва',1)";
+            $query_data[] = "INSERT INTO re_city (city_id,name,region_id) VALUES (2,'Киев',2)";
+            $query_data[] = "INSERT INTO re_city (city_id,name,region_id) VALUES (3,'Красноярск',3)";
 
             $query_data[] = "INSERT INTO re_country (country_id,name) VALUES (1,'Россия')";
             $query_data[] = "INSERT INTO re_country (country_id,name) VALUES (2,'Украина')";
 
-            $query_data[] = "INSERT INTO re_district (id,name,short_name1,city_id) VALUES (19,'Восточный',null,1)";
-            $query_data[] = "INSERT INTO re_district (id,name,short_name1,city_id) VALUES (20,'Одесский',null,2)";
+            $query_data[] = "INSERT INTO re_district (id,name,short_name1,city_id) VALUES (1,'Восточный',null,1)";
+            $query_data[] = "INSERT INTO re_district (id,name,short_name1,city_id) VALUES (2,'Одесский',null,2)";
+            $query_data[] = "INSERT INTO re_district (id,name,short_name1,city_id) VALUES (3,'Советский',null,3)";
 
             $query_data[] = "INSERT INTO re_metro (metro_id,name,city_id) VALUES (1,'Курская',1)";
             $query_data[] = "INSERT INTO re_metro (metro_id,name,city_id) VALUES (2,'Крымская',2)";
 
-            $query_data[] = "INSERT INTO re_region (region_id,name,country_id) VALUES (4,'Москва',1)";
-            $query_data[] = "INSERT INTO re_region (region_id,name,country_id) VALUES (5,'Киев',2)";
+            $query_data[] = "INSERT INTO re_region (region_id,name,country_id) VALUES (1,'Москва',1)";
+            $query_data[] = "INSERT INTO re_region (region_id,name,country_id) VALUES (2,'Киев',2)";
+            $query_data[] = "INSERT INTO re_region (region_id,name,country_id) VALUES (3,'Красноярский край',1)";
 
-            $query_data[] = "INSERT INTO re_street (street_id,prefix,name,district_id) VALUES (942,null,'проспект Мира',19)";
-            $query_data[] = "INSERT INTO re_street (street_id,prefix,name,district_id) VALUES (943,null,'Гоголя',20)";
+            $query_data[] = "INSERT INTO re_street (street_id,prefix,name,district_id) VALUES (1,null,'проспект Мира',1)";
+            $query_data[] = "INSERT INTO re_street (street_id,prefix,name,district_id) VALUES (2,null,'Гоголя',2)";
+            $query_data[] = "INSERT INTO re_street (street_id,prefix,name,district_id) VALUES (3,null,'Авиаторов',3)";
 
             $query_data[] = "INSERT INTO re_news (title,description,date,img,img_preview,anons) VALUES ('Установка успешна','Демо-версия активна 30 дней. Вы можете ознакомиться с функциями движка.',".time().",'','','Поздравляем с успешной установкой движка')";
-
-            $query_data[] = "INSERT INTO re_data (id,user_id,type_id,topic_id,country_id,city_id,metro_id,district_id,street,price,text,contact,date_added,agent_tel,room_count,elite,session_id,active,sub_id1,sub_id2,reviews_count,hot,floor,floor_count,walls,balcony,square_all,square_live,square_kitchen,bathroom,is_telephone,furniture,plate,agent_email,number,spec,floor_cover,square_room,is_kitchen,region_id,street_id, geo_lat, geo_lng) VALUES (1,1,0,25,1,1,1,19,'',5000000,'окна выходят в зеленый дворик',null,{ts '".date('Y-m-d H:i:s.')."'},null,3,0,'',1,0,0,0,1,8,16,'кирпич','есть','80','60','20','раздельный','1','1','электро','','46',0,null,null,0,4,942,55.781296,37.634074)";
-            $query_data[] = "INSERT INTO re_data (id,user_id,type_id,topic_id,country_id,city_id,metro_id,district_id,street,price,text,contact,date_added,agent_tel,room_count,elite,session_id,active,sub_id1,sub_id2,reviews_count,hot,floor,floor_count,walls,balcony,square_all,square_live,square_kitchen,bathroom,is_telephone,furniture,plate,agent_email,number,spec,floor_cover,square_room,is_kitchen,region_id,street_id, geo_lat, geo_lng) VALUES (2,1,0,24,2,2,2,20,'',2000000,'квартира в новом районе с развитой инфраструктурой',null,{ts '".date('Y-m-d H:i:s.')."'},null,2,0,'',1,0,0,0,1,5,10,'монолит','есть','70','50','20','раздельный','1','1','газ','','123',0,null,null,0,5,943,50.353835,30.690573)";
-            
-            $query_data[] = "INSERT INTO re_image (image_id,normal,preview) VALUES (62,'img5976_1326002261_1.jpg','prv5976_1326002261_1.jpg')";
-            $query_data[] = "INSERT INTO re_image (image_id,normal,preview) VALUES (63,'img5976_1326002261_2.jpg','prv5976_1326002261_2.jpg')";
-            $query_data[] = "INSERT INTO re_image (image_id,normal,preview) VALUES (64,'img5976_1326002261_3.jpg','prv5976_1326002261_3.jpg')";
-            $query_data[] = "INSERT INTO re_image (image_id,normal,preview) VALUES (65,'img5976_1326002261_4.jpg','prv5976_1326002261_4.jpg')";
-            $query_data[] = "INSERT INTO re_image (image_id,normal,preview) VALUES (66,'img5976_1326002399_1.jpg','prv5976_1326002399_1.jpg')";
-            $query_data[] = "INSERT INTO re_image (image_id,normal,preview) VALUES (67,'img5976_1326002399_2.jpg','prv5976_1326002399_2.jpg')";
-            $query_data[] = "INSERT INTO re_image (image_id,normal,preview) VALUES (68,'img5976_1326002399_3.jpg','prv5976_1326002399_3.jpg')";
-            $query_data[] = "INSERT INTO re_image (image_id,normal,preview) VALUES (69,'img5976_1326002399_4.jpg','prv5976_1326002399_4.jpg')";
-            
-            $query_data[] = "INSERT INTO re_data_image (data_image_id,id,image_id,sort_order) VALUES (135,1,62,63)";
-            $query_data[] = "INSERT INTO re_data_image (data_image_id,id,image_id,sort_order) VALUES (136,1,63,64)";
-            $query_data[] = "INSERT INTO re_data_image (data_image_id,id,image_id,sort_order) VALUES (137,1,64,65)";
-            $query_data[] = "INSERT INTO re_data_image (data_image_id,id,image_id,sort_order) VALUES (138,1,65,62)";
-            $query_data[] = "INSERT INTO re_data_image (data_image_id,id,image_id,sort_order) VALUES (139,2,66,67)";
-            $query_data[] = "INSERT INTO re_data_image (data_image_id,id,image_id,sort_order) VALUES (140,2,67,68)";
-            $query_data[] = "INSERT INTO re_data_image (data_image_id,id,image_id,sort_order) VALUES (141,2,68,69)";
-            $query_data[] = "INSERT INTO re_data_image (data_image_id,id,image_id,sort_order) VALUES (142,2,69,66)";
+																																																							   
+            $query_data[] = "INSERT INTO re_data (id,user_id,type_id,topic_id,country_id,city_id,metro_id,district_id,price,text,contact,date_added,agent_tel,room_count,elite,session_id,active,sub_id1,sub_id2,reviews_count,hot,floor,floor_count,walls,balcony,square_all,square_live,square_kitchen,bathroom,is_telephone,furniture,plate,agent_email,number,spec,floor_cover,square_room,is_kitchen,region_id,street_id, geo_lat, geo_lng, image) VALUES (1,1,0,25,1,1,1,1,10000000,'Окна выходят в зеленый дворик',null,{ts '".date('Y-m-d H:i:s.')."'},null,3,0,'',1,0,0,0,1,8,16,'кирпич','есть','80','60','20','раздельный','1','1','электро','','46',0,null,null,0,1,1,55.781296,37.634074, '".'a:3:{i:0;a:4:{s:7:"preview";s:33:"prv5886e8b224565_1485236402_1.jpg";s:6:"normal";s:33:"img5886e8b224565_1485236402_1.jpg";s:4:"type";s:7:"graphic";s:4:"mime";s:3:"jpg";}i:1;a:4:{s:7:"preview";s:33:"prv5886e8b24fc25_1485236402_2.jpg";s:6:"normal";s:33:"img5886e8b24fc25_1485236402_2.jpg";s:4:"type";s:7:"graphic";s:4:"mime";s:3:"jpg";}i:2;a:4:{s:7:"preview";s:33:"prv5886e8b275906_1485236402_3.jpg";s:6:"normal";s:33:"img5886e8b275906_1485236402_3.jpg";s:4:"type";s:7:"graphic";s:4:"mime";s:3:"jpg";}}'."')";
+            $query_data[] = "INSERT INTO re_data (id,user_id,type_id,topic_id,country_id,city_id,metro_id,district_id,price,text,contact,date_added,agent_tel,room_count,elite,session_id,active,sub_id1,sub_id2,reviews_count,hot,floor,floor_count,walls,balcony,square_all,square_live,square_kitchen,bathroom,is_telephone,furniture,plate,agent_email,number,spec,floor_cover,square_room,is_kitchen,region_id,street_id, geo_lat, geo_lng, image) VALUES (2,1,0,24,2,2,2,2,7000000,'Квартира в новом районе с развитой инфраструктурой',null,{ts '".date('Y-m-d H:i:s.')."'},null,2,0,'',1,0,0,0,1,5,10,'монолит','есть','70','50','20','раздельный','1','1','газ','','21',0,null,null,0,2,2,50.354024,30.690814, '".'a:3:{i:0;a:4:{s:7:"preview";s:33:"prv5886e83213fae_1485236274_1.jpg";s:6:"normal";s:33:"img5886e83213fae_1485236274_1.jpg";s:4:"type";s:7:"graphic";s:4:"mime";s:3:"jpg";}i:1;a:4:{s:7:"preview";s:33:"prv5886e83240190_1485236274_2.jpg";s:6:"normal";s:33:"img5886e83240190_1485236274_2.jpg";s:4:"type";s:7:"graphic";s:4:"mime";s:3:"jpg";}i:2;a:4:{s:7:"preview";s:33:"prv5886e832671b5_1485236274_3.jpg";s:6:"normal";s:33:"img5886e832671b5_1485236274_3.jpg";s:4:"type";s:7:"graphic";s:4:"mime";s:3:"jpg";}}'."')";
+            $query_data[] = "INSERT INTO re_data (id,user_id,type_id,topic_id,country_id,city_id,metro_id,district_id,price,text,contact,date_added,agent_tel,room_count,elite,session_id,active,sub_id1,sub_id2,reviews_count,hot,floor,floor_count,walls,balcony,square_all,square_live,square_kitchen,bathroom,is_telephone,furniture,plate,agent_email,number,spec,floor_cover,square_room,is_kitchen,region_id,street_id, geo_lat, geo_lng, image) VALUES (3,1,0,24,1,3,0,3,5000000,'Квартира в элитном доме. Рядом большой ТЦ, школы и детские сады.',null,{ts '".date('Y-m-d H:i:s.')."'},null,2,0,'',1,0,0,0,1,5,10,'монолит','есть','70','50','20','раздельный','1','1','газ','','41',0,null,null,0,3,3,56.048614,92.911570, '".'a:3:{i:0;a:4:{s:7:"preview";s:33:"prv5886e7ca9964d_1485236170_1.jpg";s:6:"normal";s:33:"img5886e7ca9964d_1485236170_1.jpg";s:4:"type";s:7:"graphic";s:4:"mime";s:3:"jpg";}i:1;a:4:{s:7:"preview";s:33:"prv5886e7cadb784_1485236170_2.jpg";s:6:"normal";s:33:"img5886e7cadb784_1485236170_2.jpg";s:4:"type";s:7:"graphic";s:4:"mime";s:3:"jpg";}i:2;a:4:{s:7:"preview";s:33:"prv5886e7cb1330e_1485236171_3.jpg";s:6:"normal";s:33:"img5886e7cb1330e_1485236171_3.jpg";s:4:"type";s:7:"graphic";s:4:"mime";s:3:"jpg";}}'."')";
             
             $query_data[] = "INSERT INTO re_menu (menu_id,name,sort_order,tag) VALUES (21,'Верхнее меню',0,'right_menu')";
 
@@ -297,8 +283,16 @@ INSERT INTO `".DB_PREFIX."_topic` (`id`, `name`, `active`, `parent_id`, `order`,
             
 
             foreach ( $query_data as $query ) {
-                $this->db->exec($query);
+                $stmt=$DBC->query($query, array(), $success);
+		if ( !$stmt ) {
+		    echo $DBC->getLastError().'<br>';
+		}
             }
+            
+            require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php');
+            require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/form/contactus.php');
+            $contactus_form = new contactus_Form();
+            
             
         }
         
@@ -313,7 +307,7 @@ INSERT INTO `".DB_PREFIX."_topic` (`id`, `name`, `active`, `parent_id`, `order`,
      */
     function parse_sql_file ( $filename ) {
         global $ETOWN_LANG;
-        
+        $DBC=DBC::getInstance();
         $handle = fopen($filename, "r");
         if (!$handle ) {
             $this->riseError($ETOWN_LANG->unalble_to_open_file.' '.$filename);
@@ -322,18 +316,14 @@ INSERT INTO `".DB_PREFIX."_topic` (`id`, `name`, `active`, `parent_id`, `order`,
         $data = fread($handle, filesize($filename));
         fclose($handle);
         $queries = explode('#', $data);
-        //echo '<pre>';
-        //print_r($queries);
         foreach ( $queries as $query ) {
-            $this->db->exec($query);
+           $stmt=$DBC->query($query);
         }
         if ( !$this->get_admin_user() ) {
             $query = "INSERT INTO re_user (user_id,login,pass,active,reg_date,password,fio,email,account,group_id,phone,site,imgfile,mobile,icq) VALUES (1,'admin','admin',0,null,'21232f297a57a5a743894a0e4a801fc3','Администратор','kondin@etown.ru','0',1,'Телефон','http://www.sitebill.ru','img5976_1326002028_902.jpg','','73072365')";            
-            $this->db->exec($query);
+            $stmt=$DBC->query($query);
         }
         return true;
-        
-        //echo $data;
     }
 
     /**
@@ -341,13 +331,15 @@ INSERT INTO `".DB_PREFIX."_topic` (`id`, `name`, `active`, `parent_id`, `order`,
      * @return boolean
      */
     function get_admin_user () {
+    	$DBC=DBC::getInstance();
         $query = "select * from ".DB_PREFIX."_user where login='admin'";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['user_id'] > 0 ) {
-            return $this->db->row['user_id'];
+        $stmt=$DBC->query($query);
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	if ( $ar['user_id'] > 0 ) {
+        		return $ar['user_id'];
+        	}
         }
         return false;
     }
 }
-?>

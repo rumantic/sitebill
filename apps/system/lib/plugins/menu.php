@@ -19,22 +19,21 @@ class menu extends Object_Manager {
         global $smarty;
         
         $query = "select ms.*, m.tag from ".DB_PREFIX."_menu m, ".DB_PREFIX."_menu_structure ms where m.menu_id=ms.menu_id order by ms.sort_order";
-        //echo $query;
-        
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+			
         $ra = array();
         $i = 0;
-        while ( $this->db->fetch_assoc() ) {
-            $ra[$this->db->row['tag']][] = $this->db->row;
-            //$i++;
+        if($stmt){
+        	while($ar=$DBC->fetch($stmt)){
+        		$ra[$ar['tag']][] = $ar;
+        	}
         }
-        foreach ( $ra as $tag => $menu_structure ) {
-            //echo '<pre>';
-            //print_r($menu_structure);
-            //echo '</pre>';
-            $smarty->assign($tag, $menu_structure);
+        if(!empty($ra)){
+        	foreach ( $ra as $tag => $menu_structure ) {
+        		$smarty->assign($tag, $menu_structure);
+        	}
         }
         return true;
     }
 }
-?>

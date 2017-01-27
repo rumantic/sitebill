@@ -142,14 +142,14 @@ $(document).ready(function(){
 		<ul class="nav nav-tabs" id="form_tab">
 		{foreach from=$form_elements.public key=tab item=tab_elements}
 			{assign var=tab_id value=md5($tab)}
-			<li><a href="#{$tab_id}" data-toggle="tab">{$tab}</a></li>
+			<li><a href="#t{$tab_id}" data-toggle="tab">{$tab}</a></li>
 		{/foreach}
 		</ul>
 		<div class="tab-content">
 		{foreach name=tbf from=$form_elements.public key=tab item=tab_elements}
 		
 			{assign var=tab_id value=md5($tab)}
-			<div class="tab-pane fade in{if $smarty.foreach.tbf.iteration==1} active{/if}" id="{$tab_id}">
+			<div class="tab-pane fade in{if $smarty.foreach.tbf.iteration==1} active{/if}" id="t{$tab_id}">
 			
 				<!-- <h1>{$tab}</h1> -->
 				{foreach from=$tab_elements item=element}

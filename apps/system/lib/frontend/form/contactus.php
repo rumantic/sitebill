@@ -21,7 +21,7 @@ class contactus_Form extends Object_Manager {
      * @param void
      * @return string
      */
-    function main () {
+    /*function main () {
 	    require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
 	    $data_model = new Data_Model();
 	    $form_data = $this->data_model;
@@ -40,18 +40,9 @@ class contactus_Form extends Object_Manager {
 			        
 			    } else {
 			        $order_table = $this->add_data($form_data[$this->table_name]);
-                    /*require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
-
-                    $mailer = new Mailer();*/
                     $subject = $_SERVER['SERVER_NAME'].': '.Multilanguage::_('NEW_MESSAGE_FROM_SITE','system');
                     $to = $this->getConfigValue('order_email_acceptor');
-                    $from = $this->getConfigValue('order_email_acceptor');
-                    
-                    /*if ( $this->getConfigValue('use_smtp') ) {
-                        $mailer->send_smtp($to, $from, $subject, $order_table, 1);
-                    } else {
-                        $mailer->send_simple($to, $from, $subject, $order_table, 1);
-                    }*/
+                    $from = $this->getConfigValue('system_email');
                     $this->sendFirmMail($to, $from, $subject, $order_table);
                     $rs = '<h1>'.Multilanguage::_('MESSAGE_SENT','system').'</h1>';
                     $rs .= $order_table;
@@ -63,6 +54,33 @@ class contactus_Form extends Object_Manager {
 			default : {
 			    $rs .= $this->get_form($form_data[$this->table_name], 'new', 0, Multilanguage::_('L_TEXT_SEND'), SITEBILL_MAIN_URL.'/contactus/');
 			}
+		}
+		return $rs;
+	}*/
+	
+	protected function _defaultAction(){
+		$rs='';
+		$form_data = $this->data_model;
+		$rs .= $this->get_form($form_data[$this->table_name], 'new', 0, Multilanguage::_('L_TEXT_SEND'), SITEBILL_MAIN_URL.'/contactus/');
+		return $rs;
+	}
+	
+	protected function _new_doneAction(){
+		$rs='';
+		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+		$data_model = new Data_Model();
+		$form_data = $this->data_model;
+		$form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
+	    if ( !$this->check_data( $form_data[$this->table_name] ) ) {
+			$rs .= $this->get_form($form_data[$this->table_name], 'new', 0, Multilanguage::_('L_TEXT_SEND'), SITEBILL_MAIN_URL.'/contactus/');
+		} else {
+			$order_table = $this->add_data($form_data[$this->table_name]);
+			$subject = $_SERVER['SERVER_NAME'].': '.Multilanguage::_('NEW_MESSAGE_FROM_SITE','system');
+            $to = $this->getConfigValue('order_email_acceptor');
+            $from = $this->getConfigValue('system_email');
+            $this->sendFirmMail($to, $from, $subject, $order_table);
+            $rs = '<h1>'.Multilanguage::_('MESSAGE_SENT','system').'</h1>';
+            $rs .= $order_table;
 		}
 		return $rs;
 	}
@@ -93,15 +111,6 @@ class contactus_Form extends Object_Manager {
 	    $rs .= $table_view->compile_view($form_data);
 	    $rs .= '</table>';
 	    
-	    /*
-	    $query = $data_model->get_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data);
-	    //echo $query.'<br>';
-	    
-	    $this->db->exec($query);
-	    $new_record_id = $this->db->last_insert_id();
-	    //echo "new_record_id = $new_record_id<br>";
-	    //echo $query;
-	     */
 	    return $rs;
 	}
 	
@@ -133,6 +142,28 @@ class contactus_Form extends Object_Manager {
 		}
 		return $form_data;
 	}
+	
+	/**
+	 * Check data
+	 * @param array $form_data
+	 * @return boolean
+	 */
+	function check_data ( $form_data/*, &$error_fields=array() */) {
+	    $check_status = parent::check_data($form_data);
+	    if ( !$check_status ) {
+		return $check_status;
+	    }
+	    if ( $this->getConfigValue('apps.akismet.enable') ) {
+		require_once (SITEBILL_DOCUMENT_ROOT . '/apps/akismet/admin/admin.php');
+		$akismet_admin = new akismet_admin();
+		if ( $akismet_admin->akismet_check($form_data['text']['value'].' '.$form_data['email']['value']) ) {
+		    $this->riseError($akismet_admin->GetErrorMessage());
+		    return false;
+		}
+	    }
+	    return true;
+	}
+	
 	
     /**
      * Get contactus model

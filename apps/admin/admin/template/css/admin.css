@@ -526,29 +526,74 @@ background-color: #8dbdd8;
 	position:relative;
 	top:1px;
 }
-.row3hot {
+
+.standart_admin_grid .row3hot {
     background-color: #ffe4cd;
 }
 
-.row3hot:hover {
+.standart_admin_grid .row3hot:hover {
     background-color: #edf4fa;
-    cursor: pointer;
 }
-.row3hot td {
-    border-bottom: 1px dotted;
-}
-
-.row3best {
+.standart_admin_grid .row3best {
     background-color: #b9ff6f;
 }
-
-.row3best:hover {
+.standart_admin_grid .row3best:hover {
     background-color: #edf4fa;
-    cursor: pointer;
 }
-.row3best td {
+.standart_admin_grid .user_info {overflow: hidden;}
+.standart_admin_grid .user_info .user_info_media {float: left;}
+.standart_admin_grid .user_info img {width: 70px;}
+.standart_admin_grid .user_info .user_info_data {padding-left: 90px;}
+.standart_admin_grid .user_info_data_title {display: block; font-weight: bold; margin-bottom: 10px;}
+.standart_admin_grid .notactive {color: red;}
+.standart_admin_grid .user-info2 {color: #0088cc; text-decoration: underline; cursor: pointer;}
+.new_admin_grid .row_status_id1 {
+  background-color: #D0F2CD;
+  background-color: #6fb3e0 !important;
+      background-color: #BFDEBA !important;
+    border-color: #BFDEBA;
+}
+.new_admin_grid .row_status_id2 {
+  background-color: #FDDBDB;
+  background-color: #fee188 !important;
+    border-color: #fee188;
+}
+.new_admin_grid .row_status_id3 {
+  background-color: #FD9B9B;
+      background-color: #EA91B3 !important;
+    border-color: #EA91B3;
+}
+.new_admin_grid .archived {
+    background-color: #eee !important;
+    opacity: 0.5 !important;
+}
+.new_admin_grid .row3hot td:first-child {
+    /*border-bottom: 1px solid Red;*/
+    border-left: 2px solid #d53f40;
+}
+.new_admin_grid tr {
+    opacity:0.85;
+    font-weight: bold;
+}
+.new_admin_grid tr:hover {
+    opacity:1;
+}
+
+.standart_admin_grid .row3best td {
     border-bottom: 1px dotted;
 }
+.new_admin_grid tr td:first-child {
+    background-color: #F2f2f2 !important;
+    
+}
+.new_admin_grid tr.notactive td:first-child {
+    background-color: #4A4949 !important;
+}
+.new_admin_grid tr.notactive td {
+    color: #C10404 ;
+}
+
+
 .apps_path {
 	padding: 5px;
 	margin-bottom: 5px;
@@ -750,3 +795,9 @@ div#mapviewer_edit_window div label {
 #geodata > div img {
 	max-width: none;
 }
+
+.view_table_uploads img {
+	width: 150px;
+    float: left;
+    margin: 10px;
+}    

@@ -22,10 +22,15 @@ class front_gridmanager_admin extends table_admin {
 				`title` VARCHAR(255) NOT NULL, 
 			  PRIMARY KEY (`frontgrid_id`)
 		) ENGINE=MyISAM DEFAULT CHARSET=".DB_ENCODING.";";
-		$this->db->exec($query);
-	
-		$rs = 'Приложение установлено';
-		return $rs;
+		$DBC=DBC::getInstance();
+		$success=false;
+    	$stmt=$DBC->query($query, array(), $rows, $success);
+        if(!$success){
+        	$rs = Multilanguage::_('L_APPLICATION_INSTALLED_ERROR');
+        }else{
+        	$rs = Multilanguage::_('L_APPLICATION_INSTALLED');
+        }
+        return $rs;
 	}
 	
 	function getTopMenu () {
@@ -323,9 +328,10 @@ class front_gridmanager_admin extends table_admin {
 		$columns=json_decode($fields, true);
 		print_r($columns);
 		
+		
 		if(count($fields)==0){
-			$q="DELETE FROM ".DB_PREFIX."_table_frontgrid WHERE `frontgrid_id`=".$grid_id;
-			$this->db->exec($q);
+			$query="DELETE FROM ".DB_PREFIX."_table_frontgrid WHERE `frontgrid_id`=".$grid_id;
+			$stmt=$DBC->query($query);
 			return;
 		}
 		
@@ -333,8 +339,8 @@ class front_gridmanager_admin extends table_admin {
 			$columns_array[$col['name']]=$col;
 		}
 		
-		$q="DELETE FROM ".DB_PREFIX."_table_frontgrid WHERE `frontgrid_id`=".$grid_id;
-		$this->db->exec($q);
+		$query="DELETE FROM ".DB_PREFIX."_table_frontgrid WHERE `frontgrid_id`=".$grid_id;
+		$stmt=$DBC->query($query);
 		
 		
 		if($grid_id==0){

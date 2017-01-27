@@ -6,7 +6,7 @@ $(document).ready(function(){
 	        ui=JSON.parse(update_info_json_string);
 	        //console.log(ui);
 	        jQuery.ajax({
-	        	url: 'http://www.sitebill.ru/apps/update/js/ajax.php',
+	        	url: 'https://www.sitebill.ru/apps/update/js/ajax.php',
 	        	async: false,
 	        	type: 'get',
 	        	dataType: 'jsonp',

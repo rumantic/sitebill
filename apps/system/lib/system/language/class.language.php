@@ -55,34 +55,38 @@ class Language extends SiteBill {
     	}else{
     		$query = "select * from ".DB_PREFIX."_$table_name where language_id=$language_id and product_id=$value";
     	}
-        //echo $query;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row[$key] > 0 ) {
-            return $this->db->row;
-        }
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			if ( $ar[$key] > 0 ) {
+				return $ar;
+			}
+		}
         return false;
     }
     
 	function get_version_list ( $table_name, $language_id=0, $params=array() ) {
 		$ret=array();
 		$where=array();
+		$DBC=DBC::getInstance();
 		if(count($params)==0){
 			$query = "SELECT * FROM ".DB_PREFIX."_".$table_name." WHERE language_id=".$language_id;
+			$stmt=$DBC->query($query);
 		}else{
 			foreach($params as $k=>$v){
-				$where[]="`".$k."`='".mysql_real_escape_string($v)."'";
+				$where[]="`".$k."`=?";
+				$where_d[]=$v;
 			}
-			$query = "SELECT * FROM ".DB_PREFIX."_".$table_name." WHERE language_id=".$language_id." AND ".implode(' AND ',$where);
+			$query = "SELECT * FROM ".DB_PREFIX."_".$table_name." WHERE language_id=".$language_id." AND ".implode(' AND ', $where);
+			$stmt=$DBC->query($query, $where_d);
 		}
         
-        $this->db->exec($query);
-        if($this->db->success){
-        	while($this->db->fetch_assoc()){
-        		$ret[]=$this->db->row;
-        	}
-        }
-        return $ret;
+        if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				$ret[]=$ar;
+			}
+		}
+		return $ret;
     }
 }
-?>

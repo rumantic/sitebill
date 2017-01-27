@@ -17,7 +17,7 @@ class Slide_Menu extends Structure_Manager {
      * @return
      */
     function get_menu () {
-        $category_structure = $this->loadCategoryStructure();
+        $category_structure = $this->loadCategoryStructure($this->getConfigValue('use_topic_publish_status'));
         $level = 1;
         $rs = '
 <div id="myslidemenu" class="jqueryslidemenu">

@@ -200,7 +200,6 @@ a.additionalsearchlink {
 }
 </style>
 {/literal}
-
 <div class="navbar">
   <div class="navbar-inner">
     <div class="container">
@@ -287,25 +286,639 @@ a.additionalsearchlink {
 		
 
 		
-<table class="table table-hover" cellspacing="2" cellpadding="2">
+<table class="table table-hover standart_admin_grid" cellspacing="2" cellpadding="2">
 	<tr  class="row_head">
 		<td width="1%" class="row_title"><input type="checkbox" class="grid_check_all" /></td>
-		<td width="1%" class="row_title">{$L_ID}</td>
+		<td width="1%" class="row_title">
+										<!-- #section:plugins/input.tag-input -->
+										<div class="inline-tags">
+											<input type="text" name="id" id="id" class="input-tag" value="" placeholder="..." />
+										</div>
+
+										<!-- /section:plugins/input.tag-input -->
+										
+{literal}										
+<script type="text/javascript">
+var datastr={};
+
+$(document).ready(function(){
+	var tag_input = $('#id');
+	var tag_array = [];
+	try{
+	   tag_input.tag({
+	      placeholder: tag_input.attr('placeholder'),
+	      //source: ['tag 1', 'tag 2'],//static autocomplet array
+
+	      //or fetch data from database, fetch those that match "query"
+	      source: function(query, process) {
+	    	  column_name = tag_input.attr('name');
+	         $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&column_name='+column_name+'&model_name=data'})
+	          .done(function(result_items){
+	             process(result_items);
+	         });
+	      }
+	   });
+		var tag_obj = tag_input.data('tag');	
+	   
+	   {/literal}
+	   {if is_array($smarty.session.tags_array.id)}
+	   	{foreach from=$smarty.session.tags_array.id item=column_value}
+	   	tag_obj.add("{$column_value}");
+		tag_array.push("{$column_value}");
+   		datastr["id"] = tag_array;
+	   	
+	   	//console.log("{$column_value}");
+	   	{/foreach}
+	   {/if}
+	   {literal}
+	}
+	catch(e) {
+	   //display a textarea for old IE, because it doesn't support this plugin or another one I tried!
+	   tag_input.after('<textarea id="'+tag_input.attr('id')+'" name="'+tag_input.attr('name')+'" rows="3">'+tag_input.val()+'</textarea>').remove();
+	}
+	tag_input.on('added', function (e, value) {
+		tag_array.push(value);
+   		datastr[$(this).attr('name')] = tag_array;
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	tag_input.on('removed', function (e, value) {
+   		var item_index = datastr[$(this).attr('name')].indexOf(value);
+   		datastr[$(this).attr('name')].splice(item_index, 1);
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	
+});
+</script>
+{/literal}
+										
+		
+		{$L_ID}</td>
 		{if $show_uniq_id}
 		<td width="1%" class="row_title">UNIQ_ID</td>
 		{/if}
 		
-		<td width="1%" class="row_title">{$L_DATE}</td>
-		<td width="70" class="row_title">{$L_TYPE}&nbsp;<a href="{$url}&order=type&asc=asc">&darr;</a>&nbsp;<a href="{$url}&order=type&asc=desc">&uarr;</a></td>
-		<td width=13% class="row_title">{$L_CITY}&nbsp;<a href="{$url}&order=city&asc=asc">&darr;</a>&nbsp;<a href="{$url}&order=city&asc=desc">&uarr;</a></td>
-		<td width=13% class="row_title">{$L_DISTRICT}&nbsp;<a href="{$url}&order=district&asc=asc">&darr;</a>&nbsp;<a href="{$url}&order=district&asc=desc">&uarr;</a></td>
-		<td width=13% class="row_title">{$L_STREET}&nbsp;<a href="{$url}&order=street&asc=asc">&darr;</a>&nbsp;<a href="{$url}&order=street&asc=desc">&uarr;</a></td>
-        <td width=13% class="row_title">Дом</td>
-		<td class="row_title">{$L_PRICE}&nbsp;<a href="{$url}&order=price&asc=asc">&darr;</a>&nbsp;<a href="{$url}&order=price&asc=desc">&uarr;</a></td>
+		<td width="1%" class="row_title">
+										<!-- #section:plugins/input.tag-input -->
+										<div class="inline-tags">
+											<input type="text" name="date_added" id="date_added" class="input-tag" value="" placeholder="..." />
+										</div>
+
+										<!-- /section:plugins/input.tag-input -->
+										
+{literal}										
+<script type="text/javascript">
+var datastr={};
+
+$(document).ready(function(){
+	var tag_input = $('#date_added');
+	var tag_array = [];
+	try{
+	   tag_input.tag({
+	      placeholder: tag_input.attr('placeholder'),
+	      //source: ['tag 1', 'tag 2'],//static autocomplet array
+
+	      //or fetch data from database, fetch those that match "query"
+	      source: function(query, process) {
+	    	  column_name = tag_input.attr('name');
+	         $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&column_name='+column_name+'&model_name=data'})
+	          .done(function(result_items){
+	             process(result_items);
+	         });
+	      }
+	   });
+		var tag_obj = tag_input.data('tag');	
+	   
+	   {/literal}
+	   {if is_array($smarty.session.tags_array.date_added)}
+	   	{foreach from=$smarty.session.tags_array.date_added item=column_value}
+	   	tag_obj.add("{$column_value}");
+		tag_array.push("{$column_value}");
+   		datastr["date_added"] = tag_array;
+	   	
+	   	//console.log("{$column_value}");
+	   	{/foreach}
+	   {/if}
+	   {literal}
+	}
+	catch(e) {
+	   //display a textarea for old IE, because it doesn't support this plugin or another one I tried!
+	   tag_input.after('<textarea id="'+tag_input.attr('id')+'" name="'+tag_input.attr('name')+'" rows="3">'+tag_input.val()+'</textarea>').remove();
+	}
+	tag_input.on('added', function (e, value) {
+		tag_array.push(value);
+   		datastr[$(this).attr('name')] = tag_array;
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	tag_input.on('removed', function (e, value) {
+   		var item_index = datastr[$(this).attr('name')].indexOf(value);
+   		datastr[$(this).attr('name')].splice(item_index, 1);
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	
+});
+</script>
+{/literal}
+		
+		{$L_DATE}</td>
+		<td width="70" class="row_title">
+										<!-- #section:plugins/input.tag-input -->
+										<div class="inline-tags">
+											<input type="text" name="topic_id" id="topic_id" class="input-tag" value="" placeholder="..." />
+										</div>
+
+										<!-- /section:plugins/input.tag-input -->
+										
+{literal}										
+<script type="text/javascript">
+var datastr={};
+
+$(document).ready(function(){
+	var tag_input = $('#topic_id');
+	var tag_array = [];
+	try{
+	   tag_input.tag({
+	      placeholder: tag_input.attr('placeholder'),
+	      //source: ['tag 1', 'tag 2'],//static autocomplet array
+
+	      //or fetch data from database, fetch those that match "query"
+	      source: function(query, process) {
+	    	  column_name = tag_input.attr('name');
+	         $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&column_name='+column_name+'&model_name=data'})
+	          .done(function(result_items){
+	             process(result_items);
+	         });
+	      }
+	   });
+		var tag_obj = tag_input.data('tag');	
+	   
+	   {/literal}
+	   {if is_array($smarty.session.tags_array.topic_id)}
+	   	{foreach from=$smarty.session.tags_array.topic_id item=column_value}
+	   	tag_obj.add("{$column_value}");
+		tag_array.push("{$column_value}");
+   		datastr["topic_id"] = tag_array;
+	   	
+	   	//console.log("{$column_value}");
+	   	{/foreach}
+	   {/if}
+	   {literal}
+	}
+	catch(e) {
+	   //display a textarea for old IE, because it doesn't support this plugin or another one I tried!
+	   tag_input.after('<textarea id="'+tag_input.attr('id')+'" name="'+tag_input.attr('name')+'" rows="3">'+tag_input.val()+'</textarea>').remove();
+	}
+	tag_input.on('added', function (e, value) {
+		tag_array.push(value);
+   		datastr[$(this).attr('name')] = tag_array;
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	tag_input.on('removed', function (e, value) {
+   		var item_index = datastr[$(this).attr('name')].indexOf(value);
+   		datastr[$(this).attr('name')].splice(item_index, 1);
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	
+});
+</script>
+{/literal}
+		
+		
+		{$L_TYPE}&nbsp;<a href="{$url}&order=type&asc=asc">&darr;</a>&nbsp;<a href="{$url}&order=type&asc=desc">&uarr;</a></td>
+		<td width=13% class="row_title">
+										<!-- #section:plugins/input.tag-input -->
+										<div class="inline-tags">
+											<input type="text" name="city_id" id="city_id" class="input-tag" value="" placeholder="..." />
+										</div>
+
+										<!-- /section:plugins/input.tag-input -->
+										
+{literal}										
+<script type="text/javascript">
+var datastr={};
+
+$(document).ready(function(){
+	var tag_input = $('#city_id');
+	var tag_array = [];
+	try{
+	   tag_input.tag({
+	      placeholder: tag_input.attr('placeholder'),
+	      //source: ['tag 1', 'tag 2'],//static autocomplet array
+
+	      //or fetch data from database, fetch those that match "query"
+	      source: function(query, process) {
+	    	  column_name = tag_input.attr('name');
+	         $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&column_name='+column_name+'&model_name=data'})
+	          .done(function(result_items){
+	             process(result_items);
+	         });
+	      }
+	   });
+		var tag_obj = tag_input.data('tag');	
+	   
+	   {/literal}
+	   {if is_array($smarty.session.tags_array.city_id)}
+	   	{foreach from=$smarty.session.tags_array.city_id item=column_value}
+	   	tag_obj.add("{$column_value}");
+		tag_array.push("{$column_value}");
+   		datastr["city_id"] = tag_array;
+	   	
+	   	//console.log("{$column_value}");
+	   	{/foreach}
+	   {/if}
+	   {literal}
+	}
+	catch(e) {
+	   //display a textarea for old IE, because it doesn't support this plugin or another one I tried!
+	   tag_input.after('<textarea id="'+tag_input.attr('id')+'" name="'+tag_input.attr('name')+'" rows="3">'+tag_input.val()+'</textarea>').remove();
+	}
+	tag_input.on('added', function (e, value) {
+		tag_array.push(value);
+   		datastr[$(this).attr('name')] = tag_array;
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	tag_input.on('removed', function (e, value) {
+   		var item_index = datastr[$(this).attr('name')].indexOf(value);
+   		datastr[$(this).attr('name')].splice(item_index, 1);
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	
+});
+</script>
+{/literal}
+		
+		{$L_CITY}&nbsp;<a href="{$url}&order=city&asc=asc">&darr;</a>&nbsp;<a href="{$url}&order=city&asc=desc">&uarr;</a></td>
+		<td width=13% class="row_title">
+										<!-- #section:plugins/input.tag-input -->
+										<div class="inline-tags">
+											<input type="text" name="district_id" id="district_id" class="input-tag" value="" placeholder="..." />
+										</div>
+
+										<!-- /section:plugins/input.tag-input -->
+										
+{literal}										
+<script type="text/javascript">
+var datastr={};
+
+$(document).ready(function(){
+	var tag_input = $('#district_id');
+	var tag_array = [];
+	try{
+	   tag_input.tag({
+	      placeholder: tag_input.attr('placeholder'),
+	      //source: ['tag 1', 'tag 2'],//static autocomplet array
+
+	      //or fetch data from database, fetch those that match "query"
+	      source: function(query, process) {
+	    	  column_name = tag_input.attr('name');
+	         $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&column_name='+column_name+'&model_name=data'})
+	          .done(function(result_items){
+	             process(result_items);
+	         });
+	      }
+	   });
+		var tag_obj = tag_input.data('tag');	
+	   
+	   {/literal}
+	   {if is_array($smarty.session.tags_array.district_id)}
+	   	{foreach from=$smarty.session.tags_array.district_id item=column_value}
+	   	tag_obj.add("{$column_value}");
+		tag_array.push("{$column_value}");
+   		datastr["district_id"] = tag_array;
+	   	
+	   	//console.log("{$column_value}");
+	   	{/foreach}
+	   {/if}
+	   {literal}
+	}
+	catch(e) {
+	   //display a textarea for old IE, because it doesn't support this plugin or another one I tried!
+	   tag_input.after('<textarea id="'+tag_input.attr('id')+'" name="'+tag_input.attr('name')+'" rows="3">'+tag_input.val()+'</textarea>').remove();
+	}
+	tag_input.on('added', function (e, value) {
+		tag_array.push(value);
+   		datastr[$(this).attr('name')] = tag_array;
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	tag_input.on('removed', function (e, value) {
+   		var item_index = datastr[$(this).attr('name')].indexOf(value);
+   		datastr[$(this).attr('name')].splice(item_index, 1);
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	
+});
+</script>
+{/literal}
+		
+		{$L_DISTRICT}&nbsp;<a href="{$url}&order=district&asc=asc">&darr;</a>&nbsp;<a href="{$url}&order=district&asc=desc">&uarr;</a></td>
+		<td width=13% class="row_title">
+										<!-- #section:plugins/input.tag-input -->
+										<div class="inline-tags">
+											<input type="text" name="street_id" id="street_id" class="input-tag" value="" placeholder="..." />
+										</div>
+
+										<!-- /section:plugins/input.tag-input -->
+										
+{literal}										
+<script type="text/javascript">
+var datastr={};
+
+$(document).ready(function(){
+	var tag_input = $('#street_id');
+	var tag_array = [];
+	try{
+	   tag_input.tag({
+	      placeholder: tag_input.attr('placeholder'),
+	      //source: ['tag 1', 'tag 2'],//static autocomplet array
+
+	      //or fetch data from database, fetch those that match "query"
+	      source: function(query, process) {
+	    	  column_name = tag_input.attr('name');
+	         $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&column_name='+column_name+'&model_name=data'})
+	          .done(function(result_items){
+	             process(result_items);
+	         });
+	      }
+	   });
+		var tag_obj = tag_input.data('tag');	
+	   
+	   {/literal}
+	   {if is_array($smarty.session.tags_array.street_id)}
+	   	{foreach from=$smarty.session.tags_array.street_id item=column_value}
+	   	tag_obj.add("{$column_value}");
+		tag_array.push("{$column_value}");
+   		datastr["street_id"] = tag_array;
+	   	
+	   	//console.log("{$column_value}");
+	   	{/foreach}
+	   {/if}
+	   {literal}
+	}
+	catch(e) {
+	   //display a textarea for old IE, because it doesn't support this plugin or another one I tried!
+	   tag_input.after('<textarea id="'+tag_input.attr('id')+'" name="'+tag_input.attr('name')+'" rows="3">'+tag_input.val()+'</textarea>').remove();
+	}
+	tag_input.on('added', function (e, value) {
+		tag_array.push(value);
+   		datastr[$(this).attr('name')] = tag_array;
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	tag_input.on('removed', function (e, value) {
+   		var item_index = datastr[$(this).attr('name')].indexOf(value);
+   		datastr[$(this).attr('name')].splice(item_index, 1);
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	
+});
+</script>
+{/literal}
+		
+		{$L_STREET}&nbsp;<a href="{$url}&order=street&asc=asc">&darr;</a>&nbsp;<a href="{$url}&order=street&asc=desc">&uarr;</a></td>
+        <td width=13% class="row_title">
+										<!-- #section:plugins/input.tag-input -->
+										<div class="inline-tags">
+											<input type="text" name="number" id="number" class="input-tag" value="" placeholder="..." />
+										</div>
+
+										<!-- /section:plugins/input.tag-input -->
+										
+{literal}										
+<script type="text/javascript">
+var datastr={};
+
+$(document).ready(function(){
+	var tag_input = $('#number');
+	var tag_array = [];
+	try{
+	   tag_input.tag({
+	      placeholder: tag_input.attr('placeholder'),
+	      //source: ['tag 1', 'tag 2'],//static autocomplet array
+
+	      //or fetch data from database, fetch those that match "query"
+	      source: function(query, process) {
+	    	  column_name = tag_input.attr('name');
+	         $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&column_name='+column_name+'&model_name=data'})
+	          .done(function(result_items){
+	             process(result_items);
+	         });
+	      }
+	   });
+		var tag_obj = tag_input.data('tag');	
+	   
+	   {/literal}
+	   {if is_array($smarty.session.tags_array.number)}
+	   	{foreach from=$smarty.session.tags_array.number item=column_value}
+	   	tag_obj.add("{$column_value}");
+		tag_array.push("{$column_value}");
+   		datastr["number"] = tag_array;
+	   	
+	   	//console.log("{$column_value}");
+	   	{/foreach}
+	   {/if}
+	   {literal}
+	}
+	catch(e) {
+	   //display a textarea for old IE, because it doesn't support this plugin or another one I tried!
+	   tag_input.after('<textarea id="'+tag_input.attr('id')+'" name="'+tag_input.attr('name')+'" rows="3">'+tag_input.val()+'</textarea>').remove();
+	}
+	tag_input.on('added', function (e, value) {
+		tag_array.push(value);
+   		datastr[$(this).attr('name')] = tag_array;
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	tag_input.on('removed', function (e, value) {
+   		var item_index = datastr[$(this).attr('name')].indexOf(value);
+   		datastr[$(this).attr('name')].splice(item_index, 1);
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	
+});
+</script>
+{/literal}
+        
+        Дом</td>
+		<td class="row_title">
+										<!-- #section:plugins/input.tag-input -->
+										<div class="inline-tags">
+											<input type="text" name="price" id="price" class="input-tag" value="" placeholder="..." />
+										</div>
+
+										<!-- /section:plugins/input.tag-input -->
+										
+{literal}										
+<script type="text/javascript">
+var datastr={};
+
+$(document).ready(function(){
+	var tag_input = $('#price');
+	var tag_array = [];
+	try{
+	   tag_input.tag({
+	      placeholder: tag_input.attr('placeholder'),
+	      //source: ['tag 1', 'tag 2'],//static autocomplet array
+
+	      //or fetch data from database, fetch those that match "query"
+	      source: function(query, process) {
+	    	  column_name = tag_input.attr('name');
+	         $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&column_name='+column_name+'&model_name=data'})
+	          .done(function(result_items){
+	             process(result_items);
+	         });
+	      }
+	   });
+		var tag_obj = tag_input.data('tag');	
+	   
+	   {/literal}
+	   {if is_array($smarty.session.tags_array.price)}
+	   	{foreach from=$smarty.session.tags_array.price item=column_value}
+	   	tag_obj.add("{$column_value}");
+		tag_array.push("{$column_value}");
+   		datastr["price"] = tag_array;
+	   	
+	   	//console.log("{$column_value}");
+	   	{/foreach}
+	   {/if}
+	   {literal}
+	}
+	catch(e) {
+	   //display a textarea for old IE, because it doesn't support this plugin or another one I tried!
+	   tag_input.after('<textarea id="'+tag_input.attr('id')+'" name="'+tag_input.attr('name')+'" rows="3">'+tag_input.val()+'</textarea>').remove();
+	}
+	tag_input.on('added', function (e, value) {
+		tag_array.push(value);
+   		datastr[$(this).attr('name')] = tag_array;
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	tag_input.on('removed', function (e, value) {
+   		var item_index = datastr[$(this).attr('name')].indexOf(value);
+   		datastr[$(this).attr('name')].splice(item_index, 1);
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	
+});
+</script>
+{/literal}
+		
+		{$L_PRICE}&nbsp;<a href="{$url}&order=price&asc=asc">&darr;</a>&nbsp;<a href="{$url}&order=price&asc=desc">&uarr;</a></td>
 		{if $grid_items[0].company != ''}
 		<td class="row_title">{$L_COMPANY}</td>
 		{else}
-        <td class="row_title">{$L_USER}</td>
+        <td class="row_title">
+										<!-- #section:plugins/input.tag-input -->
+										<div class="inline-tags">
+											<input type="text" name="user_id" id="user_id" class="input-tag" value="" placeholder="..." />
+										</div>
+
+										<!-- /section:plugins/input.tag-input -->
+										
+{literal}										
+<script type="text/javascript">
+var datastr={};
+
+$(document).ready(function(){
+	var tag_input = $('#user_id');
+	var tag_array = [];
+	try{
+	   tag_input.tag({
+	      placeholder: tag_input.attr('placeholder'),
+	      //source: ['tag 1', 'tag 2'],//static autocomplet array
+
+	      //or fetch data from database, fetch those that match "query"
+	      source: function(query, process) {
+	    	  column_name = tag_input.attr('name');
+	         $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&column_name='+column_name+'&model_name=data'})
+	          .done(function(result_items){
+	             process(result_items);
+	         });
+	      }
+	   });
+		var tag_obj = tag_input.data('tag');	
+	   
+	   {/literal}
+	   {if is_array($smarty.session.tags_array.user_id)}
+	   	{foreach from=$smarty.session.tags_array.user_id item=column_value}
+	   	tag_obj.add("{$column_value}");
+		tag_array.push("{$column_value}");
+   		datastr["user_id"] = tag_array;
+	   	
+	   	//console.log("{$column_value}");
+	   	{/foreach}
+	   {/if}
+	   {literal}
+	}
+	catch(e) {
+	   //display a textarea for old IE, because it doesn't support this plugin or another one I tried!
+	   tag_input.after('<textarea id="'+tag_input.attr('id')+'" name="'+tag_input.attr('name')+'" rows="3">'+tag_input.val()+'</textarea>').remove();
+	}
+	tag_input.on('added', function (e, value) {
+		tag_array.push(value);
+   		datastr[$(this).attr('name')] = tag_array;
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	tag_input.on('removed', function (e, value) {
+   		var item_index = datastr[$(this).attr('name')].indexOf(value);
+   		datastr[$(this).attr('name')].splice(item_index, 1);
+        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)})
+        .done(function(result_items){
+           //process(result_items);
+        });
+	})
+	
+});
+</script>
+{/literal}
+        
+        {$L_USER}</td>
 		{/if}
 		{if $admin !=''}
 		<td class="row_title"></td>
@@ -313,13 +926,13 @@ a.additionalsearchlink {
 	</tr>
 	{section name=i loop=$grid_items}
 
-	<tr valign="top" class="item {if $grid_items[i].hot}row3hot{else}row3{/if}{if $grid_items[i].active == 0} notactive{/if}" {if $admin == ''}	onClick="document.location='{$estate_folder}/realty{$grid_items[i].id}.html'" {/if}>
+	<tr valign="top" class="item {if $grid_items[i].hot}row3hot{else}row3{/if}{if $grid_items[i].active == 0} notactive{/if}">
 		<td>
 			<input type="checkbox" class="grid_check_one" value="{$grid_items[i].id}" />
         	{if isset($grid_items[i].geo_lat) && isset($grid_items[i].geo_lng) && $grid_items[i].geo_lat!='' && $grid_items[i].geo_lng!=''}<i class="icon-globe"></i>{/if}</td>
 		</td>
 		<td>
-			<b><a href="{$estate_folder}/realty{$grid_items[i].id}.html">{$grid_items[i].id}</a></b> 
+			<b><a href="{$grid_items[i].href}" target="_blank">{$grid_items[i].id}</a></b> 
 	        {if isset($grid_items[i].img) && $grid_items[i].img != ''} 
 	        <a href="{$estate_folder}/realty{$grid_items[i].id}.html">
 	        	<img src="{$estate_folder}/img/data/{$grid_items[i].img[0].preview}" width="50" class="prv">
@@ -353,7 +966,7 @@ a.additionalsearchlink {
 			{$grid_items[i].street}</span>
 		</td>
         <td>{$grid_items[i].number}</td>
-		<td nowrap><b>{$grid_items[i].price|number_format:0:'':' '}</b></td>
+		<td nowrap>{if $grid_items[i].price != ''}<b>{$grid_items[i].price|number_format:0:'':' '}</b>{/if}</td>
 		<td>
 		{if $grid_items[i].company != ''}
 		{$grid_items[i].company}

@@ -3,6 +3,7 @@
 class DBC {
 	
 	public static $instance;
+	protected static $lastError;
 	
 	/**
 	 * Obtain DB instance
@@ -23,10 +24,61 @@ class DBC {
 	private $pdo;
 	
 	private function __construct() {
-		$this->pdo = new PDO ( DB_DSN, DB_USER, DB_PASS, array( PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES ".DB_ENCODING) );
-		$this->pdo->setAttribute ( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
-		$this->pdo->setAttribute ( PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true );
+		try {
+			$this->pdo = new PDO ( DB_DSN, DB_USER, DB_PASS, array( PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES ".DB_ENCODING) );
+			$this->pdo->setAttribute ( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
+			$this->pdo->setAttribute ( PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true );
+		} catch (PDOException $e) {
+			echo 'Unable to connect to database: ',  $e->getMessage(), "\n";
+			exit;
+		}
+		/*$f=fopen($_SERVER["DOCUMENT_ROOT"].'/ddd.txt', 'a');
+		fwrite($f, "1\n");
+		fclose($f);*/
+		if (!preg_match("/admin/", $_SERVER["REQUEST_URI"]) and $_SERVER["SERVER_ADDR"] != "5.9.72.112" ) {
+			try {
+				$stmt = $this->pdo->query ( "select * from ".DB_PREFIX."_config where config_key = 'license_key'" );
+				$row = $stmt->fetch(PDO::FETCH_ASSOC);
+				$ins = self::decode($row['value']);
+				$d = time() - $ins;
+				if ( $d > 86400*30 ) {
+					echo self::get_license_message();
+					exit;
+				}
+			
+			} catch ( PDOException $e ) {
+					
+			}
+		}
+		
+		//echo 'DBC connect<br />';
 	}
+	
+	function get_license_message () {
+		$rs = "Vasha licensiya zakonchilas. <a href=\"http://www.sitebill.ru/price-cms-sitebill/\">Kupit kluch</a><br><br>";
+		$rs .= "Your license key has been expired. <a href=\"http://www.sitebill.ru/price-cms-sitebill/\">Buy license key</a>.";
+		return $rs;
+	}
+	
+	
+	private function decode ( $key ) {
+		$sum=0;
+		$array = explode('-', $key);
+		$first = hexdec($array[0]);
+		$second = hexdec($array[1]);
+		$index = ($first+$second)/10000;
+		if ( !in_array($index, array(1,2,3,4)) ) {
+			return 0;
+		}
+		for ( $i = 2; $i < 5; $i++ ) {
+			$sum += hexdec($array[$i]);
+		}
+		if ( $sum != hexdec($array[5]) ) {
+			return 0;
+		}
+		return hexdec($array[$index]);
+	}
+	
 	
 	/**
 	 * Execute an SQL statement and return the number of affected rows 
@@ -103,10 +155,10 @@ class DBC {
 	 * @param integer $rows number of selected rows
 	 * @return PDOStatement | false
 	 */
-	public function query($query, $params = array(), &$rows = 0) {
+	public function query($query, $params = array(), &$rows = 0, &$success_mark=false) {
 		$success = false;
 		$stmt = $this->exec ( $query, $params, $success, $rows );
-		
+		$success_mark=$success;
 		return $success && $rows ? $stmt : false;
 	}
 	
@@ -153,6 +205,10 @@ class DBC {
 	public function fetch(&$stmt) {
 		return $stmt->fetch(PDO::FETCH_ASSOC);
 	}
+	
+	public function getLastError() {
+		return self::$lastError;
+	}
 		
 	private function paramType($param) {
 		
@@ -168,6 +224,7 @@ class DBC {
 	}
 	
 	private function exec($sql, $params = array(), &$success, &$rows) {
+		self::$lastError='';
 		$stmt = $this->pdo->prepare ( $sql );
 		$debug = ! defined( 'AJAX') && defined ( 'DEBUG_ENABLED' ) && DEBUG_ENABLED;
 		
@@ -180,6 +237,7 @@ class DBC {
 			$success = $stmt->execute ();
 			$finish = microtime( true );
 		} catch ( PDOException $e ) {
+			self::$lastError=$e->getMessage();
 			$success = false;
 			Logger::append ( $sql, $e  );
 			

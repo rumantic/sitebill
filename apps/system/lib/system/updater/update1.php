@@ -17,31 +17,38 @@ class Update1 extends SiteBill {
     }
     
     function update_street_id () {
-        $query = "select * from ".DB_PREFIX."_data";
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            $ra[$this->db->row['id']] = $this->db->row;
+    	$DBC=DBC::getInstance();
+    	$ra=array();
+        $query = 'SELECT * FROM '.DB_PREFIX.'_data';
+        $stmt=$DBC->query($query);
+        if($stmt){
+        	while($ar=$DBC->fetch($stmt)){
+        		$ra[$ar['id']] = $ar;
+        	}
         }
-        foreach ( $ra as $id => $item_array ) {
-            $street_id = $this->get_street_id($item_array['street']);
-            if ( $street_id ) {
-                $query = "update ".DB_PREFIX."_data set street_id=$street_id where id=".$id;
-                echo $query.'<br>';
-                $this->db->exec($query);
-            }
+        if(!empty($ra)){
+        	foreach ( $ra as $id => $item_array ) {
+        		$street_id = $this->get_street_id($item_array['street']);
+        		if ( $street_id ) {
+        			$query = 'UPDATE '.DB_PREFIX.'_data SET street_id='.$street_id.' WHERE id='.$id;
+        			echo $query.'<br>';
+        			$stmt=$DBC->query($query);
+        		}
+        	}
         }
-        
     }
     
     function get_street_id ( $street ) {
+    	$DBC=DBC::getInstance();
         $street = trim($street);
-        $query = "select * from ".DB_PREFIX."_street where name='$street'";
-        //echo $query.'<br>';
+        $query = 'SELECT * FROM '.DB_PREFIX.'_street WHERE name=?';
+        $stmt=$DBC->query($query, array($street));
         
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['street_id'] > 0 ) {
-            return $this->db->row['street_id'];
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	if ( $ar['street_id'] > 0 ) {
+        		return $ar['street_id'];
+        	}
         }
         return false;
     }
@@ -51,26 +58,27 @@ class Update1 extends SiteBill {
      * move from data -> data_image
      */
     function update_data_img () {
-        //load all records from _data
+        $DBC=DBC::getInstance();
         $query = "select * from ".DB_PREFIX."_data where id > 3704";
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            $ra[$this->db->row['id']] = $this->db->row;
+        $stmt=$DBC->query($query);
+        if($stmt){
+        	while($ar=$DBC->fetch($stmt)){
+        		$ra[$ar['id']] = $ar;
+        	}
         }
-        //echo '<pre>';
-        //print_r($ra);
-        //echo '</pre>';
+        
         
         //insert records into _image
         foreach ( $ra as $id => $item_array ) {
             for ( $i = 1; $i <= 5; $i++ ) {
                 if ( $item_array['img'.$i] != '' ) {
                     $query = "insert into ".DB_PREFIX."_image (normal, preview) values ('{$item_array['img'.$i]}', '{$item_array['img'.$i.'_preview']}')";
-                    $image_id = $this->db->exec($query);
+                    $stmt=$DBC->query($query);
+                    $image_id = $DBC->lastInsertId();
                     
                     //link in table _data_image
                     $query = "insert into ".DB_PREFIX."_data_image (id, image_id, sort_order) values ($id, $image_id, $image_id)";
-                    $this->db->exec($query);
+                    $stmt=$DBC->query($query);
                 }
             }
         }
@@ -79,4 +87,3 @@ class Update1 extends SiteBill {
         
     }
 }
-?>

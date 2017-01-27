@@ -1,11 +1,11 @@
 {if $demomode eq 'yes'}
 <p class="warning">{$apps_words.tpleditor.TRIAL_MESSAGE}</p>
 {$apps_words.tpleditor.FILE_NAME} <input type="text" name="file_name" /><b>.tpl</b>
-<textarea id="tple_filetext" name="content" style="width: 100%; height: 800px;">{$filetext}</textarea>
+<textarea id="tple_filetext" name="content" style="width: 100%; height: 800px;">{$filetext|htmlspecialchars}</textarea>
 {else}
 <form method="post" action="{$estate_folder}/admin/index.php">
 {$apps_words.tpleditor.FILE_NAME} <input type="text" name="file_name" /><b>.tpl</b>
-<textarea id="tple_filetext" name="content" style="width: 100%; height: 800px;">{$filetext}</textarea>
+<textarea id="tple_filetext" name="content" style="width: 100%; height: 800px;">{$filetext|htmlspecialchars}</textarea>
 <input type="hidden" name="action" value="tpleditor" />
 <input type="hidden" name="do" value="new_done" />
 <input type="hidden" name="file" value="{$file}" />

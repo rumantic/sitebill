@@ -33,12 +33,12 @@ class UploadHandler
         'max_height' => 'Image exceeds maximum height',
         'min_height' => 'Image requires a minimum height'
     );
-
+    
     function __construct($options = null, $initialize = true, $error_messages = null) {
         $this->options = array(
             'script_url' => $this->get_full_url().'/',
             'upload_dir' => dirname($this->get_server_var('SCRIPT_FILENAME')).'/files/',
-        	'upload_dir' => $_SERVER['DOCUMENT_ROOT'].'/cache/upl/',
+        	'upload_dir' => rtrim($_SERVER['DOCUMENT_ROOT'], '/').'/cache/upl/',
             'upload_url' => $this->get_full_url().'/files/',
         	'upload_url' => '/cache/upl/',
             'user_dirs' => false,

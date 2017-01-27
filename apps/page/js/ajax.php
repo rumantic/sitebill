@@ -14,7 +14,7 @@ $folder='/'.$settings['Settings']['estate_folder'];
 }else{
 $folder='';
 }
-$sitebill_document_root = $_SERVER['DOCUMENT_ROOT'].$folder;
+$sitebill_document_root = rtrim($_SERVER['DOCUMENT_ROOT'], '/').$folder;
 
 define('SITEBILL_DOCUMENT_ROOT', $sitebill_document_root);
 define('SITEBILL_MAIN_URL', $folder);

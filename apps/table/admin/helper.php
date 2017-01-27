@@ -5,6 +5,7 @@
  */
 class Admin_Table_Helper extends SiteBill {
 	private static $model_storage=array();
+	
 	function create_int ( $item ) {
 		$rs = "`{$item['name']}` int(10) unsigned NOT NULL DEFAULT '0'";
 		return $rs;
@@ -44,10 +45,10 @@ class Admin_Table_Helper extends SiteBill {
 		$rs = "`{$item['name']}` LONGTEXT NOT NULL DEFAULT ''";
 		return $rs;
 	}
-	/*function create_docuploads ( $item ) {
+	function create_docuploads ( $item ) {
 		$rs = "`{$item['name']}` LONGTEXT NOT NULL DEFAULT ''";
 		return $rs;
-	}*/
+	}
 	function create_image ( $item ) {
 		
 		
@@ -58,6 +59,20 @@ class Admin_Table_Helper extends SiteBill {
 		`sort_order` int(11) NOT NULL DEFAULT 0,
 		PRIMARY KEY (`'.$item['table_name'].'_image_id`)
 		) ENGINE=MyISAM  DEFAULT CHARSET='.DB_ENCODING.' AUTO_INCREMENT=1 ;';
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($q);
+	}
+	function create_select_by_query_multi ( $item ) {
+		$q='CREATE TABLE IF NOT EXISTS `'.DB_PREFIX.'_multiple_field` (
+		  `id` int(11) NOT NULL AUTO_INCREMENT,
+		  `table_name` varchar(50) COLLATE '.DB_ENCODING.'_unicode_ci NOT NULL,
+		  `field_name` varchar(50) COLLATE '.DB_ENCODING.'_unicode_ci NOT NULL,
+		  `primary_id` int(11) NOT NULL,
+		  `field_value` int(11) NOT NULL,
+		  PRIMARY KEY (`id`),
+		  UNIQUE KEY `main_index` (`table_name`,`field_name`,`primary_id`,`field_value`)
+		) ENGINE=MyISAM  DEFAULT CHARSET='.DB_ENCODING.' COLLATE='.DB_ENCODING.'_unicode_ci;';
+	
 		$DBC=DBC::getInstance();
 		$stmt=$DBC->query($q);
 	}
@@ -86,23 +101,25 @@ class Admin_Table_Helper extends SiteBill {
 			$append_system_ajax=false;
 		}
 		
-	    $form_data['data']['date_added']['value'] = date('Y-m-d H:i:s',time());
+		$table_key=current(array_keys($form_data));
+		
+	    //$form_data['data']['date_added']['value'] = date('Y-m-d H:i:s',time());
 
-	    if ( $this->getConfigValue('currency_enable') && !isset($form_data['data']['currency_id'])) {
-	    	$form_data['data']['currency_id']['name'] = 'currency_id';
-	    	$form_data['data']['currency_id']['primary_key_name'] = 'currency_id';
-	    	$form_data['data']['currency_id']['primary_key_table'] = 'currency';
-	    	$form_data['data']['currency_id']['title'] = 'Валюта';
-	    	$form_data['data']['currency_id']['value_string'] = '';
-	    	$form_data['data']['currency_id']['value'] = 0;
-	    	$form_data['data']['currency_id']['length'] = 40;
-	    	$form_data['data']['currency_id']['type'] = 'select_by_query';
-	    	$form_data['data']['currency_id']['query'] = 'select * from '.DB_PREFIX.'_currency WHERE is_active=1 ORDER BY sort_order ASC, code ASC, currency_id ASC';
-	    	$form_data['data']['currency_id']['value_name'] = 'name';
-	    	$form_data['data']['currency_id']['title_default'] = '';
-	    	$form_data['data']['currency_id']['value_default'] = 0;
-	    	$form_data['data']['currency_id']['required'] = 'off';
-	    	$form_data['data']['currency_id']['unique'] = 'off';
+	    if ( $table_key=='data' && $this->getConfigValue('currency_enable') && !isset($form_data[$table_key]['currency_id'])) {
+	    	$form_data[$table_key]['currency_id']['name'] = 'currency_id';
+	    	$form_data[$table_key]['currency_id']['primary_key_name'] = 'currency_id';
+	    	$form_data[$table_key]['currency_id']['primary_key_table'] = 'currency';
+	    	$form_data[$table_key]['currency_id']['title'] = 'Валюта';
+	    	$form_data[$table_key]['currency_id']['value_string'] = '';
+	    	$form_data[$table_key]['currency_id']['value'] = 0;
+	    	$form_data[$table_key]['currency_id']['length'] = 40;
+	    	$form_data[$table_key]['currency_id']['type'] = 'select_by_query';
+	    	$form_data[$table_key]['currency_id']['query'] = 'select * from '.DB_PREFIX.'_currency WHERE is_active=1 ORDER BY sort_order ASC, code ASC, currency_id ASC';
+	    	$form_data[$table_key]['currency_id']['value_name'] = 'name';
+	    	$form_data[$table_key]['currency_id']['title_default'] = '';
+	    	$form_data[$table_key]['currency_id']['value_default'] = 0;
+	    	$form_data[$table_key]['currency_id']['required'] = 'off';
+	    	$form_data[$table_key]['currency_id']['unique'] = 'off';
 	    }
 	    
 	    if ( !$this->getConfigValue('ajax_form_in_admin') ) {
@@ -120,134 +137,144 @@ class Admin_Table_Helper extends SiteBill {
 	    
 	    //country
 	     
-	    if ( $this->getConfigValue('country_in_form') && isset($form_data['data']['country_id'])) {
-	    	if ( $form_data['data']['country_id']['title_default'] == '' ) {
-	    		$form_data['data']['country_id']['title_default'] = Multilanguage::_('L_CHOOSE_COUNTRY');
+	    if ( $this->getConfigValue('country_in_form') && isset($form_data[$table_key]['country_id'])) {
+	    	if ( $form_data[$table_key]['country_id']['title_default'] == '' ) {
+	    		$form_data[$table_key]['country_id']['title_default'] = Multilanguage::_('L_CHOOSE_COUNTRY');
 	    	}
-	        $form_data['data']['country_id']['onchange'] = '';
+	        $form_data[$table_key]['country_id']['onchange'] = '';
 	        if ( $this->getConfigValue('apps.realty.ajax_region_refresh') ) {
-	        	$form_data['data']['country_id']['onchange'] .= ' update_child_list(\'region_id\',this); ';
-	        	$form_data['data']['country_id']['ajax_options']['update_child_list'][] = 'region_id';
+	        	$form_data[$table_key]['country_id']['onchange'] .= ' update_child_list(\'region_id\',this); ';
+	        	$form_data[$table_key]['country_id']['ajax_options']['update_child_list'][] = 'region_id';
 	        }
 	        if ( $this->getConfigValue('apps.realty.ajax_city_refresh') ) {
-	        	$form_data['data']['country_id']['onchange'] .= ' set_empty(\'city_id\',this); ';
-	        	$form_data['data']['country_id']['ajax_options']['set_empty'][] = 'city_id';
+	        	$form_data[$table_key]['country_id']['onchange'] .= ' set_empty(\'city_id\',this); ';
+	        	$form_data[$table_key]['country_id']['ajax_options']['set_empty'][] = 'city_id';
 	        }
 	        if ( $this->getConfigValue('apps.realty.ajax_district_refresh') ) {
-	        	$form_data['data']['country_id']['onchange'] .= ' set_empty(\'district_id\',this); ';
-	        	$form_data['data']['country_id']['ajax_options']['set_empty'][] = 'district_id';
+	        	$form_data[$table_key]['country_id']['onchange'] .= ' set_empty(\'district_id\',this); ';
+	        	$form_data[$table_key]['country_id']['ajax_options']['set_empty'][] = 'district_id';
 	        }
 	        if ( $this->getConfigValue('apps.realty.ajax_metro_refresh') ) {
-	        	$form_data['data']['country_id']['onchange'] .= ' set_empty(\'metro_id\',this); ';
-	        	$form_data['data']['country_id']['ajax_options']['set_empty'][] = 'metro_id';
+	        	$form_data[$table_key]['country_id']['onchange'] .= ' set_empty(\'metro_id\',this); ';
+	        	$form_data[$table_key]['country_id']['ajax_options']['set_empty'][] = 'metro_id';
 	        }
 	        if ( $this->getConfigValue('apps.realty.ajax_street_refresh') ) {
-	        	$form_data['data']['country_id']['onchange'] .= ' set_empty(\'street_id\',this); ';
-	        	$form_data['data']['country_id']['ajax_options']['set_empty'][] = 'street_id';
+	        	$form_data[$table_key]['country_id']['onchange'] .= ' set_empty(\'street_id\',this); ';
+	        	$form_data[$table_key]['country_id']['ajax_options']['set_empty'][] = 'street_id';
 	        }
 	    }
 	    	 
 	    
 	    //region
 	     
-	    if ( $this->getConfigValue('region_in_form') && isset($form_data['data']['region_id'])) {
-	    	if ( $form_data['data']['region_id']['title_default'] == '' ) {
-	    		$form_data['data']['region_id']['title_default'] = Multilanguage::_('L_CHOOSE_REGION');
+	    if ( $this->getConfigValue('region_in_form') && isset($form_data[$table_key]['region_id'])) {
+	    	if ( $form_data[$table_key]['region_id']['title_default'] == '' ) {
+	    		$form_data[$table_key]['region_id']['title_default'] = Multilanguage::_('L_CHOOSE_REGION');
+	    	}
+	    	
+	    	if(!isset($form_data[$table_key]['region_id']['onchange'])){
+	    		$form_data[$table_key]['region_id']['onchange']='';
 	    	}
 	         
 	        if ( $this->getConfigValue('apps.realty.ajax_city_refresh') ) {
-	        	$form_data['data']['region_id']['onchange'] .= ' update_child_list(\'city_id\',this); ';
-	        	$form_data['data']['region_id']['ajax_options']['update_child_list'][] = 'city_id';
+	        	$form_data[$table_key]['region_id']['onchange'] .= ' update_child_list(\'city_id\',this); ';
+	        	$form_data[$table_key]['region_id']['ajax_options']['update_child_list'][] = 'city_id';
 	        }
 	        if ( $this->getConfigValue('apps.realty.ajax_district_refresh') ) {
-	        	$form_data['data']['region_id']['onchange'] .= ' set_empty(\'district_id\',this); ';
-	        	$form_data['data']['region_id']['ajax_options']['set_empty'][] = 'district_id';
+	        	$form_data[$table_key]['region_id']['onchange'] .= ' set_empty(\'district_id\',this); ';
+	        	$form_data[$table_key]['region_id']['ajax_options']['set_empty'][] = 'district_id';
 	        }
 	        if ( $this->getConfigValue('apps.realty.ajax_metro_refresh') ) {
-	        	$form_data['data']['region_id']['onchange'] .= ' set_empty(\'metro_id\',this); ';
-	        	$form_data['data']['region_id']['ajax_options']['set_empty'][] = 'metro_id';
+	        	$form_data[$table_key]['region_id']['onchange'] .= ' set_empty(\'metro_id\',this); ';
+	        	$form_data[$table_key]['region_id']['ajax_options']['set_empty'][] = 'metro_id';
 	        }
 	        if ( $this->getConfigValue('apps.realty.ajax_street_refresh') ) {
-	        	$form_data['data']['region_id']['onchange'] .= ' set_empty(\'street_id\',this); ';
-	        	$form_data['data']['region_id']['ajax_options']['set_empty'][] = 'street_id';
+	        	$form_data[$table_key]['region_id']['onchange'] .= ' set_empty(\'street_id\',this); ';
+	        	$form_data[$table_key]['region_id']['ajax_options']['set_empty'][] = 'street_id';
 	        }
 	        if ( $this->getRequestValue('country_id') != 0 and $this->getRequestValue('country_id') != '' ) {
-	        	$form_data['data']['region_id']['query'] = 'select * from '.DB_PREFIX.'_region where country_id='.$this->getRequestValue('country_id').' order by name';
+	        	$form_data[$table_key]['region_id']['query'] = 'select * from '.DB_PREFIX.'_region where country_id='.$this->getRequestValue('country_id').' order by name';
 	        }
 	    }
 	    	 
 	     
 	    
 	    //city
-	    if ( $this->getConfigValue('city_in_form') && isset($form_data['data']['city_id'])) {
-	    	if ( $form_data['data']['city_id']['title_default'] == '' ) {
-	    		$form_data['data']['city_id']['title_default'] = Multilanguage::_('L_CHOOSE_CITY');
+	    if ( $this->getConfigValue('city_in_form') && isset($form_data[$table_key]['city_id'])) {
+	    	if ( $form_data[$table_key]['city_id']['title_default'] == '' ) {
+	    		$form_data[$table_key]['city_id']['title_default'] = Multilanguage::_('L_CHOOSE_CITY');
+	    	}
+	    	
+	    	if(!isset($form_data[$table_key]['city_id']['onchange'])){
+	    		$form_data[$table_key]['city_id']['onchange']='';
 	    	}
 	         
 	        if ( $this->getConfigValue('apps.realty.ajax_metro_refresh') ) {
 	        	if(1==$this->getConfigValue('link_metro_to_district')){
-	        		$form_data['data']['city_id']['onchange'] .= ' update_child_list_without_district(\'metro_id\',this); ';
+	        		$form_data[$table_key]['city_id']['onchange'] .= ' update_child_list_without_district(\'metro_id\',this); ';
 	        	}else{
-	        		$form_data['data']['city_id']['onchange'] .= ' update_child_list(\'metro_id\',this); ';
+	        		$form_data[$table_key]['city_id']['onchange'] .= ' update_child_list(\'metro_id\',this); ';
 	        	}
 	        	
 	        }
 	        if($this->getConfigValue('link_street_to_city')){
 	        	if ( $this->getConfigValue('apps.realty.ajax_district_refresh') ) {
-	        		$form_data['data']['city_id']['onchange'] .= ' update_child_list(\'district_id\',this); ';
-	        		$form_data['data']['city_id']['ajax_options']['update_child_list'][] = 'district_id';
+	        		$form_data[$table_key]['city_id']['onchange'] .= ' update_child_list(\'district_id\',this); ';
+	        		$form_data[$table_key]['city_id']['ajax_options']['update_child_list'][] = 'district_id';
 	        	}
 	        	if ( $this->getConfigValue('apps.realty.ajax_street_refresh') ) {
-	        		$form_data['data']['city_id']['onchange'] .= ' update_child_list(\'street_id\',this); ';
-	        		$form_data['data']['city_id']['ajax_options']['update_child_list'][] = 'street_id';
+	        		$form_data[$table_key]['city_id']['onchange'] .= ' update_child_list(\'street_id\',this); ';
+	        		$form_data[$table_key]['city_id']['ajax_options']['update_child_list'][] = 'street_id';
 	        	}
 	        }else{
 	        	if ( $this->getConfigValue('apps.realty.ajax_district_refresh') ) {
-	        		$form_data['data']['city_id']['onchange'] .= ' update_child_list(\'district_id\',this); ';
-	        		$form_data['data']['city_id']['ajax_options']['update_child_list'][] = 'district_id';
+	        		$form_data[$table_key]['city_id']['onchange'] .= ' update_child_list(\'district_id\',this); ';
+	        		$form_data[$table_key]['city_id']['ajax_options']['update_child_list'][] = 'district_id';
 	        	}
 	        	if ( $this->getConfigValue('apps.realty.ajax_street_refresh') ) {
-	        		$form_data['data']['city_id']['onchange'] .= ' set_empty(\'street_id\',this); ';
-	        		$form_data['data']['city_id']['ajax_options']['set_empty'][] = 'street_id';
+	        		$form_data[$table_key]['city_id']['onchange'] .= ' set_empty(\'street_id\',this); ';
+	        		$form_data[$table_key]['city_id']['ajax_options']['set_empty'][] = 'street_id';
 	        	}
 	        }
 	        if ( $this->getRequestValue('region_id') != 0 and $this->getRequestValue('region_id') != '' ) {
-	        	$form_data['data']['city_id']['query'] = 'select * from '.DB_PREFIX.'_city where region_id='.$this->getRequestValue('region_id').' order by name';
+	        	$form_data[$table_key]['city_id']['query'] = 'select * from '.DB_PREFIX.'_city where region_id='.$this->getRequestValue('region_id').' order by name';
 	        }
 	    }
 	    	 
-	    if ( $this->getConfigValue('metro_in_form') && isset($form_data['data']['metro_id'])) {
-	    	if ( $form_data['data']['metro_id']['title_default'] == '' ) {
-	    		$form_data['data']['metro_id']['title_default'] = Multilanguage::_('L_CHOOSE_METRO');
+	    if ( $this->getConfigValue('metro_in_form') && isset($form_data[$table_key]['metro_id'])) {
+	    	if ( $form_data[$table_key]['metro_id']['title_default'] == '' ) {
+	    		$form_data[$table_key]['metro_id']['title_default'] = Multilanguage::_('L_CHOOSE_METRO');
 	    	}
 	         
 	        if ( $this->getRequestValue('city_id') != 0 and $this->getRequestValue('city_id') != '' &&  $this->getRequestValue('district_id') != 0 && $this->getRequestValue('district_id') != '' && 1==$this->getConfigValue('link_metro_to_district') ) {
-	    	    $form_data['data']['metro_id']['query'] = 'select * from '.DB_PREFIX.'_metro where city_id='.$this->getRequestValue('city_id').' AND district_id='.$this->getRequestValue('district_id').' order by name';
+	    	    $form_data[$table_key]['metro_id']['query'] = 'select * from '.DB_PREFIX.'_metro where city_id='.$this->getRequestValue('city_id').' AND district_id='.$this->getRequestValue('district_id').' order by name';
+	        }elseif(1!=$this->getConfigValue('apps.realty.ajax_metro_refresh')){
+	        	
 	        }elseif( $this->getRequestValue('city_id') != 0 and $this->getRequestValue('city_id') != '' ){
-	        	$form_data['data']['metro_id']['query'] = 'select * from '.DB_PREFIX.'_metro where city_id='.$this->getRequestValue('city_id').' order by name';
+	        	$form_data[$table_key]['metro_id']['query'] = 'select * from '.DB_PREFIX.'_metro where city_id='.$this->getRequestValue('city_id').' order by name';
 	        }
 	    }
 	     
 	    
 	    //district
-	    if ( $this->getConfigValue('district_in_form') && isset($form_data['data']['district_id'])) {
-	    	if ( $form_data['data']['district_id']['title_default'] == '' ) {
-	    		$form_data['data']['district_id']['title_default'] = Multilanguage::_('L_CHOOSE_DISTRICT');
+	    if ( $this->getConfigValue('district_in_form') && isset($form_data[$table_key]['district_id'])) {
+	    	if ( $form_data[$table_key]['district_id']['title_default'] == '' ) {
+	    		$form_data[$table_key]['district_id']['title_default'] = Multilanguage::_('L_CHOOSE_DISTRICT');
 	    	}
 	    	
 	    	if(1==$this->getConfigValue('link_metro_to_district')){
 	    		if ( $this->getConfigValue('apps.realty.ajax_metro_refresh') ) {
-	    			$form_data['data']['district_id']['onchange'] .= ' update_child_list(\'metro_id\',this); ';
-	    			$form_data['data']['district_id']['ajax_options']['update_child_list'][] = 'metro_id';
+	    			$form_data[$table_key]['district_id']['onchange'] .= ' update_child_list(\'metro_id\',this); ';
+	    			$form_data[$table_key]['district_id']['ajax_options']['update_child_list'][] = 'metro_id';
 	    		}
 	    		
 	    		/*if ( $this->getConfigValue('apps.realty.ajax_district_refresh') ) {
-	    			$form_data['data']['city_id']['onchange'] .= ' update_child_list(\'district_id\',this); ';
-	    			$form_data['data']['city_id']['ajax_options']['update_child_list'][] = 'district_id';
+	    			$form_data[$table_key]['city_id']['onchange'] .= ' update_child_list(\'district_id\',this); ';
+	    			$form_data[$table_key]['city_id']['ajax_options']['update_child_list'][] = 'district_id';
 	    		}
 	    		if ( $this->getConfigValue('apps.realty.ajax_street_refresh') ) {
-	    			$form_data['data']['city_id']['onchange'] .= ' update_child_list(\'street_id\',this); ';
-	    			$form_data['data']['city_id']['ajax_options']['update_child_list'][] = 'street_id';
+	    			$form_data[$table_key]['city_id']['onchange'] .= ' update_child_list(\'street_id\',this); ';
+	    			$form_data[$table_key]['city_id']['ajax_options']['update_child_list'][] = 'street_id';
 	    		}*/
 	    	}
 	    	
@@ -257,27 +284,27 @@ class Admin_Table_Helper extends SiteBill {
 	        	if($this->getConfigValue('link_street_to_city')){
 	        
 	        	}else{
-	        		$form_data['data']['district_id']['onchange'] .= ' update_child_list(\'street_id\',this); ';
-	        		$form_data['data']['district_id']['ajax_options']['update_child_list'][] = 'street_id';
+	        		$form_data[$table_key]['district_id']['onchange'] .= ' update_child_list(\'street_id\',this); ';
+	        		$form_data[$table_key]['district_id']['ajax_options']['update_child_list'][] = 'street_id';
 	        	}
 	        }
 	        if ( $this->getRequestValue('city_id') != 0 and $this->getRequestValue('city_id') != '' ) {
-	        	$form_data['data']['district_id']['query'] = 'select * from '.DB_PREFIX.'_district where city_id='.$this->getRequestValue('city_id').' order by name';
+	        	$form_data[$table_key]['district_id']['query'] = 'select * from '.DB_PREFIX.'_district where city_id='.$this->getRequestValue('city_id').' order by name';
 	        }
 	    }
 
 	    //street
-	    if ( $this->getConfigValue('street_in_form') && isset($form_data['data']['street_id'])) {
-	    	if ($form_data['data']['street_id']['title_default'] == '') {
-	    		$form_data['data']['street_id']['title_default'] = Multilanguage::_('L_CHOOSE_STREET');
+	    if ( $this->getConfigValue('street_in_form') && isset($form_data[$table_key]['street_id'])) {
+	    	if ($form_data[$table_key]['street_id']['title_default'] == '') {
+	    		$form_data[$table_key]['street_id']['title_default'] = Multilanguage::_('L_CHOOSE_STREET');
 	    	}
 	         
 	        if ( $this->getRequestValue('district_id') != 0 and $this->getRequestValue('district_id') != '' ) {
-	        	$form_data['data']['street_id']['query'] = 'select * from '.DB_PREFIX.'_street where district_id='.$this->getRequestValue('district_id').' order by name';
+	        	$form_data[$table_key]['street_id']['query'] = 'select * from '.DB_PREFIX.'_street where district_id='.$this->getRequestValue('district_id').' order by name';
 	        }
 	        if($this->getConfigValue('link_street_to_city')){
 	        	if ( $this->getRequestValue('city_id') != 0 and $this->getRequestValue('city_id') != '' ) {
-	        		$form_data['data']['street_id']['query'] = 'select * from '.DB_PREFIX.'_street where city_id='.$this->getRequestValue('city_id').' order by name';
+	        		$form_data[$table_key]['street_id']['query'] = 'select * from '.DB_PREFIX.'_street where city_id='.$this->getRequestValue('city_id').' order by name';
 	        	}
 	        }
 	    }
@@ -288,6 +315,11 @@ class Admin_Table_Helper extends SiteBill {
 	function load_model ( $table_name, $ignore_user_group=false, $ignore_activity=false ) {
 		
 		$group_id=0;
+		$anonimouse_group=intval($this->getConfigValue('user_anonimouse_group_id'));
+		//$anonimouse_group=5;
+		/*if($anonimouse_group==0){
+			$anonimouse_group=-1;
+		}*/
 		
 		if ( isset($_SESSION['user_id_value']) && intval($_SESSION['user_id_value']) > 0 ) {
 		    $user_id = intval($_SESSION['user_id_value']);
@@ -296,15 +328,28 @@ class Admin_Table_Helper extends SiteBill {
 		}
 		
 		if(!$ignore_user_group && isset($user_id) ){
-			$q="SELECT group_id FROM ".DB_PREFIX."_user WHERE user_id=?";
-			$DBC=DBC::getInstance();
-			$stmt=$DBC->query($q, array($user_id));
-			if($stmt){
-				$ar=$DBC->fetch($stmt);
-				$group_id=(int)$ar['group_id'];
+			if((1===(int)$this->getConfigValue('use_heaps')) && isset(self::$Heaps['user'][$user_id])){
+				$group_id=self::$Heaps['user'][$user_id]['group_id'];
+			}else{
+				$q="SELECT group_id FROM ".DB_PREFIX."_user WHERE user_id=?";
+				$DBC=DBC::getInstance();
+				$stmt=$DBC->query($q, array($user_id));
+				if($stmt){
+					$ar=$DBC->fetch($stmt);
+					$group_id=(int)$ar['group_id'];
+				}
 			}
+			
+		}elseif(!$ignore_user_group && (!isset($user_id) || $user_id==0)){
+			$group_id=$anonimouse_group;
 		}/*elseif(!$ignore_user_group && !isset($user_id)){
 			$group_id=5;
+		}*//*elseif(!$ignore_user_group && (!isset($user_id) || $user_id==0)){
+			$group_id=$anonimouse_group;
+		}*/
+		
+		/*if(!isset($user_id)){
+			
 		}*/
 		
 		
@@ -317,21 +362,35 @@ class Admin_Table_Helper extends SiteBill {
 		if(!isset(self::$model_storage[$model_name]) || empty(self::$model_storage[$model_name])){
 			$model_data = array();
 			$DBC=DBC::getInstance();
-			$query = "SELECT c.*
-				FROM ".DB_PREFIX."_columns c, ".DB_PREFIX."_table t
-				WHERE
-					t.table_id=c.table_id and t.name='".$table_name."'".($ignore_activity ? '' : ' AND c.active=1')."
-				ORDER BY c.sort_order";
 			
-			$stmt=$DBC->query($query);
+			$query='SELECT table_id FROM '.DB_PREFIX.'_table WHERE name=? LIMIT 1';
+			$stmt=$DBC->query($query, array($table_name));
+			
 			if(!$stmt){
 				return false;
 			}
-			//$this->db->exec($query);
+			
+			$ar=$DBC->fetch($stmt);
+			$tid=$ar['table_id'];
+			
+			/*$query = "SELECT c.*
+				FROM ".DB_PREFIX."_columns c, ".DB_PREFIX."_table t
+				WHERE
+					t.table_id=c.table_id and t.name='".$table_name."'".($ignore_activity ? '' : ' AND c.active=1')."
+				ORDER BY c.sort_order";*/
+			
+			$query = "SELECT * FROM ".DB_PREFIX."_columns WHERE table_id=?".($ignore_activity ? '' : ' AND active=1')." ORDER BY sort_order";
+			
+			$stmt=$DBC->query($query, array($tid));
+			
+			if(!$stmt){
+				$model_data[$table_name]=array();
+				return $model_data;
+			}
 			while ( $ar=$DBC->fetch($stmt) ) {
 				if(!$ignore_user_group){
 					if($ar['type']=='captcha'){
-						if($ar['group_id']!='0'){
+						if($ar['group_id']!='0' && $ar['group_id']!=''){
 							$t=array();
 							$t=explode(',', $ar['group_id']);
 							//$t[]=0;
@@ -340,7 +399,7 @@ class Admin_Table_Helper extends SiteBill {
 							}
 						}
 					}else{
-						if($ar['group_id']!='0'){
+						if($ar['group_id']!='0' && $ar['group_id']!=''){
 							$t=array();
 							$t=explode(',', $ar['group_id']);
 							if(!in_array($group_id, $t)){
@@ -401,8 +460,35 @@ class Admin_Table_Helper extends SiteBill {
 					$model_data[$table_name][$ar['name']]['unique'] = $unique;*/
 					
 				}
+				
+				$current_lang=$this->getCurrentLang();
+				if(1==$this->getConfigValue('apps.language.use_langs')){
+					if($current_lang=='ru' || $current_lang==''){
+						$lang_prefix='';
+					}else{
+						$lang_prefix='_'.$current_lang;
+					}
+				}else{
+					$lang_prefix='';
+				}
+				
+				
 				$model_data[$table_name][$ar['name']]['name'] = $ar['name'];
 				$model_data[$table_name][$ar['name']]['title'] = $ar['title'];
+				if($ar['title'.$lang_prefix]!=''){
+					$model_data[$table_name][$ar['name']]['title'] = $ar['title'.$lang_prefix];
+				}
+				
+				/*if(0===strpos($model_data[$table_name][$ar['name']]['title'], '#')){
+					$nm=substr($model_data[$table_name][$ar['name']]['title'], 1);
+					$model_data[$table_name][$ar['name']]['title']=Multilanguage::_($nm, 'system');
+				}else{
+					if($ar['title'.$lang_prefix]!=''){
+						$model_data[$table_name][$ar['name']]['title'] = $ar['title'.$lang_prefix];
+					}
+				}*/
+				
+				
 				$model_data[$table_name][$ar['name']]['value'] = $ar['value'];
 				$model_data[$table_name][$ar['name']]['type'] = $ar['type'];
 			
@@ -412,6 +498,9 @@ class Admin_Table_Helper extends SiteBill {
 				$model_data[$table_name][$ar['name']]['query'] = $ar['query'];
 				$model_data[$table_name][$ar['name']]['value_name'] = $ar['value_name'];
 				$model_data[$table_name][$ar['name']]['title_default'] = $ar['title_default'];
+				if($ar['title_default'.$lang_prefix]!=''){
+					$model_data[$table_name][$ar['name']]['title_default'] = $ar['title_default'.$lang_prefix];
+				}
 				$model_data[$table_name][$ar['name']]['value_default'] = $ar['value_default'];
 					
 				$model_data[$table_name][$ar['name']]['value_table'] = $ar['value_table'];
@@ -422,14 +511,29 @@ class Admin_Table_Helper extends SiteBill {
 				//$model_data[$table_name][$ar['name']]['select_data'] = ($ar['select_data']!='' ? unserialize($ar['select_data']) : array());
 				if($ar['select_data']!=''){
 					$model_data[$table_name][$ar['name']]['select_data'] = $this->unserializeSelectData($ar['select_data']);
+					if($ar['select_data'.$lang_prefix]!=''){
+						$model_data[$table_name][$ar['name']]['select_data'] = $this->unserializeSelectData($ar['select_data'.$lang_prefix]);
+					}
 				}
 				$model_data[$table_name][$ar['name']]['table_name'] = $ar['table_name'];
+				if(($model_data[$table_name][$ar['name']]['type']=='uploads' || $model_data[$table_name][$ar['name']]['type']=='docuploads') && $model_data[$table_name][$ar['name']]['table_name']==''){
+					$model_data[$table_name][$ar['name']]['table_name'] = $table_name;
+				}elseif($model_data[$table_name][$ar['name']]['type']=='select_by_query' && $model_data[$table_name][$ar['name']]['table_name']==''){
+					$model_data[$table_name][$ar['name']]['table_name'] = $table_name;
+				}
 				$model_data[$table_name][$ar['name']]['primary_key'] = $ar['primary_key'];
 				$model_data[$table_name][$ar['name']]['primary_key_value'] = $ar['primary_key_value'];
 				$model_data[$table_name][$ar['name']]['action'] = $ar['action'];
 				$model_data[$table_name][$ar['name']]['tab'] = $ar['tab'];
 				$model_data[$table_name][$ar['name']]['hint'] = $ar['hint'];
+				if($ar['hint'.$lang_prefix]!=''){
+					$model_data[$table_name][$ar['name']]['hint'] = $ar['hint'.$lang_prefix];
+				}
 				$model_data[$table_name][$ar['name']]['active_in_topic'] = $ar['active_in_topic'];
+				if(1===intval($this->getConfigValue('apps.table.additional_filtering'))){
+					$model_data[$table_name][$ar['name']]['active_in_optype'] = $ar['active_in_optype'];
+				}
+				
 				$model_data[$table_name][$ar['name']]['group_id'] = $ar['group_id'];
 				$model_data[$table_name][$ar['name']]['entity'] = $ar['entity'];
 				$model_data[$table_name][$ar['name']]['combo'] = $ar['combo'];
@@ -451,12 +555,15 @@ class Admin_Table_Helper extends SiteBill {
 					$unique = 'off';
 				}
 				$model_data[$table_name][$ar['name']]['unique'] = $unique;
+				
+				//$model_data[$table_name][$ar['name']]['is_ml'] = $ar['is_ml'];
 			}
 			
 			if(!empty($model_data)){
 				self::$model_storage[$model_name]=$model_data;
 			}
 		}else{
+			
 			$model_data=self::$model_storage[$model_name];
 		}
 		
@@ -553,9 +660,9 @@ class Admin_Table_Helper extends SiteBill {
 				case 'uploads':
 					$ra[] = $this->create_uploads($item_array);
 					break;
-				/*case 'docuploads':
+				case 'docuploads':
 					$ra[] = $this->create_docuploads($item_array);
-					break;*/
+					break;
 				case 'select_box':
 					$ra[] = $this->create_varchar($item_array);
 					break;
@@ -570,6 +677,12 @@ class Admin_Table_Helper extends SiteBill {
 		
 				case 'select_by_query':
 					$ra[] = $this->create_int($item_array);
+					break;
+				case 'client_id':
+					$ra[] = $this->create_int($item_array);
+					break;
+				case 'select_by_query_multi':
+					$ra[] = $this->create_select_by_query_multi($item_array);
 					break;
 		
 				case 'select_by_query_multiple':
@@ -673,7 +786,9 @@ class Admin_Table_Helper extends SiteBill {
 				case 'photo':
 					$ra[] = $this->create_varchar($item_array);
 					break;
-		
+				case 'avatar':
+					$ra[] = $this->create_varchar($item_array);
+					break;
 				case 'hidden':
 					$ra[] = $this->create_varchar($item_array);
 					break;

@@ -6,15 +6,16 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  */
 
 class mailbox_admin extends Object_Manager {
-    private $data_manager_export;
+    
     /**
      * Constructor
      */
     function __construct( $realty_type = false ) {
         $this->SiteBill();
-        Multilanguage::appendAppDictionary('mailbox');
+        
         $this->table_name = 'mailbox';
         $this->action = 'mailbox';
+        Multilanguage::appendAppDictionary($this->action, $this->getConfigValue('theme'));
         
         
         $this->primary_key = 'mailbox_id';
@@ -31,6 +32,17 @@ class mailbox_admin extends Object_Manager {
         if ( !$config_admin->check_config_item('apps.mailbox.show_claim_button') ) {
         	$config_admin->addParamToConfig('apps.mailbox.show_claim_button','0','Показывать кнопку добавления жалобы');
         }
+        if ( !$config_admin->check_config_item('apps.mailbox.use_complaint_mode') ) {
+        	$config_admin->addParamToConfig('apps.mailbox.use_complaint_mode','0','Включить режим Жалоба', 1);
+        }
+        
+        if ( !$config_admin->check_config_item('apps.mailbox.complaint_mode_variants') ) {
+        	$config_admin->addParamToConfig('apps.mailbox.complaint_mode_variants','{1~~Агент/Мошенник}{2~~Продано/Сдано}{3~~Неверная цена}{4~~Неверный адрес}{5~~Недозвониться}','Перечень жалоб', 3);
+        }
+        
+        if ( !$config_admin->check_config_item('apps.mailbox.complaint_black_auto') ) {
+        	$config_admin->addParamToConfig('apps.mailbox.complaint_black_auto',0,'Автоматически добавлять в черный список', 1);
+        }
         
         //$this->install();
         require_once(SITEBILL_DOCUMENT_ROOT.'/apps/mailbox/admin/mailbox_model.php');
@@ -39,9 +51,7 @@ class mailbox_admin extends Object_Manager {
         
     }
     
-    protected function _installAction(){
-    	$this->install();
-    }
+    
     
     public function _preload(){
     	if ( $this->getConfigValue('apps.mailbox.enable') ) {
@@ -58,7 +68,34 @@ class mailbox_admin extends Object_Manager {
 	    	if(1==$this->getConfigValue('apps.mailbox.show_claim_button')){
 	    		$this->template->assert('apps_mailbox_show_claim_button',1);
 	    	}
-	    	
+	    	if(1==$this->getConfigValue('apps.mailbox.use_complaint_mode')){
+	    		$this->template->assert('apps_mailbox_use_complaint_mode',1);
+	    		$ret=array();
+	    		if(''!=trim($this->getConfigValue('apps.mailbox.complaint_mode_variants'))){
+	    			
+	    			$matches=array();
+	    			preg_match_all('/\{[^\}]+\}/',trim($this->getConfigValue('apps.mailbox.complaint_mode_variants')),$matches);
+	    			if(count($matches)>0){
+	    				foreach($matches[0] as $v){
+	    					$v=str_replace(array('{','}'), '', $v);
+	    					$d=explode('~~',$v);
+	    					$ret[$d[0]]=$d[1];
+	    				}
+	    			}
+	    		}
+	    		$c['captcha']['name'] = 'captcha';
+  				$c['captcha']['title'] = Multilanguage::_('CAPTCHA_TITLE', 'system');
+	    		$c['captcha']['value'] = '';
+	    		$c['captcha']['length'] = 40;
+	    		$c['captcha']['type'] = 'captcha';
+	    		$c['captcha']['required'] = 'on';
+	    		$c['captcha']['unique'] = 'off';
+	    		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/form/form_generator.php');
+	    		$form_generator = new Form_Generator();
+	    		$el = $form_generator->compile_form_elements($c);
+	    		$this->template->assign('apps_mailbox_complaint_mode_captcha', $el['hash']['captcha']['html']);
+	    		$this->template->assert('apps_mailbox_complaint_mode_variants', $ret);
+	    	}
     	}else{
     		$this->template->assert('mailbox_panel', '');
     		$this->template->assert('mailbox_on',0);
@@ -81,11 +118,14 @@ class mailbox_admin extends Object_Manager {
 			  `creation_date` datetime NOT NULL,
 			  PRIMARY KEY (`mailbox_id`)
 			) ENGINE=MyISAM  DEFAULT CHARSET=".DB_ENCODING." AUTO_INCREMENT=1 ;";
-    	$this->db->exec($query);
-    	if ( !$this->db->success ) {
-    		echo $this->db->error.'<br>';
-    	}
-    	$rs = Multilanguage::_('L_APPLICATION_INSTALLED');
+    	$DBC=DBC::getInstance();
+		$success=false;
+    	$stmt=$DBC->query($query, array(), $rows, $success);
+        if(!$success){
+        	$rs = Multilanguage::_('L_APPLICATION_INSTALLED_ERROR');
+        }else{
+        	$rs = Multilanguage::_('L_APPLICATION_INSTALLED');
+        }
         return $rs;
     }
     
@@ -142,10 +182,131 @@ class mailbox_admin extends Object_Manager {
     		return $this->get_complaint_form();
     	}elseif ( $this->getRequestValue('action') == 'save_complaint' ) {
     		return $this->save_complaint();
-    	}else {
-    		//return $this->xls_parser();
+    	}elseif ( $this->getRequestValue('action') == 'send_complaint' ) {
+    		return $this->send_complaint();
+    	}elseif ( $this->getRequestValue('action') == 'get_connect_form' ) {
+    		return $this->get_connect_form();
+    	}/*elseif ( $this->getRequestValue('action') == 'test' ) {
+    		return 'mailbox_test';
+    	}*/else {
+    		
     	}
     	return false;
+    }
+    
+    private function get_connect_form(){
+    	$ret='<div class="modal hide fade">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+    <h3>Modal header</h3>
+  </div>
+  <div class="modal-body">
+    <p>One fine body…</p>
+  </div>
+  <div class="modal-footer">
+    <a href="#" class="btn">Close</a>
+    <a href="#" class="btn btn-primary">Save changes</a>
+  </div>
+</div>';
+    	return $ret;
+    }
+    
+    private function send_complaint(){
+    	
+    	$responce=array('status'=>0, 'msg'=>'');
+    	
+    	if(1!=$this->getConfigValue('apps.mailbox.use_complaint_mode')){
+    		return json_encode($responce);
+    	}
+    	
+    	$id=intval($this->getRequestValue('id'));
+    	$complaint_id=intval($this->getRequestValue('complaint_id'));
+    	$captcha=trim($_POST['captcha']);
+    	$captcha_session_key=trim($_POST['captcha_session_key']);
+    	
+    	$ret=array();
+    		if(''!=trim($this->getConfigValue('apps.mailbox.complaint_mode_variants'))){
+    	
+    			$matches=array();
+    			preg_match_all('/\{[^\}]+\}/',trim($this->getConfigValue('apps.mailbox.complaint_mode_variants')),$matches);
+    			if(count($matches)>0){
+    				foreach($matches[0] as $v){
+    					$v=str_replace(array('{','}'), '', $v);
+    					$d=explode('~~',$v);
+    					$ret[$d[0]]=$d[1];
+    				}
+    			}
+    		}
+    
+    	if(!isset($ret[$complaint_id])){
+    		$responce['msg']='Не указана причина жалобы';
+    		return json_encode($responce);
+    	}
+    	
+    	$DBC=DBC::getInstance();
+    	if(2!=$this->getConfigValue('captcha_type')){
+    		$query='SELECT captcha_session_id FROM '.DB_PREFIX.'_captcha_session WHERE captcha_session_key=? AND captcha_string=?';
+    		$stmt=$DBC->query($query, array($captcha_session_key, $captcha));
+    		if(!$stmt){
+    			$query='DELETE FROM '.DB_PREFIX.'_captcha_session WHERE captcha_session_key=?';
+    			$stmt=$DBC->query($query, array($captcha_session_key));
+    			$responce['msg']='Не правильно указан защитный код';
+    			return json_encode($responce);
+    			return;
+    		}
+    		$query='DELETE FROM '.DB_PREFIX.'_captcha_session WHERE captcha_session_key=?';
+    		$stmt=$DBC->query($query, array($captcha_session_key));
+    	}
+    	
+    	
+    	$body='Жалоба на объект ID: '.$id.'<br />';
+    	$body.='Причина жалобы: '.$ret[$complaint_id].'<br />';
+    	$subject = $_SERVER['SERVER_NAME'].': Жалоба на объявление ID: '.$id;
+    	$from = $this->getConfigValue('system_email');
+    	if(''==$this->getConfigValue('apps.mailbox.claim_address')){
+    		$n_email = $this->getConfigValue('order_email_acceptor');
+    	}else{
+    		$n_email = $this->getConfigValue('apps.mailbox.claim_address');
+    	}
+	
+	$this->template->assign('HTTP_HOST', $_SERVER['HTTP_HOST']);
+	$this->template->assign('complaint_description', $ret[$complaint_id]);
+	$this->template->assign('id', $id);
+	$this->template->assign('edit_url', $this->getServerFullUrl().'/admin/?action=data&do=edit&id='.$id);
+	$email_template_fetched = $this->fetch_email_template('complaint_object');
+
+	if ( $email_template_fetched ) {
+	    $subject = $email_template_fetched['subject'];
+	    $body = $email_template_fetched['message'];
+
+	    $message_array['apps_name'] = 'need_moderate';
+	    $message_array['method'] = __METHOD__;
+	    $message_array['message'] = "subject = $subject, message = $body";
+	    $message_array['type'] = '';
+	    //$this->writeLog($message_array);
+	}
+	
+    	 
+    	$this->sendFirmMail($n_email, $from, $subject, $body);
+    	
+    	if(1==intval($this->getConfigValue('apps.mailbox.complaint_black_auto')) && 1==intval($this->getConfigValue('apps.blacklist.enable'))){
+    		
+    		$DBC=DBC::getInstance();
+    		$query='SELECT `phone` FROM '.DB_PREFIX.'_data WHERE id=?';
+    		$stmt=$DBC->query($query, array($id));
+    		if($stmt){
+    			$ar=$DBC->fetch($stmt);
+    			if($ar['phone']!=''){
+    				$nr=preg_replace('/[^0-9]/', '', $ar['phone']);
+    				require_once SITEBILL_DOCUMENT_ROOT.'/apps/blacklist/admin/admin.php';
+    				$BA=new blacklist_admin();
+    				$BA->addNumberToBlacklist($nr, $ret[$complaint_id]);
+    			}
+    		}
+    	}
+    	
+    	$responce['status']=1;
+    	return json_encode($responce);
     }
     
     private function save_complaint(){
@@ -184,7 +345,7 @@ class mailbox_admin extends Object_Manager {
     	$form_data['message']['cols'] = '40';
     	
     	$form_data['captcha']['name'] = 'captcha';
-        $form_data['captcha']['title'] = 'Защитный код';
+        $form_data['captcha']['title'] = Multilanguage::_('CAPTCHA_TITLE', 'system');
         $form_data['captcha']['value'] = '';
         $form_data['captcha']['length'] = 40;
         $form_data['captcha']['type'] = 'captcha';
@@ -213,6 +374,24 @@ class mailbox_admin extends Object_Manager {
 			} else {
 				$mailer->send_simple($n_email, $from, $subject, $body, 1);
 			}*/
+
+			$this->template->assign('HTTP_HOST', $_SERVER['HTTP_HOST']);
+			$this->template->assign('complaint_description', nl2br($form_data['message']['value']));
+			$this->template->assign('id', $form_data['realty_id']['value']);
+			$this->template->assign('edit_url', $this->getServerFullUrl().'/admin/?action=data&do=edit&id='.$form_data['realty_id']['value']);
+			$email_template_fetched = $this->fetch_email_template('complaint_object');
+
+			if ( $email_template_fetched ) {
+			    $subject = $email_template_fetched['subject'];
+			    $body = $email_template_fetched['message'];
+
+			    $message_array['apps_name'] = 'need_moderate';
+			    $message_array['method'] = __METHOD__;
+			    $message_array['message'] = "subject = $subject, message = $body";
+			    $message_array['type'] = '';
+			    //$this->writeLog($message_array);
+			}
+			
 			$this->sendFirmMail($n_email, $from, $subject, $body);
         	return 1;
         }
@@ -255,7 +434,7 @@ class mailbox_admin extends Object_Manager {
     	$form_data['message']['cols'] = '40';
     	 
     	$form_data['captcha']['name'] = 'captcha';
-    	$form_data['captcha']['title'] = 'Защитный код';
+    	$form_data['captcha']['title'] = Multilanguage::_('CAPTCHA_TITLE', 'system');
     	$form_data['captcha']['value'] = '';
     	$form_data['captcha']['length'] = 40;
     	$form_data['captcha']['type'] = 'captcha';
@@ -283,24 +462,29 @@ class mailbox_admin extends Object_Manager {
     	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl')){
     		$tpl_name=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl';
     	}else{
-    		$tpl_name=SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template/data_form.tpl';
+    		$tpl_name=$this->getAdminTplFolder().'/data_form.tpl';
     	}
     	return $smarty->fetch($tpl_name);
     }
     
     function read_message($user_id){
     	$id=$this->getRequestValue('id');
-    	$q='UPDATE '.DB_PREFIX.'_'.$this->table_name.' SET status=1 WHERE mailbox_id='.$id;
-    	$this->db->exec($q);
-    	
+    	$q='UPDATE '.DB_PREFIX.'_'.$this->table_name.' SET status=1 WHERE mailbox_id=?';
+    	$DBC=DBC::getInstance();
+    	$stmt=$DBC->query($q, array($id));
     }
     
     function getRealtyHref($realty_id){
-    	$q='SELECT topic_id FROM '.DB_PREFIX.'_data WHERE id='.$realty_id;
-    	$this->db->exec($q);
-    	$this->db->fetch_assoc();
-    	$topic_id=(int)$this->db->row['topic_id'];
-    	
+    	//TODO: change function to using standart Sitebill::getRealtyHref
+    	$DBC=DBC::getInstance();
+    	$topic_id=0;
+    	$q='SELECT topic_id FROM '.DB_PREFIX.'_data WHERE id=?';
+    	$stmt=$DBC->query($q, array($realty_id));
+    	if($stmt){
+			$ar=$DBC->fetch($stmt);
+			$topic_id=(int)$ar['topic_id'];
+		}
+    	    	
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php');
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
     	$Structure_Manager = new Structure_Manager();
@@ -342,12 +526,16 @@ class mailbox_admin extends Object_Manager {
     
     function getUserIncomingMessages($user_id){
     	$ret=array();
-    	$q='SELECT * FROM '.DB_PREFIX.'_'.$this->table_name.' WHERE reciever_id='.$user_id.' ORDER BY creation_date DESC';
-    	$this->db->exec($q);
-    	while($this->db->fetch_assoc()){
-    		$ret[]=$this->db->row;
-    	}
+    	$DBC=DBC::getInstance();
     	
+    	$query='SELECT * FROM '.DB_PREFIX.'_'.$this->table_name.' WHERE `reciever_id`='.$user_id.' ORDER BY `creation_date` DESC';
+    	$stmt=$DBC->query($query);
+    	if($stmt){
+    		while($ar=$DBC->fetch($stmt)){
+    			$ret[]=$ar;
+    		}
+    	}
+    	    	
     	if(count($ret)>0){
     		foreach($ret as &$r){
     			$r['href']=$this->getRealtyHref($r['realty_id']);
@@ -359,10 +547,13 @@ class mailbox_admin extends Object_Manager {
     
     function getUserIncomingMessagesUnreaded($user_id){
     	$ret=array();
-    	$q='SELECT * FROM '.DB_PREFIX.'_'.$this->table_name.' WHERE status=0 AND reciever_id='.$user_id.' ORDER BY creation_date DESC';
-    	$this->db->exec($q);
-    	while($this->db->fetch_assoc()){
-    		$ret[]=$this->db->row;
+    	$DBC=DBC::getInstance();
+    	$query='SELECT * FROM '.DB_PREFIX.'_'.$this->table_name.' WHERE status=0 AND reciever_id='.$user_id.' ORDER BY creation_date DESC';
+    	$stmt=$DBC->query($query);
+    	if($stmt){
+    		while($ar=$DBC->fetch($stmt)){
+    			$ret[]=$ar;
+    		}
     	}
     	if(count($ret)>0){
     		foreach($ret as &$r){
@@ -373,13 +564,18 @@ class mailbox_admin extends Object_Manager {
     }
     
     function get_logged_user_data(){
-    	///echo $_SESSION['user_id'];
+    	$DBC=DBC::getInstance();
+		
     	$uid=(int)$_SESSION['user_id'];
     	if($uid>0){
-    		$q='SELECT* FROM '.DB_PREFIX.'_user WHERE user_id='.$uid;
-    		$this->db->exec($q);
-    		$this->db->fetch_assoc();
-    		return json_encode(array_map(array('mailbox_admin','conv'), $this->db->row));
+    		$q='SELECT * FROM '.DB_PREFIX.'_user WHERE user_id='.$uid;
+    		$stmt=$DBC->query($q);
+    		if($stmt){
+    			$ar=$DBC->fetch($stmt);
+    			return json_encode(array_map(array('mailbox_admin', 'conv'), $ar));
+    		}else{
+    			return json_encode(array('res'=>'no_user'));
+    		}
     	}else{
     		return json_encode(array('res'=>'no_user'));
     	}
@@ -473,7 +669,7 @@ class mailbox_admin extends Object_Manager {
     	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl')){
     		$tpl_name=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl';
     	}else{
-    		$tpl_name=SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template/data_form.tpl';
+    		$tpl_name=$smarty->template_dir.'/data_form.tpl';
     	}
     	return $smarty->fetch($tpl_name);
     }
@@ -484,24 +680,29 @@ class mailbox_admin extends Object_Manager {
     	global $smarty;
     	$uid=(int)$_SESSION['user_id'];
     	$this->setRequestValue('sender_id', $uid);
+    	$DBC=DBC::getInstance();
     	
+    	$payed_mode=false;
     	
     	$to=(int)$this->getRequestValue('reciever_id');
-    	//echo $to;
+    	 
     	if($to==0){
     		return json_encode(array('answer'=>'no_reciever'));
     	}
-    	$q='SELECT user_id, email FROM '.DB_PREFIX.'_user WHERE user_id='.$to;
-    	$this->db->exec($q);
-    	$this->db->fetch_assoc();
-    	if((int)$this->db->row['user_id']==0 || $this->db->row['email']==''){
+    	
+    	$query='SELECT user_id, email, fio FROM '.DB_PREFIX.'_user WHERE user_id='.$to;
+    	$stmt=$DBC->query($query);
+    	if($stmt){
+    		$ar=$DBC->fetch($stmt);
+    		if((int)$ar['user_id']==0 || $ar['email']==''){
+    			return json_encode(array('answer'=>'no_reciever'));
+    		} else {
+    			$n_email=$ar['email'];
+    			$n_fio=$ar['fio'];
+    		}
+    	}else{
     		return json_encode(array('answer'=>'no_reciever'));
-    	} else {
-    	    $n_email=$this->db->row['email'];
     	}
-    	
-    	
-    	
     	
     	$this->setRequestValue('theme', SiteBill::iconv('utf-8', SITE_ENCODING, $this->getRequestValue('theme')));
     	$this->setRequestValue('message', SiteBill::iconv('utf-8', SITE_ENCODING, $this->getRequestValue('message')));
@@ -512,45 +713,132 @@ class mailbox_admin extends Object_Manager {
     	$email=$this->getRequestValue('email');
     	$realty_id=$this->getRequestValue('realty_id');
     	$phone=$this->getRequestValue('phone');
-    	
+    	 
     	if($theme=='' || $message=='' || $name=='' || $email==''){
     		return json_encode(array('answer'=>'fields_not_specified'));
     	}
     	
+    	if($payed_mode){
+    		$subject = 'Заявка на сайте '.$_SERVER['SERVER_NAME'];
+    		$from = $this->getConfigValue('order_email_acceptor');
+    		$body = 'На сайте оставлена заявка к Вашему объекту ID: '.$realty_id;
+		
+    		
+    		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+    		$data_model = new Data_Model();
+    		$form_data = $this->data_model;
+    		$form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
+    		
+    		require_once ((SITEBILL_DOCUMENT_ROOT.'/apps/client/admin/admin.php'));
+    		$client_admin = new client_admin();
+    			
+    		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/view.php');
+    		$table_view = new Table_View();
+    		$order_table = '';
+    		$order_table .= '<table border="1" cellpadding="2" cellspacing="2" style="border: 1px solid gray;">';
+    		$order_table .= $table_view->compile_view($form_data[$this->table_name]);
+    		$order_table .= '</table>';
+		
+		$this->template->assign('HTTP_HOST', $_SERVER['HTTP_HOST']);
+		$this->template->assign('order_description', $order_table);
+		$this->template->assign('id', $realty_id);
+		$this->template->assign('edit_url', $this->getServerFullUrl().'/account/data/?do=edit&id='.$realty_id);
+		$email_template_fetched = $this->fetch_email_template('mailbox_object_order');
+
+		if ( $email_template_fetched ) {
+		    $subject = $email_template_fetched['subject'];
+		    $body = $email_template_fetched['message'];
+
+		    $message_array['apps_name'] = 'need_moderate';
+		    $message_array['method'] = __METHOD__;
+		    $message_array['message'] = "subject = $subject, message = $body";
+		    $message_array['type'] = '';
+		    //$this->writeLog($message_array);
+		}
+		
+    		$this->sendFirmMail($n_email, $from, $subject, $body);
+		
+    		
+    		if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/client/client.xml') ) {
+    			require_once ((SITEBILL_DOCUMENT_ROOT.'/apps/client/admin/admin.php'));
+    			$client_admin = new client_admin();
+    		
+    			$client_admin->data_model['client']['type_id']['value'] = 'Заявка владельцу';
+    			$client_admin->data_model['client']['status_id']['value'] = 'new';
+    			$client_admin->data_model['client']['date']['value'] = time();
+    			$client_admin->data_model['client']['fio']['value'] = $form_data[$this->table_name]['name']['value'];
+    			$client_admin->data_model['client']['email']['value'] = $form_data[$this->table_name]['email']['value'];
+    			$client_admin->data_model['client']['phone']['value'] = $form_data[$this->table_name]['phone']['value'];
+    			
+    			$client_admin->data_model['client']['order_text']['value'] = $order_table;
+    		
+    			$order_id=$client_admin->add_data($client_admin->data_model['client']);
+    			if ( $client_admin->getError() ) {
+    				$rs = $client_admin->GetErrorMessage();
+    			}
+    		}
+    		
+    		
+    		$form_data[$this->table_name]['theme']['value']='Заявка к объекту '.$realty_id;
+    		$form_data[$this->table_name]['message']['value']='На сайте оставлена заявка к Вашему объекту ID: '.$realty_id.'. ID заявки '.$order_id;
+    		$form_data[$this->table_name]['email']['value']='';
+    		$form_data[$this->table_name]['name']['value']='Администрация';
+    		$form_data[$this->table_name]['phone']['value']='';
+    		
+    		$form_data[$this->table_name]['creation_date']['value']=date('Y-m-d H:i:s',time());
+    		$form_data[$this->table_name]['status']['value']=0;
+    		$this->add_data($form_data[$this->table_name]);
+    		
+    	}else{
+
+    		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+    		$data_model = new Data_Model();
+    		$form_data = $this->data_model;
+    		$form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
+    		$form_data[$this->table_name]['creation_date']['value']=date('Y-m-d H:i:s',time());
+    		$form_data[$this->table_name]['status']['value']=0;
+    		$this->add_data($form_data[$this->table_name]);
+    		
+    		$smarty->assign('message',$message);
+    		$smarty->assign('theme',$theme);
+    		$smarty->assign('n_fio',$n_fio);
+    		$smarty->assign('realty_id',$realty_id);
+    		$smarty->assign('realty_href',$this->getRealtyHref($realty_id));
+    		$smarty->assign('server_name',$_SERVER['SERVER_NAME']);
+    		$smarty->assign('email',$email);
+    		$smarty->assign('email_signature',$this->getConfigValue('email_signature'));
+    		
+    		$smarty->assign('name',$name);
+    		$smarty->assign('phone',$phone);
+    		$tpl=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/mailbox/admin/template/email.tpl.html';
+    		if(!file_exists($tpl)){
+    			$tpl=SITEBILL_DOCUMENT_ROOT.'/apps/mailbox/admin/template/email.tpl.html';
+    		}
+    		$body=$smarty->fetch($tpl);
+    		 
+    		$subject = 'Заявка на сайте '.$_SERVER['SERVER_NAME'].': '.$theme;
+    		$from = $this->getConfigValue('order_email_acceptor');
+		
+		$this->template->assign('HTTP_HOST', $_SERVER['HTTP_HOST']);
+		$this->template->assign('order_description', $order_table);
+		$this->template->assign('id', $realty_id);
+		$this->template->assign('edit_url', $this->getServerFullUrl().'/account/data/?do=edit&id='.$realty_id);
+		$email_template_fetched = $this->fetch_email_template('mailbox_object_order_detailed');
+
+		if ( $email_template_fetched ) {
+		    $subject = $email_template_fetched['subject'];
+		    $body = $email_template_fetched['message'];
+
+		    $message_array['apps_name'] = 'need_moderate';
+		    $message_array['method'] = __METHOD__;
+		    $message_array['message'] = "subject = $subject, message = $body";
+		    $message_array['type'] = '';
+		    //$this->writeLog($message_array);
+		}
+		
+    		$this->sendFirmMail($n_email, $from, $subject, $body);
+    	}
     	
-    	
-    	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
-    	$data_model = new Data_Model();
-    	$form_data = $this->data_model;
-    	$form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
-    	$form_data[$this->table_name]['creation_date']['value']=date('Y-m-d H:i:s',time());
-    	$form_data[$this->table_name]['status']['value']=0;
-    	$this->add_data($form_data[$this->table_name]);
-    	//return print_r($form_data);
-    	
-    	
-    	/*require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
-    	$mailer = new Mailer();*/
-    	$smarty->assign('message',$message);
-    	$smarty->assign('theme',$theme);
-    	$smarty->assign('realty_id',$realty_id);
-    	$smarty->assign('realty_href',$this->getRealtyHref($realty_id));
-    	$smarty->assign('server_name',$_SERVER['SERVER_NAME']);
-    	$smarty->assign('email',$email);
-    	$smarty->assign('email_signature',$this->getConfigValue('email_signature'));
-    	 
-    	$smarty->assign('name',$name);
-    	$smarty->assign('phone',$phone);
-    	$body=$smarty->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/mailbox/admin/template/email.tpl.html');
-    	//$this->set_apps_template('accountsms', $this->getConfigValue('theme'), 'main_file_tpl', 'payment_edit_form.tpl.html');
-    	$subject = $_SERVER['SERVER_NAME'].': '.$theme;
-    	$from = $this->getConfigValue('order_email_acceptor');
-    	$this->sendFirmMail($n_email, $from, $subject, $body);
-    	/*if ( $this->getConfigValue('use_smtp') ) {
-    		$mailer->send_smtp($n_email, $from, $subject, $body, 1);
-    	} else {
-    		$mailer->send_simple($n_email, $from, $subject, $body, 1);
-    	}*/
     	return json_encode(array('answer'=>'sended'));
     	
     }

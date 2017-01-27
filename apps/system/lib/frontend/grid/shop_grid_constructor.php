@@ -257,8 +257,8 @@ class Shop_Grid_Constructor extends Grid_Constructor {
 		  
 		if(preg_match('/([-0-9A-Za-z_]+.html)/',$request_uri,$matches)){
 
-			$query="SELECT id FROM ".DB_PREFIX."_topic WHERE url='".mysql_real_escape_string($matches[1])."'";
-			$this->db->exec($query);
+			$query="SELECT id FROM ".DB_PREFIX."_topic WHERE url=?";
+			$this->db->exec($query, array($matches[1]));
 			if($this->db->success AND $this->db->num_rows()>0){
 				$this->db->fetch_assoc();
 				return $this->db->row['id'];

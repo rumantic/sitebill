@@ -32,8 +32,9 @@
     {/section}
     
 </div>
-{/if} 
-<script src="{$estate_folder}/apps/comment/js/comment_controller.js"></script>
+{/if}
+{if 1==0} 
+<!-- <script src="{$estate_folder}/apps/comment/js/comment_controller.js"></script> -->
 {literal}
 <script>
 /*$(document).ready(function(){
@@ -41,4 +42,4 @@
 });*/
 </script>
 {/literal}
-<div class="cmnts"></div>
+<div class="cmnts"></div>{/if}

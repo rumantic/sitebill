@@ -1,14 +1,65 @@
-            <div class="sidebar" id="sidebar">
-            
+<div id="sidebar" class="sidebar                  responsive" data-sidebar="true" data-sidebar-scroll="true" data-sidebar-hover="true">            
                 <ul class="nav nav-list">
                     <li>
                         <a href="{$estate_folder}/admin/"><i class="icon-home"></i> <span class="menu-text">{$L_HOME}</span></a>
                     </li>
-
-                    <li {if $admin_menua.data.active}class="active open"{/if}>
-                        <a href="{$estate_folder}/admin/?action=data"><i class="icon-book"></i> <span class="menu-text">{$L_ADMIN_MENU_AUTOADVERTS}</span></a>
-                    </li>
                     
+					{if $admin_menua.data}
+					
+					{assign var="local_data_menu" value="`$smarty.const.SITEBILL_DOCUMENT_ROOT`/apps/admin/admin/template1/local_data_menu.tpl"}
+					{if $local_data_menu|file_exists}
+					{include file='local_data_menu.tpl'}
+					{else}
+                    <li {if $admin_menua.data.active}class="active open"{/if}>
+                        <a href="{$estate_folder}/admin/?action=data">
+                        <i class="icon-book"></i> <span class="menu-text">{$L_ADMIN_MENU_AUTOADVERTS}</span>
+                        </a>
+                        <!-- 
+                        {if $admin_menua.datamain.childs.data.childs|count>0}
+                        <ul class="submenu">
+                        	{foreach from=$admin_menua.datamain.childs.data.childs item=ama}
+	                          <li {if $ama.active}class="active"{/if}>
+	                          <a href="{$ama.href}">{$ama.title}</a>
+	                          </li>
+	                          {/foreach}
+	                          </ul>
+	                        {/if} 
+                          -->
+                          
+                        
+                         {if 1==0}
+                        <!-- ul class="submenu">
+                        
+                          <li {if $ama.active}class="active"{/if}>
+                          <a href="{$estate_folder}/admin/?action=data">Актуальные</a>
+                          </li>
+
+                          <li {if $ama.active}class="active"{/if}>
+                          <a href="{$estate_folder}/admin/?action=data">На прозвон</a>
+                          </li>
+
+                          <li {if $ama.active}class="active"{/if}>
+                          <a href="{$estate_folder}/admin/?action=data">Не дозвонились</a>
+                          </li>
+
+                          <li {if $ama.active}class="active"{/if}>
+                          <a href="{$estate_folder}/admin/?action=data">Модерация</a>
+                          </li>
+
+                          <li {if $ama.active}class="active"{/if}>
+                          <a href="{$estate_folder}/admin/?action=data">Архив</a>
+                          </li>
+                          
+                        </ul-->
+                        {/if}
+                    </li>
+                    {/if}
+                    {/if}
+		    
+                    <li {if $admin_menua.client.active}class="active open"{/if}><a href="{$estate_folder}/admin/?action=client"><i class="icon- ace-icon fa fa-heart bigger-125"></i> <span class="menu-text">{if $L_CLIENT_MENU != ''}{$L_CLIENT_MENU}{else}Клиенты{/if}</span></a></li>
+		    
+                    
+                    {if $admin_menua.references}
                     <li {if $admin_menua.references.active}class="active open"{/if}>
                         <a href="#" class="dropdown-toggle">
                             <i class="icon-globe"></i>
@@ -25,7 +76,9 @@
                           {/foreach}
                         </ul>
                     </li>
+                    {/if}
                     
+                    {if $admin_menua.content}
                     <li {if $admin_menua.content.active}class="active open"{/if}>
                         <a href="#" class="dropdown-toggle">
                             <i class="icon-coffee"></i>
@@ -42,21 +95,34 @@
                           {/foreach}
                         </ul>
                     </li>
+                    {/if}
                     
                     
-
+					
+					{if $admin_menua.apps.childs.config}
                     <li {if $admin_menua.config.active}class="active open"{/if}>
                         <a href="{$estate_folder}/admin/?action=config"><i class="icon-cog"></i> <span class="menu-text">{$L_ADMIN_MENU_SETTINGS}</span></a>
                     </li>
+                    {/if}
+                    {if $admin_menua.sitebill}
                     <li {if $admin_menua.sitebill.active}class="active open"{/if}>
                         <a href="{$estate_folder}/admin/?action=sitebill"><i class="icon-refresh"></i> 
                         <span class="menu-text">{$L_ADMIN_MENU_UPDATES}</span>
                         </a>
-                    
                     </li>
+                    {/if}
+                    {if $admin_menua.user}
                     <li {if $admin_menua.user.active}class="active open"{/if}><a href="{$estate_folder}/admin/?action=user"><i class="icon-user"></i> <span class="menu-text">{$L_USER_MENU}</span></a></li>
-                    <li {if $admin_menua.structure.active}class="active open"{/if}><a href="{$estate_folder}/admin/?action=structure"><i class="icon-th-list"></i> <span class="menu-text">{$L_ADMIN_MENU_STRUCTURE}</span></a></li>
-
+                    {/if}
+		    
+                    {if $admin_menua.structure}
+                    <li {if $admin_menua.structure.active}class="active open"{/if}>
+                    <a href="{$estate_folder}/admin/?action=structure"><i class="icon-th-list"></i> <span class="menu-text">{$L_ADMIN_MENU_STRUCTURE}</span></a></li>
+                    {/if}
+<li {if $admin_menua.table.active}class="active open"{/if}><a href="{$estate_folder}/admin/?action=table">
+<i class="icon-edit"></i> 
+<span class="menu-text">Редактор форм</span></a></li>
+					{if $admin_menua.access}
                     <li {if $admin_menua.access.active}class="active open"{/if}>
                         <a href="#" class="dropdown-toggle">
                             <i class="icon-group"></i>
@@ -73,6 +139,7 @@
                           {/foreach}
                         </ul>
                     </li>
+                    {/if}
                     
                     <li>
                         <a href="#" class="dropdown-toggle">

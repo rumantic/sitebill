@@ -77,29 +77,35 @@ class gallery_site extends gallery_admin {
      * @return array
      */
     function get_gallery_list() {
+    	$DBC=DBC::getInstance();
+    	$ra=array();
         $query = "select * from ".DB_PREFIX."_gallery order by gallery_id asc";
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            $ra[] = $this->db->row;
+        $stmt=$DBC->query($query);
+        if($stmt){
+        	while($ar=$DBC->fetch($stmt)){
+        		$ra[] = $ar;
+        	}
         }
-        foreach ( $ra as $item_id => $item_array ) {
-            //get first image
-            $query = "select i.* from ".DB_PREFIX."_gallery_image gi, ".DB_PREFIX."_image i where gi.gallery_id=".$item_array['gallery_id']." and gi.image_id=i.image_id limit 1";
-            $this->db->exec($query);
-            $this->db->fetch_assoc();
-            $ra[$item_id]['image'] = $this->db->row;
+        if(!empty($ra)){
+        	foreach ( $ra as $item_id => $item_array ) {
+        		//get first image
+        		$query = 'SELECT i.* FROM '.DB_PREFIX.'_gallery_image gi, '.DB_PREFIX.'_image i WHERE gi.gallery_id='.$item_array['gallery_id'].' AND gi.image_id=i.image_id LIMIT 1';
+        		$stmt=$DBC->query($query);
+	        	if($stmt){
+		        	$ra[$item_id]['image'] = $DBC->fetch($stmt);
+		        }
+        	}
         }
         return $ra;
     }
     
     function get_gallery($gallery_id){
+    	$DBC=DBC::getInstance();
     	$ra=array();
-    	$query = "select * from ".DB_PREFIX."_gallery where gallery_id=".$gallery_id;
-    	//echo $query;
-    	$this->db->exec($query);
-    	if($this->db->success){
-    		$this->db->fetch_assoc();
-    		$ra=$this->db->row;
+    	$query = 'SELECT * FROM '.DB_PREFIX.'_gallery WHERE gallery_id=?';
+    	$stmt=$DBC->query($query, array($gallery_id));
+    	if($stmt){
+    		$ra=$DBC->fetch($stmt);
     	}
     	return $ra;
     }

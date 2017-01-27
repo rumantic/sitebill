@@ -9,3 +9,8 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule . index.php [L]
 ErrorDocument 404 /404.html
 </IfModule>
+
+<Files ~ "\.(tpl)$">
+Order allow,deny
+Deny from all
+</Files>

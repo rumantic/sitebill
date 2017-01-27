@@ -304,7 +304,7 @@ class frontend_main extends SiteBill_Krascap {
 		    $has_result=true;
 		}
 			
-		if ( $this->getConfigValue('apps.geodata.on_home') and $_SERVER['REQUEST_URI'] == SITEBILL_MAIN_URL.'/' ) {
+		if ( $this->getConfigValue('apps.geodata.on_home') and $REQUESTURIPATH == '' ) {
 		    $this->template->assert('geodata_on_home', 1);
 		    $this->template->assert('_geo_data', $this->map(true));
 		}

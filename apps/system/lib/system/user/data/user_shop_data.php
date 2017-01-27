@@ -329,11 +329,14 @@ class User_Shop_Data_Manager extends Shop_Product_Manager {
 	 */
 	function check_access_to_data ( $user_id, $data_id ) {
 	    $query = "select product_id from ".DB_PREFIX."_shop_product where user_id=$user_id and product_id=$data_id";
-	    $this->db->exec($query);
-	    $this->db->fetch_assoc();
-	    if ( $this->db->row['product_id'] > 0 ) {
-	        return true;
-	    }
+	    $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			if ( $ar['product_id'] > 0 ) {
+				return true;
+			}
+		}
 	    return false;
 	}
 	
@@ -507,35 +510,38 @@ class User_Shop_Data_Manager extends Shop_Product_Manager {
 	}
 	
 	function unarchiveProducts($ids,$user_id){
+		$DBC=DBC::getInstance();
 		foreach($ids as $id){
 			$query='UPDATE '.DB_PREFIX.'_'.$this->table_name.' SET product_add_date='.time().' WHERE '.$this->primary_key.'='.$id.' AND user_id='.$user_id;
-			$this->db->exec($query);
+			$stmt=$DBC->query($query);
 		}
 	}
 	
 	function archiveProducts($ids,$user_id){
+		$DBC=DBC::getInstance();
 		foreach($ids as $id){
 			$query='UPDATE '.DB_PREFIX.'_'.$this->table_name.' SET product_add_date='.(time()-365*24*3600).' WHERE '.$this->primary_key.'='.$id.' AND user_id='.$user_id;
-			$this->db->exec($query);
+			$stmt=$DBC->query($query);
 		}
 	}
 	
-	function prolongProducts($ids,$user_id,$term){
-		
+	function prolongProducts($ids, $user_id, $term){
+		$DBC=DBC::getInstance();
 		$query='SELECT publication_limit FROM '.DB_PREFIX.'_user WHERE user_id='.$user_id;
-		$this->db->exec($query);
-		$this->db->fetch_assoc();
-		$pub_limit=$this->db->row['publication_limit'];
-		if($term>$pub_limit){
-			$term=$pub_limit;
-			$message='Максимальный срок на который вы можете продлить объявление составляет '.$pub_limit.' день/дней';
-			$_SESSION['attenton_message']=$message;
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			$pub_limit=$ar['publication_limit'];
+			if($term>$pub_limit){
+				$term=$pub_limit;
+				$message='Максимальный срок на который вы можете продлить объявление составляет '.$pub_limit.' день/дней';
+				$_SESSION['attenton_message']=$message;
+			}
 		}
 		foreach($ids as $id){
 			$query='UPDATE '.DB_PREFIX.'_'.$this->table_name.' SET product_add_date=product_add_date+'.($term*24*3600).' WHERE '.$this->primary_key.'='.$id.' AND user_id='.$user_id;
-			$this->db->exec($query);
+			$stmt=$DBC->query($query);
 		}
 	}
 	
 }
-?>

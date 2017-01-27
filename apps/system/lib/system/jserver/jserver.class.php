@@ -9,9 +9,7 @@ class JServer {
      * Construct
      */
     function __construct() {
-    	global $__server, $__db, $__user, $__password, $sitebill_document_root;
-    	$this->db = new Db( $__server, $__db, $__user, $__password );
-        //$this->SiteBill();
+    	
     }
     
     /**
@@ -21,12 +19,14 @@ class JServer {
      */
     function load_product_data ( $product_id ) {
         $query = "SELECT * FROM ".DB_PREFIX."_shop_product WHERE product_id=$product_id";
-        //echo $query;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['product_id'] > 0 ) {
-            return $this->db->row;
-        }
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			if ( $ar['product_id'] > 0 ) {
+				return $ar;
+			}
+		}
         return false;
     }
     
@@ -87,4 +87,3 @@ class JServer {
         return $value;
     }
 }
-?>

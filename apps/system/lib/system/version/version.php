@@ -20,15 +20,6 @@ class Version extends Object_Manager {
      */
     function get_version_value ( $tag ) {
         return true;
-        /*
-        $query = "select version from ".DB_PREFIX."_version where name='$tag'";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['version'] != '' ) {
-            return $this->db->row['version'];
-        }
-        return false;
-        */
     }
     
     /**
@@ -38,8 +29,9 @@ class Version extends Object_Manager {
      * @return value 
      */
     function set_version_value ( $tag, $version ) {
-        $query = "insert into ".DB_PREFIX."_version (name, version) values ('$tag', '$version')";
-        $this->db->exec($query);
+        $query = "insert into ".DB_PREFIX."_version (name, version) values (?, ?)";
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query, array($tag, $version));
         return true;
     }
 }

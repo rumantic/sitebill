@@ -145,9 +145,10 @@ class socialauth_admin extends Object_Manager {
 		$this->template->assign('socialauth_panel', $this->getSocialAuthPanel());
 	}
 	
-	private function getSocialAuthPanel(){
+	public function getSocialAuthPanel(){
 		global $smarty;
-		if((int)$this->getSessionUserId()==0){
+		$any_auth=(intval($this->getConfigValue('apps.socialauth.vk.enable')) || intval($this->getConfigValue('apps.socialauth.ok.enable')) || intval($this->getConfigValue('apps.socialauth.tw.enable')) || intval($this->getConfigValue('apps.socialauth.gl.enable')) || intval($this->getConfigValue('apps.socialauth.fb.enable')));
+		if((int)$this->getSessionUserId()==0 && $any_auth){
 			$smarty->assign('vk_login_enable', (int)$this->getConfigValue('apps.socialauth.vk.enable'));
 			$smarty->assign('ok_login_enable', (int)$this->getConfigValue('apps.socialauth.ok.enable'));
 			$smarty->assign('tw_login_enable', (int)$this->getConfigValue('apps.socialauth.tw.enable'));

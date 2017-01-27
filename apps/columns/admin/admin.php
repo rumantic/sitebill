@@ -25,25 +25,160 @@ class columns_admin extends table_admin {
 		
 	}
 	
+	public function copyColumn($column_id, $newname, $opts=array()){
+		
+		$model=$this->data_model[$this->table_name];
+		
+		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+		$data_model = new Data_Model();
+		$model = $data_model->init_model_data_from_db ( $this->table_name, $this->primary_key, $column_id, $this->data_model[$this->table_name] );
+		$model['name']['value']=$newname;
+		if(!empty($opts)){
+			foreach($opts as $k=>$v){
+				if(isset($model[$k])){
+					$model[$k]['value']=$v;
+				}
+			}
+		}
+		unset($model[$this->primary_key]);
+		$new_record_id=$this->add_data($model, 0);
+		if(false===$new_record_id){
+			return $this->getError();
+		}
+	}
+	
+	protected function _add_lang_fieldsAction(){
+		if(1!==intval($this->getConfigValue('apps.language.use_langs'))){
+			return $this->_defaultAction();
+		}
+		$table_id=intval($this->getRequestValue('table_id'));
+		$columns_id=intval($this->getRequestValue('columns_id'));
+	
+		$langs=array_values(Multilanguage::availableLanguages());
+	
+	
+		$exising_columns=array();
+		$need_ml_columns=array();
+		$columns_to_add=array();
+	
+		$DBC=DBC::getInstance();
+		$query='SELECT columns_id, table_id, name FROM '.DB_PREFIX.'_columns WHERE table_id=?';
+		$stmt=$DBC->query($query, array($table_id));
+		if($stmt){
+			while($ar=$DBC->fetch($stmt)){
+				if($ar['is_ml']==1){
+					$need_ml_columns[]=$ar;
+				}
+				$exising_columns[]=$ar['name'];
+			}
+		}
+	
+		if(!empty($need_ml_columns)){
+			foreach($need_ml_columns as $nmc){
+				foreach($langs as $lng){
+					$new_name=$nmc['name'].'_'.$lng;
+					if(!isset($exising_columns[$new_name])){
+						$columns_to_add[$nmc['columns_id']][]=$new_name;
+					}
+				}
+			}
+		}
+	
+		if(!empty($columns_to_add)){
+			require_once SITEBILL_DOCUMENT_ROOT.'/apps/columns/admin/admin.php';
+			$CM=new columns_admin();
+			$opts=array(
+					'required'=>0,
+					'is_ml'=>0
+			);
+			foreach ($columns_to_add as $columns_id=>$new_names){
+				foreach ($new_names as $new_name){
+					$CM->copyColumn($columns_id, $new_name, $opts);
+				}
+			}
+				
+			$query = 'SELECT name FROM '.DB_PREFIX.'_table WHERE table_id=? LIMIT 1';
+			$stmt=$DBC->query($query, array($table_id));
+			if($stmt){
+				$ar=$DBC->fetch($stmt);
+				$this->helper->update_table($ar['name']);
+				$_POST['table_name']=$ar['name'];
+			}
+				
+				
+		}
+	
+		return $this->_defaultAction();
+	}
+	
 	/**
 	 * Main
 	 * @param void
 	 * @return string
 	 */
 	function main () {
-		//echo 1;
-		//exit();
+		$DBC=DBC::getInstance();
+		
 		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
 		$data_model = new Data_Model();
 		$form_data = $this->data_model;
 		$rs = $this->getTopMenu();
-		if(0!=(int)$this->getRequestValue('table_id')){
-			$rs .= '<h4>Таблица ID '.(int)$this->getRequestValue('table_id').'</h4>';
+		
+		$table_id=intval($this->getRequestValue('table_id'));
+		
+		if(0!==$table_id){
+			$rs .= '<h4>Таблица ID '.$table_id.'</h4>';
 		}
+		
+		$optype_field=null;
+		if(defined('DEVMODE')){
+			$query='SELECT * FROM '.DB_PREFIX.'_columns WHERE `table_id`=? AND name=?';
+			$stmt=$DBC->query($query, array($table_id, 'optype'));
+			if($stmt){
+				$optype_field=$DBC->fetch($stmt);
+			}
+		}
+		
 	
 		switch( $this->getRequestValue('do') ){
 			case 'structure' : {
 				$rs .= $this->structure_processor();
+				break;
+			}
+			
+			case 'copy' : {
+				$column_id=intval($this->getRequestValue($this->primary_key));
+				$this->copyColumn($column_id, 'xxx2');
+				$rs.=$this->grid();
+				break;
+			}
+			
+			case 'add_lang_fields' : {
+				$columns_id=intval($this->getRequestValue($this->primary_key));
+				
+				$langs=array_values(Multilanguage::availableLanguages());
+				
+				$DBC=DBC::getInstance();
+				$query='SELECT title, name FROM '.DB_PREFIX.'_columns WHERE `'.$this->primary_key.'`=?';
+				$stmt=$DBC->query($query, array($columns_id));
+				
+				if($stmt){
+					$cdata=$DBC->fetch($stmt);
+				}
+				
+				//$res='';
+				foreach ($langs as $lng){
+					$new_name=$cdata['name'].'_'.$lng;
+					$new_title=$cdata['title'].' '.$lng;
+					$opts=array(
+							'required'=>0,
+							'title'=>$new_title
+					);
+					$rs.=$this->copyColumn($columns_id, $new_name, $opts);
+				}
+				
+				
+				$rs.=$this->grid();
 				break;
 			}
 	
@@ -55,9 +190,9 @@ class columns_admin extends table_admin {
 				
 				//unset($form_data[$this->table_name]['action']);
 				if($form_data[$this->table_name]['dbtype']['value']!=1){
-					$form_data[$this->table_name]['dbtype']['value']='notable';
+					$form_data[$this->table_name]['dbtype']['value']=0;
 				}else{
-					$form_data[$this->table_name]['dbtype']['value']='';
+					$form_data[$this->table_name]['dbtype']['value']=1;
 				}
 				
 				$data_model->forse_auto_add_values($form_data[$this->table_name]);
@@ -71,13 +206,17 @@ class columns_admin extends table_admin {
 					if ( $this->getError() ) {
 						$rs .= $this->get_form($form_data[$this->table_name], 'edit');
 					} else {
-						$this->db->exec('SELECT name FROM '.DB_PREFIX.'_table WHERE table_id='.$this->getRequestValue('table_id').' LIMIT 1');
-						$this->db->fetch_assoc();
-						$this->helper->update_table($this->db->row['name']);
-						$_POST['table_name']=$this->db->row['name'];
+						$query='SELECT name FROM '.DB_PREFIX.'_table WHERE table_id='.$this->getRequestValue('table_id').' LIMIT 1';
+						$stmt=$DBC->query($query);
+						if($stmt){
+							$ar=$DBC->fetch($stmt);
+							$this->helper->update_table($ar['name']);
+							$_POST['table_name']=$ar['name'];
+						}
 						$rs .= $this->grid();
 					}
 				}
+				
 				break;
 			}
 	
@@ -93,7 +232,7 @@ class columns_admin extends table_admin {
 				if ( $this->getRequestValue('subdo') == 'down_image' ) {
 					$this->reorderImage($this->table_name, $this->getRequestValue('image_id'), $this->primary_key, $this->getRequestValue($this->primary_key), 'down');
 				}
-				 
+				
 				
 				//echo '<pre>';
 				//print_r($form_data[$this->table_name]);
@@ -105,15 +244,14 @@ class columns_admin extends table_admin {
 					} else {
 						$form_data[$this->table_name] = $data_model->init_model_data_from_db ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name] );
 					}
-					//echo '<pre>';
-					//print_r($form_data);
+					
 					$form_data[$this->table_name]['action']['name']='uaction';
 					
 					if($form_data[$this->table_name]['primary_key_table']['value']!=''){
 						$form_data[$this->table_name]['primary_key_name']['select_data']=$this->getTableFields($form_data[$this->table_name]['primary_key_table']['value']);
 						$form_data[$this->table_name]['value_name']['select_data']=$this->getTableFields($form_data[$this->table_name]['primary_key_table']['value']);
 					}
-					if($form_data[$this->table_name]['dbtype']['value']=='notable'){
+					if($form_data[$this->table_name]['dbtype']['value']=='notable' || $form_data[$this->table_name]['dbtype']['value']=='0'){
 						$form_data[$this->table_name]['dbtype']['value']=0;
 					}else{
 						$form_data[$this->table_name]['dbtype']['value']=1;
@@ -136,7 +274,46 @@ class columns_admin extends table_admin {
 	
 				break;
 			}
+			case 'add_meta' : {
+				//$form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
+				$form_data = $this->data_model;
+				$form_data[$this->table_name]['table_id']['value']=$this->getRequestValue('table_id');
+				$form_data[$this->table_name]['type']['value']='safe_string';
+				$form_data[$this->table_name]['active']['value']=1;
+				$form_data[$this->table_name]['name']['value']='meta_title';
+				$form_data[$this->table_name]['title']['value']='META TITLE';
+				$form_data[$this->table_name]['dbtype']['value']='';
+				$new_record_id=$this->add_data($form_data[$this->table_name], $this->getRequestValue('language_id'));
 				
+				$form_data = $this->data_model;
+				$form_data[$this->table_name]['table_id']['value']=$this->getRequestValue('table_id');
+				$form_data[$this->table_name]['type']['value']='safe_string';
+				$form_data[$this->table_name]['active']['value']=1;
+				$form_data[$this->table_name]['name']['value']='meta_keywords';
+				$form_data[$this->table_name]['title']['value']='META KEYWORDS';
+				$new_record_id=$this->add_data($form_data[$this->table_name], $this->getRequestValue('language_id'));
+				
+				$form_data = $this->data_model;
+				$form_data[$this->table_name]['table_id']['value']=$this->getRequestValue('table_id');
+				$form_data[$this->table_name]['active']['value']=1;
+				$form_data[$this->table_name]['type']['value']='textarea';
+				$form_data[$this->table_name]['name']['value']='meta_description';
+				$form_data[$this->table_name]['title']['value']='META DESCRIPTION';
+				$new_record_id=$this->add_data($form_data[$this->table_name], $this->getRequestValue('language_id'));
+				
+				$query = 'SELECT name FROM '.DB_PREFIX.'_table WHERE table_id='.$this->getRequestValue('table_id').' LIMIT 1';
+				$stmt=$DBC->query($query);
+				if($stmt){
+					$ar=$DBC->fetch($stmt);
+					$this->helper->update_table($ar['name']);
+					$_POST['table_name']=$ar['name'];
+				}
+				
+				$rs .= $this->grid();
+			
+			
+				break;
+			}	
 			case 'new_done' : {
 				$form_data[$this->table_name]['action']['name']='uaction';
 				$form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
@@ -160,13 +337,15 @@ class columns_admin extends table_admin {
 						$rs .= $this->get_form($form_data[$this->table_name], 'new');
 					} else {
 					    $query = "update ".DB_PREFIX."_columns set sort_order={$new_record_id} where columns_id={$new_record_id}";
-					    $this->db->exec($query);
-					    
-					    $this->db->exec('SELECT name FROM '.DB_PREFIX.'_table WHERE table_id='.$this->getRequestValue('table_id').' LIMIT 1');
-					    $this->db->fetch_assoc();
-					    $this->helper->update_table($this->db->row['name']);
-					    $_POST['table_name']=$this->db->row['name'];
-						$rs .= $this->grid();
+					    $stmt=$DBC->query($query);
+					    $query = 'SELECT name FROM '.DB_PREFIX.'_table WHERE table_id='.$this->getRequestValue('table_id').' LIMIT 1';
+					    $stmt=$DBC->query($query);
+					    if($stmt){
+					    	$ar=$DBC->fetch($stmt);
+					    	$this->helper->update_table($ar['name']);
+					    	$_POST['table_name']=$ar['name'];
+					    }
+					    $rs .= $this->grid();
 					}
 				}
 				break;
@@ -175,6 +354,9 @@ class columns_admin extends table_admin {
 			case 'new' : {
 				$form_data[$this->table_name]['action']['name']='uaction';
 				$form_data[$this->table_name]['table_id']['value']=$this->getRequestValue('table_id');
+				
+				
+				
 				$rs .= $this->get_form($form_data[$this->table_name]);
 				break;
 			}
@@ -205,6 +387,7 @@ class columns_admin extends table_admin {
 		return $rs_new;
 	}
 	
+	
 	function get_form( $form_data=array(), $do = 'new', $language_id = 0, $button_title = '', $action='' ){
 		global $smarty;
 		if($button_title==''){
@@ -221,13 +404,28 @@ class columns_admin extends table_admin {
 		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/form/form_generator.php');
 		$form_generator = new Form_Generator();
 		
+		
+		$langs=array_values(Multilanguage::availableLanguages());
+		/*if(count($_langs)>0){
+			foreach($_langs as $l){
+				$langs[$l]=$l;
+			}
+		}*/
+		$smarty->assign('langs', $langs);
+		$smarty->assign('langsjs', json_encode($langs));
+		
         $rs .= $this->get_ajax_functions();
+        $rs .= '<script>var langs='.json_encode(array_values($langs)).'</script>';
         $rs .= '<script src="'.SITEBILL_MAIN_URL.'/apps/columns/js/interface.js"></script>';
         $rs .= '<div id="element_preview"><h3>Предпросмотр элемента формы</h3><div id="element_preview_c">element_preview</div></div>';
 		$rs .= '<form method="post" id="column_form" class="form-horizontal" action="'.$form_action.'" enctype="multipart/form-data">';
 		if ( $this->getError() ) {
-			$smarty->assign('form_error',$form_generator->get_error_message_row($this->GetErrorMessage()));
+			$smarty->assign('form_error', $form_generator->get_error_message_row($this->GetErrorMessage()));
 		}
+		
+		
+		//$smarty->assign('langs', json_encode($langs));
+		
 		$el = $form_generator->compile_form_elements($form_data, true);
 		//array_unshift($el['public'][$this->getConfigValue('default_tab_name')], array('title'=>'Предпросмотр','name'=>'_element_preview','html'=>'<div id="_element_preview"></div>'));
 		//$el['public'][$this->getConfigValue('default_tab_name')]['_element_preview']=array('title'=>'Предпросмотр','name'=>'_element_preview','html'=>'<div id="_element_preview"></div>');
@@ -260,8 +458,11 @@ class columns_admin extends table_admin {
 		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl')){
 			$tpl_name=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl';
 		}else{
-			$tpl_name=SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template/data_form.tpl';
+			$tpl_name=$this->getAdminTplFolder().'/data_form.tpl';
 		}
+		
+		$tpl_name=SITEBILL_DOCUMENT_ROOT.'/apps/columns/admin/template/form.tpl';
+		
 		return $smarty->fetch($tpl_name);
 	}
 	

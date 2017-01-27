@@ -1,3 +1,4 @@
+{literal}
 <script type="text/javascript">
 function confirmUpdate() {
 	    if (confirm("Внимание! При добавлении новых полей в модель данных, форма объявления сильно увеличится. Если вам нужно будет ее уменьшить, то это можно сделать в Приложения - Редактор форм. Продолжить?")) {
@@ -8,6 +9,7 @@ function confirmUpdate() {
 }
 
 </script>
+{/literal}
 <div class="widget-box">
 										<div class="widget-header">
 											<h4 class="widget-title lighter smaller">

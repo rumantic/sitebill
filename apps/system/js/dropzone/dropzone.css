@@ -460,6 +460,9 @@ padding: 6px 6px 6px 6px;
 box-shadow: 1px 1px 4px rgba(0,0,0,0.16);
 font-size: 14px;
 }
+li.dz-preview-uploaded-item.dz-preview-uploaded-item-docs {
+display: block;
+}
 
 .dz-preview-uploaded-item-image {
 width: 120px;
@@ -469,6 +472,12 @@ background: #ebebeb;
 padding: 5px;
 margin-bottom: 22px;
 overflow: hidden;
+}
+
+.dz-preview-uploaded-item-doc {
+background: #ebebeb;
+    padding: 5px;
+    margin-bottom: 12px;
 }
 
 .dz-preview-uploaded-item-image img {

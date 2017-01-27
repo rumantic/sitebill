@@ -75,13 +75,14 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
      * @return string
      */
     function getNotActiveAdvCount() {
-        global $__db_prefix;
-        
-        $query = "select count(id) as cid from ".$__db_prefix."_data where active=0";
-        //echo $query;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        return $this->db->row['cid'];
+        $query = "select count(id) as cid from ".DB_PREFIX."_data where active=0";
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			return $ar['cid'];
+		}
+		return 0;
     }
     
     /**
@@ -89,48 +90,45 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
      * @param int $tid tid
      * @return int
      */
-    function getActiveTidCount( $tid ) {
-        global $__db_prefix;
-        
+    /*function getActiveTidCount( $tid ) {
         $where_array = false;
         $where_array[] = 're_district.id=re_data.district_id';
         if ( $tid != '' ) {
-            $where_array[] = $__db_prefix.'_data.topic_id='.$tid;
+            $where_array[] = DB_PREFIX.'_data.topic_id='.$tid;
         }
         
-        $where_array[] = $__db_prefix.'_data.active=1';
+        $where_array[] = DB_PREFIX.'_data.active=1';
         
         if ( $where_array ) {
             $where_statement = " where ".implode(' and ', $where_array);
         }
-        
-        //$rs .= $this->getSubTypeFlatList($_REQUEST['tid1'], $_REQUEST['tid']);
-        //$first_tid1 = $this->getFirstTid1($_REQUEST['tid']);
-        
-        
-        
-        $query = "select count(".$__db_prefix."_data.id) as cid from ".$__db_prefix."_data, ".$__db_prefix."_district $where_statement order by date_added desc";
-        //echo $query.'<br>';
-        
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        return $this->db->row['cid'];
-    }
+        $query = "select count(".DB_PREFIX."_data.id) as cid from ".DB_PREFIX."_data, ".DB_PREFIX."_district $where_statement order by date_added desc";
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			return $ar['cid'];
+		}
+        return 0;
+    }*/
     
     /**
      * Get rent order count
      * @param void
      * @return string
      */
-    function getRentOrderCount() {
+    /*function getRentOrderCount() {
         global $__db_prefix;
         
-        $query = "select count(data_get_rent_id) as cid from ".$__db_prefix."_data_get_rent";
-        //echo $query;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        return $this->db->row['cid'];
-    }
+        $query = "select count(data_get_rent_id) as cid from ".DB_PREFIX."_data_get_rent";
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+        if($stmt){
+			$ar=$DBC->fetch($stmt);
+			return $ar['cid'];
+		}
+        return 0;
+    }*/
     
     /**
      * Return array with menu items for rabota.sitebill.ru
@@ -735,6 +733,84 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
     		if ( isset($_REQUEST['action']) AND ($_REQUEST['action'] == 'data') ) {
     			$menu_sub4['data']['active'] = 1;
     		}
+    		
+    		require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/data/data_manager.php';
+    		$DM=new Data_Manager();
+    		
+    		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+    		$data_model = new Data_Model();
+    		$model = $data_model->get_kvartira_model(false, true);
+    		$statuses=array();
+    		if(isset($model['data']['status_id'])){
+    			if($model['data']['status_id']['type']=='select_box'){
+    				foreach($model['data']['status_id']['select_data'] as $k=>$v){
+    					$statuses[$k]=$v;
+    				}
+    			}
+    		}
+    		
+    		/*$statuses2=array();
+    		if(isset($model['data']['optype'])){
+    			if($model['data']['optype']['type']=='select_box'){
+    				foreach($model['data']['optype']['select_data'] as $k=>$v){
+    					$statuses2[$k]=$v;
+    				}
+    			}
+    		}*/
+    		
+    		$stat_params=array();
+    		if(!empty($statuses)){
+    			$stat_params[]='status_id';
+    		}
+    		/*if(!empty($statuses2)){
+    			$stat_params[]='optype';
+    		}*/
+    		
+    		$stat=$DM->getDataStatInfo($stat_params);
+    		
+    		$menu_sub5['sdata_1']['title'] = 'Все ('.intval($stat['total']).')';
+    		$menu_sub5['sdata_1']['href'] = SITEBILL_MAIN_URL.'/admin/?action=data';
+    		
+    		if(!empty($statuses)){
+    			foreach($statuses as $k=>$v){
+    				$menu_sub5[]=array('title'=>$v.' ('.intval($stat['status']['status_id'][$k]).')', 'href'=>SITEBILL_MAIN_URL.'/admin/?action=data&status_id='.$k);
+    			}
+    		}
+    		
+    		/*if(!empty($statuses2)){
+    			foreach($statuses2 as $k=>$v){
+    				$menu_sub5[]=array('title'=>$v.' ('.intval($stat['status']['optype'][$k]).')', 'href'=>SITEBILL_MAIN_URL.'/admin/?action=data&optype='.$k);
+    			}
+    		}*/
+    		
+    		/*
+    		$menu_sub5['sdata_1']['title'] = 'Актуальные ('.intval($stat['status'][1]).')';
+    		$menu_sub5['sdata_1']['href'] = SITEBILL_MAIN_URL.'/admin/?action=data&status_id=1';
+    		
+    		$menu_sub5['sdata_2']['title'] = 'На прозвон ('.intval($stat['status'][2]).')';
+    		$menu_sub5['sdata_2']['href'] = SITEBILL_MAIN_URL.'/admin/?action=data&status_id=2';
+    		
+    		$menu_sub5['sdata_3']['title'] = 'Не дозвонились ('.intval($stat['status'][3]).')';
+    		$menu_sub5['sdata_3']['href'] = SITEBILL_MAIN_URL.'/admin/?action=data&status_id=3';
+    		*/
+    		$menu_sub5['sdata_4']['title'] = 'Модерация ('.intval($stat['active'][0]).')';
+    		$menu_sub5['sdata_4']['href'] = SITEBILL_MAIN_URL.'/admin/?action=data&active=notactive';
+    		
+    		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/realtylogv2/admin/admin.php') && $this->getConfigValue('apps.realtylogv2.enable')==1){
+    			require_once SITEBILL_DOCUMENT_ROOT.'/apps/realtylogv2/admin/admin.php';
+    			$RL=new realtylogv2_admin();
+    			
+    			$menu_sub5['sdata_5']['title'] = 'Архив ('.$RL->getDeletedCount().')';
+    			$menu_sub5['sdata_5']['href'] = SITEBILL_MAIN_URL.'/admin/?action=realtylogv2';
+    		}
+    		
+    		$menu_sub5['sdata_6']['title'] = 'Активные ('.intval($stat['active'][1]).')';
+    		$menu_sub5['sdata_6']['href'] = SITEBILL_MAIN_URL.'/admin/?action=data&active=1';
+    		
+    		$menu_sub5['sdata_7']['title'] = 'Неактивные ('.intval($stat['active'][0]).')';
+    		$menu_sub5['sdata_7']['href'] = SITEBILL_MAIN_URL.'/admin/?action=data&active=notactive';
+    		
+    		$menu_sub4['data']['childs'] = $menu_sub5;
     	
     		$menu_sub1['country']['title'] = Multilanguage::_('L_ADMIN_MENU_COUNTRIES');
     		$menu_sub1['country']['href'] = 'index.php?action=country';
@@ -908,6 +984,27 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
     	if ( isset($_REQUEST['action']) AND ($_REQUEST['action'] == 'user') ) {
     		$menu['user']['active'] = 1;
     	}
+    	 
+    	
+    	$menu['data']['title'] = Multilanguage::_('L_ADMIN_MENU_AUTOADVERTS');
+    	$menu['data']['href'] = 'index.php?action=data';
+    	if ( isset($_REQUEST['action']) AND ($_REQUEST['action'] == 'data') ) {
+    		$menu['data']['active'] = 1;
+    	}
+    	
+    	$menu['structure']['title'] = Multilanguage::_('L_ADMIN_MENU_STRUCTURE');
+    	$menu['structure']['href'] = 'index.php?action=structure';
+    	if ( isset($_REQUEST['action']) AND ($_REQUEST['action'] == 'structure') ) {
+    		$menu['structure']['active'] = 1;
+    	}
+    	
+    	$menu['sitebill']['title'] = Multilanguage::_('L_ADMIN_MENU_UPDATES');
+    	$menu['sitebill']['href'] = 'index.php?action=sitebill';
+    	if ( isset($_REQUEST['action']) AND ($_REQUEST['action'] == 'sitebill') ) {
+    		$menu['sitebill']['active'] = 1;
+    	}
+    	 
+    	 
 
     	
     	$menu_sub_group['group']['title'] = Multilanguage::_('L_ADMIN_MENU_GROUPS');
@@ -964,20 +1061,17 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
      * @return boolean 
      */
     function massDelete ( $rows ) {
-        global $__db_prefix;
-        
         if ( count($rows) ) {
-            foreach ( $rows as $item_id => $item ) {
+        	$DBC=DBC::getInstance();
+        	foreach ( $rows as $item_id => $item ) {
                 $item_count++;
-                $query = 'delete from '.$__db_prefix.'_data where id='.$item_id;
-                $this->db->exec($query);
-                //echo "item_id = $item_id<br>";
+                $query = 'delete from '.DB_PREFIX.'_data where id='.$item_id;
+                $stmt=$DBC->query($query);
             }
         } else {
             $item_count = 0;
         }
         return sprintf(Multilanguage::_('L_MESSAGE_DELETED_N_RECORDS'),$item_count);//'Удалено '.$item_count.' записи(ей)';
-        //return 'Удалено '.$item_count.' записи(ей)';
     }
     
     /**
@@ -986,8 +1080,9 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
      * @return boolean
      */
     function deleteRecord ( $record_id ) {
-        $query = "delete from re_data where id=$record_id";
-        $this->db->exec($query);
+    	$DBC=DBC::getInstance();
+        $query = 'delete from '.DB_PREFIX.'_data where id=?';
+        $stmt=$DBC->query($query, array($record_id));
         return true;
     }
     
@@ -997,11 +1092,14 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
      * @return boolean
      */
     function hasChilds ( $tid ) {
-        $query = "select * from re_topic where parent_id=$tid";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->num_rows() > 0 ) {
-            return true;
+    	$DBC=DBC::getInstance();
+        $query = 'select COUNT(id) AS cid from '.DB_PREFIX.'_topic where parent_id=?';
+        $stmt=$DBC->query($query, array($tid));
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+        	if ( $ar['cid'] > 0 ) {
+        		return true;
+        	}
         }
         return false;
     }
@@ -1011,16 +1109,18 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
      * @param int $tid tid
      * @return int
      */
-    function getFirstTid1 ( $tid ) {
+    /*function getFirstTid1 ( $tid ) {
         $query = "select id from re_topic where parent_id=$tid order by `order` limit 1";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['id'] > 0 ) {
-            return $this->db->row['id'];
-        } else {
-            return false;
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query);
+        if($stmt){
+        	$ar=$DBC->fetch($stmt);
+	        if ( $ar['id'] > 0 ) {
+	            return $ar['id'];
+	        }
         }
-    }
+        return false;
+    }*/
     
     /**
      * Get grid frame
@@ -1082,34 +1182,28 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
      * @return string
      */
     function grid () {
-        global $__db_prefix;
-        
         $where_array = false;
-        $where_array[] = 're_district.id=re_data.district_id';
+        $where_array[] = DB_PREFIX.'_district.id='.DB_PREFIX.'_data.district_id';
         if ( $_REQUEST['tid'] != '' ) {
-            $where_array[] = 're_data.topic_id='.$_REQUEST['tid'];
+            $where_array[] = DB_PREFIX.'_data.topic_id='.$_REQUEST['tid'];
         }
         
         if ( $_REQUEST['tid1'] != '' ) {
-            $where_array[] = 're_data.type_id='.$_REQUEST['tid1'];
+            $where_array[] = DB_PREFIX.'_data.type_id='.$_REQUEST['tid1'];
         }
         $moderate = true;        
         if ( $moderate ) {
-            $where_array[] = 're_data.active=1';
+            $where_array[] = DB_PREFIX.'_data.active=1';
         }
         
         if ( $where_array ) {
             $where_statement = " where ".implode(' and ', $where_array);
         }
         
-        //$rs .= $this->getSubTypeFlatList($_REQUEST['tid1'], $_REQUEST['tid']);
-        //$first_tid1 = $this->getFirstTid1($_REQUEST['tid']);
-        
-        
-        
-        $query = "select ".$__db_prefix."_data.*, ".$__db_prefix."_district.name as district from ".$__db_prefix."_data, ".$__db_prefix."_district $where_statement order by date_added desc";
+        $query = "select ".DB_PREFIX."_data.*, ".DB_PREFIX."_district.name as district from ".DB_PREFIX."_data, ".DB_PREFIX."_district $where_statement order by date_added desc";
         //echo $query;
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+        $stmt=$DBC->query($query);
         $rs .= '<form action="index.php" method="post">';
         $grid_rows_head .= '<thead>';
         $grid_rows_head .= '<tr>';
@@ -1127,42 +1221,47 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
         $grid_rows_head .= '</tr>';
         $grid_rows_head .= '</thead>';
         $ra = array();
-        while ( $this->db->fetch_assoc() ) {
-            $ra[] = $this->db->row;
+        if($stmt){
+        	while ( $ar=$DBC->fetch($stmt) ) {
+        		$ra[] = $ar;
+        	}
         }
-        foreach ( $ra as $item_id => $item_array ) {
-        //while ( $this->db->fetch_assoc() ) {
-            $num_rows++;
-            $j++;
-            if ( ceil($j/2) > floor($j/2)  ) {
-                $row_class = "row1";
-            } else {
-                $j = 0;
-                $row_class = "row2";
-            }
-            if ( $this->db->row['hot'] == 1 ) {
-                $row_class = "hot";
-            }
-            $grid_rows .= '<tr>';
-            
-            $img = $this->getPreviewImage($item_array['id'], 1);
-            if ( !$img ) {
-                $img = '';
-            }
-            
-            $grid_rows .= '<td class="'.$row_class.'"><input type="checkbox" name="row['.$item_array['id'].']" value=""></td>';
-            $grid_rows .= '<td class="'.$row_class.'">'.$img.'</td>';
-            $grid_rows .= '<td class="'.$row_class.'">'.$item_array['id'].'</td>';
-            $grid_rows .= '<td class="'.$row_class.'">'.date('d.m.Y H:i',strtotime($item_array['date_added'])).'</td>';
-            $grid_rows .= '<td class="'.$row_class.'">'.$item_array['room_count'].'</td>';
-            $grid_rows .= '<td class="'.$row_class.'">'.$item_array['district'].'</td>';
-            $grid_rows .= '<td class="'.$row_class.'">'.$item_array['street'].'</td>';
-            $grid_rows .= '<td class="'.$row_class.'">'.$item_array['price'].'</td>';
-            $grid_rows .= '<td class="'.$row_class.'">'.$item_array['text'].'</td>';
-            $grid_rows .= '<td class="'.$row_class.'">'.$item_array['agent_tel'].'</td>';
-            $grid_rows .= '<td class="'.$row_class.'"><a href="?action=sitebill_editor&do=edit&id='.$item_array['id'].'"><img src="'.SITEBILL_MAIN_URL.'/img/edit.gif" border="0"></a><a href="?action=sitebill_editor&do=delete&tid='.$_REQUEST['tid'].'&tid1='.$_REQUEST['tid1'].'&tid2='.$_REQUEST['tid2'].'&id='.$item_array['id'].'" onclick="return confirm(\''.Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE').'\');"><img src="'.SITEBILL_MAIN_URL.'/img/delete.gif" border="0"></a></td>';
-            $grid_rows .= '</tr>';
+        
+        if(count($ra)>0){
+        	foreach ( $ra as $item_id => $item_array ) {
+        		$num_rows++;
+        		$j++;
+        		if ( ceil($j/2) > floor($j/2)  ) {
+        			$row_class = "row1";
+        		} else {
+        			$j = 0;
+        			$row_class = "row2";
+        		}
+        		if ( $item_array['hot'] == 1 ) {
+        			$row_class = "hot";
+        		}
+        		$grid_rows .= '<tr>';
+        	
+        		$img = $this->getPreviewImage($item_array['id'], 1);
+        		if ( !$img ) {
+        			$img = '';
+        		}
+        	
+        		$grid_rows .= '<td class="'.$row_class.'"><input type="checkbox" name="row['.$item_array['id'].']" value=""></td>';
+        		$grid_rows .= '<td class="'.$row_class.'">'.$img.'</td>';
+        		$grid_rows .= '<td class="'.$row_class.'">'.$item_array['id'].'</td>';
+        		$grid_rows .= '<td class="'.$row_class.'">'.date('d.m.Y H:i',strtotime($item_array['date_added'])).'</td>';
+        		$grid_rows .= '<td class="'.$row_class.'">'.$item_array['room_count'].'</td>';
+        		$grid_rows .= '<td class="'.$row_class.'">'.$item_array['district'].'</td>';
+        		$grid_rows .= '<td class="'.$row_class.'">'.$item_array['street'].'</td>';
+        		$grid_rows .= '<td class="'.$row_class.'">'.$item_array['price'].'</td>';
+        		$grid_rows .= '<td class="'.$row_class.'">'.$item_array['text'].'</td>';
+        		$grid_rows .= '<td class="'.$row_class.'">'.$item_array['agent_tel'].'</td>';
+        		$grid_rows .= '<td class="'.$row_class.'"><a href="?action=sitebill_editor&do=edit&id='.$item_array['id'].'"><img src="'.SITEBILL_MAIN_URL.'/img/edit.gif" border="0"></a><a href="?action=sitebill_editor&do=delete&tid='.$_REQUEST['tid'].'&tid1='.$_REQUEST['tid1'].'&tid2='.$_REQUEST['tid2'].'&id='.$item_array['id'].'" onclick="return confirm(\''.Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE').'\');"><img src="'.SITEBILL_MAIN_URL.'/img/delete.gif" border="0"></a></td>';
+        		$grid_rows .= '</tr>';
+        	}
         }
+        
         
         if ( $num_rows > 0 ) {
             if ( $_REQUEST['tid'] != '' ) {
@@ -1243,7 +1342,7 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
         }
         
         
-        $query = "insert into re_data set 
+        $query = "insert into ".DB_PREFIX."_data set 
             type_id='".$data_array['tid1']."', 
             topic_id='".$data_array['tid']."', 
             country_id='".$data_array['country_id']."', 
@@ -1274,8 +1373,12 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
             is_telephone='".$data_array['is_telephone']."', 
             session_id='', 
             furniture='".$data_array['furniture']."'";
-        echo $query;
-        $record_id = $this->db->exec($query);
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$record_id = $DBC->lastInsertId();
+		}	
+        
         if ( !$record_id ) {
             $this->riseError(Multilanguage::_('L_ERROR_ADD_TO_DB'));
             return false;
@@ -1320,7 +1423,7 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
             $data_array['street'] = $data_array['new_street'];
         }
         
-        $query = "update re_data set 
+        $query = "update ".DB_PREFIX."_data set 
             type_id='".$data_array['tid1']."', 
             topic_id='".$data_array['tid']."', 
             country_id='".$data_array['country_id']."', 
@@ -1352,9 +1455,9 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
             furniture='".$data_array['furniture']."'  
         where id=".$data_array['id'];
         //echo $query;
-        $this->db->exec($query);
-        
-        $this->editImage($data_array['id']);
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		$this->editImage($data_array['id']);
         return Multilanguage::_('L_MESSAGE_UPDATE_SUCCESS');
 
     }
@@ -1380,14 +1483,6 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
             $this->riseError(Multilanguage::_('L_ERROR_PRICE_NOT_SPECIFIED'));
             return false;
         }
-        
-        
-        /*
-        if ( $this->getRequestValue('text') == '' ) {
-            $this->riseError('Не указано описание');
-            return false;
-        }
-        */
         return true;
     }
     
@@ -1417,6 +1512,7 @@ function deleteRecord ( record_id ) {
      * @param string $do do value
      * @return string
      */
+    /*
     function getForm ( $data_array, $do = 'edit_done'  ) {
         $rs .= $this->getUpdateTypesJsFunction();
         $rs .= $this->getDeleteJsFunction();
@@ -1679,7 +1775,7 @@ function deleteRecord ( record_id ) {
         
         return $rs;
     }
-    
+    */
     
     
     /**
@@ -1695,11 +1791,14 @@ function deleteRecord ( record_id ) {
             return $rs;
         }
         $query = "select * from re_topic where parent_id=$parent_id";
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            $ra[$this->db->row['id']]['name'] = $this->db->row['name'];
-        }
-        
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while ( $ar=$DBC->fetch($stmt) ) {
+				$ra[$ar['id']]['name'] = $ar['name'];
+			}
+		}
+			
         $rs = '<ul id="simple">';
         foreach ( $ra as $id => $ra_array ) {
             if ( $_REQUEST['tid1'] == $id ) {
@@ -1721,18 +1820,22 @@ function deleteRecord ( record_id ) {
      * @return string
      */
     function getChildList ( $id ) {
-        $query = "select * from re_topic where parent_id=$id order by `order`";
-        $this->db->exec($query);
-        $rs .= '<ul>';
-        while ( $this->db->fetch_assoc() ) {
-            if ( $_REQUEST['tid2'] == $this->db->row['id'] ) {
-                $rs .= '<li><b>'.$this->db->row['name'].'</b></li>';
-            } else {
-                $rs .= '<li><a href="?tid='.$_REQUEST['tid'].'&tid1='.id.'&tid2='.$this->db->row['id'].'">'.$this->db->row['name'].'</a></li>';
-            }
-        }
-        $rs .= '</ul>';
-        return $rs;
+        $query = "select * from ".DB_PREFIX."_topic where parent_id=$id order by `order`";
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		$rs='';
+		if($stmt){
+			$rs .= '<ul>';
+			while ( $ar=$DBC->fetch($stmt) ) {
+				if ( $_REQUEST['tid2'] == $ar['id'] ) {
+					$rs .= '<li><b>'.$ar['name'].'</b></li>';
+				} else {
+					$rs .= '<li><a href="?tid='.$_REQUEST['tid'].'&tid1='.$id.'&tid2='.$ar['id'].'">'.$ar['name'].'</a></li>';
+				}
+			}
+			$rs .= '</ul>';
+		}
+		return $rs;
     }
     
     
@@ -1742,24 +1845,28 @@ function deleteRecord ( record_id ) {
      * @param int $type_id type ID
      * @return string
      */
-    function getTypeList ( $type_id = 2 ) {
+    /*function getTypeList ( $type_id = 2 ) {
         if ( $type_id == '' ) {
             $type_id = 2;
         }
-        $query = "select * from re_type order by id";
-        $this->db->exec($query);
-        $rs = '<select name="type_id">';
-        while ( $this->db->fetch_assoc() ) {
-            if ( $type_id == $this->db->row['id'] ) {
-                $selected = 'selected';
-            } else {
-                $selected = '';
-            }
-            $rs .= '<option value="'.$this->db->row['id'].'" '.$selected.'>'.$this->db->row['name'].'</option>';
-        }
-        $rs .= '</select>';
+        $query = "select * from ".DB_PREFIX."_type order by id";
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		$rs='';
+		if($stmt){
+			$rs = '<select name="type_id">';
+        	while ( $ar=$DBC->fetch($stmt) ) {
+	            if ( $type_id == $ar['id'] ) {
+	                $selected = 'selected';
+	            } else {
+	                $selected = '';
+	            }
+	            $rs .= '<option value="'.$ar['id'].'" '.$selected.'>'.$ar['name'].'</option>';
+	        }
+	        $rs .= '</select>';
+		}
         return $rs;
-    }
+    }*/
     
     /**
      * Get district list
@@ -1768,17 +1875,21 @@ function deleteRecord ( record_id ) {
      */
     function getDistrictList( $district_id ) {
         $query = "select * from ".DB_PREFIX."_district order by id";
-        $this->db->exec($query);
-        $rs = '<select name="district_id">';
-        while ( $this->db->fetch_assoc() ) {
-            if ( $district_id == $this->db->row['id'] ) {
-                $selected = 'selected';
-            } else {
-                $selected = '';
-            }
-            $rs .= '<option value="'.$this->db->row['id'].'" '.$selected.'>'.$this->db->row['name'].'</option>';
-        }
-        $rs .= '</select>';
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		$rs='';
+		if($stmt){
+			$rs = '<select name="district_id">';
+			while ( $ar=$DBC->fetch($stmt) ) {
+				if ( $type_id == $ar['id'] ) {
+					$selected = 'selected';
+				} else {
+					$selected = '';
+				}
+				$rs .= '<option value="'.$ar['id'].'" '.$selected.'>'.$ar['name'].'</option>';
+			}
+			$rs .= '</select>';
+		}
         return $rs;
     }
     
@@ -1792,15 +1903,17 @@ function deleteRecord ( record_id ) {
     function getStreetList ( $street ) {
         //echo 'street = '.$street;
         $ra = array();
-        $query = "select street_id, name from re_street order by name";
-        $this->db->exec($query);
-        while ( $this->db->fetch_assoc() ) {
-            $ra[$this->db->row['name']] = $this->db->row['name']; 
-        }
-        
+        $query = "select street_id, name from ".DB_PREFIX."_street order by name";
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		
+		if($stmt){
+			while ( $ar=$DBC->fetch($stmt) ) {
+				$ra[$ar['name']] = $ar['name'];
+			}
+		}
         $rs = '<select name="street">';
         foreach ( $ra as $key => $value ) {
-            //echo "key = $key, value = $value<br>";
             if ( $value != '' ) {
                 if ( $street == $value ) {
                     $selected = 'selected';
@@ -1821,18 +1934,21 @@ function deleteRecord ( record_id ) {
      */
     function loadRecord ( $record_id ) {
         $query = "select * from ".DB_PREFIX."_data where id=$record_id";
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        if ( $this->db->row['id'] == '' ) {
-            $this->riseError(Multilanguage::_('L_ERROR_RECORD_NOT_FOUND'));
-            return false;
-        }
-        $this->db->row['tid1'] = $this->db->row['type_id'];
-        $this->db->row['tid'] = $this->db->row['topic_id'];
-        //echo '<pre>';
-        //print_r( $this->db->row );
-        //echo '</pre>';
-        return $this->db->row;
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			if ( $ar['id'] == '' ) {
+				$this->riseError(Multilanguage::_('L_ERROR_RECORD_NOT_FOUND'));
+				return false;
+			}
+		}else{
+			$this->riseError(Multilanguage::_('L_ERROR_RECORD_NOT_FOUND'));
+			return false;
+		}
+        
+        $ar['tid1'] = $ar['type_id'];
+        $ar['tid'] = $ar['topic_id'];
+        return $ar;
     }
 }
-?>

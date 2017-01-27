@@ -170,14 +170,15 @@ class Zapros_Frontend extends Zapros_Manager {
     function get_view () {
         $zapros_id = $this->getIDfromURI($_SERVER['REQUEST_URI']);
         $query = "select * from ".DB_PREFIX."_zapros where zapros_id=$zapros_id and publish=1";
-        //echo $query;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        $this->db->row['date'] = date('d.m.Y', $this->db->row['date_created']); 
-        $this->db->row['date_solved'] = date('d.m.Y', $this->db->row['date_solved']); 
-        //print_r($this->db->row);
-        return $this->db->row;
-        //echo $zapros_id;
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			$ar['date'] = date('d.m.Y', $ar['date_created']); 
+	        $ar['date_solved'] = date('d.m.Y', $ar['date_solved']); 
+	        return $ar;
+		}
+        return array();
     }
     
     /**
@@ -200,16 +201,16 @@ class Zapros_Frontend extends Zapros_Manager {
      */
     function get_list () {
         $query = "select * from ".DB_PREFIX."_zapros where publish=1 and is_solved=1 order by date_solved desc";
-        $this->db->exec($query);
-        $ra = array();
-        while ( $this->db->fetch_assoc() ) {
-            $this->db->row['date'] = date('d.m.Y', $this->db->row['date_created']);
-            $this->db->row['date_solved'] = date('d.m.Y', $this->db->row['date_solved']);
-            $ra[] = $this->db->row;
-        }
-        //echo '<pre>';
-        //print_r($ra);
-        //echo '</pre>';
+    	$ra = array();
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while ( $ar=$DBC->fetch($stmt) ) {
+				$ar['date'] = date('d.m.Y', $ar['date_created']);
+				$ar['date_solved'] = date('d.m.Y', $ar['date_solved']);
+				$ra[] = $ar;
+			}
+		}
         return $ra;
     }
     

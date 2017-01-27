@@ -62,6 +62,6 @@ $smarty->cache_dir    = SITEBILL_DOCUMENT_ROOT.'/cache/smarty';
 $smarty->compile_dir  = SITEBILL_DOCUMENT_ROOT.'/cache/compile';
 $ajax_server = new Ajax_Server();
 $rs = $ajax_server->main();
-$sitebill->writeLog($rs);
+//$sitebill->writeLog($rs);
 echo $rs;
 ?>

@@ -29,6 +29,7 @@ class API_oauth extends API_Common {
 				} else {
 					$ar['admin_panel_login'] = 0;
 				}
+				$ar['success'] = 1;
 				
 				return $this->json_string($ar);
 			}
@@ -62,6 +63,7 @@ class API_oauth extends API_Common {
 				require_once (SITEBILL_DOCUMENT_ROOT.'/apps/api/classes/class.stat.php' );
 				$api_stat = new API_stat();
 				$ar['city_list'] = $api_stat->_get_city_list(true);
+				$ar['success'] = 1;
 				
 				return $this->json_string($ar);
 			}
@@ -69,6 +71,8 @@ class API_oauth extends API_Common {
 		$this->riseError('check_session_key_failed');
 		return $this->request_failed('check_session_key_failed');
 	}
+	
+	
 	
 	private function init_session_key ( $user_id ) {
 		$user_ip = $_SERVER['REMOTE_ADDR'];

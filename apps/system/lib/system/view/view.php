@@ -4,6 +4,7 @@
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
 class Table_View extends Data_Model {
+	protected $absolute_urls=false;
     /**
      * Construct
      * @param void
@@ -11,6 +12,10 @@ class Table_View extends Data_Model {
      */
     function __construct() {
         $this->SiteBill();
+    }
+    
+    public function setAbsoluteUrls(){
+    	$this->absolute_urls=true;
     }
     
     /**
@@ -27,17 +32,19 @@ class Table_View extends Data_Model {
                 case 'select_box':
                     $rs .= $this->get_select_box_row($item_array);
                 break;
-                
+               
                 case 'select_by_query':
                     $rs .= $this->get_select_box_by_query_row($item_array);
                 break;
-                
+                case 'select_by_query_multi':
+                	$rs .= $this->get_select_by_query_multi_row($item_array);
+                break;
                 case 'select_box_structure':
                     $rs .= $this->get_select_box_structure_row($item_array);
                 break;
                 
                 case 'uploadify_image':
-                    $rs .= $this->get_uploadify_row($item_array);
+                    $rs .= $this->get_uploadify_preview($item_array);
                 break;
                 
                 case 'checkbox':
@@ -51,6 +58,9 @@ class Table_View extends Data_Model {
                 case 'safe_string':
                     $rs .= $this->get_safe_text_input($item_array);
                 break;
+                case 'client_id':
+                	$rs .= $this->get_client_id_row($item_array);
+                	break;
                 
                 case 'price':
                     $rs .= $this->get_safe_text_input($item_array);
@@ -66,12 +76,25 @@ class Table_View extends Data_Model {
                 case 'dtdatetime':
                 	$rs .= $this->get_safe_text_input($item_array);
                 	break;
-                	case 'dtdate':
-                		$rs .= $this->get_safe_text_input($item_array);
-                		break;
-                		case 'dttime':
-                			$rs .= $this->get_safe_text_input($item_array);
-                			break;
+               	case 'dtdate':
+                	$rs .= $this->get_safe_text_input($item_array);
+                	
+                	break;
+                case 'dttime':
+                	$rs .= $this->get_safe_text_input($item_array);
+               		break;
+               	case 'primary_key':
+               		$rs .= $this->get_safe_text_input($item_array);
+               		break;
+               		case 'docuploads':
+               			$rs .= $this->get_docuploads_preview($item_array);
+               			break;
+               	case 'uploads':
+               		$rs .= $this->get_uploads_preview($item_array);
+               		break;
+               	case 'tlocaion':
+               		$rs .= $this->get_tlocaion_row($item_array);
+               		break;
             }
         }
         return $rs;
@@ -115,6 +138,68 @@ class Table_View extends Data_Model {
         $rs .= '</tr>';
         
         return $rs;
+    }
+    
+    function get_select_by_query_multi_row ( $item_array ) {
+    	$rs = '<tr>';
+    	$rs .= '<td>';
+    	$rs .= $item_array['title'];
+    	$rs .= '</td>';
+    	$rs .= '<td>';
+    	
+    	$parameters=$model_array[$key]['parameters'];
+    	$name=$model_array[$key]['value_name'];
+    	$langs=Multilanguage::availableLanguages();
+    	if(1===intval($this->getConfigValue('apps.language.use_langs')) && 0===intval($parameters['no_ml'])){
+    		$curlang=$this->getCurrentLang();
+    		if(1===intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang=='ru'){
+    			 
+    		}else{
+    			$name.='_'.$this->getCurrentLang();
+    		}
+    	}
+    	 
+    	/*$DBC=DBC::getInstance();
+    	$query='SELECT `field_value` FROM '.DB_PREFIX.'_multiple_field WHERE `table_name`=? AND `field_name`=? AND `primary_id`=?';
+    	$stmt=$DBC->query($query, array($table_name, $key, $primary_key_value));
+    	 
+    	if($stmt){
+    		while($ar=$DBC->fetch($stmt)){
+    			$model_array[$key]['value'][] = $ar['field_value'];
+    		}
+    	}
+    	 
+    	if(!empty($model_array[$key]['value'])){
+    		$query='SELECT `'.$name.'` FROM '.DB_PREFIX.'_'.$model_array[$key]['primary_key_table'].' WHERE `'.$model_array[$key]['primary_key_name'].'` IN ('.implode(',', $model_array[$key]['value']).')';
+    	
+    		$stmt=$DBC->query($query);
+    		if($stmt){
+    			while($ar=$DBC->fetch($stmt)){
+    				$model_array[$key]['value_string'][] = $ar[$name];
+    			}
+    		}
+    	}*/
+    
+    	$item_array['value_string'] = $this->get_string_value_by_id($item_array['primary_key_table'], $item_array['primary_key_name'], $item_array['value_name'] ,$item_array['value']);
+    
+    	$rs .= $item_array['value_string'];
+    	$rs .= '</td>';
+    	$rs .= '</tr>';
+    
+    	return $rs;
+    }
+    
+    function get_client_id_row ( $item_array ) {
+    	$rs = '<tr>';
+    	$rs .= '<td>';
+    	$rs .= $item_array['title'];
+    	$rs .= '</td>';
+    	$rs .= '<td>';
+    	$rs .= $item_array['value_string'];
+    	$rs .= '</td>';
+    	$rs .= '</tr>';
+    
+    	return $rs;
     }
     
     
@@ -217,6 +302,89 @@ class Table_View extends Data_Model {
         return $rs;
     }
     
+    function get_tlocaion_row ( $item_array ) {
+    	$rs = '<tr>';
+    	$rs .= '<td>';
+    	$rs .= $item_array['title'];
+    	$rs .= '</td>';
+    	$rs .= '<td>';
+    	$rs .= $item_array['tlocation_string'];
+    	$rs .= '</td>';
+    	$rs .= '</tr>';
+    
+    	return $rs;
+    }
+    
+    function get_uploadify_preview ( $item_array ) {
+    	
+    	$rs = '<tr>';
+    	$rs .= '<td>';
+    	$rs .= $item_array['title'];
+    	$rs .= '</td>';
+    	$rs .= '<td class="view_table_uploads">';
+    	 
+    	if(is_array($item_array['image_array']) && count($item_array['image_array'])>0){
+    		foreach($item_array['image_array'] as $it){
+    			$rs .= '<img src="'.SITEBILL_MAIN_URL.'/img/data/'.$it['preview'].'">';
+    		}
+    	}
+    	 
+    	$rs .= '</td>';
+    	$rs .= '</tr>';
+    	
+    	return $rs;
+    }
+    
+    function get_uploads_preview ( $item_array ) {
+    	$rs = '<tr>';
+    	$rs .= '<td>';
+    	$rs .= $item_array['title'];
+    	$rs .= '</td>';
+    	$rs .= '<td class="view_table_uploads">';
+    	
+    	if(is_array($item_array['value']) && count($item_array['value'])>0){
+    		foreach($item_array['value'] as $it){
+    			$rs .= '<div>';
+    			if($this->absolute_urls){
+    				$rs .= '<a href="'.$this->getServerFullUrl().'/img/data/'.$it['normal'].'" target="_blank"><img src="'.$this->getServerFullUrl().'/img/data/'.$it['preview'].'"></a>';
+    			}else{
+    				$rs .= '<a href="'.SITEBILL_MAIN_URL.'/img/data/'.$it['normal'].'" target="_blank"><img src="'.SITEBILL_MAIN_URL.'/img/data/'.$it['preview'].'"></a>';
+    			}
+    			$rs .= '</div>';
+    		}
+    	}
+    	
+    	$rs .= '</td>';
+    	$rs .= '</tr>';
+    
+    	return $rs;
+    }
+    
+    function get_docuploads_preview ( $item_array ) {
+    	$rs = '<tr>';
+    	$rs .= '<td>';
+    	$rs .= $item_array['title'];
+    	$rs .= '</td>';
+    	$rs .= '<td class="view_table_docuploads">';
+    	 
+    	if(is_array($item_array['value']) && count($item_array['value'])>0){
+    		foreach($item_array['value'] as $it){
+    			$rs .= '<div>';
+    			if($this->absolute_urls){
+    				$rs .= '<a href="'.$this->getServerFullUrl().'/img/mediadocs/'.$it['normal'].'" target="_blank">'.$it['normal'].'</a>';
+    			}else{
+    				$rs .= '<a href="'.SITEBILL_MAIN_URL.'/img/mediadocs/'.$it['normal'].'" target="_blank">'.$it['normal'].'</a>';
+    			}
+    			$rs .= '</div>';
+    		}
+    	}
+    	 
+    	$rs .= '</td>';
+    	$rs .= '</tr>';
+    
+    	return $rs;
+    }
+    
     /**
      * Get safe string input
      * @param unknown_type $item_array
@@ -238,4 +406,3 @@ class Table_View extends Data_Model {
         return $string;
     }
 }
-?>

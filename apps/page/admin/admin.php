@@ -48,22 +48,7 @@ class page_admin extends Object_Manager {
         
         $this->data_model=$form_data;
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        /*
-        require_once(SITEBILL_DOCUMENT_ROOT.'/apps/page/admin/page_model.php');
-        $Object=new Page_Model();
-		$this->data_model=$Object->get_model();
-		*/
-    	require_once (SITEBILL_DOCUMENT_ROOT.'/apps/config/admin/admin.php');
+       	require_once (SITEBILL_DOCUMENT_ROOT.'/apps/config/admin/admin.php');
         $config_admin = new config_admin();
          
         if ( !$config_admin->check_config_item('apps.page.per_page') ) {
@@ -73,6 +58,86 @@ class page_admin extends Object_Manager {
         if ( !$config_admin->check_config_item('apps.page.count_on_main') ) {
         	$config_admin->addParamToConfig('apps.page.count_on_main','3','Количество объектов на главной');
         }
+    }
+    
+    public function sitemap($sitemap){
+    	$urls=array();
+    	
+    	if(1==(int)$this->getConfigValue('apps.seo.no_trailing_slashes')){
+    		$trailing_slashe='';
+    	}else{
+    		$trailing_slashe='/';
+    	}
+    	
+    	$changefreq=(intval($this->getConfigValue('apps.sitemap.changefreq.page'))<7 ? intval($this->getConfigValue('apps.sitemap.changefreq.page')) : '6');
+    	$changefreq=$sitemap->validateFrequency($changefreq);
+    	$priority=$sitemap->validatePriority($this->getConfigValue('apps.sitemap.priority.page'));
+    	
+    	$DBC=DBC::getInstance();
+    	$query='SELECT is_service FROM '.DB_PREFIX.'_page LIMIT 1';
+    	$stmt=$DBC->query($query);
+    	if($stmt){
+    		$has_service=true;
+    	}else{
+    		$has_service=false;
+    	}
+    	
+    	if($has_service){
+    		$query='SELECT uri FROM '.DB_PREFIX.'_'.$this->table_name.' WHERE is_service=0';
+    	}else{
+    		$query='SELECT uri FROM '.DB_PREFIX.'_'.$this->table_name;
+    	}
+    	
+    	
+    	$stmt=$DBC->query($query);
+    	if($stmt){
+    		while($ar=$DBC->fetch($stmt)){
+    			/*if($ar['uri']!=''){
+    				$url=trim(str_replace('\\', '/', $ar['uri']),'/');
+    			}*/
+    			if($ar['uri']!=''){
+    				//$url=trim(str_replace('\\', '/', $ar['uri']),'/');
+    				$url=SITEBILL_MAIN_URL.'/'.$ar['uri'];
+    				$urls[]=array('url'=>$url.(false!==strpos($url, '.') ? '' : $trailing_slashe), 'changefreq'=>$changefreq, 'priority'=>$priority);
+    			}
+    			
+    			
+    		}
+    	}
+    	return $urls;
+    }
+    
+    public function sitemapHTML($sitemap){
+    	if(1==(int)$this->getConfigValue('apps.seo.no_trailing_slashes')){
+    		$trailing_slashe='';
+    	}else{
+    		$trailing_slashe='/';
+    	}
+    	$urls=array();
+    	$DBC=DBC::getInstance();
+    	$query='SELECT is_service FROM '.DB_PREFIX.'_page LIMIT 1';
+    	$stmt=$DBC->query($query);
+    	if($stmt){
+    		$has_service=true;
+    	}else{
+    		$has_service=false;
+    	}
+    
+    	
+    	if($has_service){
+    		$query='SELECT * FROM '.DB_PREFIX.'_'.$this->table_name.' WHERE `is_service`=0 ORDER BY '.$this->primary_key.' DESC';
+    	}else{
+    		$query='SELECT * FROM '.DB_PREFIX.'_'.$this->table_name.' ORDER BY '.$this->primary_key.' DESC';
+    	}
+    
+    	$stmt=$DBC->query($query);
+    	if($stmt){
+    		while($ar=$DBC->fetch($stmt)){
+    			$ar['href']=SITEBILL_MAIN_URL.'/'.trim($ar['uri'], '/').(false!==strpos($ar['uri'], '.') ? '' : $trailing_slashe);
+    			$urls[]=array('t'=>$ar['title'], 'h'=>$ar['href']);
+    		}
+    	}
+    	return $urls;
     }
     
     public function _preload(){
@@ -97,13 +162,16 @@ class page_admin extends Object_Manager {
     	
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
     	$data_model = new Data_Model();
-    	$query = $data_model->get_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data, $language_id);
-    	$this->db->exec($query);
-    	if ( !$this->db->success ) {
-    		$this->riseError($this->db->error);
-    		return false;
-    	}
-    	$new_record_id = $this->db->last_insert_id();
+    	//$query = $data_model->get_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data, $language_id);
+    	$DBC=DBC::getInstance();
+    	$queryp = $data_model->get_prepared_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data, $language_id);
+	    $stmt=$DBC->query($queryp['q'], $queryp['p'], $row, $success_mark);
+	    if ( !$success_mark ) {
+	    	$this->riseError($DBC->getLastError());
+	    	return false;
+	    }
+    	
+    	$new_record_id = $DBC->lastInsertId();
     	$imgs=$this->editImageMulti($this->action, $this->table_name, $this->primary_key, $new_record_id);
     	return $new_record_id;
     }
@@ -119,16 +187,17 @@ class page_admin extends Object_Manager {
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
     	$data_model = new Data_Model();
     	if ( $primary_key_value ) {
-    		$query = $data_model->get_edit_query(DB_PREFIX.'_'.$this->table_name, $this->primary_key, $primary_key_value, $form_data, $language_id);
+    		$queryp = $data_model->get_prepared_edit_query(DB_PREFIX.'_'.$this->table_name, $this->primary_key, $primary_key_value, $form_data, $language_id);
     	} else {
-    		$query = $data_model->get_edit_query(DB_PREFIX.'_'.$this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data, $language_id);
+    		$queryp = $data_model->get_prepared_edit_query(DB_PREFIX.'_'.$this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data, $language_id);
     	}
-    	$this->db->success = true;
-    	$this->db->exec($query);
-    	if ( !$this->db->success ) {
-    		$this->riseError($this->db->error);
+    	$DBC=DBC::getInstance();
+    	$stmt=$DBC->query($queryp['q'], $queryp['p'], $row, $success);
+    	if ( !$success ) {
+    		$this->riseError($DBC->getLastError());
     		return false;
     	}
+    	
     	$imgs=$this->editImageMulti($this->action, $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key));
     }
     
@@ -200,12 +269,17 @@ class page_admin extends Object_Manager {
     	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl')){
     		$tpl_name=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/admin/template/form_data.tpl';
     	}else{
-    		$tpl_name=SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template/data_form.tpl';
+    		$tpl_name=$this->getAdminTplFolder().'/data_form.tpl';
     	}
     	return $smarty->fetch($tpl_name);
     }
     
     protected function getPagesColumn(){
+    	if(1==(int)$this->getConfigValue('apps.seo.no_trailing_slashes')){
+    		$trailing_slashe='';
+    	}else{
+    		$trailing_slashe='/';
+    	}
     	$ret='';
     	$Records=array();
     	$DBC=DBC::getInstance();
@@ -217,7 +291,7 @@ class page_admin extends Object_Manager {
     	$stmt=$DBC->query($query);
     	if($stmt){
     		while($ar=$DBC->fetch($stmt)){
-    			$ar['href']=SITEBILL_MAIN_URL.'/'.trim($ar['uri'], '/');
+    			$ar['href']=SITEBILL_MAIN_URL.'/'.trim($ar['uri'], '/').(false!==strpos($ar['uri'], '.') ? '' : $trailing_slashe);
     			$fp=strpos($ar['body'], '<p>');
     			$lp=strpos($ar['body'], '</p>');
     			 
@@ -248,8 +322,9 @@ class page_admin extends Object_Manager {
     }
     
     function upgrade () {
-    	$query = "alter table ".DB_PREFIX."_page add column meta_title text";
-    	$this->db->exec($query);
+    	$DBC=DBC::getInstance();
+		$query = "ALTER TABLE ".DB_PREFIX."_page ADD COLUMN meta_title TEXT";
+    	$stmt=$DBC->query($query);
     }
     
     function main(){
@@ -300,17 +375,23 @@ class page_admin extends Object_Manager {
     
     function install(){
     	$query="CREATE TABLE IF NOT EXISTS `".DB_PREFIX."_".$this->table_name."` (
-  `page_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `title` varchar(255) NOT NULL DEFAULT '',
-  `uri` varchar(255) NOT NULL DEFAULT '',
-  `meta_keywords` text,
-  `meta_description` text,
-  `body` text,
-  `date` int(11) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`page_id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=".DB_ENCODING." ;";
-    	 $this->db->exec($query);
+		  `page_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+		  `title` varchar(255) NOT NULL DEFAULT '',
+		  `uri` varchar(255) NOT NULL DEFAULT '',
+		  `meta_keywords` text,
+		  `meta_description` text,
+		  `body` text,
+		  `date` int(11) NOT NULL DEFAULT '0',
+		  PRIMARY KEY (`page_id`)
+		) ENGINE=MyISAM  DEFAULT CHARSET=".DB_ENCODING." ;";
+		$DBC=DBC::getInstance();
+		$success=false;
+    	$stmt=$DBC->query($query, array(), $rows, $success);
+        if(!$success){
+        	$rs = Multilanguage::_('L_APPLICATION_INSTALLED_ERROR');
+        }else{
+        	$rs = Multilanguage::_('L_APPLICATION_INSTALLED');
+        }
+        return $rs;
     }
-    
-   
 }

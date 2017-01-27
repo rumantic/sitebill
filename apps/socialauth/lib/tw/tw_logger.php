@@ -210,6 +210,115 @@ class Tw_Logger extends Common_Logger {
 	}
 	
 	private function getToken(){
+		/*require_once SITEBILL_DOCUMENT_ROOT.'/third/oauth/tmhOAuth.php';
+		 require_once SITEBILL_DOCUMENT_ROOT.'/third/oauth/tmhUtilities.php';
+		$connection = new tmhOAuth(array(
+				'consumer_key' => $this->config['API_KEY'],
+				'consumer_secret' => $this->config['CLIENT_SECRET'],
+				'timestamp' => time()
+		));
+		$connection->request('POST', $connection->url('oauth/request_token?oauth_callback='.$this->config['REDIRECT_URI']));
+		$response = $connection->extract_params($connection->response["response"]);
+		//print_r($response);
+		return $response;*/
+		
+		
+		
+		
+		
+		//return array('oauth_token'=>'2316991279-qIRJpXaqHaA7CZ1PWSXQus00ux3tyDbFyHDu1Vm', 'oauth_token_secret'=>'d7wzdM4UhAAf2ejTT9CWeJdW94nkLPZZXilqJ5mQQYbEy');
+		
+		$oauth_nonce = md5(uniqid(rand(), true));
+		$oauth_timestamp = time();
+		$url=$this->config['TOKEN_URL'];
+		
+		$signature_parts=array();
+		
+		
+		$signature_parts[]='oauth_consumer_key='.$this->config['API_KEY'];
+		$signature_parts[]='oauth_nonce='.$oauth_nonce;
+		$signature_parts[]='oauth_signature_method=HMAC-SHA1';
+		$signature_parts[]='oauth_timestamp='.$oauth_timestamp;
+		$signature_parts[]='oauth_version=1.0';
+		//$signature_parts[]='oauth_callback='.$this->config['REDIRECT_URI'];
+		
+		$signature_base='POST&'.rawurlencode($url).'&'.rawurlencode(implode('&', $signature_parts));
+		//$signature_base='GET&'.rawurlencode($url).'&'.rawurlencode(implode('&', $signature_parts));
+		//$signature_base=' GET&https%3A%2F%2Fapi.twitter.com%2Foauth%2Frequest_token&oauth_consumer_key%3DzBD3u6X66IUFhZLzWUaxy91Yn%26oauth_nonce%3D7ebc8554ffd31c93c2a281efb89847ab%26oauth_signature_method%3DHMAC-SHA1%26oauth_timestamp%3D1467567144%26oauth_version%3D1.0';
+		
+		//echo $signature_base;
+		$key = $this->config['CLIENT_SECRET']."&";
+		$oauth_signature = base64_encode(hash_hmac("sha1", $signature_base, $key, true));
+		
+		//var_dump($oauth_signature);
+		
+		
+		/*$oauth_base_text = "POST&";
+		 $oauth_base_text .= urlencode('https://api.twitter.com/oauth/request_token')."&";
+		$oauth_base_text .= urlencode("oauth_consumer_key=".$this->config['API_KEY']."&");
+		$oauth_base_text .= urlencode("oauth_nonce=".$oauth_nonce."&");
+		$oauth_base_text .= urlencode("oauth_signature_method=HMAC-SHA1&");
+		$oauth_base_text .= urlencode("oauth_timestamp=".$oauth_timestamp."&");
+		$oauth_base_text .= urlencode("oauth_version=1.0");
+		$oauth_base_text .= urlencode("oauth_callback=".urlencode($this->config['REDIRECT_URI'])."&");
+		
+		$key = $this->config['CLIENT_SECRET']."&";
+			
+		$oauth_signature = base64_encode(hash_hmac("sha1", $oauth_base_text, $key, true));
+		*/
+		
+		
+		$params=array();
+		/*$params[]='oauth_consumer_key='.$this->config['API_KEY'];
+		 $params[]='oauth_nonce='.$oauth_nonce;
+		$params[]='oauth_signature='.rawurlencode($oauth_signature);
+		$params[]='oauth_signature_method=HMAC-SHA1';
+		$params[]='oauth_timestamp='.$oauth_timestamp;
+		$params[]='oauth_version=1.0';
+		$params[]='oauth_callback='.rawurlencode($this->config['REDIRECT_URI']);*/
+		
+		
+		$params['oauth_consumer_key']=$this->config['API_KEY'];
+		$params['oauth_nonce']=$oauth_nonce;
+		$params['oauth_signature']=urlencode($oauth_signature);
+		$params['oauth_signature_method']='HMAC-SHA1';
+		$params['oauth_timestamp']=$oauth_timestamp;
+		$params['oauth_version']='1.0';
+		
+		$href = $url/*.'?'.implode('&', $params)*/;
+		
+		$curl = curl_init();
+		curl_setopt($curl, CURLOPT_URL, $href);
+		curl_setopt($curl, CURLOPT_POST, 1);
+		curl_setopt($curl, CURLOPT_POSTFIELDS, array());
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($curl, CURLINFO_HEADER_OUT, 1);
+		curl_setopt($curl, CURLOPT_HEADER, false);
+		//curl_setopt($curl, CURLOPT_HEADERFUNCTION, array($this, 'curlHeader'));
+		if(!empty($params)) {
+			uksort($params, 'strcmp');
+			$encoded_quoted_pairs = array();
+			foreach ($params as $k => $v) {
+				$encoded_quoted_pairs[] = "{$k}=\"{$v}\"";
+			}
+			$header = 'Authorization: OAuth ' . implode(', ', $encoded_quoted_pairs);
+				
+				
+		}
+		curl_setopt($curl, CURLOPT_HTTPHEADER, array($header));
+		
+		$result = curl_exec($curl);
+		curl_close($curl);
+		parse_str($result, $tokenInfo);
+		
+		if(isset($tokenInfo['oauth_token'])){
+			return $tokenInfo;
+		}else{
+			return false;
+		}
+		
+		
 		$oauth_nonce = md5(uniqid(rand(), true));
 		$oauth_timestamp = time();
 		

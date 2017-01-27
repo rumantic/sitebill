@@ -1,8 +1,8 @@
 <div class="navbar">
   <div class="navbar-inner">
     <div class="container">
-    <div class="nav pull-left">
-          <a href="?action=data&do=new" class="btn btn-primary">{$L_ADD_RECORD_BUTTON}</a>
+    <div class="nav pull-left" style="padding-left: 5px;">
+          <a href="?action=data&do=new" class="btn btn-success"><i class="icon-white icon-file"></i> {$L_ADD_RECORD_BUTTON}</a>
     </div>                     
     
     <div class="nav pull-right">
@@ -18,7 +18,9 @@
         {else}
         <li {if $hot == 1} class="active"{/if}><a href="?action=data&hot=1">Спецпредложения ({$hot_items_count})</a></li>
         {/if}
-        
+        {if isset($archived_count)}
+    	<li {if $hot == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&archived=1">Архивные ({$archived_count})</a></li>
+    	{/if}
         
     </ul> 
  

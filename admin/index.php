@@ -1,5 +1,7 @@
 <?php
+date_default_timezone_set('Europe/Moscow');
 error_reporting(E_WARNING | E_ERROR);
+ini_set('gd.jpeg_ignore_warning', true);
 //error_reporting(E_ALL);
 ini_set('display_errors','On');
 session_start();

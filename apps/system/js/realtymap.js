@@ -1,5 +1,12 @@
-function RealtyMap(){
+function RealtyMap(version){
+	if(version===undefined){
+		this.version=2;
+	}else{
+		this.version=version;
+	}
 	this.map=null;
+	
+	this.clusterer=null;
 	this.bounds=null;
 	this.type='google';
 	
@@ -16,8 +23,10 @@ function RealtyMap(){
 	   defaultZoom: 16,
 	   yandexMapType: 'yandex#publicMap',
 	   marker_size: [42, 57],
+	   marker_offset: [-21, -57],
 	   ajax: false,
 	   marker_htm: '<div class="marker"><div class="marker-inner"></div></div>',
+	   use_clusters: false
 	};
 	
 	this.markersVariants={
@@ -47,6 +56,10 @@ function RealtyMap(){
 	
 	this.setDefaultIconSize=function(size){
 		this.markersVariants._default.size=size;
+	};
+	
+	this.setDefaultIconOffset=function(offset){
+		this.markersVariants._default.offset=offset;
 	};
 	
 	this.makeInfoWin=function(marker, infowindow, data) {
@@ -458,11 +471,18 @@ function RealtyMap(){
 				var llng=Number(this.clustered_data[i].lng);
 				var latlng=new Array(llat, llng);
 				
-				var content=this.stripslashes(this.clustered_data[i].html);
+				//var content=this.stripslashes(this.clustered_data[i].html);
 				
 				var markerOpts={};
-				markerOpts.content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
-				markerOpts.hint='Объектов '+this.clustered_data[i].count;
+				//markerOpts.content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
+				if(typeof this.clustered_data[i].html!='undefined' && this.clustered_data[i].html!=''){
+					markerOpts.content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
+				}else{
+					markerOpts.content='';
+				}
+				if(typeof this.clustered_data[i].count!='undefined'){
+					markerOpts.hint='Объектов '+this.clustered_data[i].count;
+				}
 				if(this.clustered_data[i].icon!=undefined){
 					markerOpts.icon=this.clustered_data[i].icon;
 				}
@@ -517,6 +537,11 @@ function RealtyMap(){
 				
 				var balloon = new ymaps.Balloon(this.map);
 		    }
+			if(this.options.use_clusters){
+				this.clusterer.add(this.markers);
+				this.map.geoObjects.add(this.clusterer);
+			}
+			
 			
 			if(count==1){
 				this.map.setCenter(latlng);
@@ -533,29 +558,56 @@ function RealtyMap(){
 			return;
 		}
 		ymaps.ready(function(){
-			
 			var behaviors=[];
 			if(_this.options.scrollZoom){
 				behaviors.push("scrollZoom");
 			}
 			behaviors.push("drag");
 			behaviors.push("dblClickZoom");
-			
-			_this.map = new ymaps.Map(_this.map_element, {
-				zoom: _this.options.defaultZoom,
-				center: [23.937149,49.886672],
-				behaviors: behaviors,
-				type : _this.options.yandexMapType
+						
+			if(_this.version=='2.1'){
+				var controls=[];
+				if(_this.options.fullscreenControl){
+					controls.push('fullscreenControl');
+				}
+				controls.push('zoomControl');
+				controls.push('typeSelector');
+				_this.map = new ymaps.Map(_this.map_element, {
+					zoom: _this.options.defaultZoom,
+					center: [23.937149,49.886672],
+					behaviors: behaviors,
+					type : _this.options.yandexMapType,
+					controls: controls
 				});
-			_this.map.controls.add(new ymaps.control.TypeSelector(['yandex#map', 'yandex#publicMap', 'yandex#satellite', 'yandex#hybrid']));
-			_this.map.controls.add('scaleLine');
-			if(_this.options.minimap){
-				_this.map.controls.add(new ymaps.control.MiniMap(
-				    { type: 'yandex#satellite' },
-				    { size: [90, 90] }
-				));
+			}else{
+				_this.map = new ymaps.Map(_this.map_element, {
+					zoom: _this.options.defaultZoom,
+					center: [23.937149,49.886672],
+					behaviors: behaviors,
+					type : _this.options.yandexMapType,
+					
+				});
+				_this.map.controls.add(new ymaps.control.TypeSelector(['yandex#map', 'yandex#publicMap', 'yandex#satellite', 'yandex#hybrid']));
+				_this.map.controls.add('scaleLine');
+				if(_this.options.minimap){
+					_this.map.controls.add(new ymaps.control.MiniMap(
+					    { type: 'yandex#satellite' },
+					    { size: [90, 90] }
+					));
+				}
+				_this.map.controls.add('zoomControl', { top: 75, left: 5 });
 			}
-			_this.map.controls.add('zoomControl', { top: 75, left: 5 });
+			if(_this.options.use_clusters){
+				_this.clusterer = new ymaps.Clusterer({
+		            preset: 'islands#invertedVioletClusterIcons',
+		            groupByCoordinates: false,
+		            clusterDisableClickZoom: false,
+		            clusterHideIconOnBalloonOpen: false,
+		            geoObjectHideIconOnBalloonOpen: false
+		        });
+			}
+			
+			
 			
 			_this.appendDataYandexMap();
 	    	
@@ -579,7 +631,12 @@ function RealtyMap(){
 			last_lat_lng=lat_lng;
 			
 			var markerOpts={};
-			markerOpts.content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
+			if(this.stripslashes(this.clustered_data[i].html)!=''){
+				markerOpts.content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
+			}else{
+				markerOpts.content='';
+			}
+			
 			markerOpts.hint='Объектов '+this.clustered_data[i].count;
 			
 			/*if(markers_array[0].showPopup!=undefined){
@@ -604,6 +661,11 @@ function RealtyMap(){
 	        //this.makeInfoWin(marker, infowindow, content);
 	        count++;
 		}
+		
+		if(this.options.use_clusters){
+			this.clusterer.addMarkers(this.markers);
+		}
+		
 		
 		if(count==1){
 			this.map.setCenter(last_lat_lng);
@@ -641,6 +703,9 @@ function RealtyMap(){
 		        overviewMapControl:  this.options.minimap,
 		    };
 		this.map = new google.maps.Map(this.map_element, mapOptions);
+		if(this.options.use_clusters){
+			this.clusterer = new MarkerClusterer(this.map, [], {gridSize: 50, maxZoom: 15, imagePath: estate_folder+'/apps/third/google/markerclusterer/images/m'});
+		}
 		this.appendDataGoogleMap();
 	}
 	
@@ -687,6 +752,9 @@ function RealtyMap(){
 			}
 			if(options.marker_size !== undefined){
 				self.setDefaultIconSize(options.marker_size);
+			}
+			if(options.marker_offset !== undefined){
+				self.setDefaultIconOffset(options.marker_offset);
 			}
 			self.clustered_data = datalisting || [];
 			

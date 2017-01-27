@@ -44,6 +44,11 @@ class Metro_Manager extends Object_Manager {
     	}
     	return $form_data;
     }
+	
+	function grid () {
+        $default_params['grid_item'] = array('metro_id', 'name', 'city_id');
+        return parent::grid(array(), $default_params);
+    }
     
     /**
      * Get metro model
@@ -63,6 +68,7 @@ class Metro_Manager extends Object_Manager {
     
     	$form_metro['metro']['city_id']['name'] = 'city_id';
     	$form_metro['metro']['city_id']['primary_key_name'] = 'city_id';
+    	$form_metro['metro']['city_id']['primary_key_table'] = 'city';
     	$form_metro['metro']['city_id']['title'] = Multilanguage::_('L_CITY');
     	$form_metro['metro']['city_id']['value'] = 0;
     	$form_metro['metro']['city_id']['length'] = 40;

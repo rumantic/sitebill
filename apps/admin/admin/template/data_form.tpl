@@ -1,31 +1,12 @@
 <script type="text/javascript">
 {literal}
 $(document).ready(function(){
-	/*$("#formsubmit").click(function(){
-		var _this=$(this);
-		if(_this.data('valid_me')!==undefined && _this.data('valid_me').length>0){
-			var vm=_this.data('valid_me');
-			var form=_this.parents('form').eq(0);
-			for(var i in vm){
-				console.log(vm[i]);
-			}
-			
-		}
-		return false;
-		_this.data('valid_me').hide();
-		$('<p class="loading">Сохраняю данные...</p>').insertAfter(this).slideDown("fast");
-	});
-	*/
 	$('.tooltipe_block').popover({trigger: 'hover'});
-	
-	
-	
 });
 {/literal}
 </script>
 
 <div class="tabbed_form_block">
-
 {if $form_error ne ''}
 	<p class="error">{$form_error}</p>
 {/if}
@@ -55,7 +36,6 @@ $(document).ready(function(){
 		{/foreach}
 	{/foreach}
 {else}
-
 	{if $divide_by_step==1}
 		<!-- DIVIDED BY STEPS FORM -->
 		<script type="text/javascript" src="{$estate_folder}/apps/system/js/form_tabs.js"></script>
@@ -130,17 +110,9 @@ $(document).ready(function(){
 				</div>
 			{/if}
 		{/foreach}
-		
-		
-		
-			
-		
-		
 		<!-- .DIVIDED BY STEPS FORM -->
 	{else}
 		<!-- USUAL FORM WITH TABS -->
-		
-	
 		<ul class="nav nav-tabs" id="form_tab">
 		{foreach from=$form_elements.public key=tab item=tab_elements}
 			{assign var=tab_id value=md5($tab)}
@@ -170,22 +142,15 @@ $(document).ready(function(){
 		</div>
 		
 		{literal}
-		
 		<script>
-		 $(document).ready(function(){
+			$(document).ready(function(){
 				$('#form_tab a:first').tab('show');
-			 //$('#form_tab li:first').addClass('active');
-		 });
-		  
-		  
+			});
 		</script>
 		{/literal}
 		<!-- .USUAL FORM WITH TABS -->
 	{/if}
-
-	
 {/if}
-
 
 <div class="form_element_control">
 {$form_elements.controls.apply.html} {$form_elements.controls.back.html} {$form_elements.controls.submit.html}

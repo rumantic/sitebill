@@ -32,11 +32,12 @@ class Company_Structure_Manager extends Structure_Implements {
 		}
 		
 		$query = "SELECT COUNT(company_id) as total, company_topic_id FROM ".DB_PREFIX."_company ".(count($where)>0 ? ' WHERE '.implode(' AND ',$where) : '')." GROUP BY company_topic_id";
-		//echo $query;
-		$this->db->exec($query);
-		while ( $this->db->fetch_assoc() ) {
-			$ret['data'][$user_id][$this->db->row['company_topic_id']]=$this->db->row['total'];
-			//$ret['data'][$this->db->row['company_topic_id']]=$this->db->row['total'];
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			while ( $ar=$DBC->fetch($stmt) ) {
+				$ret['data'][$user_id][$ar['company_topic_id']]=$ar['total'];
+			}
 		}
 		return $ret;
 	}
@@ -138,8 +139,6 @@ class Company_Structure_Manager extends Structure_Implements {
 				}
 			}
 			
-			//$x['href']='topic'.$catalog_id;
-			//$x['count']=$data_structure['data'][''][$catalog_id];
 			$x['count']=$category_structure['catalog'][$catalog_id]['data_count'];
 			if(isset($category_structure['childs'][$catalog_id])){
 				$this->appendChilds($x,$catalog_id,$category_structure,$my);
@@ -149,16 +148,14 @@ class Company_Structure_Manager extends Structure_Implements {
 	}
 	
 	function reorderTopics($orderArray){
-		//print_r($orderArray);
 		if(count($orderArray)>0){
+			$DBC=DBC::getInstance();
 			foreach($orderArray as $k=>$v){
 				$query='UPDATE '.DB_PREFIX.'_'.$this->table.' SET `order`='.((int)$v).' WHERE id='.((int)$k);
-				$this->db->exec($query);
+				$stmt=$DBC->query($query);
 			}
 		}
 		 
 	}
-	
-	
 	
 }

@@ -17,17 +17,19 @@ class left_menu extends Object_Manager {
      */
     function main () {
         global $smarty;
-        
+        $DBC=DBC::getInstance();
         $query = "select ms.* from ".DB_PREFIX."_menu m, ".DB_PREFIX."_menu_structure ms where m.tag='left' and m.menu_id=ms.menu_id order by sort_order";
-        $this->db->exec($query);
+        $stmt=$DBC->query($query);
         $ra = array();
-        $i = 0;
-        while ( $this->db->fetch_assoc() ) {
-            $ra[$i] = $this->db->row;
-            $i++;
+        if($stmt){
+        	$i = 0;
+        	while ( $ar=$DBC->fetch($stmt) ) {
+        		$ra[$i] = $ar;
+        		$i++;
+        	}
         }
+        
         $smarty->assign('left_menu', $ra);
         return true;
     }
 }
-?>

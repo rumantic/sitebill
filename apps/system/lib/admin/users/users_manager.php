@@ -99,9 +99,8 @@ class Users_Manager extends SiteBill_Krascap {
         $site = $params['site'];
         
         $query = "insert into ".DB_PREFIX."_user (user_id, reg_date, fio, email, phone, mobile, icq, site) values (".$user_id.",now(), '".$fio."', '".$email."',  '".$phone."', '".$mobile."', '".$icq."',  '".$site."' )";
-        //echo $query."<br>";
-        $this->db->exec($query);
-        
+        $DBC=DBC::getInstance();
+    	$stmt=$DBC->query($query);
     }
     
     /**
@@ -112,9 +111,8 @@ class Users_Manager extends SiteBill_Krascap {
     function add_user () {
         $data = $this->initDataFromRequest();
         $query = "insert into ".DB_PREFIX."_user (login, reg_date, password, fio, email, phone, site) values ('".$data['login']."', now(), '".md5($data['password'])."', '".$data['fio']."', '".$data['email']."','".$data['phone']."','".$data['site']."')";
-        //echo $query;
-        return $this->db->exec($query);
-        
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
     }
     
     /**
@@ -123,7 +121,8 @@ class Users_Manager extends SiteBill_Krascap {
      */
     function delete_user ( $user_id ) {
         $query = "delete from ".DB_PREFIX."_user where user_id=$user_id";
-        $this->db->exec($query);
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
     }
     
     /**
@@ -133,10 +132,9 @@ class Users_Manager extends SiteBill_Krascap {
      * @return boolean
      */
     function editPassword ( $user_id, $password ) {
-        global $__db_prefix;
-        
-        $query = "update ".$__db_prefix."_user set password='".md5($password)."' where user_id=$user_id";
-        $this->db->exec($query);
+        $query = "update ".DB_PREFIX."_user set password='".md5($password)."' where user_id=$user_id";
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
         return true;
     }
     
@@ -160,16 +158,15 @@ class Users_Manager extends SiteBill_Krascap {
      * @return boolean
 	 */
     function checkPassword ( $user_id, $password ) {
-        global $__db_prefix;
-    	
-    	$query = "select user_id from ".$__db_prefix."_user where user_id=$user_id and password='".md5($password)."'";
-    	//echo $query;
-    	
-    	$this->db->exec($query);
-		$this->db->fetch_assoc();
-		if ( $this->db->row['user_id'] > 0 ) {
-			return true;
-		}    	
+       	$query = "select user_id from ".DB_PREFIX."_user where user_id=$user_id and password='".md5($password)."'";
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+    	if($stmt){
+			$ar=$DBC->fetch($stmt);
+			if ( $ar['user_id'] > 0 ) {
+				return true;
+			}
+		}
 		return false;
     }
     
@@ -248,11 +245,13 @@ class Users_Manager extends SiteBill_Krascap {
      */
     function checkLogin ( $login ) {
 		$query = 'select count(*) as cid from '.DB_PREFIX.'_user where login=\''.$login.'\'';
-		//echo $query;
-		$this->db->exec($query);
-		$this->db->fetch_assoc();
-		if ( $this->db->row['cid'] > 0 ) {
-		    return false;
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			if ( $ar['cid'] > 0 ) {
+				return false;
+			}
 		}
 		return true;
     }
@@ -264,9 +263,9 @@ class Users_Manager extends SiteBill_Krascap {
 	}
 	
 	private function updateUserPicture($user_id){
-        if ( SITEBILL_MAIN_URL != '' ) {
+        /*if ( SITEBILL_MAIN_URL != '' ) {
             $add_folder = SITEBILL_MAIN_URL.'/';
-        }
+        }*/
         
 	    
 	    //global $sitebill_document_root;
@@ -274,7 +273,7 @@ class Users_Manager extends SiteBill_Krascap {
 	    //echo '$add_folder = '.$add_folder.'<br>';
 		
 	    $imgfile_directory=$this->user_image_dir;
-	    $document_root = $_SERVER['DOCUMENT_ROOT'].$add_folder; 
+	    /*$document_root = $_SERVER['DOCUMENT_ROOT'].$add_folder; */
 		
 		$avial_ext=array('jpg', 'jpeg', 'gif', 'png');
 		if(isset($_FILES['imgfile'])){
@@ -295,15 +294,15 @@ class Users_Manager extends SiteBill_Krascap {
 						$preview_name="img".uniqid().'_'.time()."_".$i.".".$ext;
                         $preview_name_tmp="_tmp".uniqid().'_'.time()."_".$i.".".$ext;
 						
-						if(! move_uploaded_file($_FILES['imgfile']['tmp_name'], $document_root.'/'.$imgfile_directory.$preview_name_tmp) ){
+						if(! move_uploaded_file($_FILES['imgfile']['tmp_name'], SITEBILL_DOCUMENT_ROOT.$imgfile_directory.$preview_name_tmp) ){
 							
 						}else{
-                            list($width,$height)=$this->makePreview($document_root.'/'.$imgfile_directory.$preview_name_tmp, $document_root.'/'.$imgfile_directory.$preview_name, 160,160, $ext,1);
-                            unlink($document_root.'/'.$imgfile_directory.$preview_name_tmp);
+                            list($width,$height)=$this->makePreview(SITEBILL_DOCUMENT_ROOT.$imgfile_directory.$preview_name_tmp, SITEBILL_DOCUMENT_ROOT.$imgfile_directory.$preview_name, 160,160, $ext,1);
+                            unlink(SITEBILL_DOCUMENT_ROOT.$imgfile_directory.$preview_name_tmp);
                             
 							$query='UPDATE '.DB_PREFIX.'_user SET imgfile="'.$preview_name.'" WHERE user_id='.$user_id;
-							//$ret=$query;
-							$this->db->exec($query);
+							$DBC=DBC::getInstance();
+							$stmt=$DBC->query($query);
 						}
 					}
 					
@@ -390,10 +389,12 @@ class Users_Manager extends SiteBill_Krascap {
 	
 	function getUserProfileData($user_id){
 		$query = 'SELECT * FROM '.DB_PREFIX.'_user WHERE user_id='.$user_id;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        return $this->db->row;
-		//return $query;
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			return $DBC->fetch($stmt);
+		}
+        return array();
 	}
 	
 	function updateUserProfile($user_id,$nd){
@@ -402,14 +403,9 @@ class Users_Manager extends SiteBill_Krascap {
 			$qparts[]=$k.'="'.$v.'"';
 		}
 		$query = 'UPDATE '.DB_PREFIX.'_user SET '.implode(',',$qparts).' WHERE user_id='.$user_id;
-		//$query.='SET fio="'.$fio.'", email="'.$email.'", phone="'.$phone.'", site="'.$site.'"';
-		//if($imgfile!==NULL){
-		//	$query.=', imgfile="'.$imgfile.'"';
-		//}
-		//$query.=' WHERE user_id='.$user_id;
-		//echo $query;
-        $this->db->exec($query);
-		if($this->db->success){
+		$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
 			return TRUE;
 		}else{
 			return FALSE;
@@ -422,14 +418,13 @@ class Users_Manager extends SiteBill_Krascap {
      * @return boolean
      */
     function load ( $record_id ) {
-        global $__db_prefix;
-        
-        $query = "select * from ".$__db_prefix."_user where user_id=$record_id";
-        //echo $query;
-        $this->db->exec($query);
-        $this->db->fetch_assoc();
-        
-        $this->setRequestValue('login', $this->db->row['login']);
+        $query = "select * from ".DB_PREFIX."_user where user_id=$record_id";
+        $DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		if($stmt){
+			$ar=$DBC->fetch($stmt);
+			$this->setRequestValue('login', $ar['login']);
+		}
     }
     
     
@@ -444,39 +439,41 @@ class Users_Manager extends SiteBill_Krascap {
         }
         
         global $_SESSION;
-        global $__db_prefix;
-        
-        $query = "select * from ".$__db_prefix."_user order by user_id asc";
-        $this->db->exec($query);
-
+        $query = "select * from ".DB_PREFIX."_user order by user_id asc";
+    	$DBC=DBC::getInstance();
+		$stmt=$DBC->query($query);
+		
         $rs .= '<div id="admin_area">';
         $rs .= '<div align="left"><table border="0" width="20%">';
         $rs .= '<td ><b>Имя</b></td>';
         $rs .= '<td></td>';
         $rs .= '<td></td>';
         $rs .= '</tr>';
-        while ( $this->db->fetch_assoc() ) {
-            $j++;
-            if ( ceil($j/2) > floor($j/2)  ) {
-                $row_class = "row1";
-            } else {
-                $j = 0;
-                $row_class = "row2";
-            }
-            $rs .= '<tr>';
-            $rs .= '<td class="'.$row_class.'" nowrap width="99%">'.$this->db->row['fio'].'</td>';
-            $rs .= '<td width="10%" nowrap>';
-            $rs .= '<a href="?action=users&do=edit&user_id='.$this->db->row['user_id'].'"><img src="'.SITEBILL_MAIN_URL.'/img/edit.gif" border="0"></a>';
-            $rs .= '</td>';
-            $rs .= '<td width="10%" nowrap>';
-            if ( $this->getConfigValue('ajax_auth_form') ) {
-                $rs .= '<a href="?action=users&do=delete&user_id='.$this->db->row['user_id'].'" onclick="run_command(\'delete_user&user_id='.$this->db->row['user_id'].'\', \'cp1251\', \''.$_SERVER['SERVER_NAME'].$add_folder.'\', \''.$_SESSION['session_key'].'\'); return false;"><img src="'.SITEBILL_MAIN_URL.'/img/delete.gif" border="0"></a>';
-            } else {
-                $rs .= '<a href="?action=users&do=delete&user_id='.$this->db->row['user_id'].'" onclick="return confirm(\''.Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE').'\');"><img src="'.SITEBILL_MAIN_URL.'/img/delete.gif" border="0"></a>';
-            }
-            $rs .= '</td>';
-            $rs .= '</tr>';
+        if($stmt){
+        	while ( $ar=$DBC->fetch($stmt) ) {
+	            $j++;
+	            if ( ceil($j/2) > floor($j/2)  ) {
+	                $row_class = "row1";
+	            } else {
+	                $j = 0;
+	                $row_class = "row2";
+	            }
+	            $rs .= '<tr>';
+	            $rs .= '<td class="'.$row_class.'" nowrap width="99%">'.$ar['fio'].'</td>';
+	            $rs .= '<td width="10%" nowrap>';
+	            $rs .= '<a href="?action=users&do=edit&user_id='.$ar['user_id'].'"><img src="'.SITEBILL_MAIN_URL.'/img/edit.gif" border="0"></a>';
+	            $rs .= '</td>';
+	            $rs .= '<td width="10%" nowrap>';
+	            if ( $this->getConfigValue('ajax_auth_form') ) {
+	                $rs .= '<a href="?action=users&do=delete&user_id='.$ar['user_id'].'" onclick="run_command(\'delete_user&user_id='.$ar['user_id'].'\', \'cp1251\', \''.$_SERVER['SERVER_NAME'].$add_folder.'\', \''.$_SESSION['session_key'].'\'); return false;"><img src="'.SITEBILL_MAIN_URL.'/img/delete.gif" border="0"></a>';
+	            } else {
+	                $rs .= '<a href="?action=users&do=delete&user_id='.$ar['user_id'].'" onclick="return confirm(\''.Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE').'\');"><img src="'.SITEBILL_MAIN_URL.'/img/delete.gif" border="0"></a>';
+	            }
+	            $rs .= '</td>';
+	            $rs .= '</tr>';
+	        }
         }
+        
         $rs .= '</table></div>';
         $rs .= '</div>';
         
@@ -484,4 +481,3 @@ class Users_Manager extends SiteBill_Krascap {
     }
 	
 }
-?>

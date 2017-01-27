@@ -220,7 +220,7 @@
                                 
                                 <span class="user-info">
                                     <small>Привет,</small>
-                                    {if $current_user_info.fio.value != ''}{$current_user_info.fio.value}{else}$current_user_info.login.value{/if}
+                                    {if $current_user_info.fio.value != ''}{$current_user_info.fio.value}{else}{$current_user_info.login.value}{/if}
                                 </span>
 
                                 <i class="icon-caret-down"></i>

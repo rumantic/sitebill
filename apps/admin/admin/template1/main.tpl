@@ -14,7 +14,8 @@
 
 		<!-- basic styles -->
 
-		<link href="{$MAIN_URL}/apps/system/js/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+		<link href="{$assets_folder}/assets/css/bootstrap.css" rel="stylesheet" />
+		<!-- link href="{$MAIN_URL}/apps/system/js/bootstrap/css/bootstrap.min.css" rel="stylesheet" /-->
 		<link href="{$assets_folder}/assets/css/bootstrap-responsive.min.css" rel="stylesheet" />
 		<link rel="stylesheet" href="{$assets_folder}/assets/css/font-awesome.min.css" />
 
@@ -50,24 +51,28 @@
 	<link rel="stylesheet" href="{$MAIN_URL}/apps/system/js/bootstrap-editable/css/bootstrap-editable.css" />
 	{if $ADMIN_NO_NANOAPI==1}
     {else}
-	<link href="http://www.sitebill.ru/css/nano.css" rel="stylesheet" type="text/css" />
-	<script src="http://www.sitebill.ru/js/nanoapi.js"></script>
-	<script src="http://www.sitebill.ru/js/nanoapi_beta.js"></script>
+	<link href="https://www.sitebill.ru/css/nano.css" rel="stylesheet" type="text/css" />
+	<script src="https://www.sitebill.ru/js/nanoapi.js"></script>
+	<script src="https://www.sitebill.ru/js/nanoapi_beta.js"></script>
 	{/if}
 	<script src="{$MAIN_URL}/js/interface.js"></script>
 	<script src="{$MAIN_URL}/js/estate.js"></script>
 	<script type="text/javascript" src="{$MAIN_URL}/js/jquery.tablesorter.min.js"></script>
     <link href="{$MAIN_URL}/css/jquery-ui-1.8.custom.css" rel="stylesheet" type="text/css"/>
    	<script type="text/javascript" src="{$MAIN_URL}/apps/system/js/jqueryui/jquery-ui.js"></script>
+   	<script type="text/javascript" src="{$MAIN_URL}/apps/system/js/sitebillcore.js"></script>
     <script type="text/javascript" src="{$MAIN_URL}/apps/system/js/mycombobox.js"></script>
+    <script type="text/javascript" src="{$MAIN_URL}/apps/system/js/jquery.cookie.js"></script>
     <link rel="stylesheet" href="{$MAIN_URL}/apps/system/css/jquery-ui.custom.css" />
     <link rel="stylesheet" href="{$MAIN_URL}/apps/system/css/mycombobox.css" />
     
     <!-- <script type="text/javascript" src="{$MAIN_URL}/js/jquery.ui.datepicker.js"></script> -->
     {if $ADMIN_NO_MAP_PROVIDERS==1}
     {else}
-    <script type="text/javascript" src="http://api-maps.yandex.ru/2.0-stable/?load=package.standard&lang=ru-RU"></script>
-	<script type="text/javascript" src="https://maps.google.com/maps/api/js?sensor=true"></script>
+    <script type="text/javascript" src="https://api-maps.yandex.ru/2.0-stable/?load=package.standard&lang=ru-RU"></script>
+	<script type="text/javascript" src="https://maps.google.com/maps/api/js{if $g_api_key!=''}?key={$g_api_key}{/if}"></script>
+	{if 1==0}<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=drawing,geometry"></script>{/if}
+
 	{/if}
 		<script src="{$assets_folder}/assets/js/ace-extra.min.js"></script>
 	
@@ -80,6 +85,7 @@
 	<script src="{$assets_folder}/assets/js/flot/jquery.flot.min.js"></script>
 	<script src="{$assets_folder}/assets/js/flot/jquery.flot.pie.min.js"></script>
 	<script src="{$assets_folder}/assets/js/flot/jquery.flot.resize.min.js"></script>
+	<script src="{$assets_folder}/assets/js/bootstrap-tag.min.js"></script>
 	
 	<!-- ace scripts -->
 
@@ -90,6 +96,9 @@
 	{literal}
 	<style>
 	.modal.fade{top: -200%;}
+	.inline-tags .tags {
+		width: 40px;
+	}
 	</style>
 	{/literal}
 	
@@ -100,9 +109,11 @@
 		</script>
 		
 </head>
-<body onload="runDialog('homescript_etown_ru'); {$onload}">
+<body onload="runDialog('homescript_etown_ru'); {$onload}" class="">
 
-{*$sitebill_news|print_r*}
+
+
+
 	<div class="navbar" id="navbar">
 			<script type="text/javascript">
 				{literal}try{ace.settings.check('navbar' , 'fixed')}catch(e){}{/literal}
@@ -110,6 +121,15 @@
 
 			<div class="navbar-inner">
 				<div class="container-fluid">
+					<button type="button" class="navbar-toggle menu-toggler pull-left" id="menu-toggler" data-target="#sidebar">
+					<span class="sr-only">Toggle sidebar</span>
+
+					<span class="icon-bar"></span>
+
+					<span class="icon-bar"></span>
+
+					<span class="icon-bar"></span>
+				</button>
                     <div class="brand">
 				    <div class="dragon"></div>
                         <div class="ttl">
@@ -118,25 +138,73 @@
                      </div>
 					
                     {include file='top_nav_notify.tpl'}
-					
+                    
+                    
+                    {if $smarty.const.DEVMODE==1}
+                    
+	                    {if $admin_menua.apps.childs}
+								
+						<div class="modal custom_modal hide fade" id="myModalAPP">
+						  <div class="modal-header">
+						    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+						    <h3>{$L_ADMIN_MENU_APPLICATIONS}</h3>
+						  </div>
+						  <div class="modal-body">
+						    <ul>
+						    {assign var=fletter value=''}
+						    {foreach from=$admin_menua.apps.childs item=ama}
+						    	{if $fletter==''}
+						    		{assign var=fletter value=$ama.title|mb_substr:0:1|strtoupper}
+						    		<li class="letter">
+						            {$fletter}
+						            </li>
+						    	{else}
+						    		{if $fletter ne $ama.title|mb_substr:0:1|strtoupper}
+						    		{assign var=fletter value=$ama.title|mb_substr:0:1|strtoupper}
+						    		 </ul>
+						    		  <ul>
+						    		<li class="letter">
+						            {$fletter}
+						            </li>
+						            {/if}
+						    	{/if}
+						                                <li>
+						                                <a {if isset($ama.childs) && $ama.childs|count>0}data-toggle="dropdown"  class="dropdown-toggle" href="{$ama.href}" data-target="#"{else}href="{$ama.href}"{/if}>{$ama.title}</a>
+						                                </li>
+						                                {/foreach}
+						    </ul>
+						  </div>
+						  <div class="modal-footer">
+						    <a href="#" class="btn" data-dismiss="modal">{$L_CLOSE}</a>
+						  </div>
+						</div>
+						{/if}
+					{/if}				
                     <div class="pull-right">
                            <a href="{$MAIN_URL}/" target="_blank" class="btn btn-small btn-primary"><i class="icon-eye-open"></i> {$L_SITE}</a>
                     
 
-                                    <div class="btn-group">
-                                            <button data-toggle="dropdown" class="btn btn-info dropdown-toggle">
-                                                {$L_ADMIN_MENU_APPLICATIONS}
-                                                <i class="icon-angle-down icon-on-right"></i>
-                                            </button>
-
-                                            <ul class="dropdown-menu">
-                                {foreach from=$admin_menua.apps.childs item=ama}
-                                <li>
-                                <a {if isset($ama.childs) && $ama.childs|count>0}data-toggle="dropdown"  class="dropdown-toggle" href="{$ama.href}" data-target="#"{else}href="{$ama.href}"{/if}>{$ama.title}</a>
-                                </li>
-                                {/foreach}
-                                            </ul>
-                                        </div>
+									{if $admin_menua.apps.childs}
+							
+										{if $smarty.const.DEVMODE==1}
+										<a href="#myModalAPP" role="button" class="btn" data-toggle="modal">{$L_ADMIN_MENU_APPLICATIONS}</a>
+										{else}
+											<div class="btn-group">
+	                                            <button data-toggle="dropdown" class="btn btn-info dropdown-toggle">
+	                                                {$L_ADMIN_MENU_APPLICATIONS}
+	                                                <i class="icon-angle-down icon-on-right"></i>
+	                                            </button>
+	
+	                                            <ul class="dropdown-menu">
+				                                {foreach from=$admin_menua.apps.childs item=ama}
+				                                <li>
+				                                <a {if isset($ama.childs) && $ama.childs|count>0}data-toggle="dropdown"  class="dropdown-toggle" href="{$ama.href}" data-target="#"{else}href="{$ama.href}"{/if}>{$ama.title}</a>
+				                                </li>
+				                                {/foreach}
+	                                            </ul>
+	                                        </div>
+                                        {/if}
+                                 	{/if}
                                  {if isset($custom_admin_entity_menu) && $custom_admin_entity_menu|count>0}
                                      <div class="btn-group">
                                             <button data-toggle="dropdown" class="btn btn-info dropdown-toggle">
@@ -233,6 +301,7 @@
 							</span>
 						</form>
 					</div><!-- #nav-search -->
+					<!-- div class="pull-right">{if $help_link!=''}{$help_link}{/if}</div-->
 				</div>
 				
 				<div class="page-content">
@@ -241,6 +310,6 @@
 				
 			</div>
 		</div>
-
+{$messenger_widget}
 </body>
 </html>

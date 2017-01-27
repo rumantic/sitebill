@@ -51,15 +51,16 @@ class Debugger {
 		return $message;
 	}
 	
-	static public function formatedMessagesExt() {
+	static public function formatedMessagesExt($html=false) {
 		$total = count(self::$queries_ext);
 		$message = '';
+		$message_h='';
 		$total_time=0;
-		$message .= '<style>
+		$message_h .= '<style>
 		#pofiler {
 		width: 600px;
 		font-size: 12px;
-		position: absolute;
+		'.(!$html ? 'position: absolute;' : '').'
 		background-color: white;
 		padding: 10px;
 		border: 1px solid silver;
@@ -68,7 +69,7 @@ class Debugger {
 				right: 0;
 		}
 				#pofiler-inner {
-		display:none;
+		'.(!$html ? 'display:none;' : '').'
 		}
 				
 				.pofiler-query {
@@ -87,21 +88,42 @@ color: rgb(94, 94, 219);
 font-size: 11px;
 }
 				';
-		$message .= '</style>';
-		$message .= '<script>';
-		$message .= '$(document).ready(function(){$("#pofiler h1").click(function(){$("#pofiler-inner").toggle()});});';
-		$message .= '</script>';
-		$message .= '<div id="pofiler">';
-		$message .= '<h1>Pofiler</h1>';
-		$message .= '<div id="pofiler-inner">';
+		$by_table=array();
+		$message_h .= '</style>';
+		$message_h .= '<script>';
+		$message_h .= '$(document).ready(function(){$("#pofiler h1").click(function(){$("#pofiler-inner").toggle()});});';
+		$message_h .= '</script>';
+		$message_h .= '<div id="pofiler">';
+		$message_h .= '<h1>Pofiler</h1>';
+		$message_h .= '<div id="pofiler-inner">';
 		$message .= '<h2>Queries</h2>';
 		if ($total) {
 			foreach(self::$queries_ext as $q){
 				$message .= '<div class="pofiler-query">';
-				$message .= '<div class="pofiler-query-query">'.$q['q'].'</div><div class="pofiler-query-time">['.$q['t'].' sec]</div>';
+				$message .= '<div class="pofiler-query-query">'.htmlspecialchars($q['q']).'</div><div class="pofiler-query-time">['.$q['t'].' sec]</div>';
 				$message .= '<div class="trace">'.$q['tr'].'</div>';
 				$message .= '</div>';
 				$total_time+=$q['t'];
+				preg_match('/re_([a-z_]*)/i', $q['q'], $matches);
+				$by_table[$matches[1]][]=$q;
+			}
+		}
+		if(!empty($by_table)){
+			$message .= '<a name="qt"></a><h2>Queries By Table</h2>';
+			$message .= '<p>';
+			foreach($by_table as $k=>$v){
+				$message .= '<a href="#qt_'.$k.'">'.$k.' ('.count($v).')</a> | ';
+			}
+			$message .= '</p>';
+			foreach($by_table as $k=>$v){
+				$message .= '<a name="qt_'.$k.'"></a><h3>'.$k.' ('.count($v).')</h3>';
+				foreach($v as $vq){
+					//$message .= '<div class="pofiler-query-query">'.$vq.'</div>';
+					$message .= '<div class="pofiler-query">';
+					$message .= '<div class="pofiler-query-query">'.htmlspecialchars($vq['q']).'</div><div class="pofiler-query-time">['.$vq['t'].' sec]</div>';
+					$message .= '<div class="trace">'.$vq['tr'].'</div>';
+					$message .= '</div>';
+				}
 			}
 		}
 		$message .= '<h2>Exeptions</h2>';
@@ -110,10 +132,14 @@ font-size: 11px;
 			$message .= implode('</p><p>', self::$exceptions);
 			$message .= '</p>';
 		}
+		
+		$m .= "<p>Total queries: $total</p>";
+		$m .= "<p>Total time: $total_time</p>";
+		$m .= '<p>Memory usage: ' . (memory_get_usage( true ) / 1024  / 1024) . ' MB</p>';
+		$m .= '<p><a href="#q">Query</a> | <a href="#qt">Query by Table</a></p>';
 	
-		$message .= "<p>Total queries: $total</p>";
-		$message .= "<p>Total time: $total_time</p>";
-		$message .= '<p>Memory usage: ' . (memory_get_usage( true ) / 1024  / 1024) . ' MB</p>';
+		$message = $message_h.$m.$message;
+		
 		$message .= '</div>';
 		$message .= '</div>';
 		return $message;
