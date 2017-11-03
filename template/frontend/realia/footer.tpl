@@ -4,7 +4,7 @@
             <div class="row">
                 <div class="widget properties span3">
                     <div class="title">
-                        <h2>{$LT_NEW_OBJECTS}</h2>
+                        <h2><editable id="new_obj_title_edit" data-file="footer.tpl">{$LT_NEW_OBJECTS}</editable></h2>
                     </div><!-- /.title -->
 
                     <div class="content">
@@ -51,55 +51,38 @@
 
                 <div class="widget span3">
                     <div class="title">
-                        <h2>{$LT_ABOUT}</h2>
+                        <h2><editable id="about_title_edit" data-file="footer.tpl">{$LT_ABOUT}</editable></h2>
                     </div><!-- /.title -->
 
                     <div class="content">
+                        <editable id="contact_edit" data-file="footer.tpl">
                         <table class="contact">
                             <tbody>
                             <tr>
                                 <th class="address">{$L_ADDRESS}:</th>
-                                {if $apps_contact_address != ''}
-                                    <td>{$apps_contact_address}</td>
-                                {else}
                                     <td>Россия<br>Красноярск<br>Батурина, 19<br></td>
-                                {/if}
                             </tr>
                             <tr>
                                 <th class="phone">{$L_PHONE}:</th>
-
-                                {if $apps_contact_phone != ''}
-                                    <td><a href="tel:{$apps_contact_phone}">{$apps_contact_phone}</a></td>
-                                {else}
                                     <td><a href="tel:8 800 250-99-31">8 800 250-99-31</a></td>
-                                {/if}
-                                
                             </tr>
                             <tr>
                                 <th class="email">E-mail:</th>
-                                {if $apps_contact_email != ''}
-                                    <td><a href="mailto:{$apps_contact_email}">{$apps_contact_email}</a></td>
-                                {else}
                                     <td><a href="mailto:dkondin@gmail.com">dkondin@gmail.com</a></td>
-                                {/if}
-                                
                             </tr>
                             <tr>
                                 <th class="skype">Skype:</th>
-                                {if $apps_contact_skype != ''}
-                                <td><a href="skype:{$apps_contact_skype}">{$apps_contact_skype}</a></td>
-                                {else}
                                     <td><a href="skype:kondin.dmitry">kondin.dmitry</a></td>
-                                {/if}
                             </tr>
                             </tbody>
                         </table>
+                        </editable>
                     </div><!-- /.content -->
                 </div><!-- /.widget -->
 
                 <div class="widget span3">
                     <div class="title">
-                        <h2 class="block-title">{$LT_FOR_USER}</h2>
+                        <h2 class="block-title"><editable id="for_user_title_edit" data-file="footer.tpl">{$LT_FOR_USER}</editable></h2>
                     </div><!-- /.title -->
 
                     <div class="content">
@@ -113,7 +96,7 @@
 
                 <div class="widget span3">
                     <div class="title">
-                        <h2 class="block-title">{$LT_CONTACTUS}</h2>
+                        <h2 class="block-title"><editable id="contactus_title_edit" data-file="footer.tpl">{$LT_CONTACTUS}</editable></h2>
                     </div><!-- /.title -->
     {literal}
     <script>
@@ -136,7 +119,7 @@
         <div id="footer-inner">
             <div class="row">
                 <div class="span6 copyright">
-                    <p>Сделано на <a href="http://www.sitebill.ru" target="_blank">CMS SiteBill</a></p>
+                    <p><editable id="copyright_edit" data-file="footer.tpl">Сделано на <a href="http://www.sitebill.ru" target="_blank">CMS SiteBill</a></editable></p>
                 </div><!-- /.copyright -->
 
                 <div class="span6 share">

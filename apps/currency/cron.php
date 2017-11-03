@@ -9,7 +9,7 @@ require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php');
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/language/russian.php');
 $smarty = new Smarty;
 $sitebill = new SiteBill();
-$sitebill->writeLog('MAIN! '.uniqid().' ~ '.microtime());
+//$sitebill->writeLog('MAIN! '.uniqid().' ~ '.microtime());
 $smarty->template_dir = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme');
 $smarty->cache_dir    = SITEBILL_DOCUMENT_ROOT.'/cache/smarty';
 $smarty->compile_dir  = SITEBILL_DOCUMENT_ROOT.'/cache/compile';

@@ -23,7 +23,7 @@ $(document).ready(function(){
 {/literal}
 </script>
 <div class="property-filter">
-   <div class="content">    
+   <div class="content">
 			{if $mysearch_on==1}
 				{if $mysearch_save_form_file ne ''}
 				{include file=$mysearch_save_form_file}
@@ -149,25 +149,25 @@ $(document).ready(function(){
 						{$structure_box}
 						</div>
 					</div>
-                  
-                  <div class="baths control-group">
-						<label class="control-label" for="inputType">
+
+                  <div class="beds control-group">
+						<label class="control-label" for="floor_min">
 						 Этаж от
 						</label>
 						 <div class="controls">
 						 <input type="text" name="floor_min" value="{if (isset($smarty.request.floor_min) && $smarty.request.floor_min!=0)}{$smarty.request.floor_min}{/if}" />
 						 </div>
 					 </div>
-                  
-                     <div class="beds control-group">
-						<label class="control-label" for="inputType">
+
+                     <div class="baths control-group">
+						<label class="control-label" for="floor_max">
 						 Этаж до
 						</label>
 						<div class="controls">
 						<input type="text" name="floor_max" value="{if (isset($smarty.request.floor_max) && $smarty.request.floor_max!=0)}{$smarty.request.floor_max}{/if}" />
 						</div>
 					</div>
-                   
+
                      <div class="beds control-group">
 						<label class="control-label" for="inputType">
 						 Этажей от
@@ -290,18 +290,18 @@ $(document).ready(function(){
 						<input class="checkbox" type="checkbox" name="room_count[]" value="4" /> <label class="ch">4+</label>
                                     </label>
 									{/if}
-						</div>          
+						</div>
                         <div class="controls">
                           <input type="checkbox" name="is_furniture"{if isset($smarty.request.is_furniture)} checked="checked"{/if} value="1" />
                          <label class="control-label" for="inputType">
 						{$L_FURNITURE}
-						 </label> 
+						 </label>
                         </div>
                         <div class="controls">
                           <input type="checkbox" name="is_phone"{if isset($smarty.request.is_phone)} checked="checked"{/if} value="1" />
                          <label class="control-label" for="inputType">
 						{$L_PHONE}
-						 </label> 
+						 </label>
                         </div>
                         <div class="controls">
                           <input type="checkbox" name="has_photo"{if isset($smarty.request.has_photo)} checked="checked"{/if} value="1" />
@@ -315,7 +315,7 @@ $(document).ready(function(){
 						 <input type="submit" value="{$L_GO_FIND}" class="btn btn-primary btn-large">
 					</div>
                   <br>
-                   <div class="hidden_advance_search"> 
+                   <div class="hidden_advance_search">
                   <a class="search_page_toggle" href="#">{$L_TURNOFF}</a>
                     </div>
                     </div>

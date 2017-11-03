@@ -39,7 +39,7 @@ require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/login.inc.php');
 if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_registry.php') ) {
 	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_registry.php');
 }
-
+require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php');
 $sitebill = new SiteBill();
 
 
@@ -70,6 +70,9 @@ function appendAppToRecently(){
 		}
 		
 	}
+	if (isset($_SESSION['recently_apps']) && is_array($_SESSION['recently_apps'])) {
+	    $_SESSION['recently_apps'] = array_unique($_SESSION['recently_apps']);
+	}
 }
 
 
@@ -92,7 +95,7 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
 	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php');
 	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/sitebill_krascap_admin.php');
 	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/sitebill_krascap_editor.php');
-	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php');
+	
 	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/users/user_object_manager.php');
 	require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/permission/permission.php');
 	$permission = new Permission();
@@ -122,6 +125,11 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
 				require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/street/street_manager.php');
 				$Street_Manager = new Street_Manager();
 				$rs = $Street_Manager->main();
+			} elseif( $_REQUEST['action'] == 'apps' ) {
+				require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/apps/apps_processor.php');
+				$Apps_Processor = new Apps_Processor();
+				$rs = $Apps_Processor->getAppsList();
+				
 			} elseif( $_REQUEST['action'] == 'menu' ) {
 				require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/menu/menu_manager.php');
 				$Menu_Manager = new Menu_Manager();
@@ -229,8 +237,8 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
 				unset($_SESSION['current_user_group_id']);
 				unset($_SESSION['current_user_name']);
 				
-				setcookie('logged_user_id', '', time()-60*60*24*5, '/');
-				setcookie('logged_user_token', '', time()-60*60*24*5, '/');
+				setcookie('logged_user_id', '', time()-60*60*24*5, '/', SiteBill::$_cookiedomain);
+				setcookie('logged_user_token', '', time()-60*60*24*5, '/', SiteBill::$_cookiedomain);
 				header('Location: '.SITEBILL_ADMIN_BASE);
 				exit;
 			} else {

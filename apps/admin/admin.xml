@@ -7,7 +7,7 @@
     <authorUrl>http://www.sitebill.ru</authorUrl>
     <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
     <license>http://www.sitebill.ru/licenses/sitebill.html</license>
-    <version status="beta">2.1.20</version>
+    <version status="beta">2.2.3</version>
     <backendMenu>false</backendMenu>
     <administration>
         <!-- Administration Menu Section -->

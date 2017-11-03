@@ -20,7 +20,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
      * @param void
      * @return string
      */
-    function main () {
+    function main ( $params = array() ) {
         switch ( $this->getRequestValue('do') ) {
             case 'load_done':
                 $csv_strings = $this->loadData();
@@ -61,7 +61,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
      * @param array $csv_strings csv string
      * @return boolean
      */
-    function importData ( $csv_string ) {
+    /*function importData ( $csv_string ) {
         $record_number = 0;
         $error_number = 0;
         if ( $this->getRequestValue('clear') == 'yes' ) {
@@ -95,14 +95,14 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         $rs = sprintf(Multilanguage::_('L_MESSAGE_SUCCESSFULLY_UPLOADED_N_STRINGS'),$record_number);
         $rs .= Multilanguage::_('L_MESSAGE_RECORDS_SKIPED_BY_ERROR').' '.$error_number.'<br>';
         return $rs;
-    }
+    }*/
     
     /**
      * Get disrtict ID by name
      * @param string $name name
      * @return int
      */
-    function getDistrictIdByName ( $name ) {
+    /*function getDistrictIdByName ( $name ) {
         $query = "select id from re_district where name like '%$name%'";
         $DBC=DBC::getInstance();
     	$stmt=$DBC->query($query);
@@ -113,14 +113,14 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
 			}
 		}
 		return false;
-    }
+    }*/
     
     /**
      * Get type by name for rent
      * @param string $name name
      * @return int
      */
-    function getTypeByNameForRent ( $name ) {
+    /*function getTypeByNameForRent ( $name ) {
         $rent_type_hash = array();
         $rent_type_hash['гостинка'] = 12; 
         $rent_type_hash['комната'] = 10; 
@@ -136,14 +136,14 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         } else {
             return $rent_type_hash[$name]; 
         }
-    }
+    }*/
     
     /**
      * Get rent room count
      * @param string $name name
      * @return int
      */
-    function getRentRoomCount ( $name ) {
+    /*function getRentRoomCount ( $name ) {
         $rent_room_count_hash = array();
         $rent_room_count_hash['гостинка'] = 0; 
         $rent_room_count_hash['комната'] = 0; 
@@ -159,7 +159,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         } else {
             return $rent_room_count_hash[$name]; 
         }
-    }
+    }*/
     
     /**
      * Add rent record
@@ -167,7 +167,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
      * @param int $record_number record number
      * @return boolean
      */
-    function addRentRecord ( $items, $record_number = 0 ) {
+    /*function addRentRecord ( $items, $record_number = 0 ) {
         if ( $record_number == 0 ) {
             if ( !$this->checkRentFormat($items) ) {
                 $this->riseError(Multilanguage::_('L_ERROR_BAD_FILE_FORMAT'));
@@ -219,14 +219,14 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         $DBC=DBC::getInstance();
     	$stmt=$DBC->query($query);
     	return true;
-    }
+    }*/
     
     /**
      * Check rent format
      * @param array $items items
      * @return boolean
      */
-    function checkRentFormat ( $items ) {
+    /*function checkRentFormat ( $items ) {
         //echo '<pre>';
         //print_r($items);
         //echo '</pre>';
@@ -280,14 +280,14 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
             return false;
         }
         return true;
-    }
+    }*/
     
     /**
      * Check sales format
      * @param array $items items
      * @return boolean
      */
-    function checkSalesFormat ( $items ) {
+    /*function checkSalesFormat ( $items ) {
         if ( $items[0] != 'кол. ком.' ) {
 	    echo 0;
             return false;
@@ -353,14 +353,14 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
             return false;
         }
         return true;
-    }
+    }*/
     
     /**
      * Get type by name
      * @param string $name name
      * @return int
      */
-    function getTypeByName ( $name ) {
+    /*function getTypeByName ( $name ) {
         $type_hash = array();
         $type_hash['Гос'] = 22; // гостинка
         $type_hash['Инд'] = 22; // дом
@@ -378,7 +378,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         } else {
             return $type_hash[$name];
         }
-    }
+    }*/
     
     /**
      * Get type_id by room count
@@ -386,7 +386,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
      * @param int $room_count room count
      * @return int
      */
-    function getTypeIDByRoomCount ($topic_id, $room_count ) {
+    /*function getTypeIDByRoomCount ($topic_id, $room_count ) {
         $query = "select id from re_topic where parent_id=$topic_id and sql_where = 'room_count = $room_count'";
     	$DBC=DBC::getInstance();
 		$stmt=$DBC->query($query);
@@ -397,7 +397,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
 			}
 		}
         return false;
-    }
+    }*/
     
     /**
      * Add record
@@ -405,7 +405,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
      * @param int $record_number record number
      * @return boolean
      */
-    function addRecord ( $items, $record_number = 0 ) {
+    /*function addRecord ( $items, $record_number = 0 ) {
         if ( $record_number == 0 ) {
             if ( !$this->checkSalesFormat($items) ) {
                 $this->riseError(Multilanguage::_('L_ERROR_BAD_FILE_FORMAT'));
@@ -459,7 +459,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
     	$DBC=DBC::getInstance();
 		$stmt=$DBC->query($query);
 		return true;
-    }
+    }*/
     
     //-----------------------------------------------------------------------------
     /*function gramm_correct ($txt) {

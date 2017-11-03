@@ -107,11 +107,16 @@ class socialauth_admin extends Object_Manager {
     	if ( !$config_admin->check_config_item('apps.socialauth.tw.redirect_url') ) {
     		$config_admin->addParamToConfig('apps.socialauth.tw.redirect_url', '', 'TWITTER REDIRECT_URI');
     	}
+    	
+    	/*if ( !$config_admin->check_config_item('apps.socialauth.gl.button_html') ) {
+    		$config_admin->addParamToConfig('apps.socialauth.gl.button_html', '', 'Код кнопки Google', 3);
+    	}*/
 	}
 	
 	function getTopMenu () {
 		$rs = '';
 		$rs .= '<a href="?action='.$this->action.'&do=update_salt" class="btn btn-primary">Обновить пароли пользователей из социальных сетей с учетом соли</a> ';
+		$rs .= '<a href="?action='.$this->action.'&do=check" class="btn btn-primary">Обновить данные пользователей под новую систему авторизации</a> ';
 		return $rs;
 	}
 	
@@ -119,6 +124,50 @@ class socialauth_admin extends Object_Manager {
 		$rs=Multilanguage::_('TEXT','socialauth');
 		return $rs;
 	}
+	
+	/*protected function _checkAction(){
+		
+		
+		$rs .= 'Производим обновление пользователей на новую систему авторизации<br />';
+    	  	
+    	$DBC=DBC::getInstance();
+    	$query='SELECT user_id, login, email, tw_id, vk_id, ok_id, gl_id, fb_id FROM re_user';
+    	$stmt=$DBC->query($query);
+    	
+    	if($stmt){
+    		while($ar=$DBC->fetch($stmt)){
+    			if(preg_match('/^(tw|ok|gl|fb|vk)([0-9]+)$/', $ar['login'], $matches)){
+    				$ar['_t']=$matches[1];
+    				if($ar[$matches[1].'_id']==''){
+    					$ar['_i']=$matches[2];
+    					$ret[]=$ar;
+    				}
+    				
+    					
+    			}elseif(preg_match('/^(tw|ok|gl|fb|vk)([0-9]+)@(tw|ok|gl|fb|vk)/', $ar['email'])){
+    				$ar['_t']=$matches[1];
+    				if($ar[$matches[1].'_id']==''){
+    					$ar['_i']=$matches[2];
+    					$ret[]=$ar;
+    				}
+    				
+    			}
+    		}
+    	}
+    	
+    	if(!empty($ret)){
+    		$count=0;
+    		foreach ($ret as $ar){
+    			$query='UPDATE re_user SET `'.$ar['_t'].'_id`=? WHERE user_id=?';
+    			$stmt=$DBC->query($query, array($ar['_i'], $ar['user_id']));
+    			$count+=1;
+    		}
+    		$rs .= 'Обновлено '.$count.' пользователей';
+    	}else{
+    		$rs .= 'Нет пользователей нуждающихся в обновлении';
+    	}
+		return $rs;
+	}*/
 	
 	protected function _update_saltAction(){
 		$this->updateSocialNetworkUsersPasswordsWithNewSalt();
@@ -155,7 +204,16 @@ class socialauth_admin extends Object_Manager {
 			$smarty->assign('gl_login_enable', (int)$this->getConfigValue('apps.socialauth.gl.enable'));
 			$smarty->assign('fb_login_enable', (int)$this->getConfigValue('apps.socialauth.fb.enable'));
 			
+			//$smarty->assign('gl_button_html', $this->getConfigValue('apps.socialauth.gl.button_html'));
 			$tpl=SITEBILL_DOCUMENT_ROOT.'/apps/socialauth/site/template/login.tpl';
+			if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/socialauth/site/template/login.tpl')){
+				$tpl=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/socialauth/site/template/login.tpl';
+			}
+			$buttons_tpl=SITEBILL_DOCUMENT_ROOT.'/apps/socialauth/site/template/buttons.tpl';
+			if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/socialauth/site/template/buttons.tpl')){
+				$buttons_tpl=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/socialauth/site/template/buttons.tpl';
+			}
+			$smarty->assign('buttons_tpl', $buttons_tpl);
 			return $smarty->fetch($tpl);
 		}else{
 			return '';

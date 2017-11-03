@@ -44,9 +44,9 @@ class Data_Manager_Export extends Object_Manager {
         
         $this->data_model[$this->table_name]['text'] = $tmp;
         $this->data_model[$this->table_name]['id']['title'] = 'ID';
-        $this->data_model[$this->table_name]['user_id']['title'] = Multilanguage::_('L_TEXT_USER');
-        $this->data_model[$this->table_name]['active']['title'] = Multilanguage::_('L_PUBLISHED_SH');
-        $this->data_model[$this->table_name]['hot']['title'] = Multilanguage::_('L_SPECIAL_SH');
+        //$this->data_model[$this->table_name]['user_id']['title'] = Multilanguage::_('L_TEXT_USER');
+        //$this->data_model[$this->table_name]['active']['title'] = Multilanguage::_('L_PUBLISHED_SH');
+        //$this->data_model[$this->table_name]['hot']['title'] = Multilanguage::_('L_SPECIAL_SH');
         $this->data_model[$this->table_name]['view_count']['title'] = Multilanguage::_('L_VIEW_COUNT');
         
         $this->model = $data_model; 
@@ -123,6 +123,20 @@ class Data_Manager_Export extends Object_Manager {
         		'city_id'=>$data['city_id'],
         		'street_id'=>$data['street_id']
         );
+	
+	    //$this->writeLog(__METHOD__.', data = <pre>'.var_export($data, true).'</pre>');
+	    //$this->writeLog(__METHOD__.', tdata = <pre>'.var_export($tlocation_data, true).'</pre>');
+	    //$this->writeLog(__METHOD__.', assoc = <pre>'.var_export($assoc_array, true).'</pre>');
+	
+	
+	//Проверим, есть ли в assoc_array маппинг для полей
+	foreach ( $tlocation_data as $key_tlocation => $data_array ) {
+	    if ( $assoc_array[$key_tlocation] != $key_tlocation ) {
+		$tlocation_data[$key_tlocation] = $data[$assoc_array[$key_tlocation]];
+	    }
+	}
+	    //$this->writeLog(__METHOD__.', tdata a = <pre>'.var_export($tlocation_data, true).'</pre>');
+	
         
         $tld=$this->createTLocationData($tlocation_data);
         foreach($tld as $kk=>$vv){
@@ -251,18 +265,6 @@ class Data_Manager_Export extends Object_Manager {
         return false;
     }
     
-    function edit() {
-        $form_data[$this->table_name] = $this->get_model(true);
-        $form_data[$this->table_name] = $this->model->init_model_data_from_request($form_data[$this->table_name]);
-        $this->model->forse_auto_add_values($form_data[$this->table_name]);
-        $this->edit_data($form_data[$this->table_name]);
-        if ( $this->getError() ) {
-        	$rs .= '<div style="color: red">Ошибка: '.$this->GetErrorMessage().'</div><br>';
-        } else {
-        	$rs .= 'Запись обновлена успешно. ID = '.$form_data[$this->table_name][$this->primary_key]['value'].'<br>';
-        }
-        return $rs;
-    }
     
     /**
      * Get search form
@@ -290,17 +292,27 @@ class Data_Manager_Export extends Object_Manager {
     	if ( $this->getError() ) {
     		$rs .= $form_generator->get_error_message_row($this->GetErrorMessage());
     	}
-    	$rs .= $form_generator->compile_form($form_data);
+    	
+    	foreach($form_data as $k=>$v){
+    		if($v['type']=='geodata'){
+    			unset($form_data[$k]);
+    		}
+    	}
+    	
+	$rs .= '<tr>';
+    	$rs .= '<td colspan="2"><h2>Фильтр выгружаемых объявлений</h2>'.$form_generator->compile_form($form_data).'</td>';
+	$rs .= '</tr>';
     
     	$rs .= '<input type="hidden" name="do" value="export">';
     	$rs .= '<input type="hidden" name="action" value="excelfree">';
 
     	$rs .= '<tr>';
-    	$rs .= '<td colspan="2">'.$this->get_export_columns_list().'</td>';
+    	$rs .= '<td colspan="2"><h2>Отметить колонки, которые необходимо выгрузить</h2><p><input type="checkbox" id="check_all111" checked="checked">Выгрузить все</p>'.$this->get_export_columns_list().'</td>';
+    	
     	$rs .= '</tr>';
 
     	$rs .= '<tr>';
-    	$rs .= '<td>
+    	$rs .= '<td colspan="2">
     			Количество строк в одном файле Excel <br/>(если в базе данных много записей, тогда нужно уменьшить количество строк в одном файле).
     			<select name="per_page">
     			<option value="0">все</option>
@@ -314,13 +326,13 @@ class Data_Manager_Export extends Object_Manager {
     			<option value="5000">5000</option>
     			<option value="10000">10000</option>
     			</select>
-    			</td>';
-    	$rs .= '<td><input type="submit" name="submit" id="formsubmit" onClick="return SitebillCore.formsubmit(this);" value="'.Multilanguage::_('LOAD_EXCEL_FILE','excelfree').'"></td>';
+    			';
+    	$rs .= '<input class="btn btn-success" type="submit" name="submit" id="formsubmit" onClick="return SitebillCore.formsubmit(this);" value="'.Multilanguage::_('LOAD_EXCEL_FILE','excelfree').'"></td>';
     	$rs .= '</tr>';
     	
     	$rs .= '</table>';
     	$rs .= '</form>';
-    
+    $rs.='<script>$(document).ready(function(){$("#check_all111").change(function(){if($(this).prop("checked")){$(".applied [type=checkbox]").prop("checked", true);}else{$(".applied [type=checkbox]").prop("checked", false);}});})</script>';
     	return $rs;
     
     }
@@ -470,6 +482,20 @@ class Data_Manager_Export extends Object_Manager {
     	return true;
     }
     
+    function edit() {
+        $form_data[$this->table_name] = $this->get_model(true);
+        $form_data[$this->table_name] = $this->model->init_model_data_from_request($form_data[$this->table_name]);
+        $this->model->forse_auto_add_values($form_data[$this->table_name]);
+        $this->edit_data($form_data[$this->table_name]);
+        if ($this->getError()) {
+            $rs .= '<div style="color: red">Ошибка: ' . $this->GetErrorMessage() . '</div><br>';
+        } else {
+            $image_processor_message = $this->init_uploads_cache($form_data[$this->table_name][$this->primary_key]['value'], $this->table_name, $this->primary_key, $form_data);
+            $rs .= 'Запись обновлена успешно. ID = ' . $form_data[$this->table_name][$this->primary_key]['value'] .' '.$image_processor_message. '<br>';
+        }
+        return $rs;
+    }
+
     function insert () {
     	 
         $form_data[$this->table_name] = $this->get_model(true);
@@ -478,10 +504,67 @@ class Data_Manager_Export extends Object_Manager {
         if ( $this->getError() ) {
             $rs .= '<div style="color: red">'.Multilanguage::_('L_ERROR').': '.$this->GetErrorMessage().'</div><br>';
         } else {
-            $rs .= Multilanguage::_('L_MESSAGE_ADD_SUCCESS').'<br>';
+            $image_processor_message = $this->init_uploads_cache($new_record_id, $this->table_name, $this->primary_key, $form_data);
+            $rs .= Multilanguage::_('L_MESSAGE_ADD_SUCCESS').' '.$image_processor_message.'<br>';
         }
         return $rs;
     }
+    
+    public function doImage($imgs, $table_name, $primary_key, $cache_name, $record_id, $skip_cache = false) {
+        //Если включена опция использования кэша для парсинга
+        if (1 == (int) $this->getConfigValue('apps.excel.use_image_cache') and ! $skip_cache) {
+            //То сохраняем массив картинок и выходим из функции
+            $DBC = DBC::getInstance();
+            $query = 'UPDATE ' . DB_PREFIX . '_' . $table_name . ' SET `' . $cache_name . '`=? WHERE `' . $primary_key . '`=?';
+            $this->writeLog($query);
+            echo $query;
+            $DBC->query($query, array(serialize($imgs), $record_id), $success);
+            if (!$success) {
+                //$this->writeLog($DBC->getLastError());
+                $this->riseError($DBC->getLastError());
+                //echo $DBC->getLastError() . '<br/>';
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+    
+    function init_uploads_cache( $record_id, $table_name, $primary_key, $form_data ) {
+        if (1 != (int) $this->getConfigValue('apps.excel.use_image_cache')) {
+            return '';
+        }
+        $image_processor_message = '';
+        foreach ( $form_data[$table_name] as $image_field_name => $field_array) {
+            if ( $form_data[$table_name][$image_field_name]['type'] == 'uploads' && $form_data[$table_name][$image_field_name]['value'] != '') {
+                $cache_name = $image_field_name.'_cache';
+                $imgs = array();
+                //$form_data[$this->table_name]['image']['value'] = str_replace('_x000D_', '', $form_data[$this->table_name]['image']['value']);
+                $form_data[$table_name][$image_field_name]['value'] = str_replace('\'', '', $form_data[$table_name][$image_field_name]['value']);
+                $_imgs = explode($this->getConfigValue('apps.excel.images_delimiter'), $form_data[$table_name][$image_field_name]['value']);
+
+                $this->writeLog(array('apps_name' => 'apps.excel', 'method' => __METHOD__, 'message' => 'form_data = <pre>' . var_export($_imgs, true) . '</pre>', 'type' => NOTICE));
+
+                foreach ($_imgs as $im) {
+                    if (trim($im) != '') {
+                        $imgs[] = trim($im);
+                    }
+                }
+                if (!empty($imgs)) {
+                    $this->nullError();
+                    $process_image = $this->doImage($imgs, $table_name, $primary_key, $cache_name, $record_id);
+                    if ($this->getConfigValue('apps.excel.use_image_cache') and $process_image) {
+                        $image_processor_message = ' [Были добавлены изображения в кэш. Необходимо запустить парсер кэшированных картинок]';
+                    }
+                    if ( $this->getError() ) {
+                        $image_processor_message = '<span class="alert alert-error alert-danger">'.$this->GetErrorMessage().'</span>';
+                    }
+                }
+            }
+        }
+        return $image_processor_message;
+    }
+    
     
     function nullError () {
     	$this->error_message = false;
@@ -648,6 +731,11 @@ class Data_Manager_Export extends Object_Manager {
     	}elseif($params['srch_date_to']!=0){
     		$where_array[]="(".DB_PREFIX."_data.date_added<='".$params['srch_date_to']."')";
     	}
+	
+    	if($params['for_press']!=''){
+    		$where_array[]="".DB_PREFIX."_data.for_press>='".strtotime($params['for_press'])."'";
+	}
+	
     
     
     	/*
@@ -728,6 +816,8 @@ class Data_Manager_Export extends Object_Manager {
     	} else {
     		$query = "select re_data.*, re_topic.name as type_sh $add_select_value from re_data, re_topic $add_from_table $where_statement order by $order";
     	}
+	
+	$this->writeLog(__METHOD__.", query = ".$query);
     
     	return $query;
     }

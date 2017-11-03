@@ -56,6 +56,16 @@ class Kvartira_Search_Form extends SiteBill {
         if(isset($kvartira_model['data']['currency_id']) && 1==$this->getConfigValue('currency_enable')){
         	$this->template->assert('currency_list', $form_generator->get_single_select_box_by_query($kvartira_model['data']['currency_id']));
         }
+
+		if($this->getConfigValue('optype_in_form') && isset($kvartira_model['data']['optype'])){
+    		if($kvartira_model['data']['optype']['type']=='select_box'){
+    			$this->template->assert('optype_list', $form_generator->get_select_box($kvartira_model['data']['optype']));
+    		}elseif($kvartira_model['data']['optype']['type']=='select_by_query'){
+    			$this->template->assert('optype_list', $form_generator->get_single_select_box_by_query($kvartira_model['data']['optype']));
+    		}
+    		
+    		
+    	}
         
         if(isset($kvartira_model['data']['tlocation'])){
         	$this->template->assert('country_list', '');
@@ -93,11 +103,9 @@ class Kvartira_Search_Form extends SiteBill {
         
         
        
-        
-        $this->template->assert('price', $this->getRequestValue('price'));
+        $this->template->assert('price', $kvartira_model['data']['price']['value']);
         $this->template->assert('id', $this->getRequestValue('id'));
         
     }
     
 }
-?>

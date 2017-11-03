@@ -3,7 +3,9 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 	
 	public function grid_exists($topics){
 		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/front_gridmanager_admin.php')){
+		    if ( !class_exists('table_admin') ) {
 			require_once SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/admin.php';
+		    }
 			require_once SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/front_gridmanager_admin.php';
 			$FGMA=new front_gridmanager_admin();
 			return $FGMA->getCustomGrid($topics);

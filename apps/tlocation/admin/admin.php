@@ -145,6 +145,9 @@ class tlocation_admin extends Object_Manager {
 	}
 	*/
 	private function _getGeolist($from, $term, $dep_key='', $dep_val=0){
+		/*if(strtolower($_SERVER['REQUEST_METHOD'])!='post'){
+			return '';
+		}*/
 		switch($from){
 			case 'country' : {
 				return $this->_getCountries($term, $dep_key, $dep_val);
@@ -165,13 +168,27 @@ class tlocation_admin extends Object_Manager {
 				return $this->_getMetros($term, $dep_key, $dep_val);
 			}
 			default : {
+				$model=$this->getRequestValue('model');
+				if($model!='' && $model!='data'){
+					require_once SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/helper.php';
+					$ATH=new Admin_Table_Helper();
+					$data_model_shared=$ATH->load_model($model, false, false);
+				}
 				
-				require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
-				$data_model = new Data_Model();
-				$data_model_shared = $data_model->get_kvartira_model(false, true);
+				if(!$data_model_shared || empty($data_model_shared[$model])){
+					require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+					$data_model = new Data_Model();
+					$data_model_shared = $data_model->get_kvartira_model(false, false);
+					$model='data';
+				}
+				
+				$data_model_shared=$data_model_shared[$model];
+				
+	    		
+				
 				//echo $from;
 				//print_r($data_model_shared['data'][$from]);
-				foreach($data_model_shared['data'] as $key=>$value){
+				foreach($data_model_shared as $key=>$value){
 					if($value['type']=='select_by_query' && $value['primary_key_table']==$from){
 						//print_r($value);
 						return $this->_getAbstractData($term, $value['primary_key_table'], $value['primary_key_name'], $value['value_name']);

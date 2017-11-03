@@ -129,7 +129,7 @@ class mailbox_admin extends Object_Manager {
         return $rs;
     }
     
-    function grid () {
+    function grid ($params=array(), $default_params=array()) {
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/grid.php');
     	$common_grid = new Common_Grid($this);
     
@@ -474,7 +474,7 @@ class mailbox_admin extends Object_Manager {
     	$stmt=$DBC->query($q, array($id));
     }
     
-    function getRealtyHref($realty_id){
+    function getRealtyHref($realty_id, $external=false, $params=array()){
     	//TODO: change function to using standart Sitebill::getRealtyHref
     	$DBC=DBC::getInstance();
     	$topic_id=0;

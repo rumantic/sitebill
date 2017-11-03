@@ -291,7 +291,23 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
     }
 
     protected function _new_doneAction() {
+    	/*$rtoken=$_POST['csrftoken'];
+    	$rhash=$_POST['csrfhash'];
+    	var_dump($rtoken);
+    	var_dump($rhash);
+    	
+    	if($rtoken==''){
+    		exit();
+    	}
+    	
+    	if(md5($rtoken.$_SESSION['csrfsecret'])!=$rhash){
+    		exit();
+    	}*/
+    	
+    	
+    	
         $user_id = $this->getSessionUserId();
+		$user_id = intval($_SESSION['user_id']);
         $rs = '';
 
 
@@ -553,9 +569,10 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
      * @param void
      * @return string
      */
-    function main() {
+    function main( $params = array() ) {
 
         $user_id = $this->getSessionUserId();
+        $user_id = intval($_SESSION['user_id']);
         if ($user_id == '' or $user_id < 1) {
             return sprintf(Multilanguage::_('L_NEED_AUTH_WITH_LINK'), '"' . SITEBILL_MAIN_URL . '/login/"');
         }
@@ -1030,12 +1047,35 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         if ($this->getRequestValue('srch_export_cian') == 'on' || $this->getRequestValue('srch_export_cian') == '1') {
             $params['srch_export_cian'] = 1;
         }
+        
+        //$params['pager_url']='account/data';
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
         $category_structure = $Structure_Manager->loadCategoryStructure();
 
         $res = $grid_constructor->get_sitebill_adv_ext($params);
+        if(!empty($res) && $this->getConfigValue('apps.mailbox.enable')==1){
+        	$ids=array();
+        	foreach($res as $i=>$d){
+        		$ids[$d[$this->primary_key]]=$i;
+        		$res[$i]['_mailbox_cnt']['l']=SITEBILL_MAIN_URL.'/mailbox/?realty_id='.$d[$this->primary_key];
+        	}
+        	$DBC=DBC::getInstance();
+        	$query='SELECT COUNT(mailbox_id) AS _cnt, realty_id, `status` FROM '.DB_PREFIX.'_mailbox WHERE realty_id IN ('.implode(',', array_keys($ids)).') GROUP BY realty_id, `status`';
+        	$stmt=$DBC->query($query);
+        	if($stmt){
+        		while($ar=$DBC->fetch($stmt)){
+					if($ar['status']==1){
+						$res[$ids[$ar['realty_id']]]['_mailbox_cnt']['r']=$ar['_cnt'];
+						$res[$ids[$ar['realty_id']]]['_mailbox_cnt']['t']+=$ar['_cnt'];
+					}else{
+						$res[$ids[$ar['realty_id']]]['_mailbox_cnt']['u']=$ar['_cnt'];
+						$res[$ids[$ar['realty_id']]]['_mailbox_cnt']['t']+=$ar['_cnt'];
+					}
+        		}
+        	}
+        }
         $this->template->assign('grid_items', $res);
         //$this->template->assign('category_tree', $grid_constructor->get_category_tree( $params, $category_structure ) );
         //$this->template->assign('breadcrumbs', $grid_constructor->get_category_breadcrumbs( $params, $category_structure ) );
@@ -1667,7 +1707,7 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
 			$rs .= '<a class="btn btn-success form-cntrl form-cntrl-siteview" href="' . $href . '" target="_blank">' . Multilanguage::_('L_SEE_AT_SITE') . '</a>';
         }
 
-        $rs .= '<form method="post" class="form-horizontal" action="' . SITEBILL_MAIN_URL . '/account/data/" enctype="multipart/form-data">';
+        $rs .= '<form method="post" class="form-horizontal" action="' . SITEBILL_MAIN_URL . '/account/data'.SiteBill::$_trslashes.'" enctype="multipart/form-data">';
 
         if ($this->getConfigValue('advert_cost') > 0 and ( $do == 'new' or $do == 'new_done' )) {
 
@@ -1698,7 +1738,12 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
             $el['private'][] = array('html' => '<input type="hidden" name="do" value="edit_done" />');
             //$el['private'][]=array('html'=>'<input type="hidden" name="id" value="'.$form_data['id']['value'].'">');
         }
-
+        
+        /*$token = md5(uniqid(mt_rand() . microtime()));
+        $hash = md5($token.$_SESSION['csrfsecret']);
+        $el['private'][] = array('html' => '<input type="hidden" name="csrftoken" value="'.$token.'" />');
+        $el['private'][] = array('html' => '<input type="hidden" name="csrfhash" value="'.$hash.'" />');
+        */
         $el['controls']['submit'] = array('html' => '<input class="btn btn-primary" type="submit" name="submit" id="formsubmit" onClick="return SitebillCore.formsubmit(this);" value="' . $button_title . '" />');
 
         $smarty->assign('do', $do);
@@ -1795,7 +1840,11 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
 
             if ($old_alias == '') {
                 if ('' != $this->getConfigValue('apps.seo.allow_custom_realty_aliase_fields')) {
-                    $new_alias = $this->createTranslitAliasByFields($id, explode(',', $this->getConfigValue('apps.seo.allow_custom_realty_aliase_fields')));
+                	$fields=explode(',',$this->getConfigValue('apps.seo.allow_custom_realty_aliase_fields'));
+                	foreach($fields as $k=>$v){
+                		$fields[$k]=trim($v);
+                	}
+                	$new_alias = $this->createTranslitAliasByFields($id, $fields);
                 }
 
                 if ('' != $new_alias) {

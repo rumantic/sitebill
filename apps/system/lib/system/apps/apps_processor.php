@@ -8,6 +8,7 @@ define ('APPS_FILE_NOT_EXIST', 1);
 class Apps_Processor extends SiteBill {
     private $plugins_dir;
     private $apps_executed = array();
+    private $frontend_app='';
     /**
      * Constructor
      */
@@ -15,6 +16,7 @@ class Apps_Processor extends SiteBill {
         $this->apps_dir = SITEBILL_APPS_DIR;
         $this->SiteBill();
     }
+    
     
     /**
      * Run apps by action and interface name
@@ -56,6 +58,13 @@ class Apps_Processor extends SiteBill {
     	return $this->apps_executed;
     }
     
+    function get_runned_app(){
+    	$app = end($this->get_executed_apps());
+    	$app=preg_replace('/^(local_)/', '', $app);
+    	$app=preg_replace('/(_site)$/', '', $app);
+    	return $app;
+    }
+    
     /**
      * Run _preload method for applications
      * @param void
@@ -78,6 +87,12 @@ class Apps_Processor extends SiteBill {
                 if ( $apps_array['local_admin_path'] != '' ) {
                     require_once ($apps_array['local_admin_path']);
                     $app_class_name = 'local_'.$name.'_admin';
+		    if ( !class_exists($app_class_name) ) {
+			$app_class_name = $name.'_admin';
+			if ( !class_exists($app_class_name) ) {
+			    $app_class_name = false;
+			}
+		    }
                 } elseif ( $apps_array['admin_path'] != '' ) {
                     require_once ($apps_array['admin_path']);
                     $app_class_name = $name.'_admin';
@@ -184,7 +199,7 @@ class Apps_Processor extends SiteBill {
                     $app_class_inst = new $app_class_name;
                     if ( $app_class_inst->frontend() ) {
                         $this->set_executed_apps($app_class_name);
-                    }
+                     }
                 }
             }
             $time_end = microtime(true);
@@ -392,7 +407,9 @@ class Apps_Processor extends SiteBill {
 	$time_end = microtime(true);
 	$time = $time_end - $time_start;	
 	//$this->writeLog(array('apps_name' => 'apps_processor', 'method' => __METHOD__, 'message' => 'Время выполнения = '.$time, 'type' => ''));
-	$this->update_apps_cache($menu_all);
+	if ( !$this->getConfigValue('apps_cache_disable') ) {
+	    $this->update_apps_cache($menu_all);
+	}
         return $menu;        
     }
     
@@ -507,14 +524,17 @@ class Apps_Processor extends SiteBill {
      * @return array массив приложений
      */
     function load_apps_from_db ( $params = array() ) {
+	if ( $this->getConfigValue('apps_cache_disable') ) {
+	    return false;
+	}
 	$DBC=DBC::getInstance();
-        if ( $params['frontend'] == 1 ) {
+        if ( isset($params['frontend']) && $params['frontend'] == 1 ) {
             $query='SELECT * FROM `'.DB_PREFIX.'_apps` WHERE `active`=? and `frontend`=?';
             $stmt=$DBC->query($query, array(1, 1));
-        } elseif ( $params['preload'] == 1 ) {
+        } elseif ( isset($params['preload']) && $params['preload'] == 1 ) {
             $query='SELECT * FROM `'.DB_PREFIX.'_apps` WHERE `active`=? and `preload`=?';
             $stmt=$DBC->query($query, array(1, 1));
-        } elseif ( $params['backend_menu'] == 1 ) {
+        } elseif ( isset($params['backend_menu']) && $params['backend_menu'] == 1 ) {
             $query='SELECT * FROM `'.DB_PREFIX.'_apps` WHERE `active`=? and `backend_menu`=?';
             $stmt=$DBC->query($query, array(1, 1));
         } else {

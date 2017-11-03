@@ -7,8 +7,8 @@
 	<authorUrl>http://www.sitebill.ru</authorUrl>
 	<copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
 	<license>http://www.sitebill.ru/licenses/sitebill.html</license>
-    <backendMenu>false</backendMenu>
-	<version status="beta">1.1.3</version>
+        <backendMenu>true</backendMenu>
+	<version status="beta">1.1.4</version>
 	<administration>
 		<!-- Administration Menu Section -->
 		<menu>Watermark Printer</menu>

@@ -36,6 +36,22 @@ td {
                         {/if}
                     {elseif $data_item.type eq "select_by_query_multiple"}
                     	{$data_item.value_string}
+                    {elseif $data_item.type eq "uploads"}
+                    	{if is_array($data_item.value) && count($data_item.value)>0}
+                    	<tr><td><b>{$data_item.title}</b></td><td>
+                    	{foreach from=$data_item.value item=im}
+                    	<a href="{$server_url}/img/data/{$im.normal}"><img src="{$server_url}/img/data/{$im.preview}"></a>
+                    	{/foreach}
+                    	</td></tr>
+                    	{/if}
+                    {elseif $data_item.type eq "docuploads"}
+                    	{if is_array($data_item.value) && count($data_item.value)>0}
+                    	<tr><td><b>{$data_item.title}</b></td><td>
+                    	{foreach from=$data_item.value item=im}
+                    	<a href="{$server_url}/img/mediadocs/{$im.normal}">{$im.normal}</a>
+                    	{/foreach}
+                    	</td></tr>
+                    	{/if}	
                     {elseif $data_item.type eq "date"}
                     	<tr><td><b>{$data_item.title}</b></td><td>{$data_item.value|date_format:"d-m-Y"}</td></tr>
                     {else}

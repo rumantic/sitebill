@@ -20,7 +20,7 @@ class Gl_Logger extends Common_Logger {
 		$this->config=array(
 			'CLIENT_ID'		=>	$Config->getConfigValue('apps.socialauth.gl.client_id'),
 			'CLIENT_SECRET'	=>	$Config->getConfigValue('apps.socialauth.gl.client_secret'),
-			'REDIRECT_URI'	=>	'http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/socialauth/login?do=login_gl',
+			'REDIRECT_URI'	=>	(1===(int)$Config->getConfigValue('work_on_https') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/socialauth/login?do=login_gl',
 			'TOKEN_URL'		=>	'https://accounts.google.com/o/oauth2/token',
 			'AUTH_URL'		=>	'https://accounts.google.com/o/oauth2/auth',
 		);
@@ -68,7 +68,7 @@ class Gl_Logger extends Common_Logger {
 				$userInfo = json_decode(file_get_contents('https://www.googleapis.com/oauth2/v1/userinfo' . '?' . urldecode(http_build_query($params))));
 				if (isset($userInfo->id)) {
 					$_login='gl'.$userInfo->id;
-					$_pass=$_login.$Config->getConfigValue('apps.socialauth.salt');
+					$_pass=Sitebill::genPassword();
 					$email = $_login.'@gl.com';
 					/*if(!isset($userInfo->email) || $userInfo->email==''){
 						$email = $_login.'@gl.com';
@@ -76,22 +76,20 @@ class Gl_Logger extends Common_Logger {
 						$email = $userInfo->email;
 					}*/
 					$_pass_md5=md5($_pass);
-					
-					$this->authUser($_login, $_pass, SiteBill::iconv('utf-8', SITE_ENCODING, $userInfo->name), $email);
-					
+					$ssInfo['ssType']='gl';
+					$ssInfo['id']=$userInfo->id;
+					$ssInfo['email']=$userInfo->email;
+					$ssInfo['name']=$userInfo->name;
+					$ssInfo['link']=$userInfo->link;
+					$ssInfo['picture']=$userInfo->picture;
+					$ssInfo['_email']='gl'.$userInfo->id.'@gl.com';
+					$ssInfo['_login']='gl'.$userInfo->id;
+					$ssInfo['_pass']=$_pass;
+					//$ssInfo['group_id']=$this->getConfigValue('apps.socialauth.default_group_id');
+					$_SESSION['ssAuthData']=$ssInfo;
 					return true;
 				}
 			}
-			
-			
-			
-			
-			
-			
-			
-		         
-			
-		        
 		}else{
 			$answer=$this->getLoginLink();
 		}
@@ -104,9 +102,6 @@ class Gl_Logger extends Common_Logger {
 		$params['client_id']=$this->config['CLIENT_ID'];
 		$params['redirect_uri']=$this->config['REDIRECT_URI'];
 		$params['response_type']='code';
-		
-		
-		
 		$href=$url.'?'.urldecode(http_build_query($params));
 		return '<a href="'.$href.'" class="ok_button">OK</a>';
 	}
@@ -118,13 +113,10 @@ class Gl_Logger extends Common_Logger {
 		$params['redirect_uri']=$this->config['REDIRECT_URI'];
 		$params['response_type']='code';
 		$params['scope']='https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
-		
-		
 		$href = $url . '?' . urldecode(http_build_query($params));
 		return $href;
 	}
-	
-	
+		
 	private function __construct(){
 		$this->configure();
 		if(isset($_SESSION['current_user']) && $_SESSION['current_user']['user_id']>0){

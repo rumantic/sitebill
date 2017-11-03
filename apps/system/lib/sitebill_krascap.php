@@ -49,6 +49,11 @@ class SiteBill_Krascap extends SiteBill {
     	$Sitebill_Includer->fetch();
     }
     
+    function load_user_stat ( $user_id ) {
+	$user_stat['advs_counter'] = 777;
+	return $user_stat;
+    }
+    
     
     
     
@@ -118,9 +123,9 @@ class SiteBill_Krascap extends SiteBill {
     }
     
     protected function FrontAction_yandexrealty_export(){
-    	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$theme.'/apps/yandexrealty/admin/local_admin.php')){
+    	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/yandexrealty/admin/local_admin.php')){
     		require_once SITEBILL_DOCUMENT_ROOT.'/apps/yandexrealty/admin/admin.php';
-    		require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$theme.'/apps/yandexrealty/admin/local_admin.php';
+    		require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/yandexrealty/admin/local_admin.php';
     		$YRE=new local_yandexrealty_admin();
     	}else{
     		require_once SITEBILL_DOCUMENT_ROOT.'/apps/yandexrealty/admin/admin.php';
@@ -308,20 +313,31 @@ class SiteBill_Krascap extends SiteBill {
     	$this->template->assert('estate_folder', $folder);
     	Multilanguage::appendTemplateDictionary($this->getConfigValue('theme'));
     	
-    	/*if(preg_match('/^im\/small\/(r|c|f)(\d+)x(\d+)\/(\d+)\.(jpg|jpeg|gif|png)$/', $REQUESTURIPATH, $matches)){
+    	
+    	//if(preg_match('/^im\/small\/(r|c|f)(\d+)x(\d+)\/(\d+)\.(jpg|jpeg|gif|png)$/', $REQUESTURIPATH, $matches)){
+    	/*if(preg_match('/^im\/small\/(r|c|f)(\d+)x(\d+)\/(.*)\.(jpg|jpeg|gif|png)$/', $REQUESTURIPATH, $matches)){	
+    		
+    		$ref=$_SERVER['HTTP_REFERER'];
+    		if($ref===NULL || 'estatecms.ru'!=parse_url($ref, PHP_URL_HOST)){
+    			$sapi_name = php_sapi_name();
+    			if ($sapi_name == 'cgi' || $sapi_name == 'cgi-fcgi') {
+    				header('Status: 404 Not Found');
+    			} else {
+    				header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
+    			}
+    			exit();
+    		}
+    		
+    		
     		$max_width='600';
     		$max_height='600';
     		$min_width='10';
     		$min_height='10';
     		
     		$new_width=(int)$matches[2];
-    		$new_height=(int)$matches[3];
-    		
+    		$new_height=(int)$matches[3]; 		
     	
-    		
     		$mod=$matches[1];
-    		
-    		
     		
     		$name=$matches[4];
     		$ext=$matches[5];
@@ -330,6 +346,7 @@ class SiteBill_Krascap extends SiteBill {
     		$file_exists=false;
     		
     		if($new_width<$min_width || $new_width>$max_width || $new_height<$min_height || $new_height>$max_height){
+    			
     			$sapi_name = php_sapi_name();
     			if ($sapi_name == 'cgi' || $sapi_name == 'cgi-fcgi') {
     				header('Status: 404 Not Found');
@@ -355,7 +372,8 @@ class SiteBill_Krascap extends SiteBill {
     		
     		
     		
-    		$normal_file=SITEBILL_DOCUMENT_ROOT.'/im/normal/'.$name.'.'.$ext;
+    		//$normal_file=SITEBILL_DOCUMENT_ROOT.'/im/normal/'.$name.'.'.$ext;
+    		$normal_file=SITEBILL_DOCUMENT_ROOT.'/img/data/'.$name.'.'.$ext;
     		$small_file=$dir.$name.'.'.$ext;
     		
     		//echo $normal_file;
@@ -386,9 +404,9 @@ class SiteBill_Krascap extends SiteBill {
     			exit();
     		}
     		
-    		//print_r($matches);
     		exit();
     	}*/
+    	
     	/*$ip='192.170.21.13';
     	$ip=$_SERVER['REMOTE_ADDR'];
     	
@@ -862,8 +880,9 @@ class SiteBill_Krascap extends SiteBill {
         				if((int)$ar['id']>0){
         					$realty_id=(int)$ar['id'];
         					$this->growCounter('data', 'id', $realty_id, $this->getSessionUserId());
-        					require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
-        					$kvartira_view = new Kvartira_View();
+        					//require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
+        					//$kvartira_view = new Kvartira_View();
+        					$kvartira_view=$this->_getRealtyViewer();
         					$this->template->assert('main', $kvartira_view->main($realty_id));
         					return;
         				}
@@ -920,16 +939,16 @@ class SiteBill_Krascap extends SiteBill {
         	}elseif(1==$this->getConfigValue('apps.seo.level_enable') && !preg_match($realty_view_regexp, $_SERVER['REQUEST_URI'])){
         		$realty_id = $this->getIDfromURI($_SERVER['REQUEST_URI']);
         		$this->growCounter('data', 'id', $realty_id, $this->getSessionUserId());
-        		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
-        		$kvartira_view = new Kvartira_View();
-        			
+        		//require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
+        		//$kvartira_view = new Kvartira_View();
+        		$kvartira_view=$this->_getRealtyViewer();
         		$this->template->assert('main', $kvartira_view->main($realty_id));
         	} elseif(0==$this->getConfigValue('apps.seo.level_enable') && preg_match($realty_view_regexp, $_SERVER['REQUEST_URI'])){
         		$realty_id = $this->getIDfromURI($_SERVER['REQUEST_URI']);
         		$this->growCounter('data', 'id', $realty_id, $this->getSessionUserId());
-        		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
-        		$kvartira_view = new Kvartira_View();
-        			
+        		//require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
+        		//$kvartira_view = new Kvartira_View();
+        		$kvartira_view=$this->_getRealtyViewer();
         		$this->template->assert('main', $kvartira_view->main($realty_id));
         	}else {
         		header("Status: 404 Not Found");
@@ -2625,9 +2644,11 @@ class SiteBill_Krascap extends SiteBill {
 		$country_url_catched=false;
 		$find_url_catched=false;
 		$city_url_catched=false;
+		$metro_url_catched=false;
 		$region_url_catched=false;
 		$predefined_url_catched=false;
 		$route_catched=false;
+		$complex_url_catched=false;
 		$REQUESTURIPATH=Sitebill::getClearRequestURI();
 	
 		$grid_constructor = $this->_getGridConstructor();
@@ -2728,8 +2749,23 @@ class SiteBill_Krascap extends SiteBill {
 					}
 				}
 			}
+			
+			if(!$route_catched && !$predefined_url_catched && !$country_url_catched && !$region_url_catched && !$city_url_catched){
+				if(intval($this->getConfigValue('apps.seo.no_metro_url'))===0){
+					$query='SELECT * FROM '.DB_PREFIX.'_metro WHERE `alias`=? LIMIT 1';
+					$stmt=$DBC->query($query, array($REQUESTURIPATH));
+					if($stmt){
+						$ar=$DBC->fetch($stmt);
+							
+						if((int)$ar['metro_id']!=0){
+							$metro_url_catched=true;
+							$metro_info=$ar;
+						}
+					}
+				}
+			}
 				
-			if(!$route_catched && !$predefined_url_catched && !$country_url_catched && !$region_url_catched && !$city_info){
+			if(!$metro_url_catched && !$route_catched && !$predefined_url_catched && !$country_url_catched && !$region_url_catched && !$city_info){
 				if($this->getConfigValue('apps.complex.enable')){
 					$DBC=DBC::getInstance();
 					$query='SELECT * FROM '.DB_PREFIX.'_complex WHERE url=? LIMIT 1';
@@ -2909,7 +2945,7 @@ class SiteBill_Krascap extends SiteBill {
 					$this->setRequestValue($k, $v);
 				}
 			}
-				
+			
 			$this->setRequestValue('predefined_info', $predefined_info);
 				
 		}elseif($country_url_catched){
@@ -3034,6 +3070,64 @@ class SiteBill_Krascap extends SiteBill {
 	
 			$this->setRequestValue('city_id', (int)$city_info['city_id']);
 			$this->setRequestValue('city_view', $REQUESTURIPATH);
+				
+		}  elseif($metro_url_catched) {
+				
+			if(1===intval($this->getConfigValue('apps.language.use_langs'))){
+				$curlang=$this->getCurrentLang();
+				$lang_postfix='_'.$curlang;
+				if(1===intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang=='ru'){
+					$lang_postfix='';
+				}
+			}else{
+				$lang_postfix='';
+			}
+				
+			if(isset($metro_info['public_title'.$lang_postfix]) && $metro_info['public_title'.$lang_postfix]!=''){
+				$title = $metro_info['public_title'.$lang_postfix];
+			}elseif(isset($metro_info['public_title']) && $metro_info['public_title']!=''){
+				$title = $metro_info['public_title'];
+			}else{
+				$title = $metro_info['name'];
+			}
+			if(isset($metro_info['meta_title'.$lang_postfix]) && $metro_info['meta_title'.$lang_postfix]!=''){
+				$meta_title = $metro_info['meta_title'.$lang_postfix];
+			}elseif ( $metro_info['meta_title'] != '' ) {
+				$meta_title = $metro_info['meta_title'];
+			} else {
+				$meta_title = $title;
+			}
+				
+			if ( (int)$this->getRequestValue('page') > 0 && (int)$this->getRequestValue('page')!=1 && 1==$this->getConfigValue('add_pagenumber_title') ) {
+				$title .= ' ['.Multilanguage::_('L_PAGE').' '.$this->getRequestValue('page').']';
+			}
+	
+			$this->template->assign('title', $title);
+			$this->template->assign('meta_title', $meta_title);
+	
+			if(isset($metro_info['description'.$lang_postfix]) && $metro_info['description'.$lang_postfix]!=''){
+				$this->template->assign('description', $metro_info['description'.$lang_postfix]);
+			}elseif ( $metro_info['description'] != '' ) {
+				$this->template->assign('description', $metro_info['description']);
+			}
+			if(isset($metro_info['meta_description'.$lang_postfix]) && $metro_info['meta_description'.$lang_postfix]!=''){
+				$this->template->assign('meta_description', $metro_info['meta_description'.$lang_postfix]);
+			}elseif ( $metro_info['meta_description'] != '' ) {
+				$this->template->assign('meta_description', $metro_info['meta_description']);
+			}else{
+				$this->template->assign('meta_description', $this->getConfigValue('meta_description_main'));
+			}
+			if(isset($metro_info['meta_keywords'.$lang_postfix]) && $metro_info['meta_keywords'.$lang_postfix]!=''){
+				$this->template->assign('meta_keywords', $metro_info['meta_keywords'.$lang_postfix]);
+			}elseif ( $metro_info['meta_keywords'] != '' ) {
+				$this->template->assign('meta_keywords', $metro_info['meta_keywords']);
+			}else{
+				$this->template->assign('meta_keywords', $this->getConfigValue('meta_keywords_main'));
+			}
+	
+	
+			$this->setRequestValue('metro_id', (int)$metro_info['metro_id']);
+			$this->setRequestValue('metro_view', $REQUESTURIPATH);
 				
 		} elseif($region_url_catched) {
 				
@@ -3330,6 +3424,8 @@ class SiteBill_Krascap extends SiteBill {
 			}
 		}
 	
+		
+		
 	
 	
 	
@@ -3367,7 +3463,7 @@ class SiteBill_Krascap extends SiteBill {
 		$grid_constructor->main($params);
 	
 	
-		return $rs;
+		return '';
 	}
 	
 	function grid_adv2 ($params=array()) {
@@ -3682,6 +3778,11 @@ class SiteBill_Krascap extends SiteBill {
 	public function gatherRequestParams(){
 		$REQUESTURIPATH=SiteBill::getClearRequestURI();
 		$params=array();
+		
+		/*if(NULL!==$this->getRequestValue('places')){
+			$params['places'] = $this->getRequestValue('places');
+		}*/
+		
 		if(NULL!==$this->getRequestValue('id')){
 			if(is_array($this->getRequestValue('id'))){
 				$params['id'] = $this->getRequestValue('id');
@@ -4578,11 +4679,11 @@ class SiteBill_Krascap extends SiteBill {
 							require_once(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/view/local_kvartira_view.php');
 							$kvartira_view = new Local_Kvartira_View();
 							*/
-							require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
-							$kvartira_view = new Kvartira_View();
-							
+							//require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
+							//$kvartira_view = new Kvartira_View();
+							$kvartira_view=$this->_getRealtyViewer();
 							if($html=$kvartira_view->main($realty_id)){
-								$this->template->assert('main', $kvartira_view->main($realty_id));
+								$this->template->assert('main', $html);
 								$result=true;
 							}
 						}
@@ -4650,27 +4751,32 @@ class SiteBill_Krascap extends SiteBill {
 				$DBC=DBC::getInstance();
 				$query='SELECT topic_id FROM '.DB_PREFIX.'_data WHERE id=?';
 				$stmt=$DBC->query($query, array($realty_id));
-				$ar=$DBC->fetch($stmt);
+				if($stmt){
+					$ar=$DBC->fetch($stmt);
+					
+					$topic_id=intval($ar['topic_id']);
+					//echo $topic_id;
+					require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
+					$Structure_Manager = new Structure_Manager();
+					$category_structure = $Structure_Manager->loadCategoryStructure();
+						
+					if($category_structure['catalog'][$topic_id]['url']!=''){
+						$parent_category_url=$category_structure['catalog'][$topic_id]['url'].'/';
+					}else{
+						$parent_category_url='';
+					}
+						
+					if(1==$this->getConfigValue('apps.seo.html_prefix_enable')){
+						$new_location=SITEBILL_MAIN_URL.'/'.$parent_category_url.$realty_alias.$realty_id.'.html';
+					}else{
+						$new_location=SITEBILL_MAIN_URL.'/'.$parent_category_url.$realty_alias.$realty_id;
+					}
+					$this->go301($new_location);
+					return false;
+				}else{
+					return false;
+				}
 				
-				$topic_id=intval($ar['topic_id']);
-				//echo $topic_id;
-				require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
-				$Structure_Manager = new Structure_Manager();
-				$category_structure = $Structure_Manager->loadCategoryStructure();
-					
-				if($category_structure['catalog'][$topic_id]['url']!=''){
-					$parent_category_url=$category_structure['catalog'][$topic_id]['url'].'/';
-				}else{
-					$parent_category_url='';
-				}
-					
-				if(1==$this->getConfigValue('apps.seo.html_prefix_enable')){
-					$new_location=SITEBILL_MAIN_URL.'/'.$parent_category_url.$realty_alias.$realty_id.'.html';
-				}else{
-					$new_location=SITEBILL_MAIN_URL.'/'.$parent_category_url.$realty_alias.$realty_id;
-				}
-				$this->go301($new_location);
-				return false;
 		
 			}elseif(1==$this->getConfigValue('apps.seo.level_enable') && !preg_match('/^'.$realty_alias.'/', $requesturi)){
 				
@@ -4707,8 +4813,9 @@ class SiteBill_Krascap extends SiteBill {
 				require_once(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/view/local_kvartira_view.php');
 				$kvartira_view = new Local_Kvartira_View();
 				*/
-				require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
-				$kvartira_view = new Kvartira_View();
+				//require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
+				//$kvartira_view = new Kvartira_View();
+				$kvartira_view=$this->_getRealtyViewer();
 				$html=$kvartira_view->main($realty_id);
 				if($html){
 					$this->growCounter('data', 'id', $realty_id, $this->getSessionUserId());
@@ -4737,9 +4844,9 @@ class SiteBill_Krascap extends SiteBill {
 				require_once(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/view/local_kvartira_view.php');
 				$kvartira_view = new Local_Kvartira_View();
 				*/
-				require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
-				$kvartira_view = new Kvartira_View();
-				
+				//require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
+				//$kvartira_view = new Kvartira_View();
+				$kvartira_view=$this->_getRealtyViewer();
 				$html=$kvartira_view->main($realty_id);
 				if($html){
 					$this->growCounter('data', 'id', $realty_id, $this->getSessionUserId());
@@ -4785,9 +4892,9 @@ class SiteBill_Krascap extends SiteBill {
 				require_once(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/view/local_kvartira_view.php');
 				$kvartira_view = new Local_Kvartira_View();
 				*/
-				require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
-				$kvartira_view = new Kvartira_View();
-				
+				//require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
+				//$kvartira_view = new Kvartira_View();
+				$kvartira_view=$this->_getRealtyViewer();
 				$html=$kvartira_view->main($realty_id);
 				if($html){
 					$this->growCounter('data', 'id', $realty_id, $this->getSessionUserId());

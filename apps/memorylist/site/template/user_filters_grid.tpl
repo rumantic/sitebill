@@ -1,7 +1,7 @@
 {literal}
 <script>
 $(document).ready(function(){
-	$('.goPDF').click(function(e){
+	/*$('.goPDF').click(function(e){
 		e.preventDefault();
 		var href=$(this).attr('href');
 		if(confirm('Выгружать с полным описанием')){
@@ -18,7 +18,7 @@ $(document).ready(function(){
 		}else{
 			window.open(href);
 		}
-	});
+	});*/
 });
 </script>
 {/literal}	
@@ -27,12 +27,7 @@ $(document).ready(function(){
 <table id="sample-table-1" class="table table-striped table-bordered table-hover">
 <thead>
 	<tr>
-		<th class="center">
-			<label>
-				<input type="checkbox" class="ace">
-				<span class="lbl"></span>
-			</label>
-		</th>
+		<th>ID</th>
 		<th>Набор</th>
 		<th>Создан</th>
 		<th>В наборе</th>
@@ -41,9 +36,8 @@ $(document).ready(function(){
 </thead>
 {foreach from=$user_filters item=user_filter}
 	<tr>
-		<td class="center">
-			<input type="checkbox" class="ace">
-			<span class="lbl"></span>
+		<td>
+			{$user_filter.memorylist_id}
 		</td>
 		<td class="center">
 			{$user_filter.title}
@@ -55,17 +49,21 @@ $(document).ready(function(){
 			В списке: {$user_filter.items|count}
 		</td>
 		<td>
-			<!--a class="btn btn-mini btn-info" href="{$etstate_folder}/memorylist/?do=showfilter&filter_id={$user_filter.memorylist_id}">
+			{if 1==0}<a class="btn btn-mini btn-info" href="{$etstate_folder}/memorylist/?do=showfilter&filter_id={$user_filter.memorylist_id}">
 				<i class="icon-edit bigger-120"></i>
-			</a-->
+			</a>{/if}
+			{if $memorylist_pdf==1}
 			<a class="btn btn-mini btn-success goPDF" target="_blank" href="{$etstate_folder}/memorylist/?do=getpdf&filter_id={$user_filter.memorylist_id}">
-				<i class="icon-print bigger-120"></i> PDF
+				<i class="icon-print icon-white"></i> PDF
 			</a>
-			<!--a class="btn btn-mini btn-success goExcell" target="_blank" href="{$etstate_folder}/memorylist/?do=getexcel&filter_id={$user_filter.memorylist_id}">
+			{/if}
+			{if $memorylist_excel==1 && 1==0}
+			<a class="btn btn-mini btn-success goExcell" target="_blank" href="{$etstate_folder}/memorylist/?do=getexcel&filter_id={$user_filter.memorylist_id}">
 				<i class="icon-file bigger-120"></i> Excell
-			</a-->
+			</a>
+			{/if}
 			<a class="btn btn-mini btn-danger" href="{$etstate_folder}/memorylist/?do=delete&filter_id={$user_filter.memorylist_id}">
-				<i class="icon-trash bigger-120">Удалить</i>
+				<i class="icon-trash icon-white"></i> Удалить
 			</a>
 		</td>
 	</tr>

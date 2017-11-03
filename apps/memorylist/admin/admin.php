@@ -11,6 +11,7 @@ class memorylist_admin extends Object_Manager {
      */
     function __construct( $realty_type = false ) {
         $this->SiteBill();
+        Multilanguage::appendAppDictionary('memorylist');
         $this->table_name='data';
         $this->primary_key='id';
         $this->this_user=(isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0);

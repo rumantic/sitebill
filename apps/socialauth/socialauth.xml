@@ -8,7 +8,7 @@
     <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
     <license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>true</backendMenu>
-    <version status="beta">2.0.7</version>
+    <version status="beta">2.1.2</version>
     <administration>
         <!-- Administration Menu Section -->
         <menu>Авторизация через соц.сети</menu>

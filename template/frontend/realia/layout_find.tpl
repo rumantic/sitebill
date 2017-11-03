@@ -125,7 +125,7 @@ $(document).ready(function(){
     		</div>
     		
     		<div class="sidebar span3">
-				<h2>{$LT_SEARCH}</h2>
+				
 				{include file='search_form.tpl'}
 				<br>
 				{include file='right_special.tpl'}

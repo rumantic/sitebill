@@ -7,6 +7,9 @@ class Config_Mask {
 		
 		$data_model = array();
 		
+		
+		
+		
 		$data_model['add_pagenumber_title_place']['name'] = 'add_pagenumber_title_place';
 		$data_model['add_pagenumber_title_place']['title'] = 'Куда добавлять кличество страниц в заголовке';
 		$data_model['add_pagenumber_title_place']['value'] = '';
@@ -1029,7 +1032,8 @@ class Config_Mask {
 		$data_model['disable_root_structure_select']['name'] = 'disable_root_structure_select';
 		$data_model['disable_root_structure_select']['title'] = 'Блокировать корневые элементы в селектбоксах структуры';
 		$data_model['disable_root_structure_select']['value'] = '0';
-		$data_model['disable_root_structure_select']['type'] = 'checkbox';
+		$data_model['disable_root_structure_select']['type'] = 'select_box';
+		$data_model['disable_root_structure_select']['select_data'] = array('0'=>'не блокировать','1'=>'только верхний уровень','2'=>'все не крайние разделы');
 		
 		$data_model['ignore_free_from_parameter']['name'] = 'ignore_free_from_parameter';
 		$data_model['ignore_free_from_parameter']['title'] = 'Игнорировать свободно с';

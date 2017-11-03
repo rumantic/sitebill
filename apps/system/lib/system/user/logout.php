@@ -26,6 +26,9 @@ class Logout extends SiteBill {
 		unset($_SESSION['viewOptions']);
         unset($_SESSION['session_key']);
         unset($_SESSION['current_user_name']);
+        unset($_SESSION['current_user_group_title']);
+        unset($_SESSION['current_user_info']);
+        
         unset($_SESSION['key']);
         
         //unset($_SESSION['Sitebill_User']);

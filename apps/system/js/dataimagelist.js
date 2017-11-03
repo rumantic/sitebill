@@ -40,7 +40,7 @@ DataImagelist={
 			var parentel=$(el).parents('.dz-preview-uploaded').eq(0);
 			$.ajax({
 				url: estate_folder + "/js/ajax.php?action=dz_imagework",
-				data: 'what=delete_all&table_name='+table+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name,
+				data: 'what=delete_all&model_name='+table+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name,
 				dataType: 'text',
 				success: function(json){
 					if(json=='ok'){
@@ -56,7 +56,7 @@ DataImagelist={
 			var parentel=$(el).parents('.dz-preview-uploaded').eq(0);
 			$.ajax({
 				url: estate_folder + "/js/ajax.php?action=dz_imagework",
-				data: 'what=delete_all&table_name='+table+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name+'&doc_mode=1',
+				data: 'what=delete_all&model_name='+table+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name+'&doc_mode=1',
 				dataType: 'text',
 				success: function(json){
 					if(json=='ok'){
@@ -76,7 +76,7 @@ DataImagelist={
 			if(current_element_index!==-1){
 				$.ajax({
 					url: estate_folder + "/js/ajax.php?action=dz_imagework",
-					data: 'what=delete&table_name='+table+'&current_position='+current_element_index+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name,
+					data: 'what=delete&model_name='+table+'&current_position='+current_element_index+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name,
 					dataType: 'text',
 					success: function(json){
 						if(json=='ok'){
@@ -100,7 +100,7 @@ DataImagelist={
 			if(current_element_index!==-1){
 				$.ajax({
 					url: estate_folder + "/js/ajax.php?action=dz_imagework",
-					data: 'what=delete&table_name='+table+'&current_position='+current_element_index+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name+'&doc_mode=1',
+					data: 'what=delete&model_name='+table+'&current_position='+current_element_index+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name+'&doc_mode=1',
 					dataType: 'text',
 					success: function(json){
 						if(json=='ok'){
@@ -124,7 +124,7 @@ DataImagelist={
 			var prev=parentel.prev('.dz-preview-uploaded-item');
 			$.ajax({
 				url: estate_folder + "/js/ajax.php?action=dz_imagework",
-				data: 'what=reorder&table_name='+table+'&current_position='+(current_element_index-1)+'&key='+pk_name+'&reorder=up&key_value='+pk_value+'&field_name='+field_name,
+				data: 'what=reorder&model_name='+table+'&current_position='+(current_element_index-1)+'&key='+pk_name+'&reorder=up&key_value='+pk_value+'&field_name='+field_name,
 				dataType: 'text',
 				success: function(json){
 					if(json=='ok'){
@@ -147,7 +147,7 @@ DataImagelist={
 			var next=parentel.next('.dz-preview-uploaded-item');
 			$.ajax({
 				url: estate_folder + "/js/ajax.php?action=dz_imagework",
-				data: 'what=reorder&table_name='+table+'&current_position='+(current_element_index-1)+'&key='+pk_name+'&reorder=down&key_value='+pk_value+'&field_name='+field_name,
+				data: 'what=reorder&model_name='+table+'&current_position='+(current_element_index-1)+'&key='+pk_name+'&reorder=down&key_value='+pk_value+'&field_name='+field_name,
 				dataType: 'text',
 				success: function(json){
 					if(json=='ok'){
@@ -172,7 +172,7 @@ DataImagelist={
 		$.ajax({
 			url: estate_folder + "/js/ajax.php?action=dz_imagework",
 			dataType: 'text',
-			data: 'what=rotate&table_name='+table+'&current_position='+(current_element_index-1)+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name+'&rot_dir='+rot_dir,
+			data: 'what=rotate&model_name='+table+'&current_position='+(current_element_index-1)+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name+'&rot_dir='+rot_dir,
 			success: function(text){
 				if(text=='ok'){
 					var im=parentel.find('img').eq(0);
@@ -200,7 +200,7 @@ DataImagelist={
 		var gross_parent=parentel.parents().eq(0);
 		$.ajax({
 			url: estate_folder + "/js/ajax.php?action=dz_imagework",
-			data: 'what=make_main&table_name='+table+'&current_position='+(current_element_index-1)+'&key='+pk_name+'&reorder=down&key_value='+pk_value+'&field_name='+field_name,
+			data: 'what=make_main&model_name='+table+'&current_position='+(current_element_index-1)+'&key='+pk_name+'&reorder=down&key_value='+pk_value+'&field_name='+field_name,
 			dataType: 'text',
 			success: function(json){
 				if(json=='ok'){
@@ -243,7 +243,7 @@ DataImagelist={
 				url: estate_folder+'/js/ajax.php?action=dz_imagework',
 				type: 'POST',
 				dataType: 'text',
-				data: 'what=change_title&title='+new_content+'&table_name='+table+'&current_position='+current_element_index+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name,
+				data: 'what=change_title&title='+new_content+'&model_name='+table+'&current_position='+current_element_index+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name,
 				success: function(title) {
 					_content_input.val(title);
 					_description_block.text(title);

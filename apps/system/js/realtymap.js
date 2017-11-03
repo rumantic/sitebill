@@ -26,7 +26,9 @@ function RealtyMap(version){
 	   marker_offset: [-21, -57],
 	   ajax: false,
 	   marker_htm: '<div class="marker"><div class="marker-inner"></div></div>',
-	   use_clusters: false
+	   use_clusters: false,
+	   adopt_bounds: true,
+	   custom_center: []
 	};
 	
 	this.markersVariants={
@@ -303,13 +305,21 @@ function RealtyMap(version){
 			var hintContent='';
 		}
 		
+		if(markerOpts.ids != undefined){
+			var ids=markerOpts.ids;
+		}else{
+			var ids=[];
+		}
+		
+		
 		
 		
 		var marker = new google.maps.Marker({
             position: latlng,
             map: this.map,
             icon: micon,
-            title: hintContent
+            title: hintContent,
+            ids: ids
         });
 		
 		if(/*markerOpts.showPopup != undefined && markerOpts.showPopup == true && */content != ''){
@@ -346,6 +356,7 @@ function RealtyMap(version){
 	this._createYandexMap=function(){
 		
 		var _this=this;
+		
 		var behaviors=[];
 		if(_this.options.scrollZoom){
 			behaviors.push("scrollZoom");
@@ -353,21 +364,40 @@ function RealtyMap(version){
 		behaviors.push("drag");
 		behaviors.push("dblClickZoom");
 		
-		_this.map = new ymaps.Map(_this.map_element, {
-			zoom: _this.options.defaultZoom,
-			center: [23.937149,49.886672],
-			behaviors: behaviors,
-			type : _this.options.yandexMapType
+		if(_this.version=='2.1'){
+			var controls=[];
+			if(_this.options.fullscreenControl){
+				controls.push('fullscreenControl');
+			}
+			controls.push('zoomControl');
+			controls.push('typeSelector');
+			_this.map = new ymaps.Map(_this.map_element, {
+				zoom: _this.options.defaultZoom,
+				center: [23.937149,49.886672],
+				behaviors: behaviors,
+				type : _this.options.yandexMapType,
+				controls: controls
 			});
-		_this.map.controls.add(new ymaps.control.TypeSelector(['yandex#map', 'yandex#publicMap', 'yandex#satellite', 'yandex#hybrid']));
-		_this.map.controls.add('scaleLine');
-		if(_this.options.minimap){
-			_this.map.controls.add(new ymaps.control.MiniMap(
-			    { type: 'yandex#satellite' },
-			    { size: [90, 90] }
-			));
+		}else{
+			_this.map = new ymaps.Map(_this.map_element, {
+				zoom: _this.options.defaultZoom,
+				center: [23.937149,49.886672],
+				behaviors: behaviors,
+				type : _this.options.yandexMapType
+				});
+			_this.map.controls.add(new ymaps.control.TypeSelector(['yandex#map', 'yandex#publicMap', 'yandex#satellite', 'yandex#hybrid']));
+			_this.map.controls.add('scaleLine');
+			if(_this.options.minimap){
+				_this.map.controls.add(new ymaps.control.MiniMap(
+				    { type: 'yandex#satellite' },
+				    { size: [90, 90] }
+				));
+			}
+			_this.map.controls.add('zoomControl', { top: 75, left: 5 });
 		}
-		_this.map.controls.add('zoomControl', { top: 75, left: 5 });
+		
+		
+		
 	
 	
 	};
@@ -416,6 +446,7 @@ function RealtyMap(version){
 			{
 				draggable: false,
 	            hideIconOnBalloonOpen: true,
+	            iconLayout: 'default#image',
 	            iconImageHref: micon,
 	            iconImageSize: marker_size,
 	            iconImageOffset: marker_offset
@@ -546,6 +577,10 @@ function RealtyMap(version){
 			if(count==1){
 				this.map.setCenter(latlng);
 				this.map.setZoom(this.options.defaultZoom);
+			}else if(!this.options.adopt_bounds){
+				var lat_lng=this.options.custom_center;
+				this.map.setCenter(lat_lng);
+				this.map.setZoom(this.options.defaultZoom);
 			}else{
 				this.map.setBounds(this.map.geoObjects.getBounds());
 			}
@@ -625,6 +660,7 @@ function RealtyMap(version){
 		var count=0;
 		
 		for(var i in this.clustered_data){
+			
 			var llat=this.clustered_data[i].lat;
 			var llng=this.clustered_data[i].lng;
 			var lat_lng=new google.maps.LatLng(llat, llng);
@@ -635,6 +671,10 @@ function RealtyMap(version){
 				markerOpts.content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
 			}else{
 				markerOpts.content='';
+			}
+			
+			if(typeof this.clustered_data[i].ids != 'undefined'){
+				markerOpts.ids=this.clustered_data[i].ids;
 			}
 			
 			markerOpts.hint='Объектов '+this.clustered_data[i].count;
@@ -669,6 +709,9 @@ function RealtyMap(version){
 		
 		if(count==1){
 			this.map.setCenter(last_lat_lng);
+		}else if(!this.options.adopt_bounds){
+			var lat_lng=new google.maps.LatLng(this.options.custom_center[0], this.options.custom_center[1]);
+			this.map.setCenter(lat_lng);
 		}else{
 			this.refreshBounds();
 		}
@@ -691,6 +734,7 @@ function RealtyMap(version){
 		}
 	};
 	this.createGoogleMap=function(){
+		
 		if(this.clustered_data.length==0 && !this.options.ajax){
 			$(this.map_element).hide();
 			return;
@@ -741,6 +785,7 @@ function RealtyMap(version){
 			}
 		 },
 		 initJSON: function(el, datalisting, type, options){
+			 
 			var options = options || {};
 			self.options=$.extend(true, {}, self.options, options)
 			self.map_element=document.getElementById(el);
@@ -782,10 +827,22 @@ function RealtyMap(version){
 			 if(undefined == self.map_element){
 			 	return false;
 			 }
+			 if(options.marker_icon !== undefined){
+				self.setDefaultIconImage(options.marker_icon);
+			}
+			if(options.marker_size !== undefined){
+				self.setDefaultIconSize(options.marker_size);
+			}
+			if(options.marker_offset !== undefined){
+				self.setDefaultIconOffset(options.marker_offset);
+			}
 			 self.createSimpleMap(markers_array);
 		 },
 		 getMap: function(){
 			 return self.map;
+		 },
+		 getMarkers: function(){
+			 return self.markers;
 		 }
 	}
 }

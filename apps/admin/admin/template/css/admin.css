@@ -800,4 +800,17 @@ div#mapviewer_edit_window div label {
 	width: 150px;
     float: left;
     margin: 10px;
-}    
+}
+.ranged-tags-title {
+    white-space: nowrap;
+}
+.ranged-tags-params {
+    background-color: white;
+    padding: 10px;
+    -webkit-box-shadow: 3px 3px 5px 0px rgba(0,0,0,0.75);
+    -moz-box-shadow: 3px 3px 5px 0px rgba(0,0,0,0.75);
+    box-shadow: 3px 3px 5px 0px rgba(0,0,0,0.75);
+}
+.ranged-tags-params input.tagged_input {
+    width: 140px;
+}

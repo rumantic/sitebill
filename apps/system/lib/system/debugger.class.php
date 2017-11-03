@@ -52,6 +52,9 @@ class Debugger {
 	}
 	
 	static public function formatedMessagesExt($html=false) {
+		if (!defined('DEBUG_ENABLED') || !DEBUG_ENABLED) {
+			return '';
+		}
 		$total = count(self::$queries_ext);
 		$message = '';
 		$message_h='';
@@ -104,8 +107,12 @@ font-size: 11px;
 				$message .= '<div class="trace">'.$q['tr'].'</div>';
 				$message .= '</div>';
 				$total_time+=$q['t'];
-				preg_match('/re_([a-z_]*)/i', $q['q'], $matches);
-				$by_table[$matches[1]][]=$q;
+				if(preg_match('/re_([a-z_]*)/i', $q['q'], $matches)){
+					$by_table[$matches[1]][]=$q;
+				}else{
+					$by_table['_SYSTEM_'][]=$q;
+				}
+				
 			}
 		}
 		if(!empty($by_table)){
@@ -133,7 +140,7 @@ font-size: 11px;
 			$message .= '</p>';
 		}
 		
-		$m .= "<p>Total queries: $total</p>";
+		$m= "<p>Total queries: $total</p>";
 		$m .= "<p>Total time: $total_time</p>";
 		$m .= '<p>Memory usage: ' . (memory_get_usage( true ) / 1024  / 1024) . ' MB</p>';
 		$m .= '<p><a href="#q">Query</a> | <a href="#qt">Query by Table</a></p>';

@@ -29,7 +29,7 @@
 
 		<link rel="stylesheet" href="{$assets_folder}/assets/css/ace-fonts.css" />
 <!-- ace styles -->
-
+<link rel="stylesheet" href="{$assets_folder}/assets/css/colorbox.css" />
 		<link rel="stylesheet" href="{$assets_folder}/assets/css/ace.min.css" />
 		<link rel="stylesheet" href="{$assets_folder}/assets/css/ace-responsive.min.css" />
 		<link rel="stylesheet" href="{$assets_folder}/assets/css/ace-skins.min.css" />
@@ -69,8 +69,11 @@
     <!-- <script type="text/javascript" src="{$MAIN_URL}/js/jquery.ui.datepicker.js"></script> -->
     {if $ADMIN_NO_MAP_PROVIDERS==1}
     {else}
-    <script type="text/javascript" src="https://api-maps.yandex.ru/2.0-stable/?load=package.standard&lang=ru-RU"></script>
-	<script type="text/javascript" src="https://maps.google.com/maps/api/js{if $g_api_key!=''}?key={$g_api_key}{/if}"></script>
+    {if $map_type=='yandex'}
+		<script type="text/javascript" src="https://api-maps.yandex.ru/2.0-stable/?load=package.standard&lang=ru-RU"></script>
+		{else}
+		<script type="text/javascript" src="https://maps.google.com/maps/api/js{if $g_api_key!=''}?key={$g_api_key}{/if}"></script>
+		{/if}
 	{if 1==0}<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=drawing,geometry"></script>{/if}
 
 	{/if}

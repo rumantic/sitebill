@@ -151,7 +151,9 @@ $(document).ready(function(){
 		<!-- .USUAL FORM WITH TABS -->
 	{/if}
 {/if}
-
+{if isset($form_elements.pre_controls)}
+	{$form_elements.pre_controls}
+{/if}
 <div class="form_element_control">
 {$form_elements.controls.apply.html} {$form_elements.controls.back.html} {$form_elements.controls.submit.html}
 </div>

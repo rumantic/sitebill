@@ -1,3 +1,4 @@
+<h2><editable id="search_title_edit" data-file="search_form.tpl">{$LT_SEARCH}</editable></h2>
 <script type="text/javascript" src="{$estate_folder}/js/autoNumeric-1.7.5.js"></script>
 <script type="text/javascript" src="{$estate_folder}/apps/system/js/mycombobox_ac.js"></script>
 <script type="text/javascript" src="{$estate_folder}/template/frontend/{$current_theme_name}/js/search_form.js"></script>

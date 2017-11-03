@@ -11,8 +11,10 @@ class User_Profile extends User_Object_Manager {
      */    
     function __construct() {
     	parent::__construct();
-    	unset($this->data_model[$this->table_name]['group_id']);
+    	//unset($this->data_model[$this->table_name]['group_id']);
     	unset($this->data_model[$this->table_name]['tariff_id']);
+    	unset($this->data_model[$this->table_name]['newpass']);
+    	unset($this->data_model[$this->table_name]['newpass_retype']);
     	 
     	/*
     	require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php';
@@ -252,7 +254,13 @@ class User_Profile extends User_Object_Manager {
 						if(! move_uploaded_file($_FILES['imgfile']['tmp_name'], SITEBILL_DOCUMENT_ROOT.'/'.$imgfile_directory.$preview_name_tmp) ){
 							
 						}else{
-                            list($width,$height)=$this->makePreview(SITEBILL_DOCUMENT_ROOT.'/'.$imgfile_directory.$preview_name_tmp, $sitebill_document_root.'/'.$imgfile_directory.$preview_name, $this->getConfigValue('user_pic_width'),$this->getConfigValue('user_pic_height'), $ext,1);
+							$mode=1;
+							if(1==$this->getConfigValue('user_pic_smart')){
+								$mode='smart';
+							}
+							$mode='smart';
+							
+                            list($width,$height)=$this->makePreview(SITEBILL_DOCUMENT_ROOT.'/'.$imgfile_directory.$preview_name_tmp, $sitebill_document_root.'/'.$imgfile_directory.$preview_name, $this->getConfigValue('user_pic_width'),$this->getConfigValue('user_pic_height'), $ext,$mode);
                             unlink(SITEBILL_DOCUMENT_ROOT.'/'.$imgfile_directory.$preview_name_tmp);
                             
 							$query='UPDATE '.DB_PREFIX.'_user SET imgfile=? WHERE user_id=?';

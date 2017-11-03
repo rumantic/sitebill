@@ -13,11 +13,11 @@ class yandexrealty_site extends yandexrealty_admin {
 	protected $category_structure=array();
 	protected $form_data_shared=array();
 	protected $errors=array();
+	protected $contracts=array();
 
 	function frontend () {
 		$REQUESTURIPATH=Sitebill::getClearRequestURI();
 		$alias=trim($this->getConfigValue('apps.yandexrealty.alias'));
-		
 		if($alias=='' && 1===intval($this->getConfigValue('apps.yandexrealty.disable_standart_entrypoint'))){
 			return false;
 		}elseif($alias==''){
@@ -26,6 +26,7 @@ class yandexrealty_site extends yandexrealty_admin {
 
 		if($REQUESTURIPATH==$alias){
 			header("Content-Type: text/xml");
+			//$this->collected_ids=array(8108, 346);
 			echo $this->run_export();
 			exit();
 		}
@@ -65,11 +66,11 @@ class yandexrealty_site extends yandexrealty_admin {
 		return false;
 	}
 	
-	protected function getExportSettings(){
+	/*protected function getExportSettings(){
 		return array();
-	}
+	}*/
 	
-	protected function collectOutData(){
+	/*protected function collectOutData(){
 		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
 		$data_model = new Data_Model();
 		$form_data_shared = $data_model->get_kvartira_model(false, true);
@@ -136,186 +137,27 @@ class yandexrealty_site extends yandexrealty_admin {
 		}
 		echo '<pre>';
 		print_r($ms);
-	}
+	}*/
 	
-	protected function getXML($data, $settings){
+	/*protected function getXML($data, $settings){
 		return '';
-	}
+	}*/
 	
-	public function get_export(){
-		$this->setExportMode();
 	
-		$this->setExportType();
+	public function run_export(){
 		
-		$data=$this->collectData();
-		$tofile=false;
-	
-	
-		$this->associations=$this->loadAssociations();
-	
-		require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php';
-		$Structure=new Structure_Manager();
-		$this->category_structure = $Structure->loadCategoryStructure();
-		$x=$Structure->createCatalogChains();
-		$this->catalogChains=$x['txt'];
-	
 		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
 		$data_model = new Data_Model();
 		$this->form_data_shared = $data_model->get_kvartira_model(false, true);
 		$this->form_data_shared = $this->form_data_shared['data'];
-	
-		$image_field=trim($this->getConfigValue('apps.yandexrealty.images_field'));
-			
-		$uploadsField=false;
-		$hasUploadify=false;
-			
-		if($image_field!='' && isset($this->form_data_shared[$image_field]) && in_array($this->form_data_shared[$image_field]['type'], array('uploads', 'uploadify_image'))){
-			if($this->form_data_shared[$image_field]['type']=='uploadify_image'){
-				$hasUploadify=true;
-			}else{
-				$uploadsField=$image_field;
-			}
-		}else{
-			foreach($this->form_data_shared as $model_item){
-				if($model_item['type']=='uploadify_image'){
-					$hasUploadify=true;
-					$uploadsField=false;
-					break;
-				}elseif($uploadsField===false && $model_item['type']=='uploads'){
-					$uploadsField=$model_item['name'];
-				}
-			}
-		}
-	
-		$xml_obj=array();
-	
-		if($tofile){
-			$xml_obj[]='<?xml version="1.0" encoding="utf-8" ?>';
-			$xml_obj[]='<realty-feed xmlns="http://webmaster.yandex.ru/schemas/feed/realty/2010-06">';
-			$xml_obj[]='<generation-date>'.$this->formdate().'</generation-date>';
-		}
 		
-		$log=array();
-		$this->errors=array();
-	
-		
-		foreach($data as $data_item){
-			$xml_collectorp=array();
-			$xml_str='';
-				
-			if($data_item['price'] > 0 AND $data_item['city'] !== ''){
-				$data_topic=(int)$data_item['topic_id'];
-				//!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['realty_type']!=0
-				if(1==(int)$this->getConfigValue('apps.yandexrealty.nonassociated_not_export') && (!isset($this->associations[$data_topic]) || $this->associations[$data_topic]['realty_type']==0)){
-					continue;
-				}
-	
-				$xml_collectorp[]=$this->exInternalId($data_item);
-				$xml_collectorp[]=$this->exPropertyType($data_item);
-				$operational_type='';
-				$xml_collectorp[]=$this->exType($data_item, $operational_type);
-				$xml_collectorp[]=$this->exCategory($data_item);
-				$xml_collectorp[]=$this->exURL($data_item);
-				$xml_collectorp[]=$this->exCreationDate($data_item);
-				$xml_collectorp[]=$this->exLastUpdateDate($data_item);
-				$xml_collectorp[]=$this->exExpireDate($data_item);
-				$xml_collectorp[]=$this->exPayedAdv($data_item);
-				$xml_collectorp[]=$this->exManuallyAdded($data_item);
-				$xml_collectorp[]=$this->exLocation($data_item);
-				$xml_collectorp[]=$this->exSalesAgent($data_item);
-				$xml_collectorp[]=$this->exPrice($data_item, $operational_type);
-				$xml_collectorp[]=$this->exNotForAgents($data_item);
-				$xml_collectorp[]=$this->exHaggle($data_item);
-				$xml_collectorp[]=$this->exMortgage($data_item);
-				$xml_collectorp[]=$this->exPrepayment($data_item);
-				$xml_collectorp[]=$this->exRentPflege($data_item);
-				$xml_collectorp[]=$this->exAgentFee($data_item);
-				$xml_collectorp[]=$this->exWithPets($data_item);
-				$xml_collectorp[]=$this->exWithChildren($data_item);
-				$xml_collectorp[]=$this->exDescription($data_item);
-				$xml_collectorp[]=$this->exImages($data_item, $hasUploadify, $uploadsField);
-				$xml_collectorp[]=$this->exRenovation($data_item);
-				$xml_collectorp[]=$this->exArea($data_item);
-				$xml_collectorp[]=$this->exLivingSpace($data_item);
-				$xml_collectorp[]=$this->exKitchenSpace($data_item);
-				$xml_collectorp[]=$this->exLotType($data_item);
-				$xml_collectorp[]=$this->exNewFlat($data_item);
-				$xml_collectorp[]=$this->exRooms($data_item);
-				$xml_collectorp[]=$this->exRoomsType($data_item);
-				$xml_collectorp[]=$this->exOpenPlan($data_item);
-				$xml_collectorp[]=$this->exRoomsOffered($data_item);
-				$xml_collectorp[]=$this->exPhone($data_item);
-				$xml_collectorp[]=$this->exInternet($data_item);
-				$xml_collectorp[]=$this->exRoomFurniture($data_item);
-				$xml_collectorp[]=$this->exTelevision($data_item);
-				$xml_collectorp[]=$this->exWashingMachine($data_item);
-				$xml_collectorp[]=$this->exKitchenFurniture($data_item);
-				$xml_collectorp[]=$this->exFloorCovering($data_item);
-				$xml_collectorp[]=$this->exBathroomUnit($data_item);
-				$xml_collectorp[]=$this->exBalcony($data_item);
-				$xml_collectorp[]=$this->exRefrigerator($data_item);
-				$xml_collectorp[]=$this->exBuildingType($data_item);
-				$xml_collectorp[]=$this->exBuildingName($data_item);
-				$xml_collectorp[]=$this->exFloorCount($data_item);
-				$xml_collectorp[]=$this->exFloor($data_item);
-				$xml_collectorp[]=$this->exWindowView($data_item);
-				$xml_collectorp[]=$this->exReadyQuarter($data_item);
-				$xml_collectorp[]=$this->exBuiltYear($data_item);
-				$xml_collectorp[]=$this->exBuildingState($data_item);
-				$xml_collectorp[]=$this->exBuildingSeries($data_item);
-				$xml_collectorp[]=$this->exIsElite($data_item);
-				$xml_collectorp[]=$this->exRubbishChute($data_item);
-				$xml_collectorp[]=$this->exLift($data_item);
-				$xml_collectorp[]=$this->exCeilingHeight($data_item);
-				$xml_collectorp[]=$this->exAlarm($data_item);
-				$xml_collectorp[]=$this->exParking($data_item);
-				$xml_collectorp[]=$this->exSauna($data_item);
-				$xml_collectorp[]=$this->exHeatingSupply($data_item);
-				$xml_collectorp[]=$this->exWaterSupply($data_item);
-				$xml_collectorp[]=$this->exSewerageSupply($data_item);
-				$xml_collectorp[]=$this->exPmg($data_item);
-				$xml_collectorp[]=$this->exKitchen($data_item);
-				$xml_collectorp[]=$this->exPool($data_item);
-				$xml_collectorp[]=$this->exBilliard($data_item);
-				$xml_collectorp[]=$this->exElectricitySupply($data_item);
-				$xml_collectorp[]=$this->exGasSupply($data_item);
-				$xml_collectorp[]=$this->exToilet($data_item);
-				$xml_collectorp[]=$this->exShower($data_item);
-	
-				$xml_collectorp[]='</offer>';
-				foreach($xml_collectorp as $k=>$v){
-					if($v==''){
-						unset($xml_collectorp[$k]);
-					}
-				}
-	
-				if(!empty($xml_collectorp)){
-					$xml_str=implode("\n", $xml_collectorp);
-				}
-	
-			}else{
-				$xml_str='';
-				$this->errors[]=$data_item['id'].' DECLINED: No price or city name';
-			}
-				
-				
-				
-				
-			if(empty($this->errors) && $xml_str!=''){
-				$xml_obj[]=$xml_str;
-			}
-			$this->errors=array();
-		}
-		
-	
-		return implode("\n", $xml_obj);
-	
-	}
-	
-	public function run_export(){
 		$this->setExportMode();
 		
 		$this->setExportType();
+		
+		//$this->export_mode='EST.UA';
+		//$this->export_mode='MEGET.UA';
+		
 		$this->remove_old_file();
 		$data=$this->collectData();
 		if(empty($data)){
@@ -337,6 +179,8 @@ class yandexrealty_site extends yandexrealty_admin {
 		}
 		
 		$this->associations=$this->loadAssociations();
+		$this->fields_associations=$this->loadFieldsAssociations();
+		
 		
 		require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php';
 		$Structure=new Structure_Manager();
@@ -344,10 +188,7 @@ class yandexrealty_site extends yandexrealty_admin {
 		$x=$Structure->createCatalogChains();
 		$this->catalogChains=$x['txt'];
 		
-		require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
-		$data_model = new Data_Model();
-		$this->form_data_shared = $data_model->get_kvartira_model(false, true);
-		$this->form_data_shared = $this->form_data_shared['data'];
+		
 		
 		$image_field=trim($this->getConfigValue('apps.yandexrealty.images_field'));
 		 
@@ -371,6 +212,49 @@ class yandexrealty_site extends yandexrealty_admin {
 				}
 			}
 		}
+		
+		$contracts=array();
+		 
+		if(''!=trim($this->getConfigValue('apps.yandexrealty.sell'))){
+			$st=explode(':', $this->getConfigValue('apps.yandexrealty.sell'));
+			if(count($st)>1){
+				$stv=explode(',', $st[1]);
+				if(count($stv)>0){
+					$contracts['sale']['f']=trim($st[0]);
+					foreach($stv as $_stv){
+						$contracts['sale']['v'][]=$_stv;
+					}
+				}
+			}
+		}
+		 
+		if(''!=trim($this->getConfigValue('apps.yandexrealty.rent'))){
+			$st=explode(':', $this->getConfigValue('apps.yandexrealty.rent'));
+			if(count($st)>1){
+				$stv=explode(',', $st[1]);
+				if(count($stv)>0){
+					$contracts['rent']['f']=trim($st[0]);
+					foreach($stv as $_stv){
+						$contracts['rent']['v'][]=$_stv;
+					}
+				}
+			}
+		}
+		
+		$this->contracts=$contracts;
+		
+		$this->mappingCommBldTypes();
+		
+		$this->mappingCommTypesCoditions();
+		
+		$this->mappingRenovationTypesCoditions();
+		
+		$this->mappingQualityTypesCoditions();
+		
+		$this->mappingStudioCoditions();
+		$this->mappingApartmentCoditions();
+		//var_dump($this->commTypesConditions);
+		
 		
 		$xml_obj=array();
 		
@@ -450,124 +334,45 @@ class yandexrealty_site extends yandexrealty_admin {
 				
 		}else{*/
 			foreach($data as $data_item){
+				
 				$xml_collectorp=array();
 				$xml_str='';
 				if($data_item['price'] > 0 AND $data_item['city'] !== ''){
+					
+					
+					
 					$data_topic=(int)$data_item['topic_id'];
 					
+					$this->presetCommonParams($data_item);
+					
 					//!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['realty_type']!=0
-					if(1==(int)$this->getConfigValue('apps.yandexrealty.nonassociated_not_export') && (!isset($this->associations[$data_topic]) || $this->associations[$data_topic]['realty_type']==0)){
-						continue;
-					}
-					$xml_collectorp=array();
-					$xml_collectorp[]=$this->exInternalId($data_item);
-					$xml_collector_item=$this->collectItemXML($data_item, $hasUploadify, $uploadsField);
-					$xml_collectorp=array_merge($xml_collectorp, $xml_collector_item);
-					$xml_collectorp[]='</offer>';
-				/*	$xml_collectorp[]=$this->exInternalId($data_item);
-					$xml_collectorp[]=$this->exPropertyType($data_item);
-					$operational_type='';
-					$xml_collectorp[]=$this->exType($data_item, $operational_type);
-					$xml_collectorp[]=$this->exCategory($data_item);
-					$xml_collectorp[]=$this->exURL($data_item);
-					$xml_collectorp[]=$this->exCreationDate($data_item);
-					$xml_collectorp[]=$this->exLastUpdateDate($data_item);
-					$xml_collectorp[]=$this->exExpireDate($data_item);
-					$xml_collectorp[]=$this->exPayedAdv($data_item);
-					$xml_collectorp[]=$this->exManuallyAdded($data_item);
-					$xml_collectorp[]=$this->exLocation($data_item);
-					$xml_collectorp[]=$this->exSalesAgent($data_item);
-					$xml_collectorp[]=$this->exPrice($data_item, $operational_type);
-					$xml_collectorp[]=$this->exNotForAgents($data_item);
-					$xml_collectorp[]=$this->exHaggle($data_item);
-					$xml_collectorp[]=$this->exMortgage($data_item);
-					$xml_collectorp[]=$this->exPrepayment($data_item);
-					$xml_collectorp[]=$this->exRentPflege($data_item);
-					$xml_collectorp[]=$this->exAgentFee($data_item);
-					$xml_collectorp[]=$this->exDealStatus($data_item);
-					$xml_collectorp[]=$this->exWithPets($data_item);
-					$xml_collectorp[]=$this->exWithChildren($data_item);
-					$xml_collectorp[]=$this->exDescription($data_item);
-					$xml_collectorp[]=$this->exImages($data_item, $hasUploadify, $uploadsField);
-					$xml_collectorp[]=$this->exRenovation($data_item);
-					$xml_collectorp[]=$this->exArea($data_item);
-					$xml_collectorp[]=$this->exLivingSpace($data_item);
-					$xml_collectorp[]=$this->exKitchenSpace($data_item);
-					$xml_collectorp[]=$this->exLotType($data_item);
-					$xml_collectorp[]=$this->exNewFlat($data_item);
-					$xml_collectorp[]=$this->exRooms($data_item);
-					$xml_collectorp[]=$this->exRoomsType($data_item);
-					$xml_collectorp[]=$this->exOpenPlan($data_item);
-					$xml_collectorp[]=$this->exRoomsOffered($data_item);
-					$xml_collectorp[]=$this->exPhone($data_item);
-					$xml_collectorp[]=$this->exInternet($data_item);
-					$xml_collectorp[]=$this->exRoomFurniture($data_item);
-					$xml_collectorp[]=$this->exTelevision($data_item);
-					$xml_collectorp[]=$this->exWashingMachine($data_item);
-					$xml_collectorp[]=$this->exKitchenFurniture($data_item);
-					$xml_collectorp[]=$this->exFloorCovering($data_item);
-					$xml_collectorp[]=$this->exBathroomUnit($data_item);
-					$xml_collectorp[]=$this->exBalcony($data_item);
-					$xml_collectorp[]=$this->exRefrigerator($data_item);
-					$xml_collectorp[]=$this->exBuildingType($data_item);
-					$xml_collectorp[]=$this->exBuildingName($data_item);
-					$xml_collectorp[]=$this->exFloorCount($data_item);
-					$xml_collectorp[]=$this->exFloor($data_item);
-					$xml_collectorp[]=$this->exWindowView($data_item);
-					$xml_collectorp[]=$this->exReadyQuarter($data_item);
-					$xml_collectorp[]=$this->exBuiltYear($data_item);
-					$xml_collectorp[]=$this->exBuildingState($data_item);
-					$xml_collectorp[]=$this->exBuildingSeries($data_item);
-					$xml_collectorp[]=$this->exIsElite($data_item);
-					$xml_collectorp[]=$this->exRubbishChute($data_item);
-					$xml_collectorp[]=$this->exLift($data_item);
-					$xml_collectorp[]=$this->exCeilingHeight($data_item);
-					$xml_collectorp[]=$this->exAlarm($data_item);
-					$xml_collectorp[]=$this->exParking($data_item);
-					$xml_collectorp[]=$this->exSauna($data_item);
-					$xml_collectorp[]=$this->exHeatingSupply($data_item);
-					$xml_collectorp[]=$this->exWaterSupply($data_item);
-					$xml_collectorp[]=$this->exSewerageSupply($data_item);
-					$xml_collectorp[]=$this->exPmg($data_item);
-					$xml_collectorp[]=$this->exKitchen($data_item);
-					$xml_collectorp[]=$this->exPool($data_item);
-					$xml_collectorp[]=$this->exBilliard($data_item);
-					$xml_collectorp[]=$this->exElectricitySupply($data_item);
-					$xml_collectorp[]=$this->exGasSupply($data_item);
-					$xml_collectorp[]=$this->exToilet($data_item);
-					$xml_collectorp[]=$this->exShower($data_item);
-					if ( $this->getConfigValue('apps.yandexrealty.complex_enable') ) {
-						$xml_collectorp[]=$this->exComplexData($data_item);
-					}
+					/*if(1==(int)$this->getConfigValue('apps.yandexrealty.nonassociated_not_export') && (!isset($this->associations[$data_topic]) || $this->associations[$data_topic]['realty_type']==0)){
+						$this->errors[]=$data_item['id'].' DECLINED: No associations setted';
+						$xml_str='--';
+					}else{*/
+						$xml_collectorp=array();
+						$xml_collectorp[]=$this->exInternalId($data_item);
+							
+						$xml_collector_item=$this->collectItemXML($data_item, $hasUploadify, $uploadsField);
+						$xml_collectorp=array_merge($xml_collectorp, $xml_collector_item);
+						$xml_collectorp[]='</offer>';
 						
-					$xml_collectorp[]='</offer>';*/
-					foreach($xml_collectorp as $k=>$v){
-						if($v==''){
-							unset($xml_collectorp[$k]);
+						foreach($xml_collectorp as $k=>$v){
+							if($v==''){
+								unset($xml_collectorp[$k]);
+							}
 						}
-					}
 						
-					if(!empty($xml_collectorp)){
-						$xml_str=implode("\n", $xml_collectorp);
-					}
-						
-						
-					/*if(empty($errors)){
-					 if($tofile){
-					$xml_obj[]=implode("\n", $xml_collectorp);
-					}
-					echo implode("\n", $xml_collectorp);
-					$log[]=$data_item['id'].' EXPORTED';
-					}else{
-						
-					}*/
+						if(!empty($xml_collectorp)){
+							$xml_str=implode("\n", $xml_collectorp);
+						}
+					/*}*/
+					
+					
 				}else{
 					$xml_str='';
 					$this->errors[]=$data_item['id'].' DECLINED: No price or city name';
 				}
-					
-					
-					
 					
 				if(empty($this->errors) && $xml_str!=''){
 					if($tofile){
@@ -594,9 +399,13 @@ class yandexrealty_site extends yandexrealty_admin {
 		
 		
 		echo '</realty-feed>';
-		
+		$this->saveExportLogs($log);
 		//print_r($log);
 	}
+	
+
+	
+	
 	
 	protected function collectItemXML($data_item, $hasUploadify, $uploadsField){
 		$xml_collectorp=array();
@@ -604,8 +413,10 @@ class yandexrealty_site extends yandexrealty_admin {
 		$xml_collectorp[]=$this->exPropertyType($data_item);
 		$operational_type='';
 		$xml_collectorp[]=$this->exType($data_item, $operational_type);
+		
 		$xml_collectorp[]=$this->exCategory($data_item);
 		$xml_collectorp[]=$this->exCommercialType($data_item);
+		$xml_collectorp[]=$this->exCommercialBuildingType($data_item);
 		$xml_collectorp[]=$this->exURL($data_item);
 		$xml_collectorp[]=$this->exCreationDate($data_item);
 		$xml_collectorp[]=$this->exLastUpdateDate($data_item);
@@ -615,11 +426,15 @@ class yandexrealty_site extends yandexrealty_admin {
 		$xml_collectorp[]=$this->exLocation($data_item);
 		$xml_collectorp[]=$this->exSalesAgent($data_item);
 		$xml_collectorp[]=$this->exPrice($data_item, $operational_type);
+		$xml_collectorp[]=$this->exCommission($data_item);
 		$xml_collectorp[]=$this->exNotForAgents($data_item);
 		$xml_collectorp[]=$this->exHaggle($data_item);
 		$xml_collectorp[]=$this->exMortgage($data_item);
-		$xml_collectorp[]=$this->exPrepayment($data_item);
-		$xml_collectorp[]=$this->exRentPflege($data_item);
+		if($operational_type=='rent'){
+			$xml_collectorp[]=$this->exPrepayment($data_item);
+			$xml_collectorp[]=$this->exRentPflege($data_item);
+		}
+		
 		$xml_collectorp[]=$this->exAgentFee($data_item);
 		$xml_collectorp[]=$this->exDealStatus($data_item);
 		$xml_collectorp[]=$this->exWithPets($data_item);
@@ -627,11 +442,15 @@ class yandexrealty_site extends yandexrealty_admin {
 		$xml_collectorp[]=$this->exDescription($data_item);
 		$xml_collectorp[]=$this->exImages($data_item, $hasUploadify, $uploadsField);
 		$xml_collectorp[]=$this->exRenovation($data_item);
+		$xml_collectorp[]=$this->exQuality($data_item);
+		$xml_collectorp[]=$this->exStudio($data_item);
+		$xml_collectorp[]=$this->exApartments($data_item);
 		$xml_collectorp[]=$this->exArea($data_item);
 		$xml_collectorp[]=$this->exLivingSpace($data_item);
 		$xml_collectorp[]=$this->exKitchenSpace($data_item);
 		$xml_collectorp[]=$this->exLotType($data_item);
 		$xml_collectorp[]=$this->exNewFlat($data_item);
+		$xml_collectorp[]=$this->exYandexBuildingId($data_item);
 		$xml_collectorp[]=$this->exRooms($data_item);
 		$xml_collectorp[]=$this->exRoomsType($data_item);
 		$xml_collectorp[]=$this->exOpenPlan($data_item);
@@ -1111,6 +930,60 @@ class yandexrealty_site extends yandexrealty_admin {
 		return '';
 	}
 	
+	protected function exStudio($data_item){
+		$studio=false;
+		if(!empty($this->studioConditions)){
+			$res_cond=false;
+			foreach($this->studioConditions as $type_id=>$type_conditions_line){
+				$res_variant=true;
+				foreach($type_conditions_line as $type_conditions_variant_item){
+						
+					if(isset($data_item[$type_conditions_variant_item['f']]) && in_array($data_item[$type_conditions_variant_item['f']], $type_conditions_variant_item['v'])){
+						$res_variant=$res_variant && true;
+					}else{
+						$res_variant=$res_variant && false;
+					}
+				}
+				$res_cond=$res_cond || $res_variant;
+				if($res_cond){
+					$studio=true;
+					break;
+				}
+			}
+		}
+		if($studio){
+			return '<studio>1</studio>';
+		}
+		return '';
+	}
+	
+	protected function exApartments($data_item){
+		$apartment=false;
+		if(!empty($this->apartmentConditions)){
+			$res_cond=false;
+			foreach($this->apartmentConditions as $type_id=>$type_conditions_line){
+				$res_variant=true;
+				foreach($type_conditions_line as $type_conditions_variant_item){
+						
+					if(isset($data_item[$type_conditions_variant_item['f']]) && in_array($data_item[$type_conditions_variant_item['f']], $type_conditions_variant_item['v'])){
+						$res_variant=$res_variant && true;
+					}else{
+						$res_variant=$res_variant && false;
+					}
+				}
+				$res_cond=$res_cond || $res_variant;
+				if($res_cond){
+					$apartment=true;
+					break;
+				}
+			}
+		}
+		if($apartment){
+			return '<apartments>1</apartments>';
+		}
+		return '';
+	}
+	
 	protected function exRoomsType($data_item){
 		if(isset($this->form_data_shared['rooms_type']) && isset($data_item['rooms_type'])){
 			$mf=$this->form_data_shared['rooms_type'];
@@ -1140,13 +1013,176 @@ class yandexrealty_site extends yandexrealty_admin {
 		
 		return '';
 	}
-	
-	protected function exLotType($data_item){
-		$data_topic=(int)$data_item['topic_id'];
+
+	protected function exYandexBuildingId($data_item) {
+	    //echo 'building';
+	    if (isset($this->form_data_shared[$this->getConfigValue('apps.yandexrealty.yandex_building_id')]) && isset($data_item[$this->getConfigValue('apps.yandexrealty.yandex_building_id')])) {
+			return '<yandex-building-id>' . $data_item[$this->getConfigValue('apps.yandexrealty.yandex_building_id')] . '</yandex-building-id>';
+	    }
+
+	    if ($this->getConfigValue('apps.yandexrealty.yandex_building_id') == 'complex.yandex_building_id') {
+			$DBC = DBC::getInstance();
+			$query = 'SELECT yandex_building_id FROM ' . DB_PREFIX . '_complex WHERE complex_id=?';
+			$stmt = $DBC->query($query, array($data_item['complex_id']));
+			if ($stmt) {
+			    $ar = $DBC->fetch($stmt);
+			    if ( $ar['yandex_building_id'] != '' ) {
+				return '<yandex-building-id>' . $ar['yandex_building_id'] . '</yandex-building-id>';
+			    }
+			}
+	    }
+	    return '';
+	}
+
+    protected function exLotType($data_item){
+    	$data_topic=(int)$data_item['topic_id'];
+    	$export_this=false;
+    	$export_realty_type='';
+    	
+    	if($this->export_mode=='EST.UA'){
+    		if(in_array($data_item['__est_ua_type'], $this->Types_Estua_Lots)){
+    			$export_this=true;
+    			$export_realty_type='lot';
+    		}elseif(in_array($data_item['__est_ua_type'], $this->Types_Estua_Houses)){
+    			$export_this=true;
+    			$export_realty_type='house';
+    		}
+    	}elseif($this->export_mode=='MEGET.UA'){
+    		if(in_array($data_item['__meget_ua_type'], $this->Types_Megetua_Lots)){
+    			$export_this=true;
+    			$export_realty_type='lot';
+    		}elseif(in_array($data_item['__meget_ua_type'], $this->Types_Megetua_Houses)){
+    			$export_this=true;
+    			$export_realty_type='house';
+    		}
+    	}else{
+    		$yandex_association_id=0;
+    		if(!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['realty_category']!=0){
+    			$yandex_association_id=$yandex_association_id=$this->associations[$data_topic]['realty_category'];
+    			if(in_array($yandex_association_id, array(4, 15, 16, 25))){
+    				$export_this=true;
+    				$export_realty_type='lot';
+    			}elseif(in_array($yandex_association_id, array(12, 13))){
+    				$export_this=true;
+    				$export_realty_type='house';
+    			}
+    			
+    		}
+    	}
+    	
+		
 		$rs='';
+		
+		if(!$export_this){
+			return '';
+		}
+		
+		if($export_realty_type=='lot'){
+			$lot_area_field=trim($this->getConfigValue('apps.yandexrealty.lot_area'));
+			
+			$meash='сот';
+			$lot_area_field_dim=trim($this->getConfigValue('apps.yandexrealty.lot_area_dim'));
+			if($lot_area_field_dim=='' && isset($this->form_data_shared['square_unit'])){
+				if($data_item['square_unit']==2){
+					$meash='кв.м';
+				}elseif($data_item['square_unit']==3){
+					$meash='га';
+				}
+			}elseif($lot_area_field_dim!=''){
+				if($lot_area_field_dim=='acr'){
+					$meash='сот';
+				}elseif($lot_area_field_dim=='sqm'){
+					$meash='кв.м';
+				}elseif($lot_area_field_dim=='ha'){
+					$meash='га';
+				}
+			}
+			
+			if($lot_area_field=='' && isset($this->form_data_shared['land_area'])){
+				$lot_area_field='land_area';
+			}elseif($lot_area_field=='' && isset($this->form_data_shared['lot_area'])){
+				$lot_area_field='lot_area';
+			}
+			
+			if(isset($data_item[$lot_area_field])){
+				$x=preg_replace('/[^0-9.,]/','',$data_item[$lot_area_field]);
+				$x=str_replace(',', '.', $x);
+				$x=floatval($x);
+				//$x=preg_replace('/[^0-9\.,]/','',$data_item['lot_area']);
+				if($x!=0){
+					$rs.='<lot-area>'."\n";
+					$rs.='<value>'.$x.'</value>'."\n";
+					$rs.='<unit>'.$meash.'</unit>'."\n";
+					$rs.='</lot-area>'."\n";
+				}
+			}
+			
+			if($this->export_mode=='MEGET.UA'){
+				$name=$this->getMegetuaCategoryName($data_item['__meget_ua_type']);
+				if($name!==''){
+					$rs.='<lot-type>'.$name.'</lot-type>';
+				}
+			}else{
+				if(isset($this->form_data_shared['lot_type']) && isset($data_item['lot_type'])){
+					$mf=$this->form_data_shared['lot_type'];
+					$di=$data_item['lot_type'];
+					if($mf['type']=='select_box' && intval($di)!=0 && isset($mf['select_data'][$di])){
+						$rs.='<lot-type>'.self::symbolsClear($mf['select_data'][$di]).'</lot-type>';
+					}elseif($mf['type']!='select_box' &&  $di!=''){
+						$rs.='<lot-type>'.self::symbolsClear($di).'</lot-type>';
+					}
+				}
+			}
+			
+			
+			
+			
+			
+		}elseif($export_realty_type=='house'){
+			$lot_area_field=trim($this->getConfigValue('apps.yandexrealty.add_lot_area'));
+			
+			$meash='сот';
+			$lot_area_field_dim=trim($this->getConfigValue('apps.yandexrealty.add_lot_area_dim'));
+			if($lot_area_field_dim=='' && isset($this->form_data_shared['square_unit'])){
+				if($data_item['square_unit']==2){
+					$meash='кв.м';
+				}elseif($data_item['square_unit']==3){
+					$meash='га';
+				}
+			}elseif($lot_area_field_dim!=''){
+				if($lot_area_field_dim=='acr'){
+					$meash='сот';
+				}elseif($lot_area_field_dim=='sqm'){
+					$meash='кв.м';
+				}elseif($lot_area_field_dim=='ha'){
+					$meash='га';
+				}
+			}
+			
+			if($lot_area_field=='' && isset($this->form_data_shared['land_area'])){
+				$lot_area_field='land_area';
+			}elseif($lot_area_field=='' && isset($this->form_data_shared['lot_area'])){
+				$lot_area_field='lot_area';
+			}
+			
+			if(isset($data_item[$lot_area_field])){
+				$x=preg_replace('/[^0-9.,]/','',$data_item[$lot_area_field]);
+				$x=str_replace(',', '.', $x);
+				$x=floatval($x);
+				//$x=preg_replace('/[^0-9\.,]/','',$data_item['lot_area']);
+				if($x!=0){
+					$rs.='<lot-area>'."\n";
+					$rs.='<value>'.$x.'</value>'."\n";
+					$rs.='<unit>'.$meash.'</unit>'."\n";
+					$rs.='</lot-area>'."\n";
+				}
+			}
+		}
+	
+		
 		if(!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['realty_category']!=0){
 			
-			if(in_array($this->associations[$data_topic]['realty_category'], array(4, 15, 16, 25))){
+			/*if(in_array($this->associations[$data_topic]['realty_category'], array(4, 15, 16, 25))){
 				$lot_area_field=trim($this->getConfigValue('apps.yandexrealty.lot_area'));
 					
 				$meash='сот';
@@ -1236,7 +1272,7 @@ class yandexrealty_site extends yandexrealty_admin {
 						$rs.='<lot-type>'.self::symbolsClear($di).'</lot-type>';
 					}
 				}
-			}
+			}*/
 			
 			
 			
@@ -1288,16 +1324,35 @@ class yandexrealty_site extends yandexrealty_admin {
 protected function exKitchenSpace($data_item){
 		$rs='';
 		$data_topic=(int)$data_item['topic_id'];
-		if(!in_array($this->associations[$data_topic]['realty_category'], array(4, 15, 16))){
-			$x=preg_replace('/[^0-9.,]/','',$data_item['square_kitchen']);
-			$x=str_replace(',', '.', $x);
-			$x=floatval($x);
-			if($x!=0){
-				$rs.='<kitchen-space>'."\n";
-				$rs.='<value>'.$x.'</value>'."\n";
-				$rs.='<unit>кв.м</unit>'."\n";
-				$rs.='</kitchen-space>';
+		
+		$export_this=false;
+		
+		if($this->export_mode=='EST.UA'){
+			if(!in_array($data_item['__est_ua_type'], $this->Types_Estua_Lots) && !in_array($data_item['__est_ua_type'], $this->Types_Estua_Commercial)){
+				$export_this=true;
 			}
+		}elseif($this->export_mode=='MEGET.UA'){
+			if(!in_array($data_item['__meget_ua_type'], $this->Types_Megetua_Lots) && !in_array($data_item['__meget_ua_type'], $this->Types_Megetua_Commercial)){
+				$export_this=true;
+			}
+		}else{
+			if(!in_array($this->associations[$data_topic]['realty_category'], array(4, 15, 16))){
+				$export_this=true;
+			}
+		}
+		
+		if(!$export_this){
+			return '';
+		}
+		
+		$x=preg_replace('/[^0-9.,]/','',$data_item['square_kitchen']);
+		$x=str_replace(',', '.', $x);
+		$x=floatval($x);
+		if($x!=0){
+			$rs.='<kitchen-space>'."\n";
+			$rs.='<value>'.$x.'</value>'."\n";
+			$rs.='<unit>кв.м</unit>'."\n";
+			$rs.='</kitchen-space>';
 		}
 		return $rs;
 	}
@@ -1305,16 +1360,35 @@ protected function exKitchenSpace($data_item){
 	protected function exLivingSpace($data_item){
 		$rs='';
 		$data_topic=(int)$data_item['topic_id'];
-		if(!in_array($this->associations[$data_topic]['realty_category'], array(4, 15, 16))){
-			$x=preg_replace('/[^0-9.,]/','',$data_item['square_live']);
-			$x=str_replace(',', '.', $x);
-			$x=floatval($x);
-			if($x!=0){
-				$rs.='<living-space>'."\n";
-				$rs.='<value>'.$x.'</value>'."\n";
-				$rs.='<unit>кв.м</unit>'."\n";
-				$rs.='</living-space>';
+		
+		$export_this=false;
+		
+		if($this->export_mode=='EST.UA'){
+			if(!in_array($data_item['__est_ua_type'], $this->Types_Estua_Lots) && !in_array($data_item['__est_ua_type'], $this->Types_Estua_Commercial)){
+				$export_this=true;
 			}
+		}elseif($this->export_mode=='MEGET.UA'){
+			if(!in_array($data_item['__meget_ua_type'], $this->Types_Megetua_Lots) && !in_array($data_item['__meget_ua_type'], $this->Types_Megetua_Commercial)){
+				$export_this=true;
+			}
+		}else{
+			if(!in_array($this->associations[$data_topic]['realty_category'], array(4, 15, 16))){
+				$export_this=true;
+			}
+		}
+		
+		if(!$export_this){
+			return '';
+		}
+		
+		$x=preg_replace('/[^0-9.,]/','',$data_item['square_live']);
+		$x=str_replace(',', '.', $x);
+		$x=floatval($x);
+		if($x!=0){
+			$rs.='<living-space>'."\n";
+			$rs.='<value>'.$x.'</value>'."\n";
+			$rs.='<unit>кв.м</unit>'."\n";
+			$rs.='</living-space>';
 		}
 		return $rs;
 	}
@@ -1337,6 +1411,55 @@ protected function exKitchenSpace($data_item){
 	}
 	
 	protected function exRenovation($data_item){
+		$renovation=false;
+		if(!empty($this->renovationTypesConditions)){
+			foreach($this->renovationTypesConditions as $renovation_type_id=>$renovation_type_conditions){
+				$res_cond=false;
+				foreach($renovation_type_conditions as $renovation_type_conditions_variant){
+					$res_variant=true;
+					foreach($renovation_type_conditions_variant as $renovation_type_conditions_variant_item){
+						if(isset($data_item[$renovation_type_conditions_variant_item['f']]) && in_array($data_item[$renovation_type_conditions_variant_item['f']], $renovation_type_conditions_variant_item['v'])){
+							$res_variant=$res_variant && true;
+								
+						}else{
+							$res_variant=$res_variant && false;
+						}
+					}
+					$res_cond=$res_cond || $res_variant;
+						
+				}
+				if($res_cond){
+					$renovation=$renovation_type_id;
+					break;
+				}
+			}
+		}
+		if($renovation){
+			switch($renovation){
+				case 'design' : {
+					return '<renovation>дизайнерский</renovation>';
+				}
+				case 'euro' : {
+					return '<renovation>евро</renovation>';
+				}
+				case 'withdecor' : {
+					return '<renovation>с отделкой</renovation>';
+				}
+				case 'reqrepair' : {
+					return '<renovation>требует ремонта</renovation>';
+				}
+				case 'good' : {
+					return '<renovation>хороший</renovation>';
+				}
+				case 'patialrep' : {
+					return '<renovation>частичный ремонт</renovation>';
+				}
+				case 'roughing' : {
+					return '<renovation>черновая отделка</renovation>';
+				}
+			}
+			
+		}
 		
 		if(isset($this->form_data_shared['renovation']) && isset($data_item['renovation'])){
 			$mf=$this->form_data_shared['renovation'];
@@ -1346,14 +1469,64 @@ protected function exKitchenSpace($data_item){
 			}elseif($mf['type']!='select_box' &&  $di!=''){
 				return '<renovation>'.self::symbolsClear($di).'</renovation>';
 			}
-			//return '<renovation>'.self::symbolsClear($data_item['renovation']).'</renovation>';
 		}
 		
 	}
 	
+	protected function exQuality($data_item){
+		$quality=false;
+		if(!empty($this->qualityTypesConditions)){
+			foreach($this->qualityTypesConditions as $quality_type_id=>$quality_type_conditions){
+				$res_cond=false;
+				foreach($quality_type_conditions as $quality_type_conditions_variant){
+					$res_variant=true;
+					foreach($quality_type_conditions_variant as $quality_type_conditions_variant_item){
+						if(isset($data_item[$quality_type_conditions_variant_item['f']]) && in_array($data_item[$quality_type_conditions_variant_item['f']], $quality_type_conditions_variant_item['v'])){
+							$res_variant=$res_variant && true;
+						}else{
+							$res_variant=$res_variant && false;
+						}
+					}
+					$res_cond=$res_cond || $res_variant;
+				}
+				if($res_cond){
+					$quality=$quality_type_id;
+					break;
+				}
+			}
+		}
+		if($quality){
+			switch($quality){
+				case 'best' : {
+					return '<quality>отличное</quality>';
+				}
+				case 'good' : {
+					return '<quality>хорошее</quality>';
+				}
+				case 'norm' : {
+					return '<quality>нормальное</quality>';
+				}
+				case 'bad' : {
+					return '<quality>плохое</quality>';
+				}
+			}
+				
+		}
+	
+	}
+	
 	protected function exImages($data_item, $hasUploadify, $uploadsField){
+		$image_fields='';
 		$imgs=array();
 		
+		if ( $this->getConfigValue('apps.yandexrealty.export_image_cache') ) {
+		    $imgs=unserialize($data_item['image_cache']);
+			foreach($imgs as $v){
+					$rs.='<image>'.$v.'</image>'."\n";
+			}
+			return $rs;
+		    
+		}
 		if($hasUploadify){
 			$imgids=array();
 			
@@ -1380,7 +1553,7 @@ protected function exKitchenSpace($data_item){
 		}
 		
 		$rs='';
-		if(count($imgs)>0){
+		if(is_array($imgs) && count($imgs)>0){
 			
 			if(1==(int)$this->getConfigValue('apps.yandexrealty.nowatermark_export') && 1==(int)$this->getConfigValue('save_without_watermark')){
 				$image_dest=$this->getServerFullUrl().'/img/data/nowatermark/';
@@ -1403,6 +1576,15 @@ protected function exKitchenSpace($data_item){
 	}
 	
 	protected function exDescription($data_item){
+		$text=$data_item['text'];
+		//var_dump($text);
+		$text=SiteBill::iconv(SITE_ENCODING, 'utf-8', $text);
+		 
+		$text=htmlspecialchars_decode($text);
+		$text=strip_tags($text);
+		$text=preg_replace('/[[:cntrl:]]/i', '', $text);
+		$text=htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+		return '<description>'.$text.'</description>';
 		return '<description>'.htmlspecialchars(strip_tags($data_item['text']), ENT_QUOTES, SITE_ENCODING).'</description>';
 	}
 	
@@ -1427,7 +1609,7 @@ protected function exKitchenSpace($data_item){
 	}
 	
 	protected function exAgentFee($data_item){
-		if(isset($this->form_data_shared['agent_fee']) && isset($data_item['agent_fee']) && (int)$data_item['agent_fee']!=0){
+		if(isset($this->form_data_shared['agent_fee']) && isset($data_item['agent_fee']) && $data_item['agent_fee'] != ''){
 			return '<agent-fee>'.(int)$data_item['agent_fee'].'</agent-fee>';
 		}
 	}
@@ -1502,13 +1684,33 @@ protected function exKitchenSpace($data_item){
 		}
 		$rs.='<currency>'.$currency.'</currency>'."\n";
 		
-		if($operational_type=='rent' && isset($data_item['period']) && $data_item['period']!=''){
-			$rs.='<period>'.self::symbolsClear($data_item['period']).'</period>'."\n";
+		if($operational_type=='rent'){
+		
+			if(isset($this->form_data_shared['period']) && $this->form_data_shared['period']['type']=='select_box'){
+				if($data_item['period']!='' && $data_item['period']!='0' && isset($this->form_data_shared['period']['select_data'][$data_item['period']])){
+					$rs.='<period>'.self::symbolsClear($this->form_data_shared['period']['select_data'][$data_item['period']]).'</period>'."\n";
+				}
+			}elseif(isset($this->form_data_shared['period'])){
+				if($data_item['period']!=''){
+					$rs.='<period>'.self::symbolsClear($data_item['period']).'</period>'."\n";
+				}
+			}
+			//$rs.='<period>'.self::symbolsClear($data_item['period']).'</period>'."\n";
 		}
 		if(isset($this->form_data_shared['unit']) && isset($data_item['unit']) && $data_item['unit']!=''){
 			$rs.='<unit>'.self::symbolsClear($data_item['unit']).'</unit>'."\n";
 		}
+		
 		$rs.='</price>';
+		return $rs;
+	}
+	
+	protected function exCommission($data_item){
+		$rs='';
+		$f=trim($this->getConfigValue('apps.yandexrealty.comission_from'));
+		if(isset($this->form_data_shared[$f]) && isset($data_item[$f]) && (float)$data_item[$f]!=0 && (float)$data_item[$f]<=100){
+			$rs.='<commission>'.(float)$data_item[$f].'</commission>';
+		}
 		return $rs;
 	}
 	
@@ -1542,37 +1744,113 @@ protected function exKitchenSpace($data_item){
 				$exporter_type=$this->group_assoc['*'];
 			}
 			
-			
+			$org_name='';
+			if(''!=trim($this->getConfigValue('apps.yandexrealty.organisation_global_name'))){
+				$org_name=self::symbolsClear(trim($this->getConfigValue('apps.yandexrealty.organisation_global_name')));
+			}
+			if($org_name==''){
+				$f=trim($this->getConfigValue('apps.yandexrealty.organisation_src'));
+				if(isset($user[$f]) && $user[$f]!=''){
+					$org_name=self::symbolsClear($user[$f]);
+				}
+			}
+				
+				
+		
 			
 			
 			if($exporter_type=='a'){
 				$rs.='<category>agency</category>'."\n";
+				if(''!=$org_name){
+					$rs.='<organization>'.$org_name.'</organization>';
+				}
 			}elseif($exporter_type=='d'){
 				$rs.='<category>developer</category>'."\n";
+				if(''!=$org_name){
+					$rs.='<organization>'.$org_name.'</organization>';
+				}
 			}else{
 				$rs.='<category>owner</category>'."\n";
 			}
 				
-			//$rs.='<gid>'.$gid.'</gid>'."\n";
+			//$rs.='<gid>'.$contact_export_variant.'</gid>'."\n";
 				
 			if($contact_export_variant==1){
-				$rs.='<phone>'.self::symbolsClear($data_item['phone']).'</phone>'."\n";
-				$rs.='<email>'.self::symbolsClear($data_item['email']).'</email>'."\n";
-				$rs.='<name>'.self::symbolsClear($data_item['fio']).'</name>'."\n";
+				$field_f=trim($this->getConfigValue('apps.yandexrealty.data_phone'));
+				if($field_f!='' && isset($data_item[$field_f]) && $data_item[$field_f]!=''){
+					$rs.='<phone>'.self::symbolsClear($data_item[$field_f]).'</phone>'."\n";
+				}
+				$field_f=trim($this->getConfigValue('apps.yandexrealty.data_email'));
+				if($field_f!='' && isset($data_item[$field_f]) && $data_item[$field_f]!=''){
+					$rs.='<email>'.self::symbolsClear($data_item[$field_f]).'</email>'."\n";
+				}
+				$field_f=trim($this->getConfigValue('apps.yandexrealty.data_name'));
+				if($field_f!='' && isset($data_item[$field_f]) && $data_item[$field_f]!=''){
+					$rs.='<name>'.self::symbolsClear($data_item[$field_f]).'</name>'."\n";
+				}
 			}elseif($contact_export_variant==2){
-				$rs.='<phone>'.self::symbolsClear($user['phone']).'</phone>'."\n";
-				$rs.='<email>'.self::symbolsClear($user['email']).'</email>'."\n";
-				$rs.='<name>'.self::symbolsClear($user['fio']).'</name>'."\n";
+				$field_f=trim($this->getConfigValue('apps.yandexrealty.profile_phone'));
+				if($field_f!='' && isset($user[$field_f]) && $user[$field_f]!=''){
+					$rs.='<phone>'.self::symbolsClear($user[$field_f]).'</phone>'."\n";
+				}
+				$field_f=trim($this->getConfigValue('apps.yandexrealty.profile_email'));
+				if($field_f!='' && isset($user[$field_f]) && $user[$field_f]!=''){
+					$rs.='<email>'.self::symbolsClear($user[$field_f]).'</email>'."\n";
+				}
+				$field_f=trim($this->getConfigValue('apps.yandexrealty.profile_name'));
+				if($field_f!='' && isset($user[$field_f]) && $user[$field_f]!=''){
+					$rs.='<name>'.self::symbolsClear($user[$field_f]).'</name>'."\n";
+				}
 			}elseif($contact_export_variant==3){
-				$rs.='<phone>'.(''!==self::symbolsClear($data_item['phone']) ? self::symbolsClear($data_item['phone']) : self::symbolsClear($user['phone'])).'</phone>'."\n";
-				$rs.='<email>'.(''!==self::symbolsClear($data_item['email']) ? self::symbolsClear($data_item['email']) : self::symbolsClear($user['email'])).'</email>'."\n";
-				$rs.='<name>'.(''!==self::symbolsClear($data_item['fio']) ? self::symbolsClear($data_item['fio']) : self::symbolsClear($user['fio'])).'</name>'."\n";
+				$field_f1=trim($this->getConfigValue('apps.yandexrealty.data_phone'));
+				$field_f2=trim($this->getConfigValue('apps.yandexrealty.profile_phone'));
+				if(isset($data_item[$field_f1]) && $data_item[$field_f1]!=''){
+					$rs.='<phone>'.self::symbolsClear($data_item[$field_f1]).'</phone>'."\n";
+				}elseif(isset($user[$field_f2]) && $user[$field_f2]!=''){
+					$rs.='<phone>'.self::symbolsClear($user[$field_f12]).'</phone>'."\n";
+				}
+				
+				$field_f1=trim($this->getConfigValue('apps.yandexrealty.data_email'));
+				$field_f2=trim($this->getConfigValue('apps.yandexrealty.profile_email'));
+				if(isset($data_item[$field_f1]) && $data_item[$field_f1]!=''){
+					$rs.='<email>'.self::symbolsClear($data_item[$field_f1]).'</email>'."\n";
+				}elseif(isset($user[$field_f2]) && $user[$field_f2]!=''){
+					$rs.='<email>'.self::symbolsClear($user[$field_f12]).'</email>'."\n";
+				}
+				
+				$field_f1=trim($this->getConfigValue('apps.yandexrealty.data_name'));
+				$field_f2=trim($this->getConfigValue('apps.yandexrealty.profile_name'));
+				if(isset($data_item[$field_f1]) && $data_item[$field_f1]!=''){
+					$rs.='<name>'.self::symbolsClear($data_item[$field_f1]).'</name>'."\n";
+				}elseif(isset($user[$field_f2]) && $user[$field_f2]!=''){
+					$rs.='<name>'.self::symbolsClear($user[$field_f12]).'</name>'."\n";
+				}
 			}elseif($contact_export_variant==4){
-				$rs.='<phone>'.(''!==self::symbolsClear($user['phone']) ? self::symbolsClear($user['phone']) : self::symbolsClear($data_item['phone'])).'</phone>'."\n";
-				$rs.='<email>'.(''!==self::symbolsClear($user['email']) ? self::symbolsClear($user['email']) : self::symbolsClear($data_item['email'])).'</email>'."\n";
-				$rs.='<name>'.(''!==self::symbolsClear($user['fio']) ? self::symbolsClear($user['fio']) : self::symbolsClear($data_item['fio'])).'</name>'."\n";
+				$field_f1=trim($this->getConfigValue('apps.yandexrealty.data_phone'));
+				$field_f2=trim($this->getConfigValue('apps.yandexrealty.profile_phone'));
+				if(isset($user[$field_f2]) && $user[$field_f2]!=''){
+					$rs.='<phone>'.self::symbolsClear($user[$field_f12]).'</phone>'."\n";
+				}elseif(isset($data_item[$field_f1]) && $data_item[$field_f1]!=''){
+					$rs.='<phone>'.self::symbolsClear($data_item[$field_f1]).'</phone>'."\n";
+				}
+				
+				$field_f1=trim($this->getConfigValue('apps.yandexrealty.data_email'));
+				$field_f2=trim($this->getConfigValue('apps.yandexrealty.profile_email'));
+				if(isset($user[$field_f2]) && $user[$field_f2]!=''){
+					$rs.='<email>'.self::symbolsClear($user[$field_f12]).'</email>'."\n";
+				}elseif(isset($data_item[$field_f1]) && $data_item[$field_f1]!=''){
+					$rs.='<email>'.self::symbolsClear($data_item[$field_f1]).'</email>'."\n";
+				}
+				
+				$field_f1=trim($this->getConfigValue('apps.yandexrealty.data_name'));
+				$field_f2=trim($this->getConfigValue('apps.yandexrealty.profile_name'));
+				if(isset($user[$field_f2]) && $user[$field_f2]!=''){
+					$rs.='<name>'.self::symbolsClear($user[$field_f12]).'</name>'."\n";
+				}elseif(isset($data_item[$field_f1]) && $data_item[$field_f1]!=''){
+					$rs.='<name>'.self::symbolsClear($data_item[$field_f1]).'</name>'."\n";
+				}
 			}
-			$rs.='</sales-agent>'."\n";
+			$rs.='</sales-agent>';
 		}else{
 			$user_id=(int)$data_item['user_id'];
 			$rs='<sales-agent>'."\n";
@@ -1670,6 +1948,13 @@ protected function exKitchenSpace($data_item){
 		if($region!=''){
 			$rs.='<region>'.self::symbolsClear($region).'</region>'."\n";
 		}
+                
+                
+                if(''!=trim($this->getConfigValue('apps.yandexrealty.district_from'))){
+                        $district_from=trim($this->getConfigValue('apps.yandexrealty.district_from'));
+                        $rs.='<district>'.self::symbolsClear($data_item[$district_from]).'</district>'."\n";
+                }
+                
 		
 		
 		$city=trim($this->getConfigValue('apps.yandexrealty.city_global'));
@@ -1708,7 +1993,7 @@ protected function exKitchenSpace($data_item){
 			$street=$data_item['street'];
 		}
 		
-		$rs.='<address>';
+		
 		$street = str_replace('шос.', 'шоссе', $street);
 		$street = str_replace('ул.', 'улица', $street);
 		$street = str_replace('пр.', 'проспект', $street);
@@ -1725,12 +2010,17 @@ protected function exKitchenSpace($data_item){
 		$street = str_replace('алл.', 'аллея', $street);
 		$street = str_replace('пл.', 'площадь', $street);
 		$street = str_replace('мкр.', 'микрорайон', $street);
-			
-		$rs.= $street;
-		if($data_item['number']!=''){
-			$rs.=', '.self::symbolsClear($data_item['number']);
+		
+		if($street!=''){
+			$rs.='<address>';
+			$rs.= $street;
+			if($data_item['number']!=''){
+				$rs.=', '.self::symbolsClear($data_item['number']);
+			}
+			$rs.='</address>'."\n";
 		}
-		$rs.='</address>'."\n";
+			
+		
 		if($data_item['metro']!=''){
 			$rs.='<metro>'."\n";
 				$rs.='<name>'.self::symbolsClear($data_item['metro']).'</name>'."\n";
@@ -1747,9 +2037,19 @@ protected function exKitchenSpace($data_item){
 			$rs.='<railway-station>'.self::symbolsClear($data_item['railway_station']).'</railway-station>'."\n";
 		}
 		
-		if(isset($this->form_data_shared['direction']) && isset($data_item['direction']) && $data_item['direction']!=''){
-			$rs.='<direction>'.self::symbolsClear($data_item['direction']).'</direction>'."\n";
+		$direction_field=trim($this->getConfigValue('apps.yandexrealty.direction_from'));
+		if($direction_field!=''){
+			if(isset($this->form_data_shared[$direction_field]) && $this->form_data_shared[$direction_field]['type']=='select_by_query' && isset($data_item['_'.$direction_field]) && $data_item['_'.$direction_field]!=''){
+				$rs.='<direction>'.self::symbolsClear($data_item['_'.$direction_field]).'</direction>'."\n";
+			}elseif(isset($this->form_data_shared[$direction_field]) && isset($data_item[$direction_field]) && $data_item[$direction_field]!=''){
+				$rs.='<direction>'.self::symbolsClear($data_item[$direction_field]).'</direction>'."\n";
+			}
+		}else{
+			if(isset($this->form_data_shared['direction']) && isset($data_item['direction']) && $data_item['direction']!=''){
+				$rs.='<direction>'.self::symbolsClear($data_item['direction']).'</direction>'."\n";
+			}
 		}
+		
 		
 		if(isset($this->form_data_shared['distance']) && isset($data_item['distance']) && (int)$data_item['distance']!=''){
 			$rs.='<distance>'.$data_item['distance'].'</distance>'."\n";
@@ -1832,21 +2132,67 @@ protected function exKitchenSpace($data_item){
 		return $rs;*/
 	}
 	
+	
+	
+	
+	
 	protected function exCategory($data_item){
 		$data_topic=(int)$data_item['topic_id'];
 		$this_realty_supertype=intval($this->associations[$data_topic]['realty_type']);
 		$rs='';
 		if($this->export_mode=='ETOWN'){
 			$rs.='<category>'.self::symbolsClear($this->catalogChains[$data_topic]).'</category>';
-		}elseif($this_realty_supertype==self::$EXP_TY_RESIDENTIAL){
+		}elseif($this->export_mode=='EST.UA'){
+			$name=$this->getEstuaCategoryName($data_item['__est_ua_type']);
+			if($name!==''){
+				$rs.='<category>'.$name.'</category>';
+			}else{
+				$this->errors[]=$data_item['id'].' DECLINED: EST.UA category unknown';
+			}
+		}elseif($this->export_mode=='MEGET.UA'){
+			if(in_array($data_item['__meget_ua_type'], $this->Types_Megetua_Lots)){
+				$rs.='<category>участок</category>';
+			}elseif(in_array($data_item['__meget_ua_type'], $this->Types_Megetua_Houses) && $data_item['__operational_type']=='rent'){
+				$rs.='<category>Дома долгосрочно</category>';
+			}else{
+				$name=$this->getMegetuaCategoryName($data_item['__meget_ua_type']);
+				if($name!==''){
+					$rs.='<category>'.$name.'</category>';
+				}else{
+					$this->errors[]=$data_item['id'].' DECLINED: MEGET.UA category unknown';
+				}
+			}
+			
+			
+			/*if($this_realty_supertype==self::$EXP_TY_COMMERCIAL){
+				$rs.='<category>коммерческая</category>';
+			}*/
+		}/*elseif($this_realty_supertype==self::$EXP_TY_RESIDENTIAL){
 			if(!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['realty_category']!=0 && isset($this->realty_categories[$this->associations[$data_topic]['realty_category']])){
-				$rs.='<category>'.$this->realty_categories[$this->associations[$data_topic]['realty_category']].'</category>'."\n";
+				$rs.='<category>'.$this->realty_categories[$this->associations[$data_topic]['realty_category']].'</category>';
 			}else{
 				$this->errors[]=$data_item['id'].' DECLINED: Residential category unknown';
 			}
 		}elseif($this_realty_supertype==self::$EXP_TY_COMMERCIAL){
-			$rs.='<category>коммерческая</category>'."\n";
-		}/*elseif(!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['realty_category']!=0){
+			if($this->export_mode=='MEGET.UA'){
+				$rs.='<category>коммерческая</category>';
+			}else{
+				$rs.='<category>коммерческая</category>';
+			}
+			
+		}*/else{
+			if($this_realty_supertype==self::$EXP_TY_RESIDENTIAL){
+				if(!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['realty_category']!=0 && isset($this->realty_categories[$this->associations[$data_topic]['realty_category']])){
+					$rs.='<category>'.$this->realty_categories[$this->associations[$data_topic]['realty_category']].'</category>';
+				}else{
+					$this->errors[]=$data_item['id'].' DECLINED: Residential category unknown';
+				}
+			}elseif($this_realty_supertype==self::$EXP_TY_COMMERCIAL){
+				$rs.='<category>коммерческая</category>';
+			}
+		}
+		
+		/*elseif(!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['realty_category']!=0){
 			$rs.='<category>'.$this->realty_categories[$this->associations[$data_topic]['realty_category']].'</category>';
 		}else{
 			$rs.='<category>'.self::symbolsClear($data_item['topic']).'</category>';
@@ -1855,14 +2201,96 @@ protected function exKitchenSpace($data_item){
 	}
 	
 	protected function exCommercialType($data_item){
+		
 		$data_topic=(int)$data_item['topic_id'];
 		$this_realty_supertype=intval($this->associations[$data_topic]['realty_type']);
 		$rs='';
-		if($this_realty_supertype==self::$EXP_TY_COMMERCIAL){
-			if(!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['realty_category']!=0 && isset($this->commercial_names[$this->associations[$data_topic]['realty_category']])){
-				$rs.='<commercial-type>'.$this->commercial_names[$this->associations[$data_topic]['realty_category']].'</commercial-type>'."\n";
-			}else{
+		if($this->export_mode=='MEGET.UA'){
+			
+		}else{
+			if($this_realty_supertype==self::$EXP_TY_COMMERCIAL){
+				$category=0;
+				if(!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['realty_category']!=0 && isset($this->commercial_names[$this->associations[$data_topic]['realty_category']])){
+					$category=$this->associations[$data_topic]['realty_category'];
+					//$rs.='<commercial-type>'.$this->commercial_names[$this->associations[$data_topic]['realty_category']].'</commercial-type>'."\n";
+				}
+					
+				//var_dump();
+				//$rs.='<commercial-type1>'.$category.'</commercial-type1>';
+				if($category==0){
+			
+					//$this->errors[]=$data_item['id'].' DECLINED: Commercial type unknown';
+					if(!empty($this->commTypesConditions)){
+						foreach($this->commTypesConditions as $comm_type_id=>$comm_type_conditions){
+							//var_dump($comm_type_conditions);
+							$res_cond=false;
+							foreach($comm_type_conditions as $comm_type_conditions_variant){
+									
+								$res_variant=true;
+								foreach($comm_type_conditions_variant as $comm_type_conditions_variant_item){
+									//var_dump($comm_type_conditions_variant_item);
+									//var_dump('Compare value '.$data_item[$comm_type_conditions_variant_item['f']].' from field '.$comm_type_conditions_variant_item['f'].' with values '.print_r($comm_type_conditions_variant_item['v'], true));
+									if(isset($data_item[$comm_type_conditions_variant_item['f']]) && in_array($data_item[$comm_type_conditions_variant_item['f']], $comm_type_conditions_variant_item['v'])){
+										$res_variant=$res_variant && true;
+											
+									}else{
+										$res_variant=$res_variant && false;
+									}
+									//var_dump($res_variant);
+								}
+								$res_cond=$res_cond || $res_variant;
+									
+							}
+							if($res_cond && isset($this->commercial_names[$comm_type_id])){
+								//echo '=='.$category.'==';
+								$category=$comm_type_id;
+								break;
+							}
+						}
+					}
+				}
+					
+				if($category!=0){
+					$rs.='<commercial-type>'.$this->commercial_names[$category].'</commercial-type>';
+				}else{
+					$this->errors[]=$data_item['id'].' DECLINED: Commercial type unknown';
+				}
+					
+					
+				/*if(!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['realty_category']!=0 && isset($this->commercial_names[$this->associations[$data_topic]['realty_category']])){
+				 $rs.='<commercial-type>'.$this->commercial_names[$this->associations[$data_topic]['realty_category']].'</commercial-type>'."\n";
+				}else{
 				$this->errors[]=$data_item['id'].' DECLINED: Commercial type unknown';
+				}*/
+			}
+		}
+		
+		return $rs;		
+	}
+	
+	protected function exCommercialBuildingType($data_item){
+		$data_topic=(int)$data_item['topic_id'];
+		$this_realty_supertype=intval($this->associations[$data_topic]['realty_type']);
+		$rs='';
+	
+		if(($this->export_mode=='MEGET.UA' && in_array($data_item['__meget_ua_type'], $this->Types_Megetua_Commercial)) || ($this->export_mode=='EST.UA' && in_array($data_item['__est_ua_type'], $this->Types_Estua_Commercial)) || ($this->export_mode!='MEGET.UA' && $this->export_mode!='EST.UA' && $this_realty_supertype==self::$EXP_TY_COMMERCIAL)){
+			if(!empty($this->comm_building_types)){
+				foreach($this->comm_building_types as $kct=>$vct){
+					if(isset($data_item[$vct[0]]) && in_array($data_item[$vct[0]], $vct[1])){
+						if($kct=='bc'){
+							$rs.='<commercial-building-type>business center</commercial-building-type>'."\n";
+						}elseif($kct=='db'){
+							$rs.='<commercial-building-type>detached building</commercial-building-type>'."\n";
+						}elseif($kct=='rb'){
+							$rs.='<commercial-building-type>residential building</commercial-building-type>'."\n";
+						}elseif($kct=='sc'){
+							$rs.='<commercial-building-type>shopping center</commercial-building-type>'."\n";
+						}elseif($kct=='wh'){
+							$rs.='<commercial-building-type>warehouse</commercial-building-type>'."\n";
+						}
+						break;
+					}
+				}
 			}
 		}
 		return $rs;
@@ -1872,9 +2300,53 @@ protected function exKitchenSpace($data_item){
 		$data_topic=(int)$data_item['topic_id'];
 		$rs='';
 		
+		if($data_item['__operational_type']=='sale'){
+			$rs.='<type>продажа</type>';
+			$operational_type='sale';
+		}elseif($data_item['__operational_type']=='rent'){
+			$operational_type='rent';
+			if($this->export_mode=='EST.UA'){
+				$rs.='<type>сдача</type>';
+			}else{
+				$rs.='<type>аренда</type>';
+			}
+		}else{
+			$this->errors[]=$data_item['id'].' DECLINED: Operational type unknown';
+		}
+		
+		return $rs;
+		
+		if(!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['operation_type']!=0){
+			$rs.='<type>'.$this->op_types[$this->associations[$data_topic]['operation_type']].'</type>';
+			if($this->associations[$data_topic]['operation_type']==2){
+				$operational_type='rent';
+			}else{
+				$operational_type='sale';
+			}
+				
+		}else{
+			if(isset($this->contracts['sale']) && $this->contracts['sale']['f']!='' && isset($data_item[$this->contracts['sale']['f']]) && in_array($data_item[$this->contracts['sale']['f']], $this->contracts['sale']['v'])){
+				$rs.='<type>продажа</type>';
+				$operational_type='sale';
+			}elseif(isset($this->contracts['rent']) && $this->contracts['rent']['f']!='' && isset($data_item[$this->contracts['rent']['f']]) && in_array($data_item[$this->contracts['rent']['f']], $this->contracts['rent']['v'])){
+				if($this->export_mode=='EST.UA'){
+					$rs.='<type>сдача</type>';
+				}else{
+					$rs.='<type>аренда</type>';
+				}
+				
+				$operational_type='rent';
+			}/*elseif(isset($data_item['optype']) && (int)$data_item['optype']==1){
+				$rs.='<type>аренда</type>';
+				$operational_type='rent';
+			}*/else{
+				$this->errors[]=$data_item['id'].' DECLINED: Operational type unknown';
+				$rs.='<type>продажа</type>';
+			}
+		}
 		
 		
-		$operational_type='sale';
+		/*$operational_type='sale';
 		if(!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['operation_type']!=0){
 			$rs.='<type>'.$this->op_types[$this->associations[$data_topic]['operation_type']].'</type>';
 			if($this->associations[$data_topic]['operation_type']==2){
@@ -1901,7 +2373,7 @@ protected function exKitchenSpace($data_item){
 				$this->errors[]=$data_item['id'].' DECLINED: Operational type unknown';
 				$rs.='<type>продажа</type>';
 			}
-		}
+		}*/
 		return $rs;
 	}
 	
@@ -1909,15 +2381,56 @@ protected function exKitchenSpace($data_item){
 		$data_topic=(int)$data_item['topic_id'];
 		$this_realty_supertype=intval($this->associations[$data_topic]['realty_type']);
 		$rs='';
-		if($this_realty_supertype==self::$EXP_TY_RESIDENTIAL){
+		
+		
+		if($this->export_mode=='EST.UA'){
+			if(in_array($data_item['__est_ua_type'], $this->Types_Estua_Commercial)){
+				$rs.='<property-type>коммерческая</property-type>';
+			}elseif(in_array($data_item['__est_ua_type'], $this->Types_Estua_Residential)){
+				$rs.='<property-type>жилая</property-type>';
+			}elseif(in_array($data_item['__est_ua_type'], $this->Types_Estua_Lots)){
+				$rs.='<property-type>земельные участки</property-type>';
+			}else{
+				$this->errors[]=$data_item['id'].' DECLINED: EST.UA property-type unknown';
+			}
+		}elseif($this->export_mode=='MEGET.UA'){
+			if(in_array($data_item['__meget_ua_type'], $this->Types_Megetua_Commercial)){
+				$rs.='<property-type>коммерческая</property-type>';
+			}elseif(in_array($data_item['__meget_ua_type'], $this->Types_Megetua_Residential) || in_array($data_item['__meget_ua_type'], $this->Types_Megetua_Lots)){
+				$rs.='<property-type>жилая</property-type>';
+			}else{
+				$this->errors[]=$data_item['id'].' DECLINED: MEGET.UA property-type unknown';
+			}
+			/*if($this_realty_supertype==self::$EXP_TY_COMMERCIAL){
+				$rs.='<category>коммерческая</category>';
+			}*/
+		}else{
+			if($this_realty_supertype==self::$EXP_TY_RESIDENTIAL){
+				$rs.='<property-type>жилая</property-type>'."\n";
+			}elseif($this_realty_supertype==self::$EXP_TY_COMMERCIAL){
+				
+			}elseif(isset($data_item['property_type']) && $data_item['property_type']!=''){
+				$rs.='<property-type>'.self::symbolsClear($data_item['property_type']).'</property-type>'."\n";
+			}else{
+				$this->errors[]=$data_item['id'].' DECLINED: property-type unknown';
+			}
+		}
+		
+		
+		/*if($this_realty_supertype==self::$EXP_TY_RESIDENTIAL){
 			$rs.='<property-type>жилая</property-type>'."\n";
 		}elseif($this_realty_supertype==self::$EXP_TY_COMMERCIAL){
+			if($this->export_mode=='MEGET.UA'){
+				$rs.='<property-type>коммерческая</property-type>';
+			}elseif($this->export_mode=='EST.UA'){
+				$rs.='<property-type>коммерческая</property-type>';
+			}
 			//$rs.='<category>коммерческая</category>'."\n";
 		}elseif(isset($data_item['property_type']) && $data_item['property_type']!=''){
 			$rs.='<property-type>'.self::symbolsClear($data_item['property_type']).'</property-type>'."\n";
 		}else{
 			$this->errors[]=$data_item['id'].' DECLINED: Supertype unknown';
-		}
+		}*/
 		/*if(!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['realty_type']!=0){
 			$rs.='<property-type>'.$this->realty_types[$this->associations[$data_topic]['realty_type']].'</property-type>';
 		}elseif(isset($data_item['property_type']) && $data_item['property_type']!=''){
@@ -1934,11 +2447,7 @@ protected function exKitchenSpace($data_item){
 	
 	protected function setExportType(){
 		$this->export_type=mb_strtolower($this->getRequestValue('type'), SITE_ENCODING);
-	}
-	
-	protected function setExportMode(){
-		$this->export_mode='YANDEX';
-	}
+	}	
 	
 	protected function remove_old_file () {
 		if(1==$this->getConfigValue('apps.yandexrealty.tofile') && file_exists($this->export_file_storage.'/'.$this->export_file)){
@@ -2002,6 +2511,12 @@ protected function exKitchenSpace($data_item){
 			$select[]='ds.name AS district';
 			$leftjoin[]='LEFT JOIN '.DB_PREFIX.'_district ds ON dt.district_id=ds.id';
 		}
+                
+    		if(isset($form_data_shared['rayon'])){
+                    $select[]='ds.name AS rayon';
+                    $leftjoin[]='LEFT JOIN '.DB_PREFIX.'_rayon ds ON dt.rayon=ds.rayon_id';
+                }
+                
 			
 		if(isset($form_data_shared['street_id'])){
 			$select[]='st.name AS street';
@@ -2011,6 +2526,19 @@ protected function exKitchenSpace($data_item){
 		if(isset($form_data_shared['metro_id'])){
 			$select[]='mt.name AS metro';
 			$leftjoin[]='LEFT JOIN '.DB_PREFIX.'_metro mt ON dt.metro_id=mt.metro_id';
+		}
+		
+		$direction_field=$this->getConfigValue('apps.yandexrealty.direction_from');
+		
+		if($direction_field!='' && isset($this->form_data_shared[$direction_field])){
+			if($this->form_data_shared[$direction_field]['type']=='select_by_query'){
+				$el=$this->form_data_shared[$direction_field];
+				$table_id='x'.rand(100,999);
+				$select[]=$table_id.'.`'.$el['value_name'].'` AS _'.$direction_field;
+				$leftjoin[]='LEFT JOIN '.DB_PREFIX.'_'.$el['primary_key_table'].' '.$table_id.' ON dt.`'.$direction_field.'`='.$table_id.'.`'.$el['primary_key_name'].'`';
+				//var_dump($el);
+			}
+				
 		}
 		
 		$basic_query='SELECT '.implode(', ', $select).' FROM '.DB_PREFIX.'_data dt '.(!empty($leftjoin) ? implode(' ', $leftjoin) : '');
@@ -2115,22 +2643,67 @@ protected function exKitchenSpace($data_item){
 			}
 		}else{
 			$DBC=DBC::getInstance();
+			if(!is_null($this->exported_ids)){
+				$where[]='dt.id IN ('.implode(',', $this->exported_ids).')';
+				if($this->activity_filtering){
+					$where[]='dt.active=1';
+				}
+				if($this->time_filtering){
+					$max_days=(int)$this->getConfigValue('apps.yandexrealty.days_interval');
+					if($max_days==0){
+						$max_date = date('Y-m-d', 0 );
+					}else{
+						$max_date = date('Y-m-d', time()- $max_days*3600*24 );
+					}
+					$where[]='dt.date_added > \''.$max_date.'\'';
+				}
+				if($this->field_filtering){
+					if(''!==trim($this->getConfigValue('apps.yandexrealty.filtering_checkbox_name'))){
+						$where[]='dt.'.trim($this->getConfigValue('apps.yandexrealty.filtering_checkbox_name')).'=1';
+					}
+				}
+			}elseif(!is_null($this->exported_conditions)){
+				foreach($this->exported_conditions as $query){
+					$where[]=$query;
+				}
+				if($this->activity_filtering){
+					$where[]='dt.active=1';
+				}
+				if($this->time_filtering){
+					$max_days=(int)$this->getConfigValue('apps.yandexrealty.days_interval');
+					if($max_days==0){
+						$max_date = date('Y-m-d', 0 );
+					}else{
+						$max_date = date('Y-m-d', time()- $max_days*3600*24 );
+					}
+					$where[]='dt.date_added > \''.$max_date.'\'';
+				}
+				if($this->field_filtering){
+					if(''!==trim($this->getConfigValue('apps.yandexrealty.filtering_checkbox_name'))){
+						$where[]='dt.'.trim($this->getConfigValue('apps.yandexrealty.filtering_checkbox_name')).'=1';
+					}
+				}
+			}else{
+				$max_days=(int)$this->getConfigValue('apps.yandexrealty.days_interval');
+				if($max_days==0){
+					$max_date = date('Y-m-d', 0 );
+				}else{
+					$max_date = date('Y-m-d', time()- $max_days*3600*24 );
+				}
+				
+				$where[]='dt.active=1';
+				$where[]='dt.date_added > \''.$max_date.'\'';
+					
+				if(''!==trim($this->getConfigValue('apps.yandexrealty.filtering_checkbox_name'))){
+					$where[]='dt.'.trim($this->getConfigValue('apps.yandexrealty.filtering_checkbox_name')).'=1';
+				}
+			}
+			
+			
 		
 			 
 			//Максимальный возраст объявления 6-месяцев
-			$max_days=(int)$this->getConfigValue('apps.yandexrealty.days_interval');
-			if($max_days==0){
-				$max_date = date('Y-m-d', 0 );
-			}else{
-				$max_date = date('Y-m-d', time()- $max_days*3600*24 );
-			}
-			 
-			$where[]='dt.active=1';
-			$where[]='dt.date_added > \''.$max_date.'\'';
-			
-			if(''!==trim($this->getConfigValue('apps.yandexrealty.filtering_checkbox_name'))){
-				$where[]='dt.'.trim($this->getConfigValue('apps.yandexrealty.filtering_checkbox_name')).'=1';
-			}
+			//if(isset)
 		
 			$query=$basic_query.(!empty($where) ? ' WHERE '.implode(' AND ', $where) : '').' ORDER BY dt.date_added DESC';
 			

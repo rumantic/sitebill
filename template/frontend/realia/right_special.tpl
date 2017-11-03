@@ -1,6 +1,6 @@
 <div class="widget properties last">
     <div class="title">
-        <h2>VIP</h2>
+        <h2><editable id="rooms_title_edit" data-file="standart_search_form.tpl">VIP</editable></h2>
     </div><!-- /.title -->
 
     <div class="content">

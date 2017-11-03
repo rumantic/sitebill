@@ -115,6 +115,8 @@ class sitemap_admin extends Object_Manager {
 		$host=$_SERVER['HTTP_HOST'];
 		if($host=='erver.ru' || preg_match('/([a-z]+).erver.ru/', $host)){
 			if($host!='erver.ru'){
+				$sitemap_prefix=md5($_SERVER['HTTP_HOST']).'.';
+				$output_file=preg_replace('/^'.preg_quote($sitemap_prefix, '/').'/', '', $output_file);
 				$output_file=str_replace('erver.ru', $host, $output_file);
 			}
 		}
@@ -178,6 +180,8 @@ class sitemap_admin extends Object_Manager {
 		$host=$_SERVER['HTTP_HOST'];
 		if($host=='erver.ru' || preg_match('/([a-z]+).erver.ru/', $host)){
 			if($host!='erver.ru'){
+				$sitemap_prefix=md5($_SERVER['HTTP_HOST']).'.';
+				$output_file=preg_replace('/^'.preg_quote($sitemap_prefix, '/').'/', '', $output_file);
 				$output_file=str_replace('erver.ru', $host, $output_file);
 			}
 		}
@@ -190,7 +194,9 @@ class sitemap_admin extends Object_Manager {
 	protected function buildSitemap(){
 		$max_count=10000;
 		$urls=$this->getSitemapItems();
-		$output_file=SITEBILL_DOCUMENT_ROOT.'/cache/sitemap.xml';
+		$sitemap_prefix=md5($_SERVER['HTTP_HOST']).'.';
+		$output_file=SITEBILL_DOCUMENT_ROOT.'/cache/'.$sitemap_prefix.'sitemap.xml';
+		
 		//echo count($urls);
 		if(count($urls)<=$max_count){
 			$this->createSitemapFile($output_file, $urls);
@@ -204,11 +210,11 @@ class sitemap_admin extends Object_Manager {
 				$start=($i-1)*$max_count;
 				$offset=$max_count;
 				$url_set=array_slice($urls, $start, $offset);
-				$output_file=SITEBILL_DOCUMENT_ROOT.'/cache/sitemap_page'.$i.'.xml';
+				$output_file=SITEBILL_DOCUMENT_ROOT.'/cache/'.$sitemap_prefix.'sitemap_page'.$i.'.xml';
 				$this->createSitemapFile($output_file, $url_set);
 				$files_urls[]=SITEBILL_MAIN_URL.'/sitemap.xml?page='.$i;
 			}
-			$output_file=SITEBILL_DOCUMENT_ROOT.'/cache/sitemap.xml';
+			$output_file=SITEBILL_DOCUMENT_ROOT.'/cache/'.$sitemap_prefix.'sitemap.xml';
 			$this->createSitemapIndexFile($output_file, $files_urls);
 		}
 		/*
@@ -375,7 +381,10 @@ class sitemap_admin extends Object_Manager {
 				while($ar=$DBC->fetch($stmt)){
 					$url=SITEBILL_MAIN_URL.'/'.$ar['url'];
 					if($url!=''){
-						$urls[]=array('url'=>$url.$trailing_slashe,'changefreq'=>$this->changefreq['country'],'priority'=>$this->priority['country']);
+						if(false===strpos($url, '.')){
+							$url.=self::$_trslashes;
+						}
+						$urls[]=array('url'=>$url,'changefreq'=>$this->changefreq['country'],'priority'=>$this->priority['country']);
 					}
 				}
 			}
@@ -391,44 +400,16 @@ class sitemap_admin extends Object_Manager {
 				while($ar=$DBC->fetch($stmt)){
 					$url=SITEBILL_MAIN_URL.'/'.$ar['url'];
 					if($url!=''){
-						$urls[]=array('url'=>$url.$trailing_slashe,'changefreq'=>$this->changefreq['city'],'priority'=>$this->priority['city']);
+						if(false===strpos($url, '.')){
+							$url.=self::$_trslashes;
+						}
+						$urls[]=array('url'=>$url,'changefreq'=>$this->changefreq['city'],'priority'=>$this->priority['city']);
 					}
 				}
 			}
 		}
 		
-		/*
-		$query='SELECT is_service FROM '.DB_PREFIX.'_page LIMIT 1';
-		$stmt=$DBC->query($query);
-		if($stmt){
-			$query='SELECT uri FROM '.DB_PREFIX.'_page WHERE is_service=0';
-		}else{
-			$query='SELECT uri FROM '.DB_PREFIX.'_page';
-		}
-		
-		
-		$stmt=$DBC->query($query);
-		if($stmt){
-			while($ar=$DBC->fetch($stmt)){
-				if($ar['uri']!=''){
-					$url=trim(str_replace('\\', '/', $ar['uri']),'/');
-				}
-				$urls[]=array('url'=>$url,'changefreq'=>$this->changefreq['page'],'priority'=>$this->priority['page']);
-			}
-		}
-		 */
-		/*
-		$query='SELECT url FROM '.DB_PREFIX.'_menu_structure';
-		$stmt=$DBC->query($query);
-		if($stmt){
-			while($ar=$DBC->fetch($stmt)){
-				if($ar['url']!=''){
-					$url=trim(str_replace('\\', '/', $ar['url']),'/');
-				}
-				$urls[]=array('url'=>$url,'changefreq'=>$this->changefreq['menu'],'priority'=>$this->priority['menu']);
-			}
-		}
-			*/
+
 		
 		/*
 		 * Prepare Data urls
@@ -450,28 +431,19 @@ class sitemap_admin extends Object_Manager {
 			 
 			if(count($data)>0){
 				foreach($data as $k=>$d){
-					$data[$k]['href']=$this->getRealtyHREF($d['id'], true, array('topic_id'=>$d['topic_id'], 'alias'=>$d['translit_alias']));
-					/*if(1==$level_enable){
-						if($category_structure['catalog'][$d['topic_id']]['url']!=''){
-							$data[$k]['parent_category_url']=$category_structure['catalog'][$d['topic_id']]['url'].'/';
-						}else{
-							$data[$k]['parent_category_url']='';
-						}
+					if(isset($d['translit_alias'])){
+						$translit_alias=$d['translit_alias'];
 					}else{
-						$data[$k]['parent_category_url']='';
+						$translit_alias='';
 					}
-					if(1==$data_alias_enable && $d['translit_alias']!=''){
-						$data[$k]['href']=SITEBILL_MAIN_URL.'/'.$data[$k]['parent_category_url'].$d['translit_alias'];
-					}elseif(1==$html_prefix_enable){
-						$data[$k]['href']=SITEBILL_MAIN_URL.'/'.$data[$k]['parent_category_url'].'realty'.$data[$k]['id'].'.html';
-					}else{
-						$data[$k]['href']=SITEBILL_MAIN_URL.'/'.$data[$k]['parent_category_url'].'realty'.$data[$k]['id'];
-					}*/
+					$data[$k]['href']=$this->getRealtyHREF($d['id'], true, array('topic_id'=>$d['topic_id'], 'alias'=>$translit_alias));
 				}
 				foreach($data as $k=>$d){
 					//$url=trim(str_replace('\\', '/', $d['href']),'/');
 					$url=str_replace('\\', '/', $d['href']);
-					$urls[]=array('url'=>$url,'changefreq'=>$this->changefreq['data'],'priority'=>$this->priority['data']);
+                                        if ( $url != '' ) {
+                                            $urls[]=array('url'=>$url,'changefreq'=>$this->changefreq['data'],'priority'=>$this->priority['data']);
+                                        }
 				}
 			}
 		}

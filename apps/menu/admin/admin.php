@@ -36,7 +36,7 @@ class menu_admin extends Object_Manager {
     			}
     			$ar['url']=trim($ar['url']);
     			if($ar['url']!='' && 0!==strpos($ar['url'], 'http:')){
-    				$ar['url'] = SITEBILL_MAIN_URL.'/'.trim($ar['url'], '/').((false===strpos($ar['url'], '.')) ? $trailing_slashe : '');
+    				$ar['url'] = SITEBILL_MAIN_URL.'/'.trim($ar['url'], '/').((false===strpos($ar['url'], '.') && $ar['url']!='#') ? $trailing_slashe : '');
     			}
     			$ra[$ar['tag']][] = $ar;
     			

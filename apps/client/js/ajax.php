@@ -1,4 +1,5 @@
 <?php
+/*DEPRECATED FILE*/
 error_reporting(E_ERROR | E_WARNING);
 ini_set('display_errors','On');
 
@@ -38,4 +39,3 @@ Multilanguage::start('backend',$_SESSION['_lang']);
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/client/admin/admin.php');
 $client_admin = new client_admin();
 echo $client_admin->ajax();
-?>

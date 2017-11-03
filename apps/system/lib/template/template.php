@@ -150,8 +150,11 @@ class Template {
         if ( !is_array($this->item) ) {
             return false;
         }
+        //debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         foreach ( $this->item as $itemKey => $itemValue ) {
-            $this->templateString = str_replace( '{'.$itemKey.'}', $itemValue, $this->templateString );
+        	if(!is_object($itemValue) && !is_array($itemValue)){
+        		$this->templateString = str_replace( '{'.$itemKey.'}', $itemValue, $this->templateString );
+        	}            
         }
         $this->render_page = $this->templateString;
         return true;

@@ -1,20 +1,4 @@
 <script src="{$estate_folder}/apps/system/js/json2.js" type="text/javascript"></script>
-{if $geodata_show_grid_map==1 and  $smarty.server.REQUEST_URI != '/'}
-<script src="{$estate_folder}/apps/system/js/realtymap.js" type="text/javascript"></script>
-<script>
-
-var loc_objects={$geoobjects_collection_clustered};
-var map_type='{$map_type}';
-{literal}
-$(document).ready(function(){
-	var RM=new RealtyMap();
-	RM.initJSON('map', loc_objects, map_type);
-});
-{/literal}
-
-	
-</script>
-{/if}
 
 
 <div class="row">
@@ -32,13 +16,9 @@ $(document).ready(function(){
 	
 	{assign var="lang_topic_name" value="name_{$smarty.session._lang}"}
 	
-	{if $geodata_show_grid_map==1  and  $smarty.server.REQUEST_URI != '/'}
-	<div id="map" style="margin: 10px 0;"></div>
-	{else}
 	<div id="map" style="margin: 10px 0;">
-		<iframe src="{$estate_folder}/js/ajax.php?action=iframe_map" style="border; 0px;" border="0" width="100%" height="100%"></iframe>
+		<iframe src="{$estate_folder}/js/ajax.php?action=iframe_map" style="border: 0px;" border="0" width="100%" height="100%"></iframe>
 	</div>
-	{/if}
 	
 	{if $smarty.session.grid_type eq 'thumbs'}
 			{include file='realty_grid_thumbs.tpl'}
@@ -97,7 +77,6 @@ $(document).ready(function(){
 </div>
 	
 	<div class="sidebar span3">
-		<h2>{$LT_SEARCH}</h2>
 		{include file='search_form.tpl'}
 		<br/>
 		{include file='right_special.tpl'}

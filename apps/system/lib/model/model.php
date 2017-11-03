@@ -22,7 +22,7 @@ class Data_Model extends SiteBill {
     	$topic_id=0;
     	$DBC=DBC::getInstance();
     	if(isset($model_array['topic_id'])){
-    		$topic_id=(int)$_REQUEST['topic_id'];
+    		$topic_id=(isset($_REQUEST['topic_id']) ? intval($_REQUEST['topic_id']) : 0);
     	}
     	if($topic_id!=0){
 	    	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
@@ -36,6 +36,13 @@ class Data_Model extends SiteBill {
 	    	}
 	    }
     	foreach ( $model_array as $key => $item_array ) {
+    		
+    		if(isset($model_array[$key]['parameters'])){
+    			$parameters=$model_array[$key]['parameters'];
+    		}else{
+    			$parameters=array();
+    		}
+    		
     		if(!$ignore_topic_activity){
     			if($topic_id!=0 && isset($item_array['active_in_topic']) && $item_array['active_in_topic']!=0){
 	        		$active_array_ids = explode(',',$item_array['active_in_topic']);
@@ -128,11 +135,7 @@ class Data_Model extends SiteBill {
             }
             if ( isset($model_array[$key]['type']) && $model_array[$key]['type'] == 'select_by_query' ) {
             	 
-	            if(isset($model_array[$key]['parameters'])){
-		    		$parameters=$model_array[$key]['parameters'];
-		    	}else{
-		    		$parameters=array();
-		    	}
+	            
 		    	
 		    	if(isset($parameters['autocomplete']) && $parameters['autocomplete']==1){
 		    		$_no_insert=$no_insert;
@@ -141,8 +144,8 @@ class Data_Model extends SiteBill {
 		    		}
 		    		
 		    		$filters=array();
-		    		$autocomplete_dep_el=$parameters['autocomplete_dep_el'];
-		    		$autocomplete_dep_el_key=$parameters['autocomplete_dep_el_key'];
+		    		$autocomplete_dep_el=(isset($parameters['autocomplete_dep_el']) ? $parameters['autocomplete_dep_el'] : '');
+		    		$autocomplete_dep_el_key=(isset($parameters['autocomplete_dep_el_key']) ? $parameters['autocomplete_dep_el_key'] : '');
 		    		if($autocomplete_dep_el!='' && $autocomplete_dep_el_key!='' && isset($model_array[$autocomplete_dep_el])){
 		    			$filters[$autocomplete_dep_el_key]=$this->getRequestValue($autocomplete_dep_el);
 		    		}
@@ -211,12 +214,6 @@ class Data_Model extends SiteBill {
           
             
             if ( isset($model_array[$key]['type']) && $model_array[$key]['type'] == 'date'   ) {
-            	if(isset($model_array[$key]['parameters'])){
-            		$parameters=$model_array[$key]['parameters'];
-            	}else{
-            		$parameters=array();
-            	}
-            	
             	if(isset($parameters['formattype']) && $parameters['formattype']=='date'){
             		$model_array[$key]['value'] = date('Y-m-d', strtotime($this->getRequestValue($key)));
             	}elseif(isset($parameters['formattype']) && $parameters['formattype']=='datetime'){
@@ -324,7 +321,7 @@ class Data_Model extends SiteBill {
             	continue;
             }
             
-            if ( isset($model_array[$key]['type']) && $model_array[$key]['type'] == 'photo'   ) {
+            if ( isset($model_array[$key]['type']) && $model_array[$key]['type'] == 'photo' && isset($_FILES[$model_array[$key]['name']])) {
             	$model_array[$key]['value'] = $_FILES[$model_array[$key]['name']]['name'];
                 continue;
             }
@@ -337,6 +334,9 @@ class Data_Model extends SiteBill {
             }
             if ( isset($model_array[$key]['type']) && $model_array[$key]['type'] == 'select_by_query_multi'   ) {
             	$model_array[$key]['value'] = $this->getRequestValue($key);
+            	if(!is_array($model_array[$key]['value'])){
+            		$model_array[$key]['value']=(array)$model_array[$key]['value'];
+            	}
             	/*if(is_array($model_array[$key]['values_array']) && count($model_array[$key]['values_array'])!=0){
             		$model_array[$key]['value']=implode(',', $model_array[$key]['values_array']);
             	}*/
@@ -372,14 +372,6 @@ class Data_Model extends SiteBill {
             
             if ( isset($model_array[$key]['type']) && $model_array[$key]['type'] == 'select_box' ) {
             	 
-            	if(isset($model_array[$key]['parameters'])){
-            		$parameters=$model_array[$key]['parameters'];
-            	}else{
-            		$parameters=array();
-            	}
-            	
-            	//$values=(array)$this->getRequestValue($model_array[$key]['name']);
-            	 
             	if(isset($parameters['multiselect']) && 1==(int)$parameters['multiselect']){
             		$model_array[$key]['values_array'] = (array)$this->getRequestValue($key);
             		if(is_array($model_array[$key]['values_array']) && count($model_array[$key]['values_array'])!=0){
@@ -400,14 +392,40 @@ class Data_Model extends SiteBill {
             
             if ( isset($model_array[$key]['type']) && $model_array[$key]['type'] == 'safe_string' ) {
             	if(!is_array($this->getRequestValue($model_array[$key]['name']))){
-            		$model_array[$key]['value'] = strip_tags($this->htmlspecialchars_decode($this->getRequestValue($model_array[$key]['name'])));
-            		if(isset($model_array[$key]['parameters'])){
-            			$parameters=$model_array[$key]['parameters'];
-            		}else{
-            			$parameters=array();
+            		
+            		$sval=strip_tags($this->htmlspecialchars_decode($this->getRequestValue($model_array[$key]['name'])));
+            		
+            		if(isset($parameters['rules']) && $parameters['rules']!=''){
+            			$rules_string=$parameters['rules'];
+            			 
+            			$rules_parts=explode(',', $rules_string);
+            			foreach($rules_parts as $r=>$rp){
+            				$rules_parts[$r]=trim($rp);
+            			}
+            			 
+            			 
+            			foreach($rules_parts as $rp){
+            				$x=explode(':', $rp);
+            				$rules[trim($x[0])]=(isset($x[1]) ? trim($x[1]) : '');
+            			}
+            			 
+            			if(!isset($rules['Type'])){
+            				$rules['Type']='string';
+            			}            			 
+            			 
+            			switch($rules['Type']){
+            				case 'decimal' : {
+            					if($sval!=''){
+            						$sval=str_replace(',', '.', $sval);
+            					}
+            					break;
+            				}
+            			}
             		}
             		
-            		if(isset($parameters['meashurable']) && (int)$parameters['meashurable']==1){
+            		$model_array[$key]['value'] = $sval;
+            		
+            		/*if(isset($parameters['meashurable']) && (int)$parameters['meashurable']==1){
             			$vars=explode(',', $parameters['meashurable_vars']);
             			//print_r($vars);
             			$def=trim($parameters['meashurable_def']);
@@ -419,7 +437,7 @@ class Data_Model extends SiteBill {
             			$val=$model_array[$key]['value'];
             			$val=$this->convertAreaMeashures($val, $meash_val);
             			$model_array[$key]['value'] = $val;
-            		}
+            		}*/
             	}else{
             		$xvalue=$this->getRequestValue($model_array[$key]['name']);
             		if(!empty($xvalue)){
@@ -438,7 +456,7 @@ class Data_Model extends SiteBill {
             	}else{
             		$parameters=array();
             	}
-            	if(isset($parameters['allow_htmltags']) && (int)$parameters['allow_htmltags']==1){
+            	if((isset($parameters['allow_htmltags']) && (int)$parameters['allow_htmltags']==1) || (isset($parameters['html']) && (int)$parameters['html']==1)){
             		$model_array[$key]['value'] = $this->htmlspecialchars_decode($this->getRequestValue($model_array[$key]['name']));
             	}else{
             		$model_array[$key]['value'] = strip_tags($this->htmlspecialchars_decode($this->getRequestValue($model_array[$key]['name'])));
@@ -657,6 +675,10 @@ class Data_Model extends SiteBill {
     	//$no_select=array('auto_add_value', 'uploadify_image', 'uploadify_file', 'captcha', 'spacer_text', 'separator');
     	//$direct=array('safe_string', 'hidden', 'primary_key', 'checkbox', 'select_box_structure');
     	foreach ($model_array as $model_item){
+    		//echo $model_item['name'].'='.$model_item['dbtype'].'<br>';
+    		if($model_item['dbtype']=='notable'){
+    			continue;
+    		}
     		switch($model_item['type']){
     			case 'safe_string' : {
     				$fields[]=$model_item['name'];
@@ -856,12 +878,12 @@ class Data_Model extends SiteBill {
     	$query = 'SELECT `'.implode('`, `', $fields).'` FROM '.DB_PREFIX.'_'.$table_name.' WHERE `'.$primary_key_name.'` IN ('.implode(',', $ids).')';
     	
     	$stmt=$DBC->query($query);
+    	
     	if($stmt){
     		while($ar=$DBC->fetch($stmt)){
     			$collected_data[$ar[$primary_key_name]]=$ar;
     		}
     	}
-    	
     	
     	
     	if(empty($collected_data)){
@@ -1067,6 +1089,7 @@ class Data_Model extends SiteBill {
     				/*$simplied[$key]['value']=$cdata[$key];
     				$simplied[$key]['value_string']=$cdata[$key];*/
     			}elseif($model_item['type']=='geodata'){
+    				$model[$key]['value']=array();
     				$model[$key]['value']['lat']=$cdata[$key.'_lat'];
     				$model[$key]['value']['lng']=$cdata[$key.'_lng'];
     				/*$simplied[$key]['value']['lat']=$cdata[$key.'_lat'];
@@ -1254,11 +1277,11 @@ class Data_Model extends SiteBill {
     			$model_array[$key]['value']['district_id'] = $row['district_id'];
     			$model_array[$key]['value']['street_id'] = $row['street_id'];
     			 
-    			$model_array[$key]['value_string']['country_id'] = $this->get_string_value_by_id('country', 'country_id', 'name' , $row['country_id'], false);
-    			$model_array[$key]['value_string']['region_id'] = $this->get_string_value_by_id('region', 'region_id', 'name' , $row['region_id'], false);
-    			$model_array[$key]['value_string']['city_id'] = $this->get_string_value_by_id('city', 'city_id', 'name' , $row['city_id'], false);
-    			$model_array[$key]['value_string']['district_id'] = $this->get_string_value_by_id('district', 'id', 'name' , $row['district_id'], false);
-    			$model_array[$key]['value_string']['street_id'] = $this->get_string_value_by_id('street', 'street_id', 'name' , $row['street_id'], false);
+    			$model_array[$key]['value_string']['country_id'] = $this->get_string_value_by_id('country', 'country_id', 'name' , $row['country_id'], true);
+    			$model_array[$key]['value_string']['region_id'] = $this->get_string_value_by_id('region', 'region_id', 'name' , $row['region_id'], true);
+    			$model_array[$key]['value_string']['city_id'] = $this->get_string_value_by_id('city', 'city_id', 'name' , $row['city_id'], true);
+    			$model_array[$key]['value_string']['district_id'] = $this->get_string_value_by_id('district', 'id', 'name' , $row['district_id'], true);
+    			$model_array[$key]['value_string']['street_id'] = $this->get_string_value_by_id('street', 'street_id', 'name' , $row['street_id'], true);
     			 
     			$tlocation_string='';
     			$temp=array();
@@ -1274,6 +1297,7 @@ class Data_Model extends SiteBill {
     
     		}
     		if ( $model_array[$key]['type'] == 'geodata' ) {
+    			$model_array[$key]['value']=array();
     			$model_array[$key]['value']['lat'] = $row[$model_array[$key]['name'].'_lat'];
     			$model_array[$key]['value']['lng'] = $row[$model_array[$key]['name'].'_lng'];
     		}
@@ -1282,7 +1306,12 @@ class Data_Model extends SiteBill {
     			$parameters=$model_array[$key]['parameters'];
     			$name=$model_array[$key]['value_name'];
     			$langs=Multilanguage::availableLanguages();
-    			if(1===intval($this->getConfigValue('apps.language.use_langs')) && 0===intval($parameters['no_ml'])){
+    			
+    			$no_ml=0;
+    			if(isset($parameters['no_ml'])){
+    				$no_ml=intval($parameters['no_ml']);
+    			}
+    			if(1===intval($this->getConfigValue('apps.language.use_langs')) && 0===$no_ml){
     				$curlang=$this->getCurrentLang();
     				if(1===intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang=='ru'){
     			
@@ -1325,7 +1354,11 @@ class Data_Model extends SiteBill {
     					$parameters=$model_array[$key]['parameters'];
     					$name=$model_array[$key]['value_name'];
     					$langs=Multilanguage::availableLanguages();
-    					if(1===intval($this->getConfigValue('apps.language.use_langs')) && 0===intval($parameters['no_ml'])){
+    					$no_ml=0;
+    					if(isset($parameters['no_ml'])){
+    						$no_ml=intval($parameters['no_ml']);
+    					}
+    					if(1===intval($this->getConfigValue('apps.language.use_langs')) && 0===$no_ml){
     						$curlang=$this->getCurrentLang();
     				
     						if(1===intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang=='ru'){
@@ -1336,7 +1369,7 @@ class Data_Model extends SiteBill {
     				
     					}
     					foreach($model_array[$key]['values_array'] as $vi){
-    						$t[] = $this->get_string_value_by_id($model_array[$key]['primary_key_table'], $model_array[$key]['primary_key_name'], $name, $vi, false);
+    						$t[] = $this->get_string_value_by_id($model_array[$key]['primary_key_table'], $model_array[$key]['primary_key_name'], $name, $vi, true);
     					}
     					$model_array[$key]['value_string'] = implode(',', $t);
     				}else{
@@ -1357,11 +1390,19 @@ class Data_Model extends SiteBill {
     			$model_array[$key]['value_string'] = $DA->getDestinationById($model_array[$key]['value']);
     		}
     		if ( $model_array[$key]['type'] == 'select_by_query' and $force_select_values ) {
-    		
-    			$parameters=$model_array[$key]['parameters'];
+    			if(isset($model_array[$key]['parameters'])){
+    				$parameters=$model_array[$key]['parameters'];
+    			}else{
+    				$parameters=array();
+    			}
+    			
     			$name=$model_array[$key]['value_name'];
     			$langs=Multilanguage::availableLanguages();
-    			if(1===intval($this->getConfigValue('apps.language.use_langs')) && 0===intval($parameters['no_ml'])){
+    			$no_ml=0;
+    			if(isset($parameters['no_ml'])){
+    				$no_ml=intval($parameters['no_ml']);
+    			}
+    			if(1===intval($this->getConfigValue('apps.language.use_langs')) && 0===$no_ml){
     				$curlang=$this->getCurrentLang();
     				
     				if(1===intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang=='ru'){
@@ -1374,7 +1415,7 @@ class Data_Model extends SiteBill {
     			
     			
     			//echo $name;
-    			$model_array[$key]['value_string'] = $this->get_string_value_by_id($model_array[$key]['primary_key_table'], $model_array[$key]['primary_key_name'], $name, $model_array[$key]['value'], false);
+    			$model_array[$key]['value_string'] = $this->get_string_value_by_id($model_array[$key]['primary_key_table'], $model_array[$key]['primary_key_name'], $name, $model_array[$key]['value'], true);
     		}
     		if ( $model_array[$key]['type'] == 'client_id' ) {
     			$val=intval($model_array[$key]['value']);
@@ -1414,7 +1455,8 @@ class Data_Model extends SiteBill {
     			}else{
     				//try get images from uploadify
     				if ( $table_name == 'data' ) {
-    					$model_array[$key]['image_array'] = $this->get_image_array ( 'data', 'data', 'id', $primary_key_value );
+    					//$model_array[$key]['image_array'] = $this->get_image_array ( 'data', 'data', 'id', $primary_key_value );
+    					$model_array[$key]['image_array'] =  array();
     				} else {
     					$model_array[$key]['value'] = array();
     				}
@@ -1484,7 +1526,10 @@ class Data_Model extends SiteBill {
     
     			}else{
     				$model_array[$key]['value'] = $row[$key];
-    				$model_array[$key]['value_string'] = $model_array[$key][$fname][$model_array[$key]['value']];
+    				$model_array[$key]['value_string']='';
+    				if(isset($model_array[$key][$fname][$model_array[$key]['value']])){
+    					$model_array[$key]['value_string'] = $model_array[$key][$fname][$model_array[$key]['value']];
+    				}    				
     			}
     			 
     		}elseif($model_array[$key]['type'] == 'select_box'){
@@ -1511,7 +1556,7 @@ class Data_Model extends SiteBill {
     			$cs=$Manager->loadCategoryStructure();
     			$model_array[$key]['value_string']=$cs['catalog'][$model_array[$key]['value']]['name'];
     		}
-    		if ( $model_array[$key]['type'] == 'select_box_structure' and $force_select_values ) {
+    		if ( $model_array[$key]['type'] == 'select_box_structure' && $force_select_values ) {
     			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_implements.php';
     			$Manager=Structure_Implements::getManager();
     			$cs=$Manager->loadCategoryStructure();
@@ -1524,10 +1569,31 @@ class Data_Model extends SiteBill {
     					$name.='_'.$this->getCurrentLang();
     				}
     			}
-    			$model_array[$key]['value_string']=$cs['catalog'][$model_array[$key]['value']][$fname];
+    			$model_array[$key]['value_string']='';
+    			if(isset($cs['catalog'][$model_array[$key]['value']])){
+    				$model_array[$key]['value_string']=$cs['catalog'][$model_array[$key]['value']][$fname];
+    			}
+    			
     		}
     		 
     	}
+    	
+    	/*foreach ( $model_array as $key => $item_array ) {
+    		if($model_array[$key]['type'] == 'textarea_editor'){
+    			if(count($model_array['image']['value'])>0){
+    				foreach($model_array['image']['value'] as $k=>$im){
+    					$kx='{$inc'.$k.'}';
+    					$ims[$kx]='<img src="'.SITEBILL_MAIN_URL.'/img/data/'.$im['preview'].'">';
+    				}
+    				//print_r($ims);
+    				if($model_array[$key]['value']!=''){
+    					$model_array[$key]['value']=str_replace(array_keys($ims), array_values($ims), $model_array[$key]['value']);
+    				}
+    			}
+    			//$ims=$model_array['image']['value'];
+    			
+    		}
+    	}*/
     	return $model_array;
     }
     
@@ -2200,6 +2266,7 @@ class Data_Model extends SiteBill {
      * @return string
      */
     function get_string_value_by_id ( $primary_key_table, $primary_key_name, $value_name, $value, $cache = false ) {
+    	
     	if($value=='' || $value=='0'){
     		return '';
     	}
@@ -2207,17 +2274,30 @@ class Data_Model extends SiteBill {
     	if ( $cache ) {
     		
     		if ( !isset($this->cache[$primary_key_table][$value]) ) {
+    			//exit;
+			$value_name = str_replace(' ', '', $value_name);
+			$value_name = str_replace('`', '', $value_name);
+			
+			$primary_key_name = str_replace('`', '', $primary_key_name);
+			$primary_key_name = str_replace(' ', '', $primary_key_name);
+
+			//$query = 'SELECT `'.$primary_key_name.'`, `'.$value_name.'` FROM '.DB_PREFIX.'_'.$primary_key_table.' WHERE `'.$primary_key_name.'` = ?';
+			$query = 'SELECT `'.$primary_key_name.'`, `'.$value_name.'` FROM '.DB_PREFIX.'_'.$primary_key_table.'';
     			
-    			$query = 'SELECT * FROM '.DB_PREFIX.'_'.$primary_key_table.' WHERE `'.$primary_key_name.'` = ?';
     			$stmt=$DBC->query($query, array($value));
     			if($stmt){
-    				$ar=$DBC->fetch($stmt);
-    				$this->cache[$primary_key_table][$ar[$primary_key_name]][$value_name] = $ar[$value_name];
+				while($ar=$DBC->fetch($stmt)) {
+				    $this->cache[$primary_key_table][$ar[$primary_key_name]][$value_name] = $ar[$value_name];
+				}
+				//echo '<pre>';
+				//print_r($ar);
+				//echo '</pre>';
     			}
     		}
     		return	$this->cache[$primary_key_table][$value][$value_name];
     	} else {
     		$query = 'SELECT * FROM '.DB_PREFIX.'_'.$primary_key_table.' WHERE `'.$primary_key_name.'` = ?';
+    		
     		$stmt=$DBC->query($query, array($value));
     		if($stmt){
     			$ar=$DBC->fetch($stmt);
@@ -2290,11 +2370,58 @@ class Data_Model extends SiteBill {
     		}
     	}*/
     	
-    	
+    	$agreement_el=intval($this->getRequestValue('agreement_el'));
+    	$agreement=intval($this->getRequestValue('agreement'));
+    	if($agreement_el && !$agreement){
+    		$errors[]=Multilanguage::_('L_ERROR_AGREEMENT');
+    	}
     	
     	//$error_fields=array();
     	
     	foreach ( $model_array as $key => $item_array ) {
+    		
+    		if(isset($item_array['parameters'])){
+    			$parameters=$item_array['parameters'];
+    		}else{
+    			$parameters=array();
+    		}
+    		
+    		$is_field_required=false;
+    		if($model_array[$key]['required'] == 'on'){
+    			$is_field_required=true;
+    		}
+    		
+    		$req_off=array();
+    		if(isset($item_array['parameters']['reqoff']) && $item_array['parameters']['reqoff']!=''){
+    			$ro=$item_array['parameters']['reqoff'];
+    			list($field, $vals)=explode(':', $ro);
+    			if($field && $vals){
+    				$vals_array=explode(',', $vals);
+    				$req_off[$field]=array();
+    				foreach($vals_array as $vals1){
+    					list($start, $end)=explode('-', $vals1);
+    					if($start!==null && $end!==null){
+    						$mar=range($start, $end);
+    						if(is_array($mar)){
+    							$req_off[$field]=array_merge($req_off[$field], $mar);
+    						}
+    					}else{
+    						$req_off[$field][]=trim($vals1);
+    					}
+    				}
+    			}
+    		}
+    		//$must_req=true;
+    		if(!empty($req_off)){
+    			foreach($req_off as $field=>$vals){
+    				$cval=$model_array[$field]['value'];
+    				if(in_array($cval, $vals)){
+    					$is_field_required=false;
+    				}
+    			}
+    		}   		
+    		
+    		
     		$rules=array();
     		if(isset($item_array['parameters']['rules']) && $item_array['parameters']['rules']!=''){
     			$rules_string=$item_array['parameters']['rules'];
@@ -2322,16 +2449,20 @@ class Data_Model extends SiteBill {
     			
     			switch($rules['Type']){
     				case 'string' : {
+    					$compare_text=strip_tags($model_array[$key]['value']);
+    					$compare_text=str_replace(array("\n", "\r"), '', $compare_text);
     					if(isset($rules['MinLength']) && $rules['MinLength']!==''){
     						$min_l=(int)$rules['MinLength'];
-    						if(mb_strlen($model_array[$key]['value'], SITE_ENCODING)<$min_l){
+    						$compare_text=strip_tags($model_array[$key]['value']);
+    						$compare_text=str_replace(array("\n", "\r"), '', $compare_text);
+    						if(mb_strlen($compare_text, SITE_ENCODING)<$min_l){
     							$errors[]=sprintf(Multilanguage::_('L_ERROR_MINLENGTH'), $model_array[$key]['title'], $min_l);
     							$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_MINLENGTH'), $model_array[$key]['title'], $min_l);
     						}
     					}
     					if(isset($rules['MaxLength']) && $rules['MaxLength']!==''){
     						$max_l=(int)$rules['MaxLength'];
-    						if(mb_strlen($model_array[$key]['value'], SITE_ENCODING)>$max_l){
+    						if(mb_strlen($compare_text, SITE_ENCODING)>$max_l){
     							$errors[]=sprintf(Multilanguage::_('L_ERROR_MAXLENGTH'), $model_array[$key]['title'], $max_l);
     							$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_MAXLENGTH'), $model_array[$key]['title'], $max_l);
     						}
@@ -2345,14 +2476,14 @@ class Data_Model extends SiteBill {
     				case 'int' : {
     					
     					if($model_array[$key]['value']!=='' && !preg_match('/^[-+]?[0-9]*$/', $model_array[$key]['value'])){
-    						$errors[]='Не верный формат значения '.$model_array[$key]['title'].'. Ожидается целое число.';
-    						$error_fields[$key][]='Не верный формат значения '.$model_array[$key]['title'].'. Ожидается целое число.';
+    						$errors[]=sprintf(Multilanguage::_('L_ERROR_VALUE_FORMAT_INVALID_INT'), $model_array[$key]['title']);
+    						$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_VALUE_FORMAT_INVALID_INT'), $model_array[$key]['title']);
     					}
     					if(isset($rules['Min']) && $rules['Min']!==''){
     						$min=(int)$rules['Min'];
     						if((int)$model_array[$key]['value']!=0 && (int)$model_array[$key]['value']<$min){
-    							$errors[]='Значения поля '.$model_array[$key]['title'].' не может быть меньше '.$min;
-    							$error_fields[$key][]='Значения поля '.$model_array[$key]['title'].' не может быть меньше '.$min;
+    							$errors[]=sprintf(Multilanguage::_('L_ERROR_VALUE_CANTBE_LESS'), $model_array[$key]['title'], $min);
+    							$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_VALUE_CANTBE_LESS'), $model_array[$key]['title'], $min);
     						}
     					}
     					if(isset($rules['Max']) && $rules['Max']!==''){
@@ -2367,15 +2498,15 @@ class Data_Model extends SiteBill {
     				case 'decimal' : {
     						
     					if($model_array[$key]['value']!=='' && !preg_match('/^[-+]?[0-9]*[.]?[0-9]+$/', $model_array[$key]['value'])){
-    						$errors[]='Не верный формат значения '.$model_array[$key]['title'].'. Ожидается десятичное число.';
-    						$error_fields[$key][]='Не верный формат значения '.$model_array[$key]['title'].'. Ожидается десятичное число.';
+    						$errors[]=sprintf(Multilanguage::_('L_ERROR_VALUE_FORMAT_INVALID_DEC'), $model_array[$key]['title']);
+    						$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_VALUE_FORMAT_INVALID_DEC'), $model_array[$key]['title']);
     					}
     					if(isset($rules['Min']) && $rules['Min']!==''){
     						$min=(float)$rules['Min'];
     						//echo $min;
     						if((float)$model_array[$key]['value']!=0 && (float)$model_array[$key]['value']<$min){
-    							$errors[]='Значения поля '.$model_array[$key]['title'].' не может быть меньше '.$min;
-    							$error_fields[$key][]='Значения поля '.$model_array[$key]['title'].' не может быть меньше '.$min;
+    							$errors[]=sprintf(Multilanguage::_('L_ERROR_VALUE_CANTBE_LESS'), $model_array[$key]['title'], $min);
+    							$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_VALUE_CANTBE_LESS'), $model_array[$key]['title'], $min);
     						}
     					}
     					if(isset($rules['Max']) && $rules['Max']!==''){
@@ -2390,7 +2521,7 @@ class Data_Model extends SiteBill {
     			}
     		}
     		
-    		$req_off=array();
+    		/*$req_off=array();
     		if(isset($item_array['parameters']['reqoff']) && $item_array['parameters']['reqoff']!=''){
     			$ro=$item_array['parameters']['reqoff'];
     			list($field, $vals)=explode(':', $ro);
@@ -2418,12 +2549,12 @@ class Data_Model extends SiteBill {
     					$must_req=false;
     				}
     			}
-    		}
+    		}*/
     		
     		
             //echo "key = $key, value = ".$model_array[$key]['value'].', required = '.$model_array[$key]['required'].'<br>';
-            if ( $must_req && $model_array[$key]['type'] == 'safe_string' or $model_array[$key]['type'] == 'textarea' ) {
-                if ( $model_array[$key]['required'] == 'on' and  $model_array[$key]['value'] == ''  ) {
+            if ( $must_req && $model_array[$key]['type'] == 'safe_string' || $model_array[$key]['type'] == 'textarea' ) {
+                if ( $is_field_required && $model_array[$key]['value'] == ''  ) {
                 	//$this->riseError(sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']));
                    	$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                    	$error_fields[$key][]=Multilanguage::_('L_ERROR_FIELD_NOT_FILLED').' '.$model_array[$key]['title'];
@@ -2468,32 +2599,25 @@ class Data_Model extends SiteBill {
                 }
                 */
                 
-            } elseif( $model_array[$key]['type'] == 'email' ){
-            	if ( $must_req && $model_array[$key]['required'] == 'on' and  $model_array[$key]['value'] == ''  ) {
-            		//$this->riseError(sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']));
-                   	$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            }elseif( $model_array[$key]['type'] == 'email' ){
+            	if ( $is_field_required && $model_array[$key]['value'] == ''  ) {
+            		$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                    	$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
             	}
-            	if($model_array[$key]['value'] != '' AND !$this->validateEmailFormat($model_array[$key]['value'])){
-    				//$this->riseError(Multilanguage::_('L_ERROR_EMAIL_FORMAT_INVALID').' '.$model_array[$key]['title']);
+            	if($model_array[$key]['value'] != '' && !$this->validateEmailFormat($model_array[$key]['value'])){
     				$errors[]=Multilanguage::_('L_ERROR_EMAIL_FORMAT_INVALID').' '.$model_array[$key]['title'];
     				$error_fields[$key][]=Multilanguage::_('L_ERROR_EMAIL_FORMAT_INVALID').' '.$model_array[$key]['title'];
-                    //return false;
-    			}
+                }
             } elseif( $model_array[$key]['type'] == 'mobilephone' ){
-            	if ( $model_array[$key]['required'] == 'on' and  $model_array[$key]['value'] == ''  ) {
+            	if ( $is_field_required && $model_array[$key]['value'] == ''  ) {
             		if($must_req){
             			$this->riseError(sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']));
             			$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
             			$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
             		}
-            		//echo "key = $key, value = ".$model_array[$key]['value'].', required = '.$model_array[$key]['required'].'<br>';
-            		
-            		//return false;
             	}
-            	// print_r($model_array[$key]['parameters']);
-            	if(isset($model_array[$key]['parameters']['mask'])){
-            		$mask=$model_array[$key]['parameters']['mask'];
+            	if(isset($parameters['mask'])){
+            		$mask=$parameters['mask'];
             		$mask=preg_replace('/[^h\d]/', '', $mask);
             		if($mask!=''){
             			$mask=str_replace('h', '\d', $mask);
@@ -2504,25 +2628,21 @@ class Data_Model extends SiteBill {
             		$mask='';
             	}
             	
-            	if(($model_array[$key]['value']!='') AND (!$this->validateMobilePhoneNumberFormat($model_array[$key]['value'], $mask))){
-            		//$this->riseError(Multilanguage::_('L_ERROR_PHONE_FORMAT_INVALID').' '.$model_array[$key]['title']);
+            	if(($model_array[$key]['value']!='') && (!$this->validateMobilePhoneNumberFormat($model_array[$key]['value'], $mask))){
             		$errors[]=Multilanguage::_('L_ERROR_PHONE_FORMAT_INVALID').' '.$model_array[$key]['title'];
             		$error_fields[$key][]=Multilanguage::_('L_ERROR_PHONE_FORMAT_INVALID').' '.$model_array[$key]['title'];
-            		//return false;
             	}
             	
             	
             	
             } elseif($model_array[$key]['type'] == 'select_box_structure_simple_multiple') {
-            	if ( $must_req && $model_array[$key]['required'] == 'on' &&  count($model_array[$key]['values_array']) == 0  ) {
-            		//$this->riseError(sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']));
-                   	$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            	if ( $is_field_required && count($model_array[$key]['values_array']) == 0  ) {
+            		$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                    	$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                 }
             } elseif($model_array[$key]['type'] == 'select_by_query_multiple') {
-            	if ( $must_req && $model_array[$key]['required'] == 'on' &&  count($model_array[$key]['values_array']) == 0  ) {
-            		//$this->riseError(sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']));
-                   	$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            	if ( $is_field_required && count($model_array[$key]['values_array']) == 0  ) {
+            		$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                    	$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                 }
             } /*elseif($model_array[$key]['type'] == 'datetime'){
@@ -2532,44 +2652,97 @@ class Data_Model extends SiteBill {
             		$errors[]=Multilanguage::_('L_ERROR_FIELD_NOT_FILLED').' '.$model_array[$key]['title'];
             	}
             } */elseif($model_array[$key]['type'] == 'dtdatetime'){
-            	if ( $must_req && $model_array[$key]['required'] == 'on' && $model_array[$key]['value']!=='' && !Sitebill_Datetime::checkDTDatetime($model_array[$key]['value'], $model_array[$key]['parameters'])) {
+            	if ( $is_field_required && $model_array[$key]['value']!=='' && !Sitebill_Datetime::checkDTDatetime($model_array[$key]['value'], $model_array[$key]['parameters'])) {
             		$errors[]='Invalid date format on field '.$model_array[$key]['title'];
-            	}elseif($must_req && $model_array[$key]['required'] == 'on' && $model_array[$key]['value']===''){
+            	}elseif($is_field_required && $model_array[$key]['value']===''){
             		$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
             		$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
             	}
-            } elseif($model_array[$key]['type'] == 'dtdate'){
-            	if ( $must_req && $model_array[$key]['required'] == 'on' && $model_array[$key]['value']!=='' && !Sitebill_Datetime::checkDTDatetime($model_array[$key]['value'], $model_array[$key]['parameters'])) {
+            }elseif($model_array[$key]['type'] == 'dtdate'){
+            	if ( $is_field_required && $model_array[$key]['value']!=='' && !Sitebill_Datetime::checkDTDatetime($model_array[$key]['value'], $model_array[$key]['parameters'])) {
             		$errors[]='Invalid date format on field '.$model_array[$key]['title'];
-            	}elseif($must_req && $model_array[$key]['required'] == 'on' && $model_array[$key]['value']===''){
+            	}elseif($is_field_required && $model_array[$key]['value']===''){
             		$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
             		$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
             	}
-            } elseif($model_array[$key]['type'] == 'dttime'){
-            	if ( $must_req && $model_array[$key]['required'] == 'on' && $model_array[$key]['value']!=='' && !Sitebill_Datetime::checkDTTime($model_array[$key]['value'], $model_array[$key]['parameters'])) {
+            }elseif($model_array[$key]['type'] == 'dttime'){
+            	if ( $is_field_required && $model_array[$key]['value']!=='' && !Sitebill_Datetime::checkDTTime($model_array[$key]['value'], $model_array[$key]['parameters'])) {
             		$errors[]='Invalid date format on field '.$model_array[$key]['title'];
-            	}elseif($must_req && $model_array[$key]['required'] == 'on' && $model_array[$key]['value']===''){
+            	}elseif($is_field_required && $model_array[$key]['value']===''){
             		$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
             		$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
             	}
-            }else {
-            	//echo "key = $key, value = ".$model_array[$key]['value'].', required = '.$model_array[$key]['required'].'<br>';
-                if ( $must_req && $model_array[$key]['required'] == 'on' ) {
+            }/*elseif($model_array[$key]['type'] == 'select_by_query'){
+            	
+            	$new_check=false;
+            	if(0==intval($this->getConfigValue('apps.realty.off_system_ajax')) && !(isset($parameters['autocomplete']) && $parameters['autocomplete']==1)){
+            		$new_check=true;
+            	}
+            	
+            	if($new_check){
+            		$vars=array();
+            		$DBC=DBC::getInstance();
+            		$query=$model_array[$key]['query'];
+            		$stmt=$DBC->query($query);
+            		if($stmt){
+            			while($ar=$DBC->fetch($stmt)){
+            				$vars[]=$ar[$model_array[$key]['primary_key_name']];
+            			}
+            		}
+            		if ( $is_field_required && !empty($vars) ) {
+            			if(!is_array($model_array[$key]['value'])){
+            				if(!preg_match('/.+/', $model_array[$key]['value']) || preg_match('/^[0]$/', $model_array[$key]['value'])){
+            					$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            					$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            				}
+            			}elseif(empty($model_array[$key]['value'])){
+            				$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            				$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            			}else{
+            				$values=$model_array[$key]['value'];
+            				foreach($values as $value){
+            					if(!preg_match('/.+/', $value) || preg_match('/^[0]$/', $value)){
+            						$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            						$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            					}
+            				}
+            			}
+            		}
+            	}else{
+            		if ( $is_field_required ) {
+            			if(!is_array($model_array[$key]['value'])){
+            				if(!preg_match('/.+/', $model_array[$key]['value']) || preg_match('/^[0]$/', $model_array[$key]['value'])){
+            					$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            					$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            				}
+            			}elseif(empty($model_array[$key]['value'])){
+            				$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            				$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            			}else{
+            				$values=$model_array[$key]['value'];
+            				foreach($values as $value){
+            					if(!preg_match('/.+/', $value) || preg_match('/^[0]$/', $value)){
+            						$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            						$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
+            					}
+            				}
+            			}
+            		}
+            	}
+            }*/else {
+            	if ( $is_field_required ) {
                     if(!is_array($model_array[$key]['value'])){
                     	if(!preg_match('/.+/', $model_array[$key]['value']) || preg_match('/^[0]$/', $model_array[$key]['value'])){
-                    		//$this->riseError(sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']));
                     		$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                     		$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                     	}
                     }elseif(empty($model_array[$key]['value'])){
-                    	//$this->riseError(sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']));
                     	$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                     	$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                     }else{
                     	$values=$model_array[$key]['value'];
                     	foreach($values as $value){
                     		if(!preg_match('/.+/', $value) || preg_match('/^[0]$/', $value)){
-                    			$this->riseError(sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']));
                     			$errors[]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                     			$error_fields[$key][]=sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                     		}
@@ -3967,7 +4140,7 @@ class Data_Model extends SiteBill {
 		
 		$form_data['data']['active']['name'] = 'active';
 		$form_data['data']['active']['title'] = 'Публиковать на сайте';
-		$form_data['data']['active']['value'] = 0;
+		$form_data['data']['active']['value'] = 1;
 		$form_data['data']['active']['length'] = 40;
 		$form_data['data']['active']['type'] = 'checkbox';
 		$form_data['data']['active']['required'] = 'off';
@@ -4064,8 +4237,8 @@ class Data_Model extends SiteBill {
 		    $form_data['data']['region_id']['type'] = 'select_by_query';
 		    $form_data['data']['region_id']['query'] = 'select * from '.DB_PREFIX.'_region order by name';
 
-		    if ( $this->getRequestValue('country_id') != 0 and $this->getRequestValue('country_id') != '' ) {
-		        $form_data['data']['region_id']['query'] = 'select * from '.DB_PREFIX.'_region where country_id='.$this->getRequestValue('country_id').' order by name';
+		    if ( intval($this->getRequestValue('country_id')) != 0/* and $this->getRequestValue('country_id') != '' */) {
+		        $form_data['data']['region_id']['query'] = 'select * from '.DB_PREFIX.'_region where country_id='.intval($this->getRequestValue('country_id')).' order by name';
 		    }
 		    
 		    $form_data['data']['region_id']['value_name'] = 'name';
@@ -4103,8 +4276,8 @@ class Data_Model extends SiteBill {
 		    $form_data['data']['city_id']['length'] = 40;
 		    $form_data['data']['city_id']['type'] = 'select_by_query';
 		    $form_data['data']['city_id']['query'] = 'select * from '.DB_PREFIX.'_city order by name';
-		    if ( $this->getRequestValue('region_id') != 0 and $this->getRequestValue('region_id') != '' ) {
-		        $form_data['data']['city_id']['query'] = 'select * from '.DB_PREFIX.'_city where region_id='.$this->getRequestValue('region_id').' order by name';
+		    if ( intval($this->getRequestValue('region_id')) != 0/* and $this->getRequestValue('region_id') != '' */) {
+		        $form_data['data']['city_id']['query'] = 'select * from '.DB_PREFIX.'_city where region_id='.intval($this->getRequestValue('region_id')).' order by name';
 		    }
 		    $form_data['data']['city_id']['value_name'] = 'name';
 		    if ( $this->getConfigValue('theme') == 'kgs' ) {
@@ -4115,6 +4288,7 @@ class Data_Model extends SiteBill {
 		    $form_data['data']['city_id']['value_default'] = 0;
 		    $form_data['data']['city_id']['required'] = 'off';
 		    $form_data['data']['city_id']['unique'] = 'off';
+		    $form_data['data']['city_id']['parameters']['autocomplete'] = 1;
 		    if ( $ajax ) {
 		        if ( $this->getConfigValue('apps.realty.ajax_metro_refresh') ) {
 		            $form_data['data']['city_id']['onchange'] .= ' update_child_list(\'metro_id\', this); ';     
@@ -4152,8 +4326,8 @@ class Data_Model extends SiteBill {
 		    $form_data['data']['metro_id']['length'] = 40;
 		    $form_data['data']['metro_id']['type'] = 'select_by_query';
 		    $form_data['data']['metro_id']['query'] = 'select * from '.DB_PREFIX.'_metro order by name';
-		    if ( $this->getRequestValue('city_id') != 0 and $this->getRequestValue('city_id') != '' ) {
-		        $form_data['data']['metro_id']['query'] = 'select * from '.DB_PREFIX.'_metro where city_id='.$this->getRequestValue('city_id').' order by name';
+		    if ( intval($this->getRequestValue('city_id')) != 0/* and $this->getRequestValue('city_id') != '' */) {
+		        $form_data['data']['metro_id']['query'] = 'select * from '.DB_PREFIX.'_metro where city_id='.intval($this->getRequestValue('city_id')).' order by name';
 		    }
 		
 		    $form_data['data']['metro_id']['value_name'] = 'name';
@@ -4161,6 +4335,9 @@ class Data_Model extends SiteBill {
 		    $form_data['data']['metro_id']['value_default'] = 0;
 		    $form_data['data']['metro_id']['required'] = 'off';
 		    $form_data['data']['metro_id']['unique'] = 'off';
+		    $form_data['data']['metro_id']['parameters']['autocomplete'] = 1;
+		    
+		    
 		//}
 		
 		//if ( $this->getConfigValue('district_in_form') ) {
@@ -4173,14 +4350,17 @@ class Data_Model extends SiteBill {
 		    $form_data['data']['district_id']['length'] = 40;
 		    $form_data['data']['district_id']['type'] = 'select_by_query';
 		    $form_data['data']['district_id']['query'] = 'select * from '.DB_PREFIX.'_district order by name';
-		    if ( $this->getRequestValue('city_id') != 0 and $this->getRequestValue('city_id') != '' ) {
-		        $form_data['data']['district_id']['query'] = 'select * from '.DB_PREFIX.'_district where city_id='.$this->getRequestValue('city_id').' order by name';
+		    if ( intval($this->getRequestValue('city_id')) != 0/* and $this->getRequestValue('city_id') != '' */) {
+		        $form_data['data']['district_id']['query'] = 'select * from '.DB_PREFIX.'_district where city_id='.intval($this->getRequestValue('city_id')).' order by name';
 		    }
 		    $form_data['data']['district_id']['value_name'] = 'name';
 		    $form_data['data']['district_id']['title_default'] = Multilanguage::_('L_CHOOSE_DISTRICT');
 		    $form_data['data']['district_id']['value_default'] = 0;
 		    $form_data['data']['district_id']['required'] = 'off';
 		    $form_data['data']['district_id']['unique'] = 'off';
+		    $form_data['data']['district_id']['parameters']['autocomplete'] = 1;
+		    
+		    
 		    if ( $ajax ) {
 		        if ( $this->getConfigValue('apps.realty.ajax_street_refresh') ) {
 		        	 if($this->getConfigValue('link_street_to_city')){
@@ -4204,12 +4384,12 @@ class Data_Model extends SiteBill {
 		    $form_data['data']['street_id']['length'] = 40;
 		    $form_data['data']['street_id']['type'] = 'select_by_query';
 		    $form_data['data']['street_id']['query'] = 'select * from '.DB_PREFIX.'_street order by name';
-		    if ( $this->getRequestValue('district_id') != 0 and $this->getRequestValue('district_id') != '' ) {
-		        $form_data['data']['street_id']['query'] = 'select * from '.DB_PREFIX.'_street where district_id='.$this->getRequestValue('district_id').' order by name';
+		    if ( intval($this->getRequestValue('district_id')) != 0/* and $this->getRequestValue('district_id') != '' */) {
+		        $form_data['data']['street_id']['query'] = 'select * from '.DB_PREFIX.'_street where district_id='.intval($this->getRequestValue('district_id')).' order by name';
 		    }
 		    if($this->getConfigValue('link_street_to_city')){
-			    if ( $this->getRequestValue('city_id') != 0 and $this->getRequestValue('city_id') != '' ) {
-			        $form_data['data']['street_id']['query'] = 'select * from '.DB_PREFIX.'_street where city_id='.$this->getRequestValue('city_id').' order by name';
+			    if ( intval($this->getRequestValue('city_id')) != 0/* and $this->getRequestValue('city_id') != '' */) {
+			        $form_data['data']['street_id']['query'] = 'select * from '.DB_PREFIX.'_street where city_id='.intval($this->getRequestValue('city_id')).' order by name';
 			    }
 		    }
 			
@@ -4218,6 +4398,8 @@ class Data_Model extends SiteBill {
 		    $form_data['data']['street_id']['value_default'] = 0;
 		    $form_data['data']['street_id']['required'] = 'off';
 		    $form_data['data']['street_id']['unique'] = 'off';
+		    $form_data['data']['street_id']['parameters']['autocomplete'] = 1;
+		    
 		    
 		    if ( $this->getConfigValue('user_add_street_enable') ) {
 		    	$form_data['data']['new_street']['name'] = 'new_street';
@@ -4480,7 +4662,7 @@ class Data_Model extends SiteBill {
 		$form_data['data']['image']['required'] = 'off';
 		$form_data['data']['image']['unique'] = 'off';
 		
-		if ( $this->getConfigValue('apps.realtypro.youtube') ) {
+		//if ( $this->getConfigValue('apps.realtypro.youtube') ) {
 			$form_data['data']['youtube']['name'] = 'youtube';
 			$form_data['data']['youtube']['title'] = 'Видео';
 			$form_data['data']['youtube']['value'] = '';
@@ -4488,7 +4670,7 @@ class Data_Model extends SiteBill {
 			$form_data['data']['youtube']['type'] = 'safe_string';
 			$form_data['data']['youtube']['required'] = 'off';
 			$form_data['data']['youtube']['unique'] = 'off';
-		}
+		//}
 		
 		$form_data['data']['fio']['name'] = 'fio';
 		$form_data['data']['fio']['title'] = 'Ваше имя';

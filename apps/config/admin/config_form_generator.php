@@ -18,7 +18,7 @@ class Config_Form_Generator extends Form_Generator {
 
 	$string = '';
 	$string .= '<div class="control-group">';
-	$string .= '<label class="control-label">' . $item_array['title'] . ($item_array['required'] == "on" ? '<span style=\"color: red;\">*</span>' : '') . ($item_array['hint'] != '' ? ' <span class="help-block">(' . $item_array['hint'] . ')</span>' : '') . '</label>';
+	$string .= '<label class="control-label">' . $item_array['title'] . (isset($item_array['required']) && $item_array['required'] == "on" ? '<span style=\"color: red;\">*</span>' : '') . ($item_array['hint'] != '' ? ' <span class="help-block">(' . $item_array['hint'] . ')</span>' : '') . '</label>';
 	//$string .= '<span class="help-block">'.$item_array['hint'].'</span>';
 	$string .= '<div class="controls">';
 	$string .= '<input type="text" name="conf_param_value[' . $item_array['name'] . ']" id="' . $item_array['name'] . '" placeholder="' . htmlspecialchars(strip_tags($item_array['title']), ENT_QUOTES, SITE_ENCODING) . '" value="' . htmlspecialchars($item_array['value'], ENT_QUOTES, SITE_ENCODING) . '" />';
@@ -32,16 +32,16 @@ class Config_Form_Generator extends Form_Generator {
     function get_textarea_row($item_array) {
 
 	$string = '';
-	if ($item_array['rows'] == '') {
+	if (!isset($item_array['rows']) || $item_array['rows'] == '') {
 	    $item_array['rows'] = 10;
 	}
 
-	if ($item_array['cols'] == '') {
+	if (!isset($item_array['cols']) || $item_array['cols'] == '') {
 	    $item_array['cols'] = 50;
 	}
 
 	$string .= '<div class="control-group">';
-	$string .= '<label class="control-label">' . $item_array['title'] . ($item_array['required'] == "on" ? '<span style=\"color: red;\">*</span>' : '') . ($item_array['hint'] != '' ? ' <span class="help-block">(' . $item_array['hint'] . ')</span>' : '') . '</label>';
+	$string .= '<label class="control-label">' . $item_array['title'] . (isset($item_array['required']) && $item_array['required'] == "on" ? '<span style=\"color: red;\">*</span>' : '') . ($item_array['hint'] != '' ? ' <span class="help-block">(' . $item_array['hint'] . ')</span>' : '') . '</label>';
 	$string .= '<div class="controls">';
 	$string .= '<textarea name="conf_param_value[' . $item_array['name'] . ']" id="' . $item_array['name'] . '" rows="' . $item_array['rows'] . '" cols="' . $item_array['cols'] . '" >' . $item_array['value'] . '</textarea>';
 	$string .= '</div>';
@@ -67,7 +67,7 @@ class Config_Form_Generator extends Form_Generator {
 
 	$string = '';
 	$string .= '<div class="control-group">';
-	$string .= '<label class="control-label">' . $item_array['title'] . ($item_array['required'] == "on" ? '<span style=\"color: red;\">*</span>' : '') . ($item_array['hint'] != '' ? ' <span class="help-block">(' . $item_array['hint'] . ')</span>' : '') . '</label>';
+	$string .= '<label class="control-label">' . $item_array['title'] . (isset($item_array['required']) && $item_array['required'] == "on" ? '<span style=\"color: red;\">*</span>' : '') . ($item_array['hint'] != '' ? ' <span class="help-block">(' . $item_array['hint'] . ')</span>' : '') . '</label>';
 	//$string .= '<span class="help-block">'.$item_array['hint'].'</span>';
 	$string .= '<div class="controls">';
 	$string .= '<select name="conf_param_value[' . $item_array['name'] . ']">';
@@ -105,7 +105,7 @@ class Config_Form_Generator extends Form_Generator {
 
 	$string = '';
 	$string .= '<div class="control-group">';
-	$string .= '<label class="control-label">' . $item_array['title'] . ($item_array['required'] == "on" ? '<span style=\"color: red;\">*</span>' : '') . ($item_array['hint'] != '' ? ' <span class="help-block">(' . $item_array['hint'] . ')</span>' : '') . '</label>';
+	$string .= '<label class="control-label">' . $item_array['title'] . (isset($item_array['required']) && $item_array['required'] == "on" ? '<span style=\"color: red;\">*</span>' : '') . ($item_array['hint'] != '' ? ' <span class="help-block">(' . $item_array['hint'] . ')</span>' : '') . '</label>';
 	//$string .= '<span class="help-block">'.$item_array['hint'].'</span>';
 	$string .= '<div class="controls">';
 	$string .= '<input type="checkbox" name="conf_param_value[' . $item_array['name'] . ']" value="0" checked="checked" style="display:none;" />';

@@ -17,3 +17,14 @@ body {
     cursor: pointer;
 }
 
+editable {
+    display: inline-block;
+    padding-left: 1px;
+    padding-right: 1px;
+    min-width: 3px;
+    border: 1px dotted green;
+}
+editable:hover {
+    background-color: #f8ae63;
+    border: 1px dashed green;
+}

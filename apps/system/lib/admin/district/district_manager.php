@@ -62,9 +62,9 @@ class District_Manager extends Object_Manager {
      */
     function load ( $record_id ) {
     	$DBC=DBC::getInstance();
-        $query = "select * from re_district where id=$record_id";
+        $query = 'SELECT * FROM '.DB_PREFIX.'_district WHERE id=?';
         //echo $query;
-        $stmt=$DBC->query($query);
+        $stmt=$DBC->query($query, array($record_id));
         $ar=array();
         if($stmt){
         	$ar=$DBC->fetch($stmt);

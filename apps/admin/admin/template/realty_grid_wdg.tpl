@@ -352,8 +352,15 @@ $(document).ready(function(){
 		<td>{$grid_items[i][$grid_data_column].value_string}</td>
 		{/if}
 	{/foreach}
+        
 	{if $admin !=''}
 			<td nowrap>
+                            
+                            {if $data_adv_share_access_can_view_all and $grid_items[i].user_id.value != $data_adv_share_access_user_id}
+                                {*Если у нас включена опция data_adv_share_access и мы включили опцию data_adv_share_access_can_view_all и при этом 
+                                идентификатор пользователя текущего объявления в генерации грида отличается от пользователя админки, то прячем контролы
+                                *}
+                                {else}
 		{if isset($show_up_icon) && $show_up_icon}
 		
 		<a class="btn btn-warning go_up" alt="{$grid_items[i].id.value}" href="#grow_up"><i class="icon-white icon-circle-arrow-up"></i></a>
@@ -394,6 +401,7 @@ $(document).ready(function(){
 				{/if}
 			
 			{/if}
+                        {/if}
 			
 			</td>
 			{/if}

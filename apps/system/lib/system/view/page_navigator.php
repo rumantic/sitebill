@@ -49,7 +49,7 @@ class Page_Navigator {
 		if($current_page==1){
 			$first_page_navigation.='&laquo;&laquo; '.Multilanguage::_('L_TO_START');
 			$fpn['text']='&laquo;&laquo;';
-			$fpn['href']='';
+			$fpn['href']=$requestdata['url'].'?page=1';
 		}else{
 			$first_page_navigation.='<a href="'.$requestdata['url'].($requestdata['params']? '?'.$requestdata['params'] : '').'" title="'.Multilanguage::_('L_TO_START').'">&laquo;&laquo; '.Multilanguage::_('L_TO_START').'</a>';
 			$fpn['text']='&laquo;&laquo;';
@@ -246,7 +246,7 @@ class Page_Navigator {
 		
 		//print_r($pager_params);
 		unset($pager_params['page']);
-		$pairs=array();
+		/*$pairs=array();
 		if(count($pager_params)>0){
 			foreach ( $pager_params as $key => $value ) {
 				if(is_array($value)){
@@ -266,9 +266,14 @@ class Page_Navigator {
 			$pager_params_string=implode('&', $pairs);
 		}else{
 			$pager_params_string='';
+		}*/
+		
+		if(!empty($pager_params)){
+			$pager_params_string=urldecode(http_build_query($pager_params));
+		}else{
+			$pager_params_string='';
 		}
-		//echo $pager_params_string;
-		//$this->initSettings($settings);
+
 		$pages_count=ceil($total_records/$per_page);
 		
 		$ret=array();
@@ -285,7 +290,7 @@ class Page_Navigator {
 		if($current_page==1){
 			//$first_page_navigation.='&laquo;&laquo; '.Multilanguage::_('L_TO_START');
 			$fpn['text']='&laquo;&laquo;';
-			$fpn['href']='';
+			$fpn['href']=$url.'page=1'.($pager_params_string!='' ? '&'.$pager_params_string : '');
 		}else{
 			//$first_page_navigation.='<a href="'.$url.'page=1'.($pager_params_string!='' ? '&'.$pager_params_string : '').'" title="'.Multilanguage::_('L_TO_START').'">&laquo;&laquo; '.Multilanguage::_('L_TO_START').'</a>';
 			$fpn['text']='&laquo;&laquo;';

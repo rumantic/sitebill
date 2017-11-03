@@ -60,6 +60,10 @@ class seo_admin extends Object_Manager {
         	$config_admin->addParamToConfig('apps.seo.no_city_url', 0, 'Не перехватывать алиасы городов', 1);
         }
         
+        if ( !$config_admin->check_config_item('apps.seo.no_metro_url') ) {
+        	$config_admin->addParamToConfig('apps.seo.no_metro_url', 1, 'Не перехватывать алиасы станций метро', 1);
+        }
+        
         if ( !$config_admin->check_config_item('apps.seo.no_trailing_slashes') ) {
         	$config_admin->addParamToConfig('apps.seo.no_trailing_slashes', 0, 'Не использовать концевые слеши', 1);
         }
@@ -67,6 +71,18 @@ class seo_admin extends Object_Manager {
         if ( !$config_admin->check_config_item('apps.seo.realty_alias') ) {
         	$config_admin->addParamToConfig('apps.seo.realty_alias', 'realty', 'Подстановочная часть стандартного алиаса объявления');
         }
+        
+        /*if ( !$config_admin->check_config_item('apps.seo.user_alias') ) {
+        	$config_admin->addParamToConfig('apps.seo.user_alias', 'user', 'Подстановочная часть стандартного алиаса пользователя');
+        }
+        
+        if ( !$config_admin->check_config_item('apps.seo.user_html_end') ) {
+        	$config_admin->addParamToConfig('apps.seo.user_html_end', 1, 'Включить .html постфиксы в конце URL пользователя', 1);
+        }
+        
+        if ( !$config_admin->check_config_item('apps.seo.user_slash_divider') ) {
+        	$config_admin->addParamToConfig('apps.seo.user_slash_divider', 0, 'Использовать разделитель-слеш после подстановочной части URL пользователя', 1);
+        }*/
     }
     
 	function main(){

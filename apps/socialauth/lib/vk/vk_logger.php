@@ -19,7 +19,7 @@ class Vk_Logger extends Common_Logger {
 		$this->config=array(
 		'VK_APP_ID'             => $Config->getConfigValue('apps.socialauth.vk.api_key'), // ID приложения
 		'VK_APP_SECRET'         => $Config->getConfigValue('apps.socialauth.vk.secret'), // Защищенный ключ
-		'REDIRECT_URI'          => $Config->getConfigValue('apps.socialauth.vk.redirect_url'),
+		'REDIRECT_URI'          => (1===(int)$Config->getConfigValue('work_on_https') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/socialauth/login?do=login_vk',
 		'DISPLAY'               => 'popup', // page OR popup OR touch OR wap
 		'SCOPE'                 => array(
 				//'notify', // Пользователь разрешил отправлять ему уведомления.
@@ -80,7 +80,7 @@ class Vk_Logger extends Common_Logger {
 			{
 				throw new Exception('Ошибка получения Access Token Error: '.$result->error.' , Description: '.$result->error_description);
 			}else{                
-				$sRequest = "https://api.vk.com/method/users.get?uids=".$result->user_id."&access_token=".$result->access_token."&fields=has_mobile";
+				$sRequest = "https://api.vk.com/method/users.get?uids=".$result->user_id."&access_token=".$result->access_token."&fields=has_mobile,photo_400_orig,contacts,personal";
 				$ch = curl_init();
 		
 				curl_setopt($ch, CURLOPT_URL, $sRequest);
@@ -89,8 +89,9 @@ class Vk_Logger extends Common_Logger {
 				curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
 		
 				$json = curl_exec($ch);
-		
+		//echo curl_error($ch);
 				curl_close($ch);
+				//echo $sRequest;
 				//print_r($json);
 				$oResponce = json_decode($json);
 				
@@ -99,10 +100,21 @@ class Vk_Logger extends Common_Logger {
 				}else{
 					$result=$oResponce->response[0];
 					$_login='vk'.$result->uid;
-					$_pass=$_login.$Config->getConfigValue('apps.socialauth.salt');
+					$_pass=$_pass=Sitebill::genPassword();
 					$email = $_login.'@vk.com'; 
-					$_pass_md5=md5($_pass);
-					$this->authUser($_login, $_pass, SiteBill::iconv('utf-8', SITE_ENCODING, $result->first_name.' '.$result->last_name), $email);
+					//$_pass_md5=md5($_pass);
+					
+					$ssInfo['ssType']='vk';
+					$ssInfo['id']=$result->uid;
+					$ssInfo['email']=$result->email;
+					$ssInfo['name']=$result->first_name.' '.$result->last_name;
+					//$ssInfo['link']=$userInfo->link;
+					$ssInfo['picture']=$userInfo->photo_400_orig;
+					$ssInfo['_email']='vk'.$result->uid.'@vk.com';
+					$ssInfo['_login']='vk'.$result->uid;
+					$ssInfo['_pass']=$_pass;
+					$_SESSION['ssAuthData']=$ssInfo;
+					//$this->authUser($_login, $_pass, SiteBill::iconv('utf-8', SITE_ENCODING, $result->first_name.' '.$result->last_name), $email);
 					return true;
 				}
 			}

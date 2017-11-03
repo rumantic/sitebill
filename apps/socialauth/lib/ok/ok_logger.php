@@ -14,12 +14,12 @@ class Ok_Logger extends Common_Logger {
 	private function configure(){
 		require_once (SITEBILL_DOCUMENT_ROOT.'/apps/config/admin/admin.php');
 		$Config = new config_admin();
-		
+		//$Config->getServerFullUrl()
 		$this->config=array(
 			'CLIENT_ID'		=>	$Config->getConfigValue('apps.socialauth.ok.client_id'),
 			'PUBLIC_KEY'	=>	$Config->getConfigValue('apps.socialauth.ok.public_key'),
 			'RESPONSE_TYPE' =>	'code',
-			'REDIRECT_URI'	=>	'http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/socialauth/login?do=login_ok',
+			'REDIRECT_URI'	=>	(1===(int)$Config->getConfigValue('work_on_https') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/socialauth/login?do=login_ok',
 			'CLIENT_SECRET'	=>	$Config->getConfigValue('apps.socialauth.ok.client_secret'),
 			'GRANT_TYPE'	=>	'authorization_code',
 			'TOKEN_URL'		=>	'http://api.odnoklassniki.ru/oauth/token.do',
@@ -66,7 +66,7 @@ class Ok_Logger extends Common_Logger {
 			//print_r($result);
 			
 			if (isset($result['access_token']) && isset($this->config['PUBLIC_KEY'])) {
-				$sign = md5('application_key='.$this->config['PUBLIC_KEY'].'format=jsonmethod=users.getCurrentUser' . md5($result['access_token'].$this->config['CLIENT_SECRET']));
+				$sign = md5('application_key='.$this->config['PUBLIC_KEY'].'fields=uid,name,email,pic_4format=jsonmethod=users.getCurrentUser' . md5($result['access_token'].$this->config['CLIENT_SECRET']));
 			
 				$params = array(
 						'method'          => 'users.getCurrentUser',
@@ -75,16 +75,37 @@ class Ok_Logger extends Common_Logger {
 						'format'          => 'json',
 						'sig'             => $sign
 				);
+				$params['fields']='uid,name,email,pic_4';
 				
 				$url = $this->config['DATA_URL'];
 				$oResponce = json_decode(file_get_contents($url.'?'. urldecode(http_build_query($params))));
 				if($oResponce->uid!==null){
+					
 					$result=$oResponce;
-					$_login='ok'.$result->uid;
-					$_pass=$_login.$Config->getConfigValue('apps.socialauth.salt');
+					$_login='ok'.$oResponce->uid;
+					$_pass=$_pass=Sitebill::genPassword();
 					$email = $_login.'@ok.com';
-					$_pass_md5=md5($_pass);
-					$this->authUser($_login, $_pass, SiteBill::iconv('utf-8', SITE_ENCODING, $result->name), $email);
+					/*if(!isset($oResponce->email) || $oResponce->email==''){
+						$email = $_login.'@ok.com';
+					}else{
+						$email = $userInfo->email;
+					}*/
+					//$_pass_md5=md5($_pass);
+					$ssInfo['ssType']='ok';
+					$ssInfo['id']=$oResponce->uid;
+					$ssInfo['email']='';
+					if(isset($oResponce->email)){
+						$ssInfo['email']=$oResponce->email;
+					}
+					
+					$ssInfo['name']=$oResponce->name;
+					//$ssInfo['link']=$userInfo->link;
+					$ssInfo['picture']=$userInfo->pic_4;
+					$ssInfo['_email']='ok'.$oResponce->uid.'@ok.com';
+					$ssInfo['_login']='ok'.$oResponce->uid;
+					$ssInfo['_pass']=$_pass;
+					$_SESSION['ssAuthData']=$ssInfo;
+					//$this->authUser($_login, $_pass, SiteBill::iconv('utf-8', SITE_ENCODING, $result->name), $email);
 					return true;
 				}else{
 					return false;
@@ -93,12 +114,6 @@ class Ok_Logger extends Common_Logger {
 			}else{
 				return false;
 			}
-			
-			
-			//echo($json);
-		         
-			
-		        
 		}else{
 			$answer=$this->getLoginLink();
 		}

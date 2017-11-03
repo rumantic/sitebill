@@ -84,6 +84,16 @@ if(isset($_GET['run_debug'])){
 */
 //require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_application.php');
 
+/*$_SESSION['csrftoken'] = md5(uniqid(mt_rand() . microtime()));
+if($_SESSION['csrfsecret']==''){
+	$_SESSION['csrfsecret']=md5(uniqid(mt_rand() . microtime()));
+}*/
+
+/*
+$salt=substr(md5(time().rand(100,999)), 0, 6);
+$token = $salt.":".MD5($salt.":".$_SESSION['skey']);
+setcookie('CSRF-TOKEN', $token, time()+3600, '/', Sitebill::$_cookiedomain);*/
+
 
 require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/debugger.class.php';
 require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/logger.class.php';
@@ -191,7 +201,7 @@ class SiteBill {
     	$this->template->assign('estate_folder', SITEBILL_MAIN_URL);
     	$this->template->assign('bootstrap_version', trim($this->getConfigValue('bootstrap_version')));
     
-    	$params_str.='var SitebillVars={};';
+    	$params_str='var SitebillVars={};';
     	$params_str.='SitebillVars.resInc=\''.SITEBILL_MAIN_URL.'\';';
     	$params_str.='SitebillVars.linkPath=\''.SITEBILL_MAIN_URL.'\';';
     	$params_str.='SitebillVars.ajaxPath=\''.SITEBILL_MAIN_URL.'/js/ajax.php\';';
@@ -217,14 +227,32 @@ class SiteBill {
     	}else{
     		$this->template->assign('ADMIN_NO_NANOAPI', '0');
     	}
-   
+    	if(1==$this->getConfigValue('use_google_map')){
+    		$this->template->assert('map_type', 'google');
+    	}else{
+    		$this->template->assert('map_type', 'yandex');
+    	}
+    	//global $smarty;
+    	/*$H=new Url_Helper();
+    	
+    	$H::setEndSlashes(!$this->getConfigValue('apps.seo.no_trailing_slashes'));
+    	$this->template->assert('Helpers', $H);*/
+    	//$smarty->assign('z', new Url_Helper());
     	$this->template->assert('estate_folder', SITEBILL_MAIN_URL);
     	self::setLangSession();
     	
     	require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/db/mysql_db_emulator.php';
     	$this->db = new Mysql_DB_Emulator();
+	$this->load_hooks();
     	
     }
+    
+    function load_hooks () {
+    	if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/hooks'.'/hooks.php') ) {
+	    include_once (SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/hooks'.'/hooks.php');
+	}
+    }
+    
     
     public static function genPassword($len=8){
 		$array=array('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','0','1','2','3','4','5','6','7','8','9','@','#','%','&','?','!');
@@ -337,7 +365,7 @@ class SiteBill {
     /*
      * return nonslashed full net url
      */
-    protected function getServerFullUrl($domain_only=false){
+    public function getServerFullUrl($domain_only=false){
     	return (1===(int)$this->getConfigValue('work_on_https') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].(!$domain_only ? SITEBILL_MAIN_URL : '');
     }
     
@@ -370,7 +398,7 @@ class SiteBill {
     			require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$SConf->getConfigValue('theme').self::$localSettings['RealtyView']['path'];
     			$gcname=self::$localSettings['RealtyView']['name'];
     			self::$_realty_viewer_local = new $gcname();
-    		}elseif(1==intval($SConf->getConfigValue('classic_local_view'))){
+    		}elseif(1==intval($SConf->getConfigValue('classic_local_view')) && file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$SConf->getConfigValue('theme').'/main/view/local_kvartira_view.php')){
     			require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php';
     			require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
     			require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$SConf->getConfigValue('theme').'/main/view/local_kvartira_view.php';
@@ -453,6 +481,38 @@ class SiteBill {
 		}
 	}
     */
+	
+
+	/**
+	 * @param timestamp $date
+	 * @return timestamp
+	 */
+	static function addMonthToDate($date){
+		$now_day=date('j', $date);
+		$now_month=date('n', $date);
+		$now_year=date('Y', $date);
+		$now_month_days=date('t', $date);
+		$time=date('H:i:s', $date);
+		 
+		$next_year=$now_year;
+		$next_month=$now_month+1;
+		if($next_month>12){
+			$next_month=1;
+			$next_year+=1;
+		}
+		 
+		$next_month_days=date('t', strtotime($next_year.'-'.($next_month<10 ? '0'.$next_month : $next_month).'-01'));
+		 
+		if($now_day<=$next_month_days){
+			$next_day=$now_day;
+		}elseif($now_day==$now_month_days){
+			$next_day=$next_month_days;
+		}else{
+			$next_day=$next_month_days;
+		}
+		return strtotime($next_year.'-'.($next_month<10 ? '0'.$next_month : $next_month).'-'.($next_day<10 ? '0'.$next_day : $next_day).' '.$time);
+	}
+	
  	static function getAttachments($object_type, $object_id){
     	$attachments=array();
     	if((int)$object_id==0 || $object_type==''){
@@ -584,6 +644,9 @@ class SiteBill {
      */
     function getSessionUserId ( ) {
         $key = (isset($_SESSION['key']) ? $_SESSION['key'] : '');
+	if ( self::$Heaps['session']['user_id'] != '' ) {
+	    return self::$Heaps['session']['user_id'];
+	}
         if ( $key != '' ) {
         	$DBC=DBC::getInstance();
         	$query = "SELECT user_id FROM ".DB_PREFIX."_session WHERE session_key=? LIMIT 1";
@@ -593,6 +656,7 @@ class SiteBill {
         		$user_id = $ar['user_id'];
         		if ( $user_id != '' and $user_id != 0 ) {
         			$this->user_id = $user_id;
+				self::$Heaps['session']['user_id'] = $user_id;
         			//$init->setUserId($user_id);
         			return $user_id;
         		} else {
@@ -692,6 +756,24 @@ class SiteBill {
             if ( !empty($image_name) ) {
                 $arr=explode('.',$image_name);
                 $ext=strtolower($arr[count($arr)-1]);
+                
+                if(function_exists('exif_read_data')){
+                	$exif = exif_read_data($uploadify_path.$image_name, 0, true);
+                	if( false === empty( $exif['IFD0']['Orientation'] ) ) {
+                		switch( $exif['IFD0']['Orientation'] ) {
+                			case 8:
+                				$this->rotateImageInDestination($uploadify_path.$image_name, $uploadify_path.$image_name, 90);
+                				break;
+                			case 3:
+                				$this->rotateImageInDestination($uploadify_path.$image_name, $uploadify_path.$image_name, 180);
+                				break;
+                			case 6:
+                				$this->rotateImageInDestination($uploadify_path.$image_name, $uploadify_path.$image_name, -90);
+                				break;
+                		}
+                	}
+                }
+                
                 if((1==$this->getConfigValue('seo_photo_name_enable')) AND ($name_template!='')){
                 	$name_template=substr($name_template, 0, 150);
                 	if($i==0){
@@ -1004,6 +1086,25 @@ class SiteBill {
     			if ( !empty($image_name) ) {
     				$arr=explode('.',$image_name);
     				$ext=strtolower(end($arr));
+    				
+    				
+    				
+    				if(function_exists('exif_read_data')){
+    					$exif = @exif_read_data($uploadify_path.$image_name, 0, true);
+    					if( isset($exif['IFD0']) && isset($exif['IFD0']['Orientation']) && false === empty( $exif['IFD0']['Orientation'] ) ) {
+    						switch( $exif['IFD0']['Orientation'] ) {
+    							case 8:
+    								$this->rotateImageInDestination($uploadify_path.$image_name, $uploadify_path.$image_name, 90);
+    								break;
+    							case 3:
+    								$this->rotateImageInDestination($uploadify_path.$image_name, $uploadify_path.$image_name, 180);
+    								break;
+    							case 6:
+    								$this->rotateImageInDestination($uploadify_path.$image_name, $uploadify_path.$image_name, -90);
+    								break;
+    						}
+    					}
+    				}
     				//$ext=strtolower($arr[count($arr)-1]);
     				if((1==$this->getConfigValue('seo_photo_name_enable')) AND ($name_template!='')){
     					$name_template=substr($name_template,0,150);
@@ -1036,20 +1137,20 @@ class SiteBill {
     				if(in_array($ext, array('jpg','jpeg','gif','png'))){
     					$big_width = $this->getConfigValue($action.'_image_big_width');
     					if ($big_width == '') {
-    						$big_width = $this->getConfigValue('news_image_big_width');
+    						$big_width = $this->getConfigValue('data_image_big_width');
     					}
     					$big_height = $this->getConfigValue($action.'_image_big_height');
     					if ( $big_height == '' ) {
-    						$big_height = $this->getConfigValue('news_image_big_height');
+    						$big_height = $this->getConfigValue('data_image_big_height');
     					}
     					 
     					$preview_width = $this->getConfigValue($action.'_image_preview_width');
     					if ( $preview_width == '' ) {
-    						$preview_width = $this->getConfigValue('news_image_preview_width');
+    						$preview_width = $this->getConfigValue('data_image_preview_width');
     					}
     					$preview_height = $this->getConfigValue($action.'_image_preview_height');
     					if ( $preview_height == '' ) {
-    						$preview_height = $this->getConfigValue('news_image_preview_height');
+    						$preview_height = $this->getConfigValue('data_image_preview_height');
     					}
     		
     					if(isset($parameters['norm_width']) && (int)$parameters['norm_width']!=0){
@@ -1082,6 +1183,9 @@ class SiteBill {
     						$preview_name=$folder_name.'/'.$preview_name;
     						$prv=$folder_name.'/'.$prv;
     					}
+    					
+    					
+    					
     					/*
     					 if(defined('STR_MEDIA') && STR_MEDIA=='new'){
     					$file_name=md5(uniqid().time().rand(1000,999).$i);
@@ -1148,6 +1252,41 @@ class SiteBill {
     	
     	$this->delete_uploadify_images($session_key, $field_name);
     	return $ra;
+    }
+    
+    function rotateImageInDestination($source_image, $destination, $degree){
+    	
+    	$arr=explode('.', $source_image);
+    	$ext=end($arr);
+    	 
+    	if($source_image==''){
+    		return '';
+    	}
+    	 
+    	
+    	 
+    	if($ext=='jpg' || $ext=='jpeg'){
+    		$source_image_res=imagecreatefromjpeg($source_image);
+    	}elseif($ext=='png'){
+    		$source_image_res=imagecreatefrompng($source_image);
+    	}elseif($ext=='gif'){
+    		$source_image_res=imagecreatefromgif($source_image);
+    	}
+    	
+    	$im=imagerotate ($source_image_res, $degree, 0);
+    	 
+    	if($ext=='jpg' || $ext=='jpeg'){
+    		$im=imagerotate ($source_image_res, $degree, 0);
+    		imagejpeg($im, $destination, (int)$this->getConfigValue('jpeg_quality'));
+    	}elseif($ext=='png'){
+    		$im=imagerotate ($source_image_res, $degree, 0);
+    		imagepng($im, $destination, (int)$this->getConfigValue('png_quality'));
+    	}elseif($ext=='gif'){
+    		$im=imagerotate ($source_image_res, $degree, 0);
+    		imagegif($im, $destination);
+    	}
+    	 
+    	return;
     }
     
     /**
@@ -1583,6 +1722,10 @@ $(document).ready(function() {
     						alert(\''.Multilanguage::_('L_MESSAGE_AVIALABLE_EXTS').' *.jpg,*.jpeg,*.png,*.gif\');
     						return false;
     					}
+    					if ( response == \'bad_file\' ) {
+    						alert(\'bad_file\');
+    						return false;
+    					}
     					if ( queueSize > maxQueueSize ) {
     						alert(\''.Multilanguage::_('L_MESSAGE_MAX_FILES_COUNT').'\');
     						return false;
@@ -1592,6 +1735,7 @@ $(document).ready(function() {
     					if(imgs_count==max_item_count){
     						$(\'#file_uploadUploader\').hide();
 						}
+    								
     					addFileNotify(queueSize);
     					addFileInCollector(response);
     					
@@ -1606,9 +1750,11 @@ function addFileNotify ( queueSize ) {
 function addFileInCollector ( filePath ) {
 	var temp=new Array();
 	temp=filePath.split(\'/\');
+    //								temp=filePath.split(\'||\');
 	var f=temp[temp.length-1];
 	var cont=$(\'#filecollector\').html();
 	cont=cont+\'<div><img src="\'+filePath+\'" /><a class="kill_upl btn btn-mini btn-danger" href="javascript:void(0)" alt="\'+f+\'">X</a></div>\';
+    //								cont=cont+\'<div><img src="\'+temp[0]+\'" /><a class="kill_upl btn btn-mini btn-danger" href="javascript:void(0)" alt="\'+f+\'">X</a></div>\';
 	$(\'#filecollector\').html(cont);
 	
 }
@@ -1655,7 +1801,7 @@ if(false!==$uploaded_images){
     function getDropzonePlugin ( $session_code, $params=array() ) {
     	$element=$params['element']['name'];
     	$type=$params['element']['type'];
-    	 
+    	 $rs='';
     	
     	$this->clear_uploadify_table($session_code);
     	
@@ -1679,6 +1825,7 @@ if(false!==$uploaded_images){
     	$rs.='<script>
     			
     			$(document).ready(function(){
+    			
     			//var prevbuttonstatus_'.$Dropzone_name.';
     				var '.$Dropzone_name.' = new Dropzone("div#'.$id.'", 
     				{ 
@@ -1714,6 +1861,7 @@ if(false!==$uploaded_images){
 										//form.find("[name=submit]").prop("disabled", prevbuttonstatus'.$Dropzone_name.');
 												//console.log(prevbuttonstatus'.$Dropzone_name.');
 							}else{
+														
 								var form=$(this.element).parents("form");
 														
 								var rem=$(file.previewElement).find(".dz-remove");
@@ -2538,12 +2686,13 @@ function addFileNotify ( queueSize ) {
      * @return string
      */
     function getRequestValue( $key, $type='', $from='' ) {
+    	$flags=ENT_COMPAT | ENT_HTML401;
     	$value=NULL;
     	switch($from){
     		case 'get' : {
     			if(isset($_GET[$key])){
     				$value=$this->escape($_GET[$key]);
-    				$value=htmlspecialchars($_GET[$key]);
+    				$value=htmlspecialchars($_GET[$key], $flags, SITE_ENCODING);
     			}
     			break;
     		}
@@ -2559,13 +2708,15 @@ function addFileNotify ( queueSize ) {
     				//$value=$this->xssProtect($_GET[$key]);
     				//$value=strip_tags($_GET[$key]);
     				if(is_array($value)){
-    					$value=$this->htmlspecialchars($value);
+    					$value=$this->htmlspecialchars($value, $flags);
     					/*foreach ($value as $k=>$v){
     						$value[$k]=htmlspecialchars($v);
     					}*/
     				}else{
     					
-    					$value=htmlspecialchars($this->escape($value));
+    					$value=htmlspecialchars($this->escape($value), $flags, SITE_ENCODING);
+    					//$value=htmlspecialchars($value, $flags, SITE_ENCODING);
+    						
     					
     				}
     				
@@ -2579,10 +2730,10 @@ function addFileNotify ( queueSize ) {
     					/*foreach ($value as $k=>$v){
     						$value[$k]=htmlspecialchars($v);
     					}*/
-    					$value=$this->htmlspecialchars($value);
+    					$value=$this->htmlspecialchars($value, $flags);
     					
     				}else{
-    					$value=htmlspecialchars($this->escape($value));
+    					$value=htmlspecialchars($this->escape($value), $flags, SITE_ENCODING);
     					
     				}
     				//echo '</pre>';
@@ -2607,6 +2758,9 @@ function addFileNotify ( queueSize ) {
     			if ( preg_match('/sleep[\s]*\(/i', $value) ) {
     				return NULL;
     			}
+				if ( preg_match('/benchmark/i', $value) ) {
+				    return NULL;
+				}			
     			 
     			if ( preg_match_all('/select/i', $value, $matches)) {
     				if(count($matches[0])>1){
@@ -2868,6 +3022,115 @@ function addFileNotify ( queueSize ) {
     	return $rs;
     }
     
+    function get_page_links_list_default ($page, $total, $per_page, $params ) {
+    	if ( $total <= $per_page ) {
+    		return '';
+    	}
+    	if(isset($params['page_url']) && $params['page_url']!=''){
+    		$url=SITEBILL_MAIN_URL.'/'.$params['page_url'];
+    		unset($params['page_url']);
+    	}else{
+    		$url='';
+    	}
+    	$pairs = array();
+    	unset($params['page']);
+    	if(count($params)>0){
+    		foreach ( $params as $key => $value ) {
+    			if(is_array($value)){
+    				if(count($value)>0){
+    					foreach($value as $v){
+    						if($v!=''){
+    							$pairs[] = $key.'[]='.$v;
+    						}
+    					}
+    				}
+    			}elseif ( $value != '' ) {
+    				$pairs[] = "$key=$value";
+    			}
+    		}
+    	}
+    	if(count($pairs)>0){
+    		$url= $url.'?'.implode('&', $pairs);
+    	}else{
+    		$url= $url;
+    	}
+    	 
+    	$current_page =  $page;
+    	if($current_page==''){
+    		$current_page=1;
+    	}else{
+    		$current_page=(int)$current_page;
+    	}
+    
+    	$limit = $per_page;
+    
+    	$total_pages=ceil($total/$limit);
+    	$page_navigation='';
+    	$first_page_navigation='';
+    	$last_page_navigation='';
+    	$start_page_navigation='';
+    	$end_page_navigation='';
+    	$p_prew=$current_page-1;
+    	$p_next=$current_page+1;
+    
+    	$last_number_page='<li><a rel="nofollow" href="'.$url.(false!==strpos($url, '?') ? '&page='.$total_pages : '?page='.$total_pages).'" class="pagenav"><strong>'.$total_pages.'</strong></a></li>';
+    
+    	if($current_page==1){
+    		$first_page_navigation.='<li><span class="pagenav">&laquo;&laquo; </span></li>';
+    	}else{
+    		$first_page_navigation.='<li><a rel="nofollow" href="'.$url.(false!==strpos($url, '?') ? '&page=1' : '?page=1').'" class="pagenav" title="в начало">&laquo;&laquo; </a></li>';
+    	}
+    
+    	if($current_page==$total_pages){
+    		$last_page_navigation.='<li><span class="pagenav"> &raquo;&raquo;</span></li>';
+    		$last_number_page='';
+    	}else{
+    		$last_page_navigation.='<li><a rel="nofollow" href="'.$url.(false!==strpos($url, '?') ? '&page='.$total_pages : '?page='.$total_pages).'" class="pagenav" title="в конец"> &raquo;&raquo;</a></li>';
+    	}
+    
+    	if($p_prew<1){
+    		$start_page_navigation.='<li><span class="pagenav">&laquo; </span></li>';
+    	}else{
+    		$start_page_navigation.='<li><a rel="nofollow" href="'.$url.(false!==strpos($url, '?') ? '&page='.$p_prew : '?page='.$p_prew).'" class="pagenav" title="предыдущая">&laquo; </a></li>';
+    	}
+    
+    	if($p_next>$total_pages){
+    		$end_page_navigation.='<li><span class="pagenav"> &raquo;</span></li>';
+    	}else{
+    		$end_page_navigation.='<li><a rel="nofollow" href="'.$url.(false!==strpos($url, '?') ? '&page='.$p_next : '?page='.$p_next).'" class="pagenav" title="следующая"> &raquo;</a></li>';
+    	}
+    
+    
+    	$linestart=$current_page-7;
+    	$lineend=$current_page+7;
+    
+    	if($linestart<=1){
+    		$linestart=1;
+    		$lineprefix='';
+    	}else{
+    		$lineprefix='<li>...</li>';
+    	}
+    
+    	if($lineend>=$total_pages){
+    		$lineend=$total_pages;
+    		$last_number_page='';
+    		$linepostfix='';
+    	}
+    	else{
+    		$linepostfix='<li>...</li>';
+    	}
+    
+    	for($i=$linestart;$i<=$lineend;$i++){
+    		if($current_page==$i){
+    			$page_navigation.='<li><span class="pagenav"> '.$i.' </span></li>';
+    		}else{
+    			$page_navigation.='<li><a rel="nofollow" href="'.$url.(false!==strpos($url, '?') ? '&page='.$i : '?page='.$i).'" class="pagenav"><strong>'.$i.'</strong></a></li>';
+    		}
+    	}
+    	$page_navigation='<ul class="pagination">'.$first_page_navigation.$start_page_navigation.$lineprefix.$page_navigation.$linepostfix.$end_page_navigation.$last_number_page.$last_page_navigation.'</ul>';
+    	return $page_navigation;
+    }
+    
     
 	/**
 	 * Get page links list
@@ -2878,42 +3141,63 @@ function addFileNotify ( queueSize ) {
 	 * @return array
 	 */
 	function get_page_links_list ($page, $total, $per_page, $params ) {
-	    if ( $total <= $per_page ) {
+		
+		if(defined('ADMIN_MODE')){
+			return $this->get_page_links_list_default ($page, $total, $per_page, $params );
+		}
+		
+		$pager_settings=array();
+		$pager_settings['draw_all_pages']=intval($this->getConfigValue('core.listing.pager_draw_all'));
+		$pager_settings['draw_all_pages_max']=intval($this->getConfigValue('core.listing.pager_draw_all_max'));
+		$pager_settings['active_page_offset']=intval($this->getConfigValue('core.listing.pager_page_offset'));
+		$pager_settings['show_end_links']=intval($this->getConfigValue('core.listing.pager_end_buttons'));
+		$pager_settings['show_prev_links']=intval($this->getConfigValue('core.listing.pager_prev_buttons'));
+		$pager_settings['show_prefixes']=intval($this->getConfigValue('core.listing.pager_show_prefixes'));
+		
+		if ( $total <= $per_page ) {
 	        return '';
 	    }
-	    //echo $params['page_url'];
-	    if(isset($params['page_url']) && $params['page_url']!=''){
-	    	$url=SITEBILL_MAIN_URL.'/'.$params['page_url'];
-	    	unset($params['page_url']);
-	    }else{
-	    	$url='';
-	    }
-	    $pairs = array();
-	    unset($params['page']);
-	    if(count($params)>0){
-		    foreach ( $params as $key => $value ) {
-		        if(is_array($value)){
-	        		if(count($value)>0){
-	        			foreach($value as $v){
-	        				if($v!=''){
-	        					$pairs[] = $key.'[]='.$v;
-	        				}
-	        			}
-	        		}
-	        	}elseif ( $value != '' ) {
-		            $pairs[] = "$key=$value";
-		        }
-		    }
-	    }
-	    if(count($pairs)>0){
-	    	$url= $url.'?'.implode('&', $pairs);
-	    }else{
-	    	$url= $url;
-	    }
 	    
-		
-		//echo $total;
-		$current_page =  $page;
+	    if(isset($params['page_url']) && $params['page_url']!=''){
+	    	$url=SITEBILL_MAIN_URL.'/'.$params['page_url'].'/?';
+	    }else{
+	    	$url=SITEBILL_MAIN_URL.'/?';
+	    	$url='?';
+	    }
+	    unset($params['page_url']);
+	    unset($params['page']);
+	    
+	    /*$pairs=array();
+	    if(count($params)>0){
+	    	//echo urldecode(http_build_query($params));
+	    	foreach ( $params as $key => $value ) {
+	    		if(is_array($value)){
+	    			if(count($value)>0){
+	    				foreach($value as $v){
+	    					if($v!=''){
+	    						$pairs[] = $key.'[]='.$v;
+	    					}
+	    				}
+	    			}
+	    		}elseif ( $value != '' ) {
+	    			$pairs[] = $key."=".$value;
+	    		}
+	    	}
+	    }
+	    if(!empty($pairs)){
+	    	$pager_params_string=implode('&', $pairs);
+	    }else{
+	    	$pager_params_string='';
+	    }*/
+	    
+	    if(count($params)>0){
+	    	$pager_params_string=urldecode(http_build_query($params));
+	    }else{
+	    	$pager_params_string='';
+	    } 
+	    
+	    
+	    $current_page=$page;
 		if($current_page==''){
 			$current_page=1;
 		}else{
@@ -2923,76 +3207,299 @@ function addFileNotify ( queueSize ) {
 	    $limit = $per_page;
 		
 		$total_pages=ceil($total/$limit);
+		if($total_pages<=$pager_settings['draw_all_pages_max']){
+			$pager_settings['draw_all_pages']=1;
+		}
+		$pages_count=ceil($total/$limit);
+		if($total_pages<2){
+			return '';
+		}
+		
+		$ret=array();	
+		
+		$p_prew=$current_page-1;
+		$p_next=$current_page+1;
+		
+		if($current_page==1){
+			$fpn['text']='&laquo;&laquo;';
+			$fpn['href']=$url.'page=1'.($pager_params_string!='' ? '&'.$pager_params_string : '');
+		}else{
+			$fpn['text']='&laquo;&laquo;';
+			$fpn['href']=$url.'page=1'.($pager_params_string!='' ? '&'.$pager_params_string : '');
+		}
+		
+		$ret['fpn']=$fpn;
+		
+		if($current_page==$total_pages){
+			$lpn['text']='&raquo;&raquo;';
+			$lpn['href']='';
+		}else{
+			$lpn['text']='&raquo;&raquo;';
+			$lpn['href']=$url.'page='.$total_pages.($pager_params_string!='' ? '&'.$pager_params_string : '');
+		}
+		
+		$ret['lpn']=$lpn;
+		
+		if($p_prew<1){
+			$ppn['text']='&laquo;';
+			$ppn['href']='';
+		}else{
+			$ppn['text']='&laquo;';
+			$ppn['href']=$url.'page='.$p_prew.($pager_params_string!='' ? '&'.$pager_params_string : '');
+			$ppn['go_page']=$p_prew;
+		}
+		
+		$ret['ppn']=$ppn;
+		
+		if($p_next>$total_pages){
+			$npn['text']='&raquo;';
+			$npn['href']='';
+		}else{
+			$npn['text']='&raquo;';
+			$npn['href']=$url.'page='.$p_next.($pager_params_string!='' ? '&'.$pager_params_string : '');
+			$npn['go_page']=$p_next;
+		}
+		
+		$ret['npn']=$npn;		
+				
+		$start_page=$current_page-$pager_settings['active_page_offset'];
+		$end_page=$current_page+$pager_settings['active_page_offset'];
+		
+		if($start_page<=1){
+			$pager_settings['left_prefix']=0;
+			$pager_settings['start']=1;
+		}else{
+			$pager_settings['left_prefix']=0;
+			if($pager_settings['show_prefixes']==1){
+				$pager_settings['left_prefix']=1;
+			}
+			$pager_settings['start']=$start_page;
+		}
+		
+		if($end_page>=$total_pages){
+			$pager_settings['right_prefix']=0;
+			$pager_settings['end']=$total_pages;
+		}else{
+			$pager_settings['right_prefix']=0;
+			if($pager_settings['show_prefixes']==1){
+				$pager_settings['right_prefix']=1;
+			}
+			$pager_settings['end']=$end_page;
+		}
+		
+		for($i=1;$i<=$total_pages;$i++){
+			if($i==$current_page){
+				$ret['pages'][$i]=array('text'=>$i, 'href'=>'', 'current'=>'1');
+			}else{
+				$ret['pages'][$i]=array('text'=>$i, 'href'=>$url.'page='.$i.($pager_params_string!='' ? '&'.$pager_params_string : ''), 'current'=>'0');
+			}
+		}
+		
+		$ret['current_page']=$current_page;
+		$ret['total_pages']=$total_pages;
+		
+		global $smarty;
+		$smarty->assign('pager_settings', $pager_settings);
+		$smarty->assign('paging', $ret);
+		$tpl=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/common_pager.tpl';
+		if(!file_exists($tpl)){
+			$tpl=SITEBILL_DOCUMENT_ROOT.'/apps/system/template/common_pager.tpl';
+		}
+		return $smarty->fetch($tpl);
+	}
+	
+	
+	/*function __get_page_links_list ($page, $total, $per_page, $params ) {
+	
+		$show_all_pages=false;
+		$show_nav_buttons=true;
+		$show_last_buttons=true;
+		$page_offset_active=7;
+		$noindex_pager=true;
+	
+		$pager_wrap_tpl='<ul class="pagination">{links}</ul>';
+		$sep_tpl='<li><a href="#">...</a></li>';
+		$page_tpl='<li><a rel="nofollow" href="{href}" class="pagenav">{page}</a></li>';
+		$page_active_tpl='<li><span class="pagenav">{page}</span></li>';
+	
+		$next_active_tpl='<li><a rel="nofollow" href="{href}" class="pagenav"><strong>&raquo;</strong></a></li>';
+		$next_passive_tpl='<li><a rel="nofollow" href="{href}" class="pagenav"><strong>&raquo;</strong></a></li>';
+	
+		$prev_active_tpl='<li><a rel="nofollow" href="{href}" class="pagenav"><strong>&laquo;</strong></a></li>';
+		$prev_passive_tpl='<li><a rel="nofollow" href="{href}" class="pagenav"><strong>&laquo;</strong></a></li>';
+	
+		$first_active_tpl='<li><a rel="nofollow" href="{href}" class="pagenav"><strong>&laquo;&laquo;</strong></a></li>';
+		$first_passive_tpl='<li><a rel="nofollow" href="{href}" class="pagenav"><strong>&laquo;&laquo;</strong></a></li>';
+	
+		$last_active_tpl='<li><a rel="nofollow" href="{href}" class="pagenav"><strong>&raquo;&raquo;</strong></a></li>';
+		$last_passive_tpl='<li><a rel="nofollow" href="{href}" class="pagenav"><strong>&raquo;&raquo;</strong></a></li>';
+	
+		$page_first_tpl='<li><a rel="nofollow" href="{href}" class="pagenav">{page}</a></li>';
+		$page_last_tpl='<li><a rel="nofollow" href="{href}" class="pagenav">{page}</a></li>';
+	
+		if(!defined('ADMIN_MODE')){
+			$pager_wrap_tpl='<ul class="pagination">{links}</ul>';
+			$sep_tpl='<li><a href="javascript:void(0);">...</a></li>';
+			$page_tpl='<li><a href="{href}">{page}</a></li>';
+			$page_active_tpl='<li class="active"><a href="{href}">{page}</a></li>';
+			$next_active_tpl='<li><a href="{href}">›</a></li>';
+			$next_passive_tpl='<li><a href="{href}">›</a></li>';
+			$prev_active_tpl='<li><a href="{href}">‹</a></li>';
+			$prev_passive_tpl='<li><a href="{href}">‹</a></li>';
+	
+		}
+	
+		 
+		if ( $total <= $per_page ) {
+			return '';
+		}
+	
+		$current_page=intval($page);
+		if($current_page==0){
+			$current_page=1;
+		}
+	
+		$total_pages=ceil($total/$per_page);
+	
+		if($show_all_pages){
+			$linestart=1;
+			$lineend=$total_pages;
+		}else{
+			//$showable_pages_count=2*$page_offset_active+1;
+			$linestart=$current_page-$page_offset_active;
+			$lineend=$current_page+$page_offset_active;
+				
+			if($linestart<=1){
+				$linestart=1;
+			}
+				
+			if($lineend>=$total_pages){
+				$lineend=$total_pages;
+			}
+		}
+	
+	
+		if(isset($params['page_url']) && $params['page_url']!=''){
+			$url=SITEBILL_MAIN_URL.'/'.$params['page_url'];
+			unset($params['page_url']);
+		}else{
+			$url='';
+		}
+	
+		$pairs=array();
+		$query_str='';
+		unset($params['page']);
+		if(count($params)>0){
+			foreach ( $params as $key => $value ) {
+				if(is_array($value)){
+					if(count($value)>0){
+						foreach($value as $v){
+							if($v!=''){
+								$pairs[] = $key.'[]='.$v;
+							}
+						}
+					}
+				}elseif ( $value != '' ) {
+					$pairs[]=$key.'='.$value;
+				}
+			}
+		}
+		if(count($pairs)>0){
+			$query_str='?'.implode('&', $pairs).'&';
+		}else{
+			$query_str='?';
+		}
+		 
+		$fpn_href=$url;
+		$lpn_href=$url;
+		$ppn_href=$url;
+		$npn_href=$url;
+		$page_href=$url.$query_str;
+	
+	
+	
+	
+	
+	
 		$page_navigation='';
 		$first_page_navigation='';
 		$last_page_navigation='';
 		$start_page_navigation='';
 		$end_page_navigation='';
+	
 		$p_prew=$current_page-1;
 		$p_next=$current_page+1;
-		
+		$fpn='';
+		$lpn='';
+		$ppn='';
+		$npn='';
 	
-		
-		$last_number_page='<li><a rel="nofollow" href="'.$url.(false!==strpos($url, '?') ? '&page='.$total_pages : '?page='.$total_pages).'" class="pagenav"><strong>'.$total_pages.'</strong></a></li>';
-		
-		if($current_page==1){
-			$first_page_navigation.='<li><span class="pagenav">&laquo;&laquo; </span></li>';
+	
+		if(count($pairs)>0){
+			$fpn_href=$fpn_href.'?'.implode('&', $pairs).'&page=1';
+			$lpn_href=$lpn_href.'?'.implode('&', $pairs).'&page='.$total_pages;
+			$ppn_href=$ppn_href.'?'.implode('&', $pairs).'&page='.$p_prew;
+			$npn_href=$npn_href.'?'.implode('&', $pairs).'&page='.$p_next;
+			//$page_href=$page_href.'?'.implode('&', $pairs).'&page='.$p_next;
 		}else{
-			$first_page_navigation.='<li><a rel="nofollow" href="'.$url.(false!==strpos($url, '?') ? '&page=1' : '?page=1').'" class="pagenav" title="в начало">&laquo;&laquo; </a></li>';
+			$fpn_href=$fpn_href.'?page=1';
+			$lpn_href=$lpn_href.'?page='.$total_pages;
+			$ppn_href=$ppn_href.'?page='.$p_prew;
+			$npn_href=$npn_href.'?page='.$p_next;
 		}
-		
-		if($current_page==$total_pages){
-			$last_page_navigation.='<li><span class="pagenav"> &raquo;&raquo;</span></li>';
-			$last_number_page='';
-		}else{
-			$last_page_navigation.='<li><a rel="nofollow" href="'.$url.(false!==strpos($url, '?') ? '&page='.$total_pages : '?page='.$total_pages).'" class="pagenav" title="в конец"> &raquo;&raquo;</a></li>';
-		}
-		
-		if($p_prew<1){
-			$start_page_navigation.='<li><span class="pagenav">&laquo; </span></li>';
-		}else{
-			$start_page_navigation.='<li><a rel="nofollow" href="'.$url.(false!==strpos($url, '?') ? '&page='.$p_prew : '?page='.$p_prew).'" class="pagenav" title="предыдущая">&laquo; </a></li>';
-		}
-		
-		if($p_next>$total_pages){
-			$end_page_navigation.='<li><span class="pagenav"> &raquo;</span></li>';
-		}else{
-			$end_page_navigation.='<li><a rel="nofollow" href="'.$url.(false!==strpos($url, '?') ? '&page='.$p_next : '?page='.$p_next).'" class="pagenav" title="следующая"> &raquo;</a></li>';
-		}
-		
-		
-		$linestart=$current_page-7;
-		$lineend=$current_page+7;
-		
-		if($linestart<=1){
-			$linestart=1;
-			$lineprefix='';
-		}else{
-			$lineprefix='<li>...</li>';
-		}
-		
-		if($lineend>=$total_pages){
-			$lineend=$total_pages;
-			$last_number_page='';
-			$linepostfix='';
-		}
-		else{
-			$linepostfix='<li>...</li>';
-		}
-		
-		
-		
-		//for($i=1;$i<=$total_pages;$i++){
-		for($i=$linestart;$i<=$lineend;$i++){
-			if($current_page==$i){
-				$page_navigation.='<li><span class="pagenav"> '.$i.' </span></li>';
-			}else{
-				$page_navigation.='<li><a rel="nofollow" href="'.$url.(false!==strpos($url, '?') ? '&page='.$i : '?page='.$i).'" class="pagenav"><strong>'.$i.'</strong></a></li>';
+	
+		if($show_last_buttons){
+			if($current_page!=1 && $linestart!=1){
+				$fpn=str_replace('{href}', $fpn_href, $first_active_tpl);
+			}
+			if($current_page!=$total_pages && $lineend!=$total_pages){
+				$lpn=str_replace('{href}', $lpn_href, $last_active_tpl);
 			}
 		}
-		$page_navigation='<ul class="pagination">'.$first_page_navigation.$start_page_navigation.$lineprefix.$page_navigation.$linepostfix.$end_page_navigation.$last_number_page.$last_page_navigation.'</ul>';
-	    return $page_navigation;
-	}
+	
+		if($show_nav_buttons){
+			if($current_page!=1){
+				$ppn=str_replace('{href}', $ppn_href, $prev_active_tpl);
+			}
+			if($current_page!=$total_pages){
+				$npn=str_replace('{href}', $npn_href, $next_active_tpl);
+			}
+		}
+	
+		if($linestart!=1){
+			$first_page_go=str_replace(array('{href}', '{page}'), array($fpn_href, 1), $page_first_tpl);
+		}
+	
+		if($linestart!=1 && ($linestart-1)==1){
+			$lineprefix='';
+		}elseif($linestart!=1 && ($linestart-1)>1){
+			$lineprefix=$sep_tpl;
+		}
+		for($i=$linestart;$i<=$lineend;$i++){
+			if($current_page==$i){
+				$page_navigation.=str_replace(array('{href}', '{page}'), array($page_href.'page='.$i, $i), $page_active_tpl);
+			}else{
+				$page_navigation.=str_replace(array('{href}', '{page}'), array($page_href.'page='.$i, $i), $page_tpl);
+			}
+		}
+	
+		if($lineend!=$total_pages){
+			$last_page_go=str_replace(array('{href}', '{page}'), array($lpn_href, $total_pages), $page_last_tpl);
+		}
+	
+		if($lineend!=$total_pages && ($total_pages-$lineend)==1){
+			$linepostfix='';
+		}elseif($lineend!=$total_pages && ($total_pages-$lineend)>1){
+			$linepostfix=$sep_tpl;
+		}
+	
+	
+	$page_nav=str_replace('{links}', $fpn.$ppn.$first_page_go.$lineprefix.$page_navigation.$linepostfix.$last_page_go.$npn.$lpn, $pager_wrap_tpl);
+		if($noindex_pager){
+			$page_nav='<!--noindex-->'.$page_nav.'<!--/noindex-->';
+		}
+		return $page_nav;
+	}*/
     
     /**
      * Get image list admin
@@ -3076,14 +3583,14 @@ function addFileNotify ( queueSize ) {
             if ( $j++ > 100 ) {
                 return;
             }
-	        if($category_structure['catalog'][$parent_category_id]['url']!=''){
+	        if(isset($category_structure['catalog'][$parent_category_id]) && $category_structure['catalog'][$parent_category_id]['url']!=''){
 	        	$ra[] = '<a href="'.rtrim($url,'/').'/'.$category_structure['catalog'][$parent_category_id]['url'].'">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
 	        }else{
 	        	$ra[] = '<a href="'.rtrim($url,'/').'/topic'.$parent_category_id.'.html">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
 	        }
             $parent_category_id = $category_structure['catalog'][$parent_category_id]['parent_id'];
         }
-        if ( $category_structure['catalog'][$parent_category_id]['name'] != '' ) {
+        if ( isset($category_structure['catalog'][$parent_category_id]) && $category_structure['catalog'][$parent_category_id]['name'] != '' ) {
        	 	if($category_structure['catalog'][$parent_category_id]['url']!=''){
 	        	$ra[] = '<a href="'.rtrim($url,'/').'/'.$category_structure['catalog'][$parent_category_id]['url'].'">'.$category_structure['catalog'][$parent_category_id]['name'].'</a>';
 	        }else{
@@ -3109,8 +3616,15 @@ function addFileNotify ( queueSize ) {
      */
     function get_category_breadcrumbs_string( $params, $category_structure, $url = '' ) {
         $rs = '';
-        $ra[] = ''.$category_structure['catalog'][$params['topic_id']]['name'].'';
-        $parent_category_id = $category_structure['catalog'][$params['topic_id']]['parent_id'];
+        $ra=array();
+        $parent_category_id=0;
+        $j=0;
+        if(isset($category_structure['catalog'][$params['topic_id']])){
+        	$ra[] = ''.$category_structure['catalog'][$params['topic_id']]['name'].'';
+        	$parent_category_id = $category_structure['catalog'][$params['topic_id']]['parent_id'];
+        }
+        
+       
         while ( isset($category_structure['catalog'][$parent_category_id]['parent_id']) && $category_structure['catalog'][$parent_category_id]['parent_id'] != 0 ) {
             if ( $j++ > 100 ) {
                 return;
@@ -3453,19 +3967,19 @@ function addFileNotify ( queueSize ) {
 		$tr = array(
 				"а"=>"a","б"=>"b",
 				"в"=>"v","г"=>"g","д"=>"d","е"=>"e","ё"=>"e","ж"=>"j",
-				"з"=>"z","и"=>"i","й"=>"y","к"=>"k","л"=>"l",
+				"з"=>"z","и"=>"i","й"=>"y", "і"=>"i","ї"=>"yi", "к"=>"k","л"=>"l",
 				"м"=>"m","н"=>"n","о"=>"o","п"=>"p","р"=>"r",
 				"с"=>"s","т"=>"t","у"=>"u","ф"=>"f","х"=>"h",
 				"ц"=>"ts","ч"=>"ch","ш"=>"sh","щ"=>"sch","ъ"=>"y",
-				"ы"=>"i","ь"=>"","э"=>"e","ю"=>"yu","я"=>"ya",
+				"ы"=>"i","ь"=>"","э"=>"e","ю"=>"yu","я"=>"ya","і"=>"i",
 	
 				"А"=>"a","Б"=>"b",
-				"В"=>"v","Г"=>"g","Д"=>"d","Е"=>"e","Ё"=>"e","Ж"=>"j",
-				"З"=>"z","И"=>"i","Й"=>"y","К"=>"k","Л"=>"l",
+				"В"=>"v","Г"=>"g","Д"=>"d","Е"=>"e","Ё"=>"e","Є"=>"ye","Ж"=>"j",
+				"З"=>"z","И"=>"i","Й"=>"y", "І"=>"i","Ї"=>"yi", "К"=>"k","Л"=>"l",
 				"М"=>"m","Н"=>"n","О"=>"o","П"=>"p","Р"=>"r",
 				"С"=>"s","Т"=>"t","У"=>"u","Ф"=>"f","Х"=>"h",
 				"Ц"=>"ts","Ч"=>"ch","Ш"=>"sh","Щ"=>"sch","Ъ"=>"y",
-				"Ы"=>"i","Ь"=>"","Э"=>"e","Ю"=>"yu","Я"=>"ya",
+				"Ы"=>"i","Ь"=>"","Э"=>"e","Ю"=>"yu","Я"=>"ya","І"=>"i",
 	
 				" "=> "-",  'Š'=>'S', 'š'=>'s', 'Ž'=>'Z', 'ž'=>'z', 'À'=>'A', 'Á'=>'A', 'Â'=>'A', 'Ã'=>'A', 'Ä'=>'A', 'Å'=>'A', 'Æ'=>'A', 'Ç'=>'C', 'È'=>'E', 'É'=>'E',
 				'Ê'=>'E', 'Ë'=>'E', 'Ì'=>'I', 'Í'=>'I', 'Î'=>'I', 'Ï'=>'I', 'Ñ'=>'N', 'Ò'=>'O', 'Ó'=>'O', 'Ô'=>'O', 'Õ'=>'O', 'Ö'=>'O', 'Ø'=>'O', 'Ù'=>'U',
@@ -3505,8 +4019,11 @@ function addFileNotify ( queueSize ) {
 		}*/
 	}
 	
-	public static function getClearRequestURI(){
-		$url=urldecode($_SERVER['REQUEST_URI']);
+	public static function getClearRequestURI($test_url=''){
+		if($test_url==''){
+			$test_url=$_SERVER['REQUEST_URI'];
+		}
+		$url=urldecode($test_url);
 		$url=str_replace('\\', '/', $url);
 		if(preg_match('/(\/(\/+))/', $url)){
 			return $url;
@@ -3514,7 +4031,7 @@ function addFileNotify ( queueSize ) {
 		$REQUESTURIPATH=parse_url($url, PHP_URL_PATH);
 		
 		if($REQUESTURIPATH==false){
-			$REQUESTURIPATH=urldecode($_SERVER['REQUEST_URI']);
+			$REQUESTURIPATH=urldecode($test_url);
 		}
 		if('/'===$REQUESTURIPATH){
 			return '';
@@ -3620,3 +4137,13 @@ function addFileNotify ( queueSize ) {
         $stmt = $DBC->query($query, array(), $rows, $success);
     }
 }
+
+/*class Url_Helper {
+	private static $endSlashes=false;
+	public static function getUrl($url){
+		return $_SERVER['HTTP_HOST'].'/'.$url.(self::$endSlashes ? '/' : '');
+	}
+	public static function setEndSlashes($b){
+		self::$endSlashes=(bool)$b;
+	}
+}*/

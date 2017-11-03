@@ -12,6 +12,7 @@
 	{include file=$_layout}
 	{/if}
 {*$profiler*}
+{$dashboard}
 </body>
 </html>
 {/if}

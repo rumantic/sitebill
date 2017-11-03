@@ -282,8 +282,8 @@ class toolbox_admin extends Object_Manager {
     }
     
     protected function _previewAdoptUploadsAction () {
-    	$this->previewAdoptUploads();
-    	return $this->_defaultAction();
+    	return $this->previewAdoptUploads();
+    	//return $this->_defaultAction();
     }
     
     protected function _imageRewriterAction () {
@@ -599,7 +599,7 @@ class toolbox_admin extends Object_Manager {
     		$params=array();
     		foreach($uploads_fields as $uf){
     			$params[$uf]['pw']=$this->getConfigValue('apps.realty.data_image_preview_width');
-    			$params[$uf]['ph']=$this->getConfigValue('apps.realty.data_image_preview_width');
+    			$params[$uf]['ph']=$this->getConfigValue('apps.realty.data_image_preview_height');
     			
     			if(isset($data_model[$uf]['parameters']['prev_width']) && (int)$data_model[$uf]['parameters']['prev_width']!=0){
     				$params[$uf]['pw']=(int)$data_model[$uf]['parameters']['prev_width'];
@@ -610,8 +610,10 @@ class toolbox_admin extends Object_Manager {
     			
     		}
     	}else{
-    		return;
+    		return 'All images resized';
     	}
+	
+	$rs = '';
     	
     	foreach($realty as $r){
     		foreach($uploads_fields as $uf){
@@ -626,9 +628,13 @@ class toolbox_admin extends Object_Manager {
     						if(file_exists(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$normal)){
     							if(file_exists(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$prev)){
     								$sizes=getimagesize(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$prev);
+								$rs .= 'image '.SITEBILL_DOCUMENT_ROOT.'/img/data/'.$prev.", sizes = ". var_export($sizes, true);
     								if($params[$uf]['pw']!=$sizes[0] || $params[$uf]['ph']!=$sizes[1]){
+									$rs .= ' -> need resize<br>';
     									$must_resize=true;
-    								}
+								} else {
+								    $rs .= ' -> not resize<br><br>';
+								}
     							}else{
     								$must_resize=true;
     							}
@@ -636,6 +642,7 @@ class toolbox_admin extends Object_Manager {
     							if($must_resize){
     								$arr=explode('.', $prev);
     								$ext=strtolower($arr[count($arr)-1]);
+								$rs .= 'start resize '.SITEBILL_DOCUMENT_ROOT.'/img/data/'.$prev.'</br></br>';
     								$this->makePreview(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$normal, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$prev, $params[$uf]['pw'], $params[$uf]['ph'], $ext, 'smart');
     							}
     						}
@@ -644,8 +651,11 @@ class toolbox_admin extends Object_Manager {
     			}
     		}
     	}
+	
+	$rs .= '<br> Выполнить следующий шаг <a href="'.SITEBILL_MAIN_URL.'/admin/index.php?action='.$this->action.'&do=previewAdoptUploads&start='.($start+$step).'">далее</a>';
+	return $rs;
     	
-    	header('location: '.SITEBILL_MAIN_URL.'/admin/index.php?action='.$this->action.'&do=previewAdoptUploads&start='.($start+$step));
+    	//header('location: '.SITEBILL_MAIN_URL.'/admin/index.php?action='.$this->action.'&do=previewAdoptUploads&start='.($start+$step));
     	exit();
     	
     	

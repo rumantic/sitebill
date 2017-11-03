@@ -12,8 +12,9 @@ class sitemap_site extends sitemap_admin {
 		$REQUESTURIPATH=Sitebill::getClearRequestURI();
 		
 		if($REQUESTURIPATH=='sitemap.xml'){
-			if(file_exists(SITEBILL_DOCUMENT_ROOT.'/cache/sitemap.xml')){
-				$sitemap_created_at=filemtime(SITEBILL_DOCUMENT_ROOT.'/cache/sitemap.xml');
+			$sitemap_prefix=md5($_SERVER['HTTP_HOST']).'.';
+			if(file_exists(SITEBILL_DOCUMENT_ROOT.'/cache/'.$sitemap_prefix.'sitemap.xml')){
+				$sitemap_created_at=filemtime(SITEBILL_DOCUMENT_ROOT.'/cache/'.$sitemap_prefix.'sitemap.xml');
 				$time_offset=(int)$this->getConfigValue('apps.sitemap.sitemaplivetime');
 				if(($sitemap_created_at+$time_offset)<time()){
 					$this->buildSitemap();
@@ -22,12 +23,12 @@ class sitemap_site extends sitemap_admin {
 				$this->buildSitemap();
 			}
 			$page=(int)$_GET['page'];
-			if($page>0 && file_exists(SITEBILL_DOCUMENT_ROOT.'/cache/sitemap_page'.$page.'.xml')){
+			if($page>0 && file_exists(SITEBILL_DOCUMENT_ROOT.'/cache/'.$sitemap_prefix.'sitemap_page'.$page.'.xml')){
 				header("Content-Type: text/xml");
-				echo file_get_contents(SITEBILL_DOCUMENT_ROOT.'/cache/sitemap_page'.$page.'.xml');
+				echo file_get_contents(SITEBILL_DOCUMENT_ROOT.'/cache/'.$sitemap_prefix.'sitemap_page'.$page.'.xml');
 			}else{
 				header("Content-Type: text/xml");
-				echo file_get_contents(SITEBILL_DOCUMENT_ROOT.'/cache/sitemap.xml');
+				echo file_get_contents(SITEBILL_DOCUMENT_ROOT.'/cache/'.$sitemap_prefix.'sitemap.xml');
 			}
 			
 			

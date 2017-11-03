@@ -208,6 +208,93 @@ $(document).ready(function(){
 	        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)}).done(function(result_items){location.reload();});
 		})
 	});
+	$('.ranged-tags').each(function(e){
+		var _this=$(this);
+		var name=_this.data('field');
+		_this.find('.ranged-tags-title').click(function(e){
+			e.preventDefault();
+			_this.find('.ranged-tags-params').fadeToggle();
+		});
+		_this.find('.cancel').click(function(e){
+			e.preventDefault();
+			_this.find('.ranged-tags-params').fadeToggle();
+		});
+		var min=null;
+		var max=null;
+		var txt='не задано';
+		
+		_this.find('input').each(function(e){
+			var iname=$(this).attr('name');
+			var val=$(this).val();
+			var tag_array = {};
+			
+			
+			var reg=/(.*)\[(.*)\]/;
+			var matches=$(this).attr('name').match(reg);
+			//console.log($(this).attr('name'));
+			if(typeof datastr[name] != 'undefined'){
+				tag_array=datastr[name];
+			}
+			if(val!=''){
+				tag_array[matches[2]]=val;
+			}else{
+				delete tag_array[matches[2]];
+			}
+			datastr[name] = tag_array;
+			if(iname==name+'[min]' && val!=''){
+				min=val;
+			}
+			if(iname==name+'[max]' && val!=''){
+				max=val;
+			}
+			
+			
+			
+		});
+		
+		if(min !== null && max !== null){
+			var txt=min+' - '+max;
+		}else if(min !== null){
+			var txt='от '+min;
+		}else if(max !== null){
+			var txt='до '+max;
+		}
+		_this.find('.ranged-tags-title').html(txt);
+				
+		_this.find('.apply').click(function(e){
+			e.preventDefault();
+			var tag_array = {};
+			var reg=/(.*)\[(.*)\]/;
+			if(typeof datastr[name] != 'undefined'){
+				tag_array=datastr[name];
+			}
+			_this.find('input').each(function(){
+				var val=$(this).val();
+				var matches=$(this).attr('name').match(reg);
+				if(typeof datastr[name] != 'undefined'){
+					tag_array=datastr[name];
+				}
+				if(val!=''){
+					tag_array[matches[2]]=val;
+				}else{
+					delete tag_array[matches[2]];
+				}
+				
+				datastr[name] = tag_array;
+			});
+			$.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)}).done(function(result_items){location.reload();});
+		});
+		
+		_this.find('.clear').click(function(e){
+			e.preventDefault();
+			if(typeof datastr[name] != 'undefined'){
+				tag_array=datastr[name];
+				delete datastr[name];
+			}
+			$.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)}).done(function(result_items){location.reload();});
+		});
+		
+	});
 });
 </script>
 {/literal}
@@ -218,7 +305,7 @@ $(document).ready(function(){
     		<div class="nav pull-right">
 		
 			{if $admin ne ''}
-			<div align="right"><a href="#search" id="search_toggle" class="btn btn-info"><i class="icon-white icon-search"></i> {$L_ADVSEARCH}</a></div>
+			<div align="right"><a href="?action=data&do=import" title="Загрузить записи в формате Excel" class="btn btn-info btn-xs "><i class="icon-white icon-upload"></i> </a> <a href="#search" id="search_toggle" class="btn btn-info"><i class="icon-white icon-search"></i> {$L_ADVSEARCH}</a></div>
 			<div id="search_form_block" {if $smarty.request.submit_search_form_block eq ''}style="display:none;"{/if} class="spacer-top">
 				<form class="form-horizontal" action="?action=data" method="get">
 					<div class="control-group">
@@ -267,6 +354,8 @@ $(document).ready(function(){
 							<input type="text" name="srch_date_to" id="srch_date_to" value="{$smarty.request.srch_date_to}" />
 						</div>
 					</div>
+                                        
+                                        {$custom_admin_search_fields}                                                
 				
 					<div class="control-group">
 						<div class="controls">
@@ -435,16 +524,28 @@ $(document).ready(function(){
 		<td class="row_title">
 			<!-- #section:plugins/input.tag-input -->
 			<div class="inline-tags">
-				<input type="text" name="price" id="price" class="input-tag tagged price" value="" placeholder="..." />
+				<div class="ranged-tags" data-field="price">
+    				<div class="ranged-tags-title"></div>
+    				<div class="ranged-tags-params" style="display: none;">
+	    				<input name="price[min]" type="text" class="tagged_input" value="{$smarty.session.tags_array.price.min}">
+	    				<input name="price[max]" type="text" class="tagged_input" value="{$smarty.session.tags_array.price.max}">
+	    				<a href="#" class="btn btn-danger clear" title="очистить фильтр"><i class="icon-remove"></i></a>
+	    				<a href="#" class="btn btn-success apply" title="применить фильтр"><i class="icon-ok"></i></a>
+	    				<a href="#" class="btn cancel" title="скрыть окно фильтра"><i class="icon-off"></i></a>
+    				</div>
+    			</div>
 			</div>
 			{if is_array($smarty.session.tags_array.price)}
 				<script>
 				if(column_values_for_tags['price']===undefined){
-					column_values_for_tags['price']=[];
+					column_values_for_tags['price']={};
 				}
-				{foreach from=$smarty.session.tags_array.price item=column_value}
-			   	column_values_for_tags['price'].push('{$column_value}');
-		   		{/foreach}
+				{if $smarty.session.tags_array.price.min!=''}
+				column_values_for_tags['price']['min']='{$smarty.session.tags_array.price.min}';
+				{/if}
+				{if $smarty.session.tags_array.price.max!=''}
+				column_values_for_tags['price']['max']='{$smarty.session.tags_array.price.max}';
+				{/if}
 		   		</script>
 			{/if}
 			<!-- /section:plugins/input.tag-input -->
@@ -531,6 +632,12 @@ $(document).ready(function(){
 		</td>
 		{if $admin !=''}
 		<td nowrap>
+                            {if $data_adv_share_access_can_view_all and $grid_items[i].user_id != $data_adv_share_access_user_id}
+                                {*Если у нас включена опция data_adv_share_access и мы включили опцию data_adv_share_access_can_view_all и при этом 
+                                идентификатор пользователя текущего объявления в генерации грида отличается от пользователя админки, то прячем контролы
+                                *}
+                                {else}
+                    
 			<div class="btn-group">
 				<a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
 					Еще<span class="caret"></span>
@@ -558,10 +665,12 @@ $(document).ready(function(){
 						{/if}
 				</ul>
 		</div>
+                                
 		<div class="btn-group">
 			<a title="Редактировать" href="{$estate_folder_control}?do=edit&id={$grid_items[i].id}" class="btn btn-info"><i class="icon-white icon-pencil"></i></a></li>
 			<a title="Удалить" onclick="return confirm('{$L_MESSAGE_REALLY_WANT_DELETE}');" href="{$estate_folder_control}?{if $topic_id != ''}topic_id={$topic_id}&{/if}do=delete&id={$grid_items[i].id}" class="btn btn-danger"><i class="icon-white icon-remove"></i></a></li>
 		</div>
+                            {/if}
 	</td>
 	{/if}
 	</tr>

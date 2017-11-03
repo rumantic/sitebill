@@ -1,6 +1,6 @@
 ClientOrder={
-	init_form: function(container_id, model, options){
-		var options = options || {};
+	init_form: function(container_id, model, options, custom_template = false){
+		var options = options || {/*horizontal: false*/};
 		
 		var container=$('#'+container_id);
 		if(container.length==0){
@@ -8,15 +8,19 @@ ClientOrder={
 		}
 		var model=model;
 		$.ajax({
-			url: estate_folder+'/apps/client/js/ajax.php',
-			data: {action: 'get_order_form', model: model, options: options},
+			url: estate_folder+'/js/ajax.php',
+			data: {action: 'get_order_form', model: model, options: options, _app: 'client', custom_template: custom_template},
 			dataType: 'html',
 			type: 'post',
 			success: function(html){
 				container.html(html);
+				
 				var form=container.find('form');
 				form.removeClass('form-horizontal').addClass('form-inline');
-				
+				/*if(options.horizontal){
+					form.removeClass('form-inline').addClass('form-horizontal');
+				}*/
+								
 				var errorb=$('<p class="error"></p>');
 				errorb.hide();
 				form.prepend(errorb);
@@ -34,8 +38,9 @@ ClientOrder={
 		var data=SitebillCore.serializeFormJSON(form);
 		data.action='save_order_form';
 		data.model=model;
+		data._app='client';			
 		$.ajax({
-			url: estate_folder+'/apps/client/js/ajax.php',
+			url: estate_folder+'/js/ajax.php',
 			data: data,
 			dataType: 'json',
 			type: 'post',
@@ -63,6 +68,19 @@ ClientOrder={
 		if(errorb.length==0){
 			var errorb=$('<p class="error"></p>');
 			form.prepend(errorb);
+		}
+		if(form.find('.captcha_placeholder')){
+			var data={};
+			data.action='build_captcha';
+			$.ajax({
+				url: estate_folder+'/js/ajax.php',
+				data: data,
+				dataType: 'html',
+				type: 'post',
+				success: function(html){
+					form.find('.captcha_placeholder').replaceWith(html);
+				}
+			});
 		}
 		errorb.hide();
 		

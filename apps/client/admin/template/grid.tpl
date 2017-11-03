@@ -68,6 +68,12 @@
 					<br>
 					{$order.date|date_format:'H:i'}<br>
 					<strong>{$order.client_id}</strong>
+					{if isset($order.ip) && $order.ip!=''}
+					<small>{$order.ip}</small>
+					{/if}
+					{if isset($order.src_page) && $order.src_page!=''}
+					<small>{$order.src_page}</small>
+					{/if}
 					</td>
 
 					<td class="">
@@ -172,9 +178,9 @@ $(document).ready(function(){
 			var id=_this.data('id');
 			
 			$.ajax({
-				url: estate_folder+'/apps/client/js/ajax.php',
+				url: estate_folder+'/js/ajax.php',
 				dataType: 'json',
-				data: {action: 'delete_order', id: id},
+				data: {action: 'delete_order', id: id, _app: 'client'},
 				type: 'post',
 				success: function(json){
 					if(json.status==1){
@@ -211,9 +217,9 @@ $(document).ready(function(){
 			return;
 		}
 		$.ajax({
-			url: estate_folder+'/apps/client/js/ajax.php',
+			url: estate_folder+'/js/ajax.php',
 			dataType: 'json',
-			data: {action: 'send_by_email', id: id, emails: emails, theme: theme, message: message},
+			data: {action: 'send_by_email', id: id, emails: emails, theme: theme, message: message, _app: 'client'},
 			type: 'post',
 			success: function(json){
 				if(json.status==1){
@@ -233,9 +239,9 @@ $(document).ready(function(){
 		var id=$(this).parents('.set_status').eq(0).data('id');
 		var ordel_line=$(this).parents('.order_line').eq(0);
 		$.ajax({
-			url: estate_folder+'/apps/client/js/ajax.php',
+			url: estate_folder+'/js/ajax.php',
 			dataType: 'json',
-			data: {action: 'set_status', id: id, status_id: new_status},
+			data: {action: 'set_status', id: id, status_id: new_status, _app: 'client'},
 			type: 'post',
 			success: function(json){
 				if(json.status==1){

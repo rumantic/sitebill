@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install>
-	<name>logger</name>
-	<creationDate>June 2014</creationDate>
-	<author>The Sitebill Development Team</author>
-	<authorEmail>kondin@etown.ru</authorEmail>
-	<authorUrl>http://www.sitebill.ru</authorUrl>
-	<copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
-	<license>http://www.sitebill.ru/licenses/sitebill.html</license>
+    <name>logger</name>
+    <creationDate>June 2014</creationDate>
+    <author>The Sitebill Development Team</author>
+    <authorEmail>kondin@etown.ru</authorEmail>
+    <authorUrl>http://www.sitebill.ru</authorUrl>
+    <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
+    <license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>true</backendMenu>
-	<version status="beta">1.0.4</version>
-	<administration>
-		<!-- Administration Menu Section -->
-		<menu>System logger</menu>
-	</administration>	
+    <version status="beta">1.0.5</version>
+    <administration>
+        <!-- Administration Menu Section -->
+        <menu>System logger</menu>
+    </administration>	
 </install>

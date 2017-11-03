@@ -11,22 +11,27 @@ class Remind extends User_Object {
        * @param void
        * @return void
        */
-      function Remind () {
-      	
-          $this->SiteBill();
-      }
+	function Remind () {
+      	$this->SiteBill();
+	}
       
       /**
        * Main
        */
-      function main () {
-      	if(isset($_POST['submit'])){
+	function main () {
+		$this->template->assign('title', Multilanguage::_('PASSWORD_RECOVERY'));
+		$tpl=SITEBILL_DOCUMENT_ROOT.'/apps/system/template/user.remind.tpl';
+		if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/template/user.remind.tpl')){
+			$tpl=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/template/user.remind.tpl';
+		}
+		$this->template->assign('main_file_tpl', $tpl);
+		if(isset($_POST['submit']) && !isset($_REQUEST['recovery_code'])){
       		$login=trim($this->getRequestValue('login'));
       		$email=trim($this->getRequestValue('email'));
       		
       		if($login=='' && $email==''){
-      			$rs=Multilanguage::_('NO_SUCH_USER','system');
-      			$rs.=$this->getForm();
+      			$this->template->assign('error_msg', Multilanguage::_('NO_SUCH_USER','system'));
+      			$this->getForm();
       		}else{
       			$user_array=$this->getUserId($login, $email);
       			
@@ -51,10 +56,13 @@ class Remind extends User_Object {
       					$str12=substr($fto[1], -1);
       					$fto[1]=$str11.'***'.$str12;
       				}
-      				$rs=sprintf(Multilanguage::_('REMIND_INSTRUCTION','system'), implode('@', $fto));
+      				$this->template->assign('success_msg', sprintf(Multilanguage::_('REMIND_INSTRUCTION','system'), implode('@', $fto)));
+      				$this->getRecoveryForm();
+      				$tpl=SITEBILL_DOCUMENT_ROOT.'/apps/system/template/user.remind.tpl';
+      				
       			}else{
-      				$rs=Multilanguage::_('NO_SUCH_USER','system');
-      				$rs.=$this->getForm();
+      				$this->template->assign('error_msg', Multilanguage::_('NO_SUCH_USER','system'));
+      				$this->getForm();
       			}
       		}
       		
@@ -69,20 +77,13 @@ class Remind extends User_Object {
       				$login = $email;
       			}
       			    
-      			$new_password=$this->generatePassword();
+      			$new_password=Sitebill::genPassword(6);
       			$this->updatePassword($user_id, $new_password);
-      			/*require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
-				$mailer = new Mailer();*/
-				$message = sprintf(Multilanguage::_('NEW_PASSWORD_ASC_BODY','system'), $login, $new_password, 'http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL);
+      			$message = sprintf(Multilanguage::_('NEW_PASSWORD_ASC_BODY','system'), $login, $new_password, 'http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL);
 				$subject = sprintf(Multilanguage::_('NEW_PASSWORD_ASC_TITLE','system'), $_SERVER['HTTP_HOST']);
 				
 				$to = $this->getEmail($user_id);
 				$from = $this->getConfigValue('order_email_acceptor');
-				/*if ( $this->getConfigValue('use_smtp') ) {
-					$mailer->send_smtp($to, $from, $subject, $message, 1);
-				} else {
-					$mailer->send_simple($to, $from, $subject, $message, 1);
-				}*/
 				$this->sendFirmMail($to, $from, $subject, $message);
 				$this->removePasswordRecovery($user_id, $this->getRequestValue('recovery_code'));
 				$fto=array();
@@ -97,47 +98,18 @@ class Remind extends User_Object {
 					$str12=substr($fto[1], -1);
 					$fto[1]=$str11.'***'.$str12;
 				}
-				$rs = '<div class="message">'.sprintf(Multilanguage::_('NEW_PASS_ON_POST','system'), implode('@', $fto)).'</div>';
+				$this->template->assign('success_msg', sprintf(Multilanguage::_('NEW_PASS_ON_POST','system'), implode('@', $fto)));
+				
       		}else{
       			$rs = $this->getForm();
       		}
       	}else{
-      		$rs = $this->getForm();
+      		$this->getForm();
       	}
-      	return $rs;
+      	
       }
       
-      /**
-       * Send password
-       * @param int $user_id user id
-       * @return string
-       */
-      /*
-      function sendPassword ($user_id) {
-		$new_password = $this->generatePassword();
-          
-		$login = $this->getLoginByUserID($user_id);          
-		$this->updatePassword($user_id, $new_password);
-          
-		require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
-		$mailer = new Mailer();
-		$message = "Здравствуйте.<br><br>";
-		$message .= "Вы запросили новый пароль.<br><br>";
-		$message .= "Ваш login: ".$login."<br>";
-		$message .= "Ваш пароль: ".$new_password."<br>";
-		$subject = 'Новый пароль на сайте '.$_SERVER['HTTP_HOST'];
-		$to = $this->getEmail($user_id);
-		$from = $this->getConfigValue('order_email_acceptor');
-		if ( $this->getConfigValue('use_smtp') ) {
-			$mailer->send_smtp($to, $from, $subject, $message, 1);
-		} else {
-			$mailer->send_simple($to, $from, $subject, $message, 1);
-		}
-		$rs = '<div class="message">Новый пароль отправлен на почту '.$to.'</div>';
-          
-		return $rs;
-      }
-      */
+
       /**
        * Update password
        * @param int $user_id user id
@@ -145,86 +117,41 @@ class Remind extends User_Object {
        * @return mixed
 	   */
       function updatePassword ( $user_id, $password ) {
-          $query = "UPDATE ".DB_PREFIX."_user SET password=? WHERE user_id=?";
+          $query = 'UPDATE '.DB_PREFIX.'_user SET `password`=? WHERE `user_id`=?';
           $DBC=DBC::getInstance();
           $stmt=$DBC->query($query, array(md5($password), $user_id));
           return true;
       }
       
-      /**
-       * Generate new password
-       * @param void
-       * @return string
-	   */
-      function generatePassword () {
-          $number = 6;
-          $arr = array('a','b','c','d','e','f',
-                 	   'g','h','i','j','k','l',
-                 	   'm','n','o','p','r','s',
-                 	   't','u','v','x','y','z',
-                       'A','B','C','D','E','F',
-                 	   'G','H','I','J','K','L',
-                 	   'M','N','O','P','R','S',
-                 	   'T','U','V','X','Y','Z',
-                 	   '1','2','3','4','5','6',
-                 	   '7','8','9','0');
-
-          $pass = "";
-
-          for($i = 0; $i < $number; $i++) {
-              $index = rand(0, count($arr) - 1);
-              $pass .= $arr[$index];
-          }
-          return $pass;
-      }
-      
+   
       /**
        * Get form
        * @param void
        * @return string
        */
-      function getForm () {
-      	$rs .= '<table border="0" cellpadding="0" cellspacing="0" align="center">';
-		$rs .= '<tr>';
-		$rs .= '<td class="special">';
-		$rs .= '<div id="admin_area">';
-		$rs .= '<h1>'.Multilanguage::_('PASSWORD_RECOVERY','system').'</h1>';
-       	$rs .= '<form method="post" action="'.SITEBILL_MAIN_URL.'/remind/'.'">';
-        $rs .= '';
-        $rs .= '<table border="0">';
-        
-        $rs .= '<tr>';
-        if ( 1==$this->getConfigValue('email_as_login') ) {
-        	$rs .= '<td class="special">'.Multilanguage::_('TYPE_LOGIN_PASS_EMAILMODE','system').': </td>';
-        }else{
-        	$rs .= '<td class="special">'.Multilanguage::_('TYPE_LOGIN_PASS','system').': </td>';
-        }
-        
-        $rs .= '<td class="special"><input type="text" name="login" id="login"></td>';
-        $rs .= '</tr>';
-        
-        /*
-        $rs .= '<tr>';
-        $rs .= '<td class="special">Или e-mail: </td>';
-        $rs .= '<td class="special"><input type="text" name="email" id="email"></td>';
-        $rs .= '</tr>';
-        */
-        
-        $rs .= '<tr>';
-        $rs .= '<td class="special"></td>';
-        $rs .= '<td class="special"><input type="submit" name="submit" value="'.Multilanguage::_('SEND_PASSWORD','system').'"></td>';
-        $rs .= '</tr>';
-        $rs .= '</table>';
-        //$rs .= '<input type="hidden" name="do" value="login">';
-        $rs .= '</form>';
-		$rs .= '</div> ';   
-		$rs .= '</td>';
-		$rs .= '</tr>';
-		$rs .= '</table>';
-      	
-          
-          return $rs;
-      }
+		function getForm () {
+	      	
+	      	if ( 1==$this->getConfigValue('email_as_login') ) {
+	      		$this->template->assign('email_as_login', 1);
+	      	}
+	      	$this->template->assign('remind_href', SITEBILL_MAIN_URL.'/remind'.Sitebill::$_trslashes);
+	      	$ftpl=SITEBILL_DOCUMENT_ROOT.'/apps/system/template/user.remind.form.tpl';
+	      	if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/template/user.remind.form.tpl')){
+	      		$ftpl=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/template/user.remind.form.tpl';
+	      	}
+	      	$this->template->assign('remind_form', $ftpl);
+	      	//$tpl=SITEBILL_DOCUMENT_ROOT.'/apps/system/template/user.remind.tpl';
+	      	//$this->template->assign('main_file_tpl', $tpl);
+		}
+		
+		function getRecoveryForm () {
+			$this->template->assign('recovery_href', SITEBILL_MAIN_URL.'/remind'.Sitebill::$_trslashes);
+			$ftpl=SITEBILL_DOCUMENT_ROOT.'/apps/system/template/user.remind.recoveryform.tpl';
+			if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/template/user.remind.recoveryform.tpl')){
+				$ftpl=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/template/user.remind.recoveryform.tpl';
+			}
+			$this->template->assign('recovery_form', $ftpl);
+		}
       
     
       function getUserId($login,$email){
@@ -249,22 +176,22 @@ class Remind extends User_Object {
       
       function addPasswordRecovery($user_id){
       	$code=md5(time());
-      	$query="INSERT INTO ".DB_PREFIX."_password_recovery (user_id, recovery_code) VALUES (?, ?)";
+      	$query='INSERT INTO '.DB_PREFIX.'_password_recovery (`user_id`, `recovery_code`) VALUES (?, ?)';
       	$DBC=DBC::getInstance();
       	$stmt=$DBC->query($query, array($user_id, $code));
       	return $code;
       }
       
       function removePasswordRecovery($user_id, $code){
-      	$query="DELETE FROM ".DB_PREFIX."_password_recovery WHERE user_id=? AND recovery_code=?";
+      	$query='DELETE FROM '.DB_PREFIX.'_password_recovery WHERE `user_id`=? AND `recovery_code`=?';
       	$DBC=DBC::getInstance();
       	$stmt=$DBC->query($query, array($user_id, $code));
       	return;
       }
       
-      function checkRecoveryCode($code){
-      	$id=0;
-      	$query="SELECT user_id FROM ".DB_PREFIX."_password_recovery WHERE recovery_code=?";
+	function checkRecoveryCode($code){
+		$id=0;
+		$query='SELECT `user_id` FROM '.DB_PREFIX.'_password_recovery WHERE `recovery_code`=?';
       	$DBC=DBC::getInstance();
       	$stmt=$DBC->query($query, array($code));
       	
@@ -273,5 +200,5 @@ class Remind extends User_Object {
       		$id=(int)$ar['user_id'];
       	}
       	return $id;
-      }
+	}
 }

@@ -53,14 +53,14 @@ class geodata_admin extends Object_Manager {
     		$config_admin->addParamToConfig('apps.geodata.map_zoom_default','','Масштаб карты');
     	}
     	if ( !$config_admin->check_config_item('apps.geodata.allow_view_coding') ) {
-    		$config_admin->addParamToConfig('apps.geodata.allow_view_coding','0','Разрешить геокодирование при просмотре объявления');
+    		$config_admin->addParamToConfig('apps.geodata.allow_view_coding','1','Разрешить геокодирование при просмотре объявления');
     	}
     	
     	if ( !$config_admin->check_config_item('apps.geodata.try_encode') ) {
-    		$config_admin->addParamToConfig('apps.geodata.try_encode','0','Включить попытку геокодировать положение при сохранении\изменении объявления');
+    		$config_admin->addParamToConfig('apps.geodata.try_encode','1','Включить попытку геокодировать положение при сохранении\изменении объявления');
     	}
     	if ( !$config_admin->check_config_item('apps.geodata.try_encode_fields') ) {
-    		$config_admin->addParamToConfig('apps.geodata.try_encode_fields','','Список системных имен полей для геокодирования при сохранении\изменении объявления(разделитель - запятая)');
+    		$config_admin->addParamToConfig('apps.geodata.try_encode_fields','city_id,street_id,number','Список системных имен полей для геокодирования при сохранении\изменении объявления(разделитель - запятая)');
     	}
     	if ( !$config_admin->check_config_item('apps.geodata.try_encode_anycase') ) {
     		$config_admin->addParamToConfig('apps.geodata.try_encode_anycase','0','Проводить геокодирование даже если координаты указаны');
@@ -73,6 +73,9 @@ class geodata_admin extends Object_Manager {
     	} 
     	if ( !$config_admin->check_config_item('apps.geodata.no_scroll_zoom') ) {
     		$config_admin->addParamToConfig('apps.geodata.no_scroll_zoom','0','Выключить зуммирование карты скроллом',1);
+    	}
+    	if ( !$config_admin->check_config_item('apps.geodata.iframe_map_limit') ) {
+    		$config_admin->addParamToConfig('apps.geodata.iframe_map_limit','0','Количество объектов выводимых на iframe-карте. 0 - выводить все');
     	}
     }
     
@@ -313,7 +316,7 @@ class geodata_admin extends Object_Manager {
      * @return string
      */
     
-    function grid ($params=array()) {
+    function grid ($params=array(), $default_params=array()) {
     	
     }
     
@@ -418,20 +421,21 @@ class geodata_admin extends Object_Manager {
     		foreach ($ids as $id){
     			$form_data_shared = $form_data;
     			$form_data_shared = $data_model->init_model_data_from_db ( 'data', 'id', $id, $form_data_shared, true );
-    			$form_data_shared=$this->try_geocode($form_data_shared);
+    			$str='';
+    			$form_data_shared=$this->try_geocode($form_data_shared, $str);
     			//print_r($form_data_shared[$geofield]);
     			if($form_data_shared[$geofield]['value']['lat']!='' && $form_data_shared[$geofield]['value']['lng']!=''){
     				$stmt=$DBC->query($update_query, array($form_data_shared[$geofield]['value']['lat'], $form_data_shared[$geofield]['value']['lng'], $id));
     				$geocoded++;
     				$report[]=array(
     						'id'=>$id,
-    						'report'=>'Геокодирование удалось.',
+    						'report'=>'Геокодирование удалось. ('.$str.')',
     						'error_status'=>0
     				);
     			}else{
     				$report[]=array(
     						'id'=>$id,
-    						'report'=>'Геокодинг не возможен.',
+    						'report'=>'Геокодинг не возможен. ('.$str.')',
     						'error_status'=>1
     				);
     				$_SESSION['geodata']['not_geocoded']++;
@@ -640,7 +644,7 @@ class geodata_admin extends Object_Manager {
     	return false;
     }
     
-    public function try_geocode($form_data){
+    public function try_geocode($form_data, &$ret_str=''){
     	$geofield='';
     	//
     	foreach ($form_data as $form_field){
@@ -665,7 +669,9 @@ class geodata_admin extends Object_Manager {
     				$val='';
     				$gf=trim($gf);
     				if(isset($form_data[$gf])){
-    					if(in_array($form_data[$gf]['type'], array('select_box', 'select_by_query'))){
+    					if($form_data[$gf]['type']=='tlocation'){
+							$val=$form_data[$gf]['tlocation_string'];
+						}elseif(in_array($form_data[$gf]['type'], array('select_box', 'select_by_query'))){
     						$val=$form_data[$gf]['value_string'];
     					}elseif(in_array($form_data[$gf]['type'], array('safe_string', 'gadres'))){
     						$val=$form_data[$gf]['value'];
@@ -677,12 +683,17 @@ class geodata_admin extends Object_Manager {
     			}
     			$str='';
     			if(!empty($vals)){
+    				
+    				if(trim($this->getConfigValue('apps.geodata.prevtext'))!=''){
+    					array_unshift($vals, trim($this->getConfigValue('apps.geodata.prevtext')));
+    				}
     				$str=implode(', ', $vals);
     			}
     			
     			
     				
     			if($str!=''){
+    				
     				//require_once SITEBILL_DOCUMENT_ROOT.'/apps/geodata/admin/admin.php';
     				if('y'==$this->getConfigValue('apps.geodata.save_geocoder')){
     					$res=self::geocode_address($str);
@@ -701,6 +712,7 @@ class geodata_admin extends Object_Manager {
     			}
     		}
     	}
+    	$ret_str=$str;
     	return $form_data;
     }
     

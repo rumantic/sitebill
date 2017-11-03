@@ -40,7 +40,7 @@ var price_for=Number({/literal}{if (isset($price)) && ($price ne '')}{$price}{el
         {*$currency_list*}
             <div class="type control-group">
                 <label class="control-label" for="inputType">
-                    {$L_TYPE}
+                    <editable id="type_title_edit" data-file="standart_search_form.tpl">{$L_TYPE}</editable>
                 </label>
                 <div class="controls">
                 	{$structure_box}
@@ -51,7 +51,7 @@ var price_for=Number({/literal}{if (isset($price)) && ($price ne '')}{$price}{el
             {if $country_list != ''}
             <div class="type control-group">
                 <label class="control-label" for="inputType">
-                    {$L_COUNTRY}
+                    <editable id="country_title_edit" data-file="standart_search_form.tpl">{$L_COUNTRY}</editable>
                 </label>
                 <div class="controls">
                 	{$country_list}
@@ -62,7 +62,7 @@ var price_for=Number({/literal}{if (isset($price)) && ($price ne '')}{$price}{el
             {if $region_list != ''}
             <div class="type control-group">
                 <label class="control-label" for="inputType">
-                    {$L_REGION}
+                    <editable id="region_title_edit" data-file="standart_search_form.tpl">{$L_REGION}</editable>
                 </label>
                 <div class="controls">
                 	{$region_list}
@@ -73,7 +73,7 @@ var price_for=Number({/literal}{if (isset($price)) && ($price ne '')}{$price}{el
             {if $city_list != ''}
             <div class="type control-group">
                 <label class="control-label" for="inputType">
-                    {$L_CITY}
+                    <editable id="city_title_edit" data-file="standart_search_form.tpl">{$L_CITY}</editable>
                 </label>
                 <div class="controls">
                 	{$city_list}
@@ -84,7 +84,7 @@ var price_for=Number({/literal}{if (isset($price)) && ($price ne '')}{$price}{el
             {if $district_list != ''}
             <div class="type control-group">
                 <label class="control-label" for="inputType">
-                    {$L_DISTRICT}
+                    <editable id="district_title_edit" data-file="standart_search_form.tpl">{$L_DISTRICT}</editable>
                 </label>
                 <div class="controls">
                 	{$district_list}
@@ -95,7 +95,7 @@ var price_for=Number({/literal}{if (isset($price)) && ($price ne '')}{$price}{el
             {if $street_list != ''}
             <div class="type control-group">
                 <label class="control-label" for="inputType">
-                    {$L_STREET}
+                    <editable id="street_title_edit" data-file="standart_search_form.tpl">{$L_STREET}</editable>
                 </label>
                 <div class="controls">
                 	{$street_list}
@@ -106,7 +106,7 @@ var price_for=Number({/literal}{if (isset($price)) && ($price ne '')}{$price}{el
             {if $metro_list != ''}
             <div class="type control-group">
                 <label class="control-label" for="inputType">
-                    {$L_METRO}
+                    <editable id="metro_title_edit" data-file="standart_search_form.tpl">{$L_METRO}</editable>
                 </label>
                 <div class="controls">
                 	{$metro_list}
@@ -150,7 +150,7 @@ var price_for=Number({/literal}{if (isset($price)) && ($price ne '')}{$price}{el
             
             <div class="type control-group">
                 <label class="control-label" for="inputType">
-                    {$L_ROOMS1}
+                    <editable id="rooms_title_edit" data-file="standart_search_form.tpl">{$L_ROOMS1}</editable>
                 </label>
                 <div class="controls">
 					{if isset($smarty.request.room_count) && is_array($smarty.request.room_count)}

@@ -18,7 +18,7 @@ class FB_Logger {
 		$this->config=array(
 		'FB_APP_ID'             => $Config->getConfigValue('fblogin.api_key'), // ID приложения
 		'FB_APP_SECRET'         => $Config->getConfigValue('fblogin.secret'), // Защищенный ключ
-		'FB_REDIRECT_URI'          => $Config->getConfigValue('fblogin.redirect_url'),
+		'FB_REDIRECT_URI'          => (1===(int)$Config->getConfigValue('work_on_https') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/socialauth/login?do=login_fb',/*$Config->getConfigValue('fblogin.redirect_url'),*/
 		'DISPLAY'               => 'page', // page OR popup OR touch OR wap
 		'SCOPE'                 => array(), 
 		);
@@ -38,7 +38,7 @@ class FB_Logger {
 				$Realty_User=Realty_User::getInstance();
 				
 				$_login='fb'.$user_profile['id'];
-				$_pass=md5('fk'.$user_profile['id'].$user_profile['username']);
+				$_pass=md5('fk'.$user_profile['id'].$user_profile['username'].$Config->getConfigValue('apps.socialauth.salt'));
 				if(!$Realty_User->checkUserExistence($_login, $_pass)){
 					$now = (string) time();
 					$user_verification_code = md5(uniqid().$now);

@@ -387,15 +387,15 @@ $(document).ready(function(){
 		var _hidden=parent.find('input[type=hidden]');
 		var _pk=$(this).attr('pk');
 		var _table=$(this).attr('from');
-		var _table=$(this).attr('from');
+		var _model=$(this).data('model');
 		var _depel=$(this).data('depel');
 		var _depelkey=$(this).data('depelkey');
+		var _noptappend=$(this).data('notappend');
 		
 		
 		$(this).autocomplete({
 			open: function() { 
 	            $('.ui-menu').width(_this.width());
-	            /**/
 	        } ,
 			source: function( request, response ) {
 				var answer=[];
@@ -406,9 +406,9 @@ $(document).ready(function(){
 				}
 				$.ajax({
 					url: estate_folder+'/apps/tlocation/js/ajax.php',
-					type: 'GET',
+					type: 'post',
 					dataType: 'json',
-					data: 'action=get_geolist&from='+_table+'&term='+encodeURIComponent(request.term)+'&depelkey='+_depelkey+'&dep_val='+dep_val,
+					data: 'action=get_geolist&from='+_table+'&term='+encodeURIComponent(request.term)+'&depelkey='+_depelkey+'&dep_val='+dep_val+'&model='+_model,
 					success: function(json) {
 						
 						$.map(json,function(n,i){
@@ -425,20 +425,25 @@ $(document).ready(function(){
 	    	},
 	    	response: function( event, ui ) {
 				_hidden.val('');
+				
 			},
 			minLength: 1,
 			select: function( event, ui ) {
 				event.stopPropagation();
 				_hidden.val(ui.item.id);
+				
 				//_hidden.trigger('change');
 			},
 			change: function( event, ui ) {
 				_hidden.trigger('change');
+				
 				if(ui.item===null){
 					_hidden.val('');
-					
+					if(_noptappend){
+						_this.val('');
+					}
 				}
-			},
+			}
 		});
 		
 		/*$(this).input(function(){

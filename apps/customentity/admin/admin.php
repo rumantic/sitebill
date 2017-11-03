@@ -5,23 +5,18 @@ class customentity_admin extends Object_Manager {
     private static $custom_entity_holder=false;
     
     function __construct() {
-    	
-    	
-        $this->SiteBill();
-        
+    	$this->SiteBill();
         $this->entity=$this->getRequestValue('action');
-        Multilanguage::appendAppDictionary('entity');
-        if($this->entity!='' && $this->entity!='customentity'){
-	        $model=$this->initEntityModel($this->entity);
-	        $this->data_model=$model;
-	        //echo $this->getEntityPKName($model[$this->entity]);
-	        $this->table_name = $this->entity;
-	        $this->action = $this->entity;
-	        $this->primary_key = $this->getEntityPKName($model[$this->entity]);
+        $ent=$this->getEntityList();
+        if(isset($ent[$this->entity])){
+        	Multilanguage::appendAppDictionary('entity');
+        	$model=$this->initEntityModel($this->entity);
+        	$this->data_model=$model;
+        	$this->table_name = $this->entity;
+        	$this->action = $this->entity;
+        	$this->primary_key = $this->getEntityPKName($model[$this->entity]);
         }
-        
-        
-    }
+	}
     
     /*
      * Установка entity вручную, для внеших вызовов из других классов

@@ -54,6 +54,10 @@ class Table_View extends Data_Model {
                 case 'textarea':
                     $rs .= $this->get_textarea_row($item_array);
                 break;
+				
+				 case 'textarea_editor':
+                    $rs .= $this->get_textarea_row($item_array);
+                break;
                 
                 case 'safe_string':
                     $rs .= $this->get_safe_text_input($item_array);

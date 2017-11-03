@@ -58,7 +58,7 @@ class Permission extends Sitebill {
     
     function clear_menu_array( $menu_array, $user_id ) {
     	foreach ($menu_array as $node => $node_array ) {
-    		if ( is_array($node_array['childs']) ) {
+    		if ( isset($node_array['childs']) && is_array($node_array['childs']) ) {
     			foreach ($node_array['childs'] as $action => $app_info ) {
     				//echo 'action = '.$action.'<br>';
     				//echo 'user_id = '.$user_id.'<br>';

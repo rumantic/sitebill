@@ -14,7 +14,7 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
      * @param void
      * @return string
      */
-    function main () {
+   /* function main () {
         if ( $_REQUEST['tid'] == '' ) {
             $_REQUEST['tid'] = 2;
         }
@@ -67,7 +67,7 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
         $data_array = $this->loadRecord($this->getRequestValue('id'));
         $rs = $this->getForm( $data_array );
         return $rs;
-    }
+    }*/
     
     /**
      * Get not active adv count
@@ -963,6 +963,18 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
     	if ( isset($_REQUEST['action']) AND ($_REQUEST['action'] == 'datamain') ) {
     		$menu['datamain']['active'] = 1;
     	}
+	
+    	$menu['client']['title'] = Multilanguage::_('L_CLIENT_MENU');
+    	$menu['client']['href'] = 'index.php?action=client';
+    	if ( isset($_REQUEST['action']) AND ($_REQUEST['action'] == 'client') ) {
+    		$menu['client']['active'] = 1;
+    	}
+	
+    	$menu['table']['title'] = Multilanguage::_('L_TABLE_MENU');
+    	$menu['table']['href'] = 'index.php?action=table';
+    	if ( isset($_REQUEST['action']) AND ($_REQUEST['action'] == 'table') ) {
+    		$menu['table']['active'] = 1;
+    	}
     	
     	
     	$menu['references']['title'] = Multilanguage::_('L_ADMIN_MENU_REFERENCES');
@@ -1060,7 +1072,7 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
      * @param array $rows rows
      * @return boolean 
      */
-    function massDelete ( $rows ) {
+    /*function massDelete ( $rows ) {
         if ( count($rows) ) {
         	$DBC=DBC::getInstance();
         	foreach ( $rows as $item_id => $item ) {
@@ -1072,26 +1084,26 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
             $item_count = 0;
         }
         return sprintf(Multilanguage::_('L_MESSAGE_DELETED_N_RECORDS'),$item_count);//'Удалено '.$item_count.' записи(ей)';
-    }
+    }*/
     
     /**
      * Delete record
      * @param int $record_id record ID
      * @return boolean
      */
-    function deleteRecord ( $record_id ) {
+    /*function deleteRecord ( $record_id ) {
     	$DBC=DBC::getInstance();
         $query = 'delete from '.DB_PREFIX.'_data where id=?';
         $stmt=$DBC->query($query, array($record_id));
         return true;
-    }
+    }*/
     
     /**
      * Has childs?
      * @param int $tid tid
      * @return boolean
      */
-    function hasChilds ( $tid ) {
+    /*function hasChilds ( $tid ) {
     	$DBC=DBC::getInstance();
         $query = 'select COUNT(id) AS cid from '.DB_PREFIX.'_topic where parent_id=?';
         $stmt=$DBC->query($query, array($tid));
@@ -1102,7 +1114,7 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
         	}
         }
         return false;
-    }
+    }*/
     
     /**
      * Get first tid1
@@ -1127,7 +1139,7 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
      * @param void
      * @return string
      */
-    function getGridFrame () {
+    /*function getGridFrame () {
         if ( $_REQUEST['tid'] == '' ) {
             $_REQUEST['tid'] = 2;
         }
@@ -1140,7 +1152,7 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
         $rs .= '</tr>';
         $rs .= '</table>';
         return $rs;
-    }
+    }*/
     
     /**
      * Get additional menu
@@ -1158,7 +1170,7 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
      * @param void
      * @return string
      */
-    function getSearchByIDForm () {
+    /*function getSearchByIDForm () {
         $rs .= '<table border="0" width="100%">';
         $rs .= '<tr>';
         $rs .= '<td style="text-align: center;">';
@@ -1173,7 +1185,7 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
         $rs .= '</tr>';
         $rs .= '</table>';
         return $rs;
-    }
+    }*/
     
     
     /**
@@ -1181,7 +1193,7 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
      * @param void
      * @return string
      */
-    function grid () {
+    /*function grid () {
         $where_array = false;
         $where_array[] = DB_PREFIX.'_district.id='.DB_PREFIX.'_data.district_id';
         if ( $_REQUEST['tid'] != '' ) {
@@ -1298,7 +1310,7 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
         $rs .= '</table>';
         $rs .= '</form>';
         return $rs;
-    }
+    }*/
     
     
     /**
@@ -1306,7 +1318,7 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
      * @param array $data_array data array
      * @return string
      */
-    function newRecord ( $data_array ) {
+    /*function newRecord ( $data_array ) {
         
         if ( $data_array['new_country'] != '' ) {
             require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/country/country_manager.php');
@@ -1385,14 +1397,14 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
         }
         $this->editImage($record_id);
         return Multilanguage::_('L_MESSAGE_ADD_SUCCESS');
-    }
+    }*/
     
     /**
      * Edit record
      * @param array $data_array data array
      * @return string
      */
-    function editRecord ( $data_array ) {
+    /*function editRecord ( $data_array ) {
         global $sitebill_document_root;
         
         if ( $data_array['new_country'] != '' ) {
@@ -1460,14 +1472,14 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
 		$this->editImage($data_array['id']);
         return Multilanguage::_('L_MESSAGE_UPDATE_SUCCESS');
 
-    }
+    }*/
     
     /**
      * Check data
      * @param array $data_array data array 
      * @return boolean
      */
-    function checkData ( $data_array ) {
+    /*function checkData ( $data_array ) {
         global $debug_mode;
         if ( $this->getRequestValue('district_id') == '' ) {
             $this->riseError(Multilanguage::_('L_ERROR_DISTRICT_NOT_SPECIFIED'));
@@ -1484,14 +1496,14 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
             return false;
         }
         return true;
-    }
+    }*/
     
     /**
      * Get delete JS function
      * @param void
      * @return string
      */
-    function getDeleteJsFunction () {
+    /*function getDeleteJsFunction () {
         $rs .= '<script>';
         $rs .= '
 function deleteRecord ( record_id ) {
@@ -1504,7 +1516,7 @@ function deleteRecord ( record_id ) {
 </script>
 ';
         return $rs;
-    }
+    }*/
     
     /**
      * Get edit form
@@ -1784,7 +1796,7 @@ function deleteRecord ( record_id ) {
      * @param int $parent_id parent ID
      * @return string
      */
-    function getSubTypeFlatList ($type_id, $parent_id ) {
+    /*function getSubTypeFlatList ($type_id, $parent_id ) {
         $ra = array();
         if ( $parent_id === false ) {
             $rs = '';
@@ -1812,14 +1824,14 @@ function deleteRecord ( record_id ) {
         }
         $rs .= '</ul>';
         return $rs;
-    }
+    }*/
     
     /**
      * Get child list
      * @param int $id id
      * @return string
      */
-    function getChildList ( $id ) {
+    /*function getChildList ( $id ) {
         $query = "select * from ".DB_PREFIX."_topic where parent_id=$id order by `order`";
         $DBC=DBC::getInstance();
 		$stmt=$DBC->query($query);
@@ -1836,7 +1848,7 @@ function deleteRecord ( record_id ) {
 			$rs .= '</ul>';
 		}
 		return $rs;
-    }
+    }*/
     
     
     
@@ -1873,7 +1885,7 @@ function deleteRecord ( record_id ) {
      * @param int $district_id district ID
      * @return string
      */
-    function getDistrictList( $district_id ) {
+    /*function getDistrictList( $district_id ) {
         $query = "select * from ".DB_PREFIX."_district order by id";
         $DBC=DBC::getInstance();
 		$stmt=$DBC->query($query);
@@ -1891,7 +1903,7 @@ function deleteRecord ( record_id ) {
 			$rs .= '</select>';
 		}
         return $rs;
-    }
+    }*/
     
     
     
@@ -1900,7 +1912,7 @@ function deleteRecord ( record_id ) {
      * @param string $street street
      * @return string
      */
-    function getStreetList ( $street ) {
+    /*function getStreetList ( $street ) {
         //echo 'street = '.$street;
         $ra = array();
         $query = "select street_id, name from ".DB_PREFIX."_street order by name";
@@ -1925,14 +1937,14 @@ function deleteRecord ( record_id ) {
         }
         $rs .= '</select>';
         return $rs;
-    }
+    }*/
     
     /**
      * Load record
      * @param int $record_id record ID
      * @return array
      */
-    function loadRecord ( $record_id ) {
+   /* function loadRecord ( $record_id ) {
         $query = "select * from ".DB_PREFIX."_data where id=$record_id";
         $DBC=DBC::getInstance();
 		$stmt=$DBC->query($query);
@@ -1950,5 +1962,5 @@ function deleteRecord ( record_id ) {
         $ar['tid1'] = $ar['type_id'];
         $ar['tid'] = $ar['topic_id'];
         return $ar;
-    }
+    }*/
 }

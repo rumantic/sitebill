@@ -18,6 +18,16 @@ class table_update extends SiteBill {
         $query_data[] = "alter table ".DB_PREFIX."_table_searchform modify topic_id text";
         $query_data[] = "alter table ".DB_PREFIX."_table_searchform add column title_en text";
         
+        $query_data[] = "alter table ".DB_PREFIX."_customentity add column is_public tinyint(1) NOT NULL DEFAULT '0'";
+        $query_data[] = "alter table ".DB_PREFIX."_customentity add column alias varchar(255)";
+        $query_data[] = "alter table ".DB_PREFIX."_customentity add column list_tpl varchar(255)";
+        $query_data[] = "alter table ".DB_PREFIX."_customentity add column view_tpl varchar(255)";
+        $query_data[] = "alter table ".DB_PREFIX."_customentity add column sortby varchar(255)";
+        $query_data[] = "alter table ".DB_PREFIX."_customentity add column sortorder varchar(255)";
+        $query_data[] = "alter table ".DB_PREFIX."_customentity add column per_page int(11)";
+        $query_data[] = "alter table ".DB_PREFIX."_customentity add column list_title varchar(255)";
+        $query_data[] = "alter table ".DB_PREFIX."_customentity add column view_title varchar(255)";
+        
     	require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php';
 		require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php';
 		$Structure_Manager=new Structure_Manager();

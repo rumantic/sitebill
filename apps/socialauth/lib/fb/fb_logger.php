@@ -18,7 +18,7 @@ class Fb_Logger extends Common_Logger {
 		$this->config=array(
 			'CLIENT_ID'		=>	$Config->getConfigValue('apps.socialauth.fb.client_id'),
 			'CLIENT_SECRET'	=>	$Config->getConfigValue('apps.socialauth.fb.client_secret'),
-			'REDIRECT_URI'	=>	'http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/socialauth/login?do=login_fb',
+			'REDIRECT_URI'	=>	(1===(int)$Config->getConfigValue('work_on_https') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL.'/socialauth/login?do=login_fb',
 			'TOKEN_URL'		=>	'https://graph.facebook.com/oauth/access_token',
 			'AUTH_URL'		=>	'https://www.facebook.com/dialog/oauth',
 		);
@@ -50,18 +50,47 @@ class Fb_Logger extends Common_Logger {
 			$params['code']=$_GET['code'];
 			
 			$tokenInfo = null;
-			parse_str(file_get_contents($url . '?' . http_build_query($params)), $tokenInfo);
-			
+			$d=file_get_contents($url . '?' . http_build_query($params));
+			$tokenInfo=json_decode($d, true);
+		
+		
 			if (count($tokenInfo) > 0 && isset($tokenInfo['access_token'])) {
+					
+				
 				$params = array('access_token' => $tokenInfo['access_token']);
-			
-				$userInfo = json_decode(file_get_contents('https://graph.facebook.com/me' . '?' . urldecode(http_build_query($params))));
+				$params['fields']='id,last_name,first_name,name,email,picture';
+				$x=file_get_contents('https://graph.facebook.com/v2.8/me' . '?' . urldecode(http_build_query($params)));
+				
+				$userInfo = json_decode($x);
+				
 				if (isset($userInfo->id)) {
 					$_login='fb'.$userInfo->id;
-					$_pass=$_login.$Config->getConfigValue('apps.socialauth.salt');
-					$email = $_login.'@fb.com';
+					$_pass=Sitebill::genPassword();
+					$email = $userInfo->email;
+					/*if(!isset($userInfo->email) || $userInfo->email==''){
+						$email = $_login.'@fb.com';
+					}else{
+						$email = $userInfo->email;
+					}*/
+					
 					$_pass_md5=md5($_pass);
-					$this->authUser($_login, $_pass, SiteBill::iconv('utf-8', SITE_ENCODING, $userInfo->name), $email);
+					
+					$ssInfo['ssType']='fb';
+					$ssInfo['id']=$userInfo->id;
+					$ssInfo['email']='';
+					if(isset($userInfo->email)){
+						$ssInfo['email']=$userInfo->email;
+					}
+					
+					$ssInfo['name']=$userInfo->name;
+					//$ssInfo['link']=$userInfo->link;
+					$ssInfo['picture']=$userInfo->picture;
+					$ssInfo['_email']='fb'.$userInfo->id.'@fb.com';
+					$ssInfo['_login']='fb'.$userInfo->id;
+					$ssInfo['_pass']=$_pass;
+					$_SESSION['ssAuthData']=$ssInfo;
+					
+					//$this->authUser($_login, $_pass, SiteBill::iconv('utf-8', SITE_ENCODING, $userInfo->name), $email);
 					
 					return true;
 				}

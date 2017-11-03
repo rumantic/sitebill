@@ -98,22 +98,22 @@
 				        <div class="bottom-inner row">
 				            <div class="item span4">
 				                <div class="address decoration"></div>
-				                <h2><a>{$LT_ADD_YOUR_OWN}</a></h2>
-				                <p>{$LT_ADD_YOUR_OWN_DESC}</p>
-				                <a href="{$estate_folder}/add/" class="btn btn-primary">{$LT_VIEW_DETAILS}</a>
+                                                <h2><a><editable id="add_title_main" data-file="main.tpl">{$LT_ADD_YOUR_OWN}</editable></a></h2>
+				                <p><editable id="add_desc_main" data-file="main.tpl">{$LT_ADD_YOUR_OWN_DESC}</editable></p>
+                                            <a href="{$estate_folder}/add/" class="btn btn-primary">{$LT_VIEW_DETAILS}</a>
 				            </div><!-- /.item -->
 
 				            <div class="item span4">
 				                <div class="gps decoration"></div>
-				                <h2><a>{$LT_RENT_FLAT}</a></h2>
-				                <p>{$LT_RENT_FLAT_DESC}</p>
+                                                <h2><a><editable id="rent_title_main" data-file="main.tpl">{$LT_RENT_FLAT}</editable></a></h2>
+				                <p><editable id="rent_desc_main" data-file="main.tpl">{$LT_RENT_FLAT_DESC}</editable></p>
 				                <a href="{$estate_folder}/getrent/" class="btn btn-primary">{$LT_VIEW_DETAILS}</a>
 				            </div><!-- /.item -->
 
 				            <div class="item span4">
 				                <div class="key decoration"></div>
-				                <h2><a>{$LT_MORTGAGES}</a></h2>
-				                <p>{$LT_MORTGAGES_DESC}</p>
+                                                <h2><a><editable id="mort_title_main" data-file="main.tpl">{$LT_MORTGAGES}</editable></a></h2>
+				                <p><editable id="mort_desc_main" data-file="main.tpl">{$LT_MORTGAGES_DESC}</editable></p>
 				                <a href="{$estate_folder}/ipotekaorder/" class="btn btn-primary">{$LT_VIEW_DETAILS}</a>
 				            </div><!-- /.item -->
 				        </div><!-- /.bottom-inner -->

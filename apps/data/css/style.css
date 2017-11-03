@@ -5,8 +5,12 @@
   vertical-align: middle;
   background-color: #FFF;
   border: 1px solid #d5d5d5;
-  width: 106px;
+  width: 50px;
 }
+.common-grid-sortable {
+    font-size: 12px;
+}
+
 
 .tags:hover {
   border-color: #b5b5b5;

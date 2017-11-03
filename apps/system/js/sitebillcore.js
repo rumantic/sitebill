@@ -11,17 +11,11 @@ var SitebillCore={
 	getDialogPositionCoords: function(dialog_width, dialog_height){
 		var w_width=(window.innerWidth) ? window.innerWidth : ((document.all) ? document.body.offsetWidth : null); 
 		var w_height=(window.innerHeight) ? window.innerHeight : ((document.all) ? document.body.offsetHeight : null);
-		
-		//this.frozenBody();
-		
 		var scroll=this.getBodyScrollTop();
-		
 		var dialog_w=dialog_width;
 		var dialog_h=dialog_height;
-					
 		var dialog_top=((w_height-dialog_h)/2);
 		var dialog_left=((w_width-dialog_w)/2);
-		
 		return Array(dialog_left,dialog_top+scroll);
 	},
 	isValidEmail: function (email)

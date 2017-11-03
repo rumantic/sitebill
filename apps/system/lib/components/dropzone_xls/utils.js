@@ -8,7 +8,7 @@
 
 	//console.log('ca =');
 	//console.log(ca);
-	//console.log('datastr' + datastr);
+	//console.log(datastr.join('&'));
 
     		
     	//var ret = '';
@@ -23,10 +23,18 @@
 	$("#button_block").css("display", "none");
 	$("#uploads_result").html("");
 	$.getJSON(url,{},function(data){
+            //console.log(data);
     		$("#uploads_result").html("");
     		$("#uploads_result").append(data.content);
 		$(".loading").css("display", "none");
-	});
+	}).fail(function() {
+            //console.log( data );
+            
+            //console.log( "error" );
+        })
+        .always(function() {
+            //console.log( "complete" );
+        });;
     }
     $(document).ready(function(){
     	$(".applied").sortable({
