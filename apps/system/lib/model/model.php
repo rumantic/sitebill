@@ -4121,14 +4121,21 @@ class Data_Model extends SiteBill {
 		$form_data['data']['id']['type'] = 'primary_key';
 		$form_data['data']['id']['required'] = 'off';
 		$form_data['data']['id']['unique'] = 'off';
-		
-		$form_data['data']['user_id']['name'] = 'user_id';
-		$form_data['data']['user_id']['title'] = 'Идентификатор пользователя';
-		$form_data['data']['user_id']['value'] = 0;
-		$form_data['data']['user_id']['length'] = 40;
-		$form_data['data']['user_id']['type'] = 'user_id';
-		$form_data['data']['user_id']['required'] = 'off';
-		$form_data['data']['user_id']['unique'] = 'off';
+
+        $form_data['data']['user_id']['name'] = 'user_id';
+        $form_data['data']['user_id']['title'] = 'Владелец';
+        $form_data['data']['user_id']['primary_key_name'] = 'user_id';
+        $form_data['data']['user_id']['primary_key_table'] = 'user';
+        $form_data['data']['user_id']['value_string'] = '';
+        $form_data['data']['user_id']['value'] = 0;
+        $form_data['data']['user_id']['length'] = 40;
+        $form_data['data']['user_id']['type'] = 'select_by_query';
+        $form_data['data']['user_id']['query'] = 'select * from ' . DB_PREFIX . '_user order by fio';
+        $form_data['data']['user_id']['value_name'] = 'fio';
+        $form_data['data']['user_id']['title_default'] = Multilanguage::_('L_CHOOSE_USER');
+        $form_data['data']['user_id']['value_default'] = 0;
+        $form_data['data']['user_id']['required'] = 'off';
+        $form_data['data']['user_id']['unique'] = 'off';
 		
 		$form_data['data']['date_added']['name'] = 'date_added';
 		$form_data['data']['date_added']['title'] = 'Дата подачи';
