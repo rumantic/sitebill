@@ -1,1 +1,0 @@
-{include file='realty_grid_list.tpl'}
