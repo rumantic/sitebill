@@ -1688,7 +1688,7 @@ class config_admin extends Object_Manager {
         }
 
         if (!$this->check_config_item('show_demo_banners')) {
-            $this->addParamToConfig('show_demo_banners', '0', 'Показывать рекламные баннеры sitebill.ru');
+            $this->addParamToConfig('show_demo_banners', '1', 'Показывать рекламные баннеры sitebill.ru');
         }
         if (!$this->check_config_item('use_topic_publish_status')) {
             $this->addParamToConfig('use_topic_publish_status', '0', 'Использовать переключатель активности для категорий');
