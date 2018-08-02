@@ -267,7 +267,7 @@ if ($_POST['ready']) {
     $query_a[] = "update " . DB_PREFIX . "_config set value = '1' where config_key='apps.seo.level_enable'";
     $query_a[] = "update " . DB_PREFIX . "_config set value = '1' where config_key='apps.mailbox.enable'";
     $query_a[] = "update " . DB_PREFIX . "_config set value = '1' where config_key='apps.dashboard.enable'";
-    $query_a[] = "update " . DB_PREFIX . "_config set value = 'realia' where config_key='theme'";
+    $query_a[] = "update " . DB_PREFIX . "_config set value = 'agency' where config_key='theme'";
     foreach ($query_a as $query_b) {
         $stmt = $DBC->query($query_b, array(), $success);
         if (!$stmt) {
