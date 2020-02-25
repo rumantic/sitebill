@@ -59,33 +59,68 @@ class Group_Manager extends Object_Manager {
      * @return
      */
     function get_group_model() {
-        $form_group = array();
-
-        $form_group['group']['group_id']['name'] = 'group_id';
-        $form_group['group']['group_id']['title'] = Multilanguage::_('L_ID');
-        $form_group['group']['group_id']['value'] = 0;
-        $form_group['group']['group_id']['length'] = 40;
-        $form_group['group']['group_id']['type'] = 'primary_key';
-        $form_group['group']['group_id']['required'] = 'off';
-        $form_group['group']['group_id']['unique'] = 'off';
-
-        $form_group['group']['name']['name'] = 'name';
-        $form_group['group']['name']['title'] = Multilanguage::_('GROUP_NAME', 'system');
-        $form_group['group']['name']['value'] = '';
-        $form_group['group']['name']['length'] = 40;
-        $form_group['group']['name']['type'] = 'safe_string';
-        $form_group['group']['name']['required'] = 'on';
-        $form_group['group']['name']['unique'] = 'off';
-
-        $form_group['group']['system_name']['name'] = 'system_name';
-        $form_group['group']['system_name']['title'] = Multilanguage::_('SYSTEM_NAME', 'system') . ' (' . Multilanguage::_('LATIN_LETTERS_ONLY', 'system') . ')';
-        $form_group['group']['system_name']['value'] = '';
-        $form_group['group']['system_name']['length'] = 40;
-        $form_group['group']['system_name']['type'] = 'safe_string';
-        $form_group['group']['system_name']['required'] = 'on';
-        $form_group['group']['system_name']['unique'] = 'off';
-
-        return $form_group;
+    	
+    	require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
+    		$ATH = new Admin_Table_Helper();
+    		$form_data = $ATH->load_model('group', false);
+    		if (empty($form_data)) {
+    			$form_data = array();
+    			$form_data = $this->getUserGroupModelDescription();
+    			require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
+    			require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php';
+    			$TA = new table_admin();
+    			$TA->create_table_and_columns($form_data, 'group');
+    			$form_data = array();
+    			$form_data = $ATH->load_model('group', false);
+    		}
+    	
+    		return $form_data;
+    }
+    
+    function getUserGroupModelDescription(){
+    	$form_group = array();
+    	
+    	/*$form_group['group']['is_aggr']['name'] = 'is_aggr';
+    	$form_group['group']['is_aggr']['title'] = Multilanguage::_('IS_AGGREGABLE','system');
+    	$form_group['group']['is_aggr']['value'] = '';
+    	$form_group['group']['is_aggr']['length'] = 40;
+    	$form_group['group']['is_aggr']['type'] = 'checkbox';
+    	$form_group['group']['is_aggr']['required'] = 'off';
+    	$form_group['group']['is_aggr']['unique'] = 'off';
+    	
+    	$form_group['group']['aggr_list']['name'] = 'aggr_list';
+    	$form_group['group']['aggr_list']['title'] = Multilanguage::_('IS_AGGR_LIST','system');
+    	$form_group['group']['aggr_list']['value'] = '';
+    	$form_group['group']['aggr_list']['length'] = 40;
+    	$form_group['group']['aggr_list']['type'] = 'safe_string';
+    	$form_group['group']['aggr_list']['required'] = 'off';
+    	$form_group['group']['aggr_list']['unique'] = 'off';*/
+    	
+    	$form_group['group']['group_id']['name'] = 'group_id';
+    	$form_group['group']['group_id']['title'] = Multilanguage::_('L_ID');
+    	$form_group['group']['group_id']['value'] = 0;
+    	$form_group['group']['group_id']['length'] = 40;
+    	$form_group['group']['group_id']['type'] = 'primary_key';
+    	$form_group['group']['group_id']['required'] = 'off';
+    	$form_group['group']['group_id']['unique'] = 'off';
+    	
+    	$form_group['group']['name']['name'] = 'name';
+    	$form_group['group']['name']['title'] = Multilanguage::_('GROUP_NAME', 'system');
+    	$form_group['group']['name']['value'] = '';
+    	$form_group['group']['name']['length'] = 40;
+    	$form_group['group']['name']['type'] = 'safe_string';
+    	$form_group['group']['name']['required'] = 'on';
+    	$form_group['group']['name']['unique'] = 'off';
+    	
+    	$form_group['group']['system_name']['name'] = 'system_name';
+    	$form_group['group']['system_name']['title'] = Multilanguage::_('SYSTEM_NAME', 'system') . ' (' . Multilanguage::_('LATIN_LETTERS_ONLY', 'system') . ')';
+    	$form_group['group']['system_name']['value'] = '';
+    	$form_group['group']['system_name']['length'] = 40;
+    	$form_group['group']['system_name']['type'] = 'safe_string';
+    	$form_group['group']['system_name']['required'] = 'on';
+    	$form_group['group']['system_name']['unique'] = 'off';
+    	
+    	return $form_group;
     }
 
     function create_dna_table() {

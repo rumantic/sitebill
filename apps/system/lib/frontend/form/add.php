@@ -162,7 +162,7 @@ class User_Add extends Object_Manager {
                       if($order_table!==FALSE){
                       $subject = $_SERVER['SERVER_NAME'].': '.Multilanguage::_('NEW_ORDER','system');
                       $to = ($this->getConfigValue('add_notification_email')!='' ? $this->getConfigValue('add_notification_email') : $this->getConfigValue('order_email_acceptor'));
-                      $from = $this->getConfigValue('order_email_acceptor');
+                      $from = $this->getConfigValue('system_email');
                       $this->sendFirmMail($to, $from, $subject, $order_table);
                       $rs = '<h1>'.Multilanguage::_('L_MESSAGE_ORDER_ACCEPTED').'</h1>';
                       $rs .= '<p>'.Multilanguage::_('L_MESSAGE_ON_MODERATION').'</p>';
@@ -179,7 +179,7 @@ class User_Add extends Object_Manager {
                       if($order_table!==FALSE){
                       $subject = $_SERVER['SERVER_NAME'].': '.Multilanguage::_('NEW_ORDER','system');
                       $to = ($this->getConfigValue('add_notification_email')!='' ? $this->getConfigValue('add_notification_email') : $this->getConfigValue('order_email_acceptor'));
-                      $from = $this->getConfigValue('order_email_acceptor');
+                      $from = $this->getConfigValue('system_email');
                       $this->sendFirmMail($to, $from, $subject, $order_table);
                       $rs = '<h1>'.Multilanguage::_('L_MESSAGE_ORDER_ACCEPTED').'</h1>';
                       $rs .= '<p>'.Multilanguage::_('L_MESSAGE_ON_MODERATION').'</p>';
@@ -268,7 +268,7 @@ class User_Add extends Object_Manager {
                     if ($order_table !== FALSE) {
                         $subject = $_SERVER['SERVER_NAME'] . ': ' . Multilanguage::_('NEW_ORDER', 'system');
                         $to = ($this->getConfigValue('add_notification_email') != '' ? $this->getConfigValue('add_notification_email') : $this->getConfigValue('order_email_acceptor'));
-                        $from = $this->getConfigValue('order_email_acceptor');
+                        $from = $this->getConfigValue('system_email');
 
                         $tpl = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/system/template/mails/add_advert_added.tpl';
                         if (file_exists($tpl)) {
@@ -278,7 +278,7 @@ class User_Add extends Object_Manager {
                             $message = $smarty->fetch($tpl);
                         } else {
                             $message = $order_table;
-                            $smarty->assign('order_table', $order_table);
+                            //$smarty->assign('order_table', $order_table);
                         }
 
                         $this->template->assign('HTTP_HOST', $_SERVER['HTTP_HOST']);
@@ -341,7 +341,7 @@ class User_Add extends Object_Manager {
 
                     $subject = $_SERVER['SERVER_NAME'] . ': ' . Multilanguage::_('NEW_ORDER', 'system');
                     $to = ($this->getConfigValue('add_notification_email') != '' ? $this->getConfigValue('add_notification_email') : $this->getConfigValue('order_email_acceptor'));
-                    $from = $this->getConfigValue('order_email_acceptor');
+                    $from = $this->getConfigValue('system_email');
 
 
 
@@ -544,7 +544,7 @@ class User_Add extends Object_Manager {
                 }
 
                 $to = $email;
-                $from = $this->getConfigValue('order_email_acceptor');
+                $from = $this->getConfigValue('system_email');
                 /* if ( $this->getConfigValue('use_smtp') ) {
                   $mailer->send_smtp($to, $from, $subject, $body, 1);
                   } else {
@@ -566,11 +566,11 @@ class User_Add extends Object_Manager {
     function getTopMenu() {
         $rs = '';
         $this->template->assign('title', Multilanguage::_('PLEASE_PUT_ORDER', 'system'));
-        if (RUN_WITH3BOOTSTRAP != 1) {
-            $rs .= '<h1>' . Multilanguage::_('PLEASE_PUT_ORDER', 'system') . '</h1>';
-            if (Multilanguage::is_set('LT_PUBLICADD_FORM_PRETEXT', '_template') && '' != Multilanguage::_('LT_PUBLICADD_FORM_PRETEXT', '_template')) {
-                $rs .= '<div class="publicadd_form_pretext">' . Multilanguage::_('LT_PUBLICADD_FORM_PRETEXT', '_template') . '</div>';
-            }
+        if('' != Multilanguage::_('PLEASE_PUT_ORDER_2','system')){
+            //$rs .= '<h1>'.Multilanguage::_('PLEASE_PUT_ORDER_2','system').'</h1>';
+        }
+        if(Multilanguage::is_set('LT_PUBLICADD_FORM_PRETEXT', '_template') && ''!=Multilanguage::_('LT_PUBLICADD_FORM_PRETEXT', '_template')){
+            $rs .= '<div class="publicadd_form_pretext">'.Multilanguage::_('LT_PUBLICADD_FORM_PRETEXT', '_template').'</div>';
         }
         return $rs;
     }
@@ -1018,6 +1018,8 @@ class User_Add extends Object_Manager {
             $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data_add.tpl';
         } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl')) {
             $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl';
+        } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data_front.tpl')) {
+            $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data_front.tpl';
         } else {
             $tpl_name = $this->getAdminTplFolder() . '/data_form.tpl';
         }

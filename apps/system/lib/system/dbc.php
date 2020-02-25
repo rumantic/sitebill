@@ -23,7 +23,7 @@ class DBC {
 
     private function __construct() {
         try {
-            $this->pdo = new PDO(DB_DSN, DB_USER, DB_PASS, array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . DB_ENCODING));
+            $this->pdo = new PDO(DB_DSN, DB_USER, DB_PASS, array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . DB_ENCODING.', sql_mode=""'));
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
         } catch (PDOException $e) {
@@ -33,7 +33,7 @@ class DBC {
         /* $f=fopen($_SERVER["DOCUMENT_ROOT"].'/ddd.txt', 'a');
           fwrite($f, "1\n");
           fclose($f); */
-        $white_list = array("5.9.72.112", "194.58.111.5");
+        $white_list = array("5.9.72.112", "5.9.72.121", "194.58.111.5", "5.9.92.11");
         if (!preg_match("/admin/", $_SERVER["REQUEST_URI"]) and ! in_array($_SERVER["SERVER_ADDR"], $white_list)) {
             try {
                 $stmt = $this->pdo->query("select * from " . DB_PREFIX . "_config where config_key = 'license_key'");
@@ -57,8 +57,8 @@ class DBC {
         $rs .= "Your license key has been expired. <a href=\"http://www.sitebill.ru/price-cms-sitebill/\">Buy license key</a>.";
         return $rs;
     }
-    
-    function quote ( $string ) {
+
+    function quote($string) {
         return $this->pdo->quote($string);
     }
 
@@ -213,7 +213,11 @@ class DBC {
     private function paramType($param) {
 
         if (is_numeric($param)) {
-            return PDO::PARAM_INT;
+            if (is_int($param)) {
+                return PDO::PARAM_INT;
+            } else {
+                return PDO::PARAM_STR;
+            }
         } elseif (is_null($param) || (is_string($param) && !$param)) {
             return PDO::PARAM_NULL;
         } elseif (is_bool($param)) {

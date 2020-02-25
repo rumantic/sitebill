@@ -975,6 +975,33 @@ class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
     	if ( isset($_REQUEST['action']) AND ($_REQUEST['action'] == 'table') ) {
     		$menu['table']['active'] = 1;
     	}
+        
+        /*Компоненты*/
+        
+        
+        $menu_sub101=array();
+        if(1==$this->getConfigValue('enable_curator_mode')){
+            $menu_sub101['cowork']['title'] = 'Куратор';
+            $menu_sub101['cowork']['href'] = 'index.php?action=cowork';
+            if ( isset($_REQUEST['action']) AND ($_REQUEST['action'] == 'cowork') ) {
+                $menu['components']['cowork'] = 1;
+                //$menu_sub101['cowork']['active'] = 1;
+            }
+        }
+        
+        if(!empty($menu_sub101)){
+            $menu['components']['title'] = 'Компонент';
+            $menu['components']['href'] = '#';
+
+            if ( isset($_REQUEST['action']) AND ($_REQUEST['action'] == 'components') ) {
+                $menu['components']['active'] = 1;
+            }
+            
+            $menu['components']['childs'] = $menu_sub101;
+        }
+        
+        
+        
     	
     	
     	$menu['references']['title'] = Multilanguage::_('L_ADMIN_MENU_REFERENCES');

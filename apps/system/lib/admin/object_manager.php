@@ -10,36 +10,46 @@ class Object_Manager extends SiteBill {
 
     /**
      * Table name
-     * @var string
+     * @public string
      */
-    var $table_name;
+    public $table_name;
 
     /**
      * Primary key
-     * @var string
+     * @public string
      */
-    var $primary_key;
+    public $primary_key;
 
     /**
      * Action name
-     * @var string
+     * @public string
      */
-    var $action;
+    public $action;
+    public $mod_name = '';
 
     /**
      * Data model
-     * @var array
+     * @public array
      */
-    var $data_model;
+    public $data_model;
     protected $imgs = false;
     public $app_title;
     private $new_record_id = false;
+    private $total_count = 0;
+    protected $redirect_disabled = false;
+    public $notwatermarked_folder = SITEBILL_DOCUMENT_ROOT . '/img/nwtm/';
+    private $nowatermark_folder_with_id = false;
+    private $grid_params = null;
 
     /**
      * Constructor
      */
     function __construct() {
         $this->SiteBill();
+    }
+
+    function _preload() {
+        return false;
     }
 
     function check_table_exist($table_name) {
@@ -50,6 +60,26 @@ class Object_Manager extends SiteBill {
             return false;
         }
         return true;
+    }
+
+    protected function disable_redirect() {
+        $this->redirect_disabled = true;
+    }
+
+    protected function isRedirectDisabled() {
+        return $this->redirect_disabled;
+    }
+
+    public function set_mod($mod_name) {
+        $this->mod_name = $mod_name;
+    }
+
+    public function set_total_count($total_count) {
+        $this->total_count = $total_count;
+    }
+
+    public function get_total_count() {
+        return $this->total_count;
     }
 
     protected function _helpAction() {
@@ -68,7 +98,7 @@ class Object_Manager extends SiteBill {
         return '';
     }
 
-    protected function _before_edit_done_action($form_data) {
+    public function _before_edit_done_action($form_data) {
         return $form_data;
     }
 
@@ -76,7 +106,7 @@ class Object_Manager extends SiteBill {
         return $form_data;
     }
 
-    protected function _before_check_action($form_data, $type = 'new') {
+    public function _before_check_action($form_data, $type = 'new') {
         return $form_data;
     }
 
@@ -86,6 +116,16 @@ class Object_Manager extends SiteBill {
 
     protected function _after_add_done_action($form_data) {
         return $form_data;
+    }
+
+    public function rest_new_done() {
+        $this->disable_redirect();
+        $this->_new_doneAction();
+    }
+
+    public function rest_edit_done() {
+        $this->disable_redirect();
+        $this->_edit_doneAction();
     }
 
     protected function _edit_doneAction() {
@@ -268,6 +308,9 @@ class Object_Manager extends SiteBill {
             } else {
                 $model_itited = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
                 if ($model_itited) {
+                    if (1 == $this->getConfigValue('apps.language.autotrans_enable')) {
+                        $model_itited = $data_model->init_model_data_auto_translate($model_itited);
+                    }
                     $rs = $this->get_form($model_itited, 'edit');
                 } else {
                     $rs = '';
@@ -302,6 +345,10 @@ class Object_Manager extends SiteBill {
             $rs .= '<a href="?action=' . $this->action . '">ОК</a>';
             $rs .= '</div>';
         } else {
+            if ($this->isRedirectDisabled()) {
+                return true;
+            }
+
             header('location: ?action=' . $this->action);
             exit();
             $rs .= $this->grid();
@@ -451,6 +498,14 @@ class Object_Manager extends SiteBill {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         $form_data = $this->data_model;
+        if ( defined('IFRAME_MODE') ) {
+            if ( is_array($this->getRequestValue('default_request'))  ) {
+                foreach ($this->getRequestValue('default_request') as $key => $value) {
+                    $form_data[$this->table_name][$key]['value'] = $value;
+                }
+            }
+        }
+
 
         $rs = $this->get_form($form_data[$this->table_name]);
         return $rs;
@@ -603,28 +658,18 @@ class Object_Manager extends SiteBill {
         if (isset($input_params['grid_conditions']) && count($input_params['grid_conditions']) > 0) {
             $common_grid->set_conditions($input_params['grid_conditions']);
         }
+        if (isset($params['grid_conditions_sql']) && count($params['grid_conditions_sql']) > 0) {
+            $common_grid->set_conditions_sql($params['grid_conditions_sql']);
+        }
 
+        if ($input_params['per_page'] != '') {
+            $per_page = $input_params['per_page'];
+        } else {
+            $per_page = 99999;
+        }
+        $common_grid->setPagerParams(array('action' => $this->action, 'page' => 1, 'per_page' => $per_page));
 
-
-        //$common_grid->set_grid_query('SELECT * FROM '.DB_PREFIX.'_'.$this->table_name.' ORDER BY name ASC');
-
-
-        $common_grid->setPagerParams(array('action' => $this->action, 'page' => 1, 'per_page' => 99999));
-
-        //$rs = $common_grid->extended_items();
         $common_grid->construct_query();
-        //return $common_grid->get_grid_query();
-        //$query = $common_grid->get_grid_query();
-        //$DBC=DBC::getInstance();
-        //$stmt=$DBC->query($query);
-        //set_include_path(SITEBILL_DOCUMENT_ROOT.'/apps/excelfree/lib/phpexcel/');
-        //while($ar=$DBC->fetch($stmt)){
-        //fputcsv($outputBuffer, $ar);
-        //}
-
-        require_once SITEBILL_APPS_DIR . '/third/phpexcel/PHPExcel/IOFactory.php';
-        require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/grid/grid_constructor.php';
-        //$grid_constructor = new Grid_Constructor();
 
 
         $exported_template_fields = $this->getRequestValue('template_fields');
@@ -676,37 +721,28 @@ class Object_Manager extends SiteBill {
               exit;
              */
 
-            $objPHPExcel = new PHPExcel();
+            $objPHPExcel = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
             $styleArray = array(
                 'font' => array(
                     'bold' => true,
                 ),
                 'alignment' => array(
-                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_LEFT,
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
                 ),
                 'borders' => array(
-                    'top' => array(
-                        'style' => PHPExcel_Style_Border::BORDER_THIN,
-                    ),
-                    'left' => array(
-                        'style' => PHPExcel_Style_Border::BORDER_THIN,
-                    ),
-                    'right' => array(
-                        'style' => PHPExcel_Style_Border::BORDER_THIN,
-                    ),
                     'bottom' => array(
-                        'style' => PHPExcel_Style_Border::BORDER_THIN,
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => array(
+                            'rgb' => '808080'
+                        )
                     ),
                 ),
                 'fill' => array(
-                    'type' => PHPExcel_Style_Fill::FILL_GRADIENT_LINEAR,
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
                     'rotation' => 90,
-                    'startcolor' => array(
-                        'argb' => 'FFA0A0A0',
-                    ),
-                    'endcolor' => array(
-                        'argb' => 'FFFFFFFF',
-                    ),
+                    'color' => array(
+                        'rgb' => 'c5c5c5',
+                    )
                 ),
             );
 
@@ -714,8 +750,7 @@ class Object_Manager extends SiteBill {
 
             $objPHPExcel->getActiveSheet()->getStyle('A1:' . $last_letter . '1')->applyFromArray($styleArray);
 
-
-            $column = 0;
+            $column = 1;
 
             foreach ($exported_fields as $ef) {
                 $objPHPExcel->getActiveSheet()->setCellValueByColumnAndRow($column, 1, SiteBill::iconv(SITE_ENCODING, 'utf-8', $_model[$ef]['title']));
@@ -724,11 +759,11 @@ class Object_Manager extends SiteBill {
 
                 $column++;
             }
-            $column = 0;
+            $column = 1;
 
             foreach ($data_a as $item_id => $data_item_a) {
                 $row = $item_id + 2;
-                $column = 0;
+                $column = 1;
                 foreach ($data_item_a as $key => $value) {
                     if (is_array($value)) {
                         $value = $value['value_string'];
@@ -738,7 +773,7 @@ class Object_Manager extends SiteBill {
                 }
             }
 
-            $objWriter = new PHPExcel_Writer_Excel2007($objPHPExcel);
+            $objWriter = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($objPHPExcel);
             $xlsx_file_name = $this->action . "_page" . $current_page . ".xlsx";
             $xlsx_output_file = SITEBILL_DOCUMENT_ROOT . "/cache/upl/" . $xlsx_file_name;
             $objWriter->save($xlsx_output_file);
@@ -889,12 +924,26 @@ class Object_Manager extends SiteBill {
         if (!isset($this->data_model_object) || !is_object($this->data_model_object)) {
             $this->data_model_object = new Data_Model();
         }
+
         $form_data = $this->data_model;
-        if ($record_id > 0) {
+
+        if (is_array($record_id) && !empty($record_id)) {
+            $form_data[$this->table_name] = $this->data_model_object->init_model_data_from_db_multi($this->table_name, $this->primary_key, $record_id, $form_data[$this->table_name], TRUE);
+        } elseif ($record_id > 0) {
             $form_data[$this->table_name] = $this->data_model_object->init_model_data_from_db($this->table_name, $this->primary_key, $record_id, $form_data[$this->table_name], TRUE);
         }
+
         return $form_data[$this->table_name];
         //print_r($form_data[$this->table_name]);
+    }
+
+    function get_id_by_filter($field, $value, $filters = array()) {
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
+        if (!isset($this->data_model_object) || !is_object($this->data_model_object)) {
+            $this->data_model_object = new Data_Model();
+        }
+        $primary_key_value = $this->data_model_object->get_value_id_by_name($this->table_name, $field, $this->primary_key, $value, $filters);
+        return $primary_key_value;
     }
 
     /**
@@ -920,6 +969,10 @@ class Object_Manager extends SiteBill {
                 foreach ($model_field['value'] as $upload) {
                     $uploads[] = $upload['preview'];
                     $uploads[] = $upload['normal'];
+                    if ( $upload['remote'] == 'true') {
+                        $remote_shards[] = $upload['preview'];
+                        $remote_shards[] = $upload['normal'];
+                    }
                 }
             } elseif ($model_field['type'] == 'docuploads' && !empty($model_field['value'])) {
                 foreach ($model_field['value'] as $upload) {
@@ -945,6 +998,15 @@ class Object_Manager extends SiteBill {
             foreach ($uploads as $upload) {
                 @unlink(SITEBILL_DOCUMENT_ROOT . '/img/data/' . $upload);
                 @unlink(SITEBILL_DOCUMENT_ROOT . '/img/data/nowatermark/' . $upload);
+                if ($table_name == 'data') {
+                    @unlink($this->notwatermarked_folder . $upload);
+                }
+            }
+            if ( $this->getConfigValue('apps.sharder.enable') ) {
+                if ( !is_object($this->sharder) ) {
+                    $this->sharder = new \sharder\lib\sharder();
+                }
+                $this->sharder->remove_remote_files($remote_shards, $this->getServerFullUrl(true));
             }
         }
         if (!empty($docuploads)) {
@@ -979,6 +1041,11 @@ class Object_Manager extends SiteBill {
         if (!isset($this->table_name)) {
             return '';
         }
+        if ( count($params) == 0 and $this->get_grid_params() != null) {
+            $params = $this->get_grid_params();
+        }
+
+
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/grid.php');
         $common_grid = new Common_Grid($this);
         $common_grid->set_action($this->action);
@@ -1032,15 +1099,134 @@ class Object_Manager extends SiteBill {
         if (isset($params['grid_conditions']) && count($params['grid_conditions']) > 0) {
             $common_grid->set_conditions($params['grid_conditions']);
         }
+        if (isset($params['grid_conditions_sql']) && count($params['grid_conditions_sql']) > 0) {
+            $common_grid->set_conditions_sql($params['grid_conditions_sql']);
+        }
+
+        if ($default_params['batch_update']) {
+            $common_grid->enableBatchUpdate();
+            $common_grid->setBatchUpdateUrl($default_params['batch_update_url']);
+        }
+        
+        
+        if ($default_params['mass_delete'] && $default_params['mass_delete_url']) {
+            //$common_grid->enableBatchUpdate();
+            $common_grid->setMAssDeleteUrl($default_params['mass_delete_url']);
+        }
+        
+        if ($default_params['batch_activate']) {
+            $common_grid->enableBatchActivate();
+        }
+        //$common_grid->set_grid_query('SELECT * FROM '.DB_PREFIX.'_'.$this->table_name.' ORDER BY name ASC');
+
+        if (isset($default_params['pager_params'])) {
+            $pager_params = $default_params['pager_params'];
+        } else {
+            $pager_params = array();
+        }
+
+        $pager_params['action'] = $this->action;
+        $pager_params['page'] = $this->getRequestValue('page');
+        $pager_params['per_page'] = $this->getConfigValue('common_per_page');
+
+        $common_grid->setPagerParams($pager_params);
+
+        $grid_string = $common_grid->construct_grid();
+        $rs = $common_grid->extended_items();
+        $rs .= $grid_string;
+        return $rs;
+    }
+
+    /**
+     * Generate grid array (array version of the grid method)
+     * @param $params - здесь задаем параметры для того чтобы полностью переопределить структуру грида
+     * @param $default_params - здесь указываем параметры для вывода колонок по-умолчанию, если нет пользовательских и нет $params тогда рисуем колонки из $default_params
+     * @return string
+     */
+    function grid_array($params = array(), $default_params = array()) {
+        if (!isset($this->table_name)) {
+            return '';
+        }
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/grid.php');
+        $common_grid = new Common_Grid($this);
+        $common_grid->set_action($this->action);
+        $common_grid->set_grid_table($this->table_name);
+        if ($params['url'] != '') {
+            $common_grid->set_grid_url($params['url']);
+        }
+        if (isset($default_params['render_user_id'])) {
+            $common_grid->set_render_user_id($default_params['render_user_id']);
+        }
+
+        if (isset($params['grid_item']) && count($params['grid_item']) > 0) {
+            foreach ($params['grid_item'] as $grid_item) {
+                $common_grid->add_grid_item($grid_item);
+            }
+        } else {
+            $DBC = DBC::getInstance();
+            $used_fields = array();
+            $query = 'SELECT `grid_fields` FROM ' . DB_PREFIX . '_table_grids WHERE `action_code`=?';
+            $stmt = $DBC->query($query, array($this->action));
+            if ($stmt) {
+                $ar = $DBC->fetch($stmt);
+                $used_fields = json_decode($ar['grid_fields']);
+                //$this->writeLog(__METHOD__ . ', rows = <pre>' . var_export($used_fields, true) . '</pre>');
+            }
+
+            if (!empty($used_fields)) {
+                foreach ($used_fields as $uf) {
+                    $common_grid->add_grid_item($uf);
+                }
+            } else {
+                if (isset($default_params['grid_item']) && count($default_params['grid_item']) > 0) {
+                    foreach ($default_params['grid_item'] as $grid_item) {
+                        $common_grid->add_grid_item($grid_item);
+                    }
+                } else {
+                    $common_grid->add_grid_item($this->primary_key);
+                    $common_grid->add_grid_item('name');
+                }
+            }
+        }
+        $common_grid->add_grid_item('city_id');
+        $common_grid->add_grid_item('street_id');
+        $common_grid->add_grid_item('image');
+
+        if (isset($params['grid_controls']) && count($params['grid_controls']) > 0) {
+            foreach ($params['grid_controls'] as $grid_item) {
+                $common_grid->add_grid_control($grid_item);
+            }
+        } else {
+            $common_grid->add_grid_control('edit');
+            $common_grid->add_grid_control('delete');
+        }
+
+        if (isset($params['grid_conditions']) && count($params['grid_conditions']) > 0) {
+            $common_grid->set_conditions($params['grid_conditions']);
+        }
+
+        if (isset($params['grid_conditions_sql']) && count($params['grid_conditions_sql']) > 0) {
+            $common_grid->set_conditions_sql($params['grid_conditions_sql']);
+        }
+        if (isset($params['grid_conditions_left_join']) && count($params['grid_conditions_left_join']) > 0) {
+            $common_grid->set_conditions_left_join($params['grid_conditions_left_join']);
+        }
+
 
         //$common_grid->set_grid_query('SELECT * FROM '.DB_PREFIX.'_'.$this->table_name.' ORDER BY name ASC');
 
+        if ($params['page'] != '' and $params['per_page'] != '') {
+            $common_grid->setPagerParams(array('action' => $this->action, 'page' => $params['page'], 'per_page' => $params['per_page']));
+        } else {
+            $common_grid->setPagerParams(array('action' => $this->action, 'page' => $this->getRequestValue('page'), 'per_page' => $this->getConfigValue('common_per_page')));
+        }
 
-        $common_grid->setPagerParams(array('action' => $this->action, 'page' => $this->getRequestValue('page'), 'per_page' => $this->getConfigValue('common_per_page')));
+        //$this->writeLog(__METHOD__ . ', yes table = <pre>' . var_export($rows, true) . '</pre>');
 
-        $rs = $common_grid->extended_items();
-        $rs .= $common_grid->construct_grid();
-        return $rs;
+        $common_grid->construct_grid();
+        $this->set_total_count($common_grid->get_total_count());
+
+        return $common_grid->construct_grid_array();
     }
 
     /**
@@ -1054,6 +1240,8 @@ class Object_Manager extends SiteBill {
         $data_model = new Data_Model();
         $query_params = $data_model->get_prepared_insert_query(DB_PREFIX . '_' . $this->table_name, $form_data, $language_id);
         $query_params_vals = $query_params['p'];
+        $this->writeLog(__METHOD__);
+        $this->writeArrayLog($query_params);
 
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query_params['q'], $query_params_vals, $rows, $success);
@@ -1268,6 +1456,9 @@ class Object_Manager extends SiteBill {
      * @return string
      */
     function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
+        if ( defined('IFRAME_MODE') ) {
+            $action = '?';
+        }
 
 
         $_SESSION['allow_disable_root_structure_select'] = true;
@@ -1390,10 +1581,6 @@ class Object_Manager extends SiteBill {
         return $tabs_array;
     }
 
-    public function _preload() {
-        //echo get_class($this).'<br />';
-    }
-
     protected function createTranslitAliasByFields($id, $fields_for_alias) {
         $alias = '';
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
@@ -1508,4 +1695,74 @@ class Object_Manager extends SiteBill {
         return $rs;
     }
 
+    /**
+     * Выполняем загрузку дополнительных параметров для формирования запроса SQL
+     * из хуков /template/frontend/'.$this->getConfigValue('theme').'/hooks'.'/hooks.php
+     * @param type $context контекст объекта
+     * @param type $params параметры
+     * @return type
+     */
+    public function onGridConditionsPrepare($context, $params) {
+        if (function_exists('onGridConditionsPrepare_hook')) {
+            $params = onGridConditionsPrepare_hook($context, $params);
+        }
+        return $params;
+    }
+
+    function prepare_model_for_dadata($form_data) {
+        $dadata_enable = false;
+        foreach ($form_data as $key => $item_array) {
+            if ($item_array['parameters']['dadata'] == 1) {
+                $dadata_enable = true;
+                break;
+            }
+        }
+        if ($dadata_enable) {
+            foreach ($form_data as $key => $item_array) {
+                if (in_array($key, array('city_id', 'district_id', 'street_id'))) {
+                    $form_data[$key]['parameters']['autocomplete'] = 1;
+                }
+            }
+        }
+        return $form_data;
+    }
+
+    function init_db_model ($table_name, $default_object_model, $params = false) {
+        $form_data = array();
+
+        if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/columns/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php')) {
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
+            $ATH = new Admin_Table_Helper();
+            $form_data = $ATH->load_model($table_name, false);
+            if (empty($form_data)) {
+                $form_data = array();
+                $form_data = $default_object_model->get_model($params);
+                require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
+                require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php';
+                $TA = new table_admin();
+                $TA->create_table_and_columns($form_data, $table_name);
+                $form_data = array();
+                $form_data = $ATH->load_model($table_name, false);
+            }
+        } else {
+            $form_data = $default_object_model->get_model($params);
+        }
+
+        $this->model = $default_object_model;
+        $this->data_model = $form_data;
+    }
+
+    function set_grid_params ( $params ) {
+        $this->grid_params = $params;
+    }
+
+    function get_grid_params () {
+        if ( $this->grid_params != null ) {
+            return $this->grid_params;
+        } elseif ( is_array($this->getRequestValue('grid_params')) ) {
+            $this->grid_params = $this->getRequestValue('grid_params');
+            return $this->grid_params;
+        }
+        return null;
+    }
 }

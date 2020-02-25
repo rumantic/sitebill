@@ -128,6 +128,9 @@ class News_Grid_Constructor extends Grid_Constructor {
         $this->template->assert('pager', $Pager->getPagerArray());
         $paging = Page_Navigator::getPagingArray($total, $page, $limit, array(), $paging_alias);
         $this->template->assert('news_paging', $paging);
+        
+        $this->template->assert('news_pager', $this->get_page_links_list ($page, $total, $limit, array('page_url' => $paging_alias)));
+
 
 
 
@@ -173,7 +176,7 @@ class News_Grid_Constructor extends Grid_Constructor {
                     }
                 }
             }
-
+            $ra[$item_id]['_date']=$ra[$item_id]['date'];
             if ($use_datetime) {
                 $ra[$item_id]['date'] = date('d.m.Y', strtotime($ra[$item_id]['date']));
             } else {
@@ -235,6 +238,7 @@ class News_Grid_Constructor extends Grid_Constructor {
                 }
                 if (isset($ims[0])) {
                     $ra[$k]['prev_img'] = SITEBILL_MAIN_URL . '/img/data/' . $ims[0]['preview'];
+                    $ra[$k]['norm_img'] = SITEBILL_MAIN_URL . '/img/data/' . $ims[0]['normal'];
                 }
             }
         }
@@ -260,12 +264,10 @@ class News_Grid_Constructor extends Grid_Constructor {
             $app_item_alias = 'news';
         }
         if ($news_alias != '') {
-            return SITEBILL_MAIN_URL . '/' . $app_news_alias . '/' . $news_alias . $trailing_slashe;
+            return $this->createUrlTpl($app_news_alias . '/' . $news_alias);
         } else {
-            return SITEBILL_MAIN_URL . '/' . $app_item_alias . $news_id . '.html';
+            return $this->createUrlTpl($app_item_alias . $news_id . '.html');
         }
     }
 
 }
-
-?>

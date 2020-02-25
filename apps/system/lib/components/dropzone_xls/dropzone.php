@@ -25,10 +25,15 @@ class DropZone extends ajax_common {
 	$collection = array();
 	$script_code[] = '<script src="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.js"></script>';
 	$script_code[] = '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css">';
-	$script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js"></script>';
+	$script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=1"></script>';
 	//$html.='<script src="'.SITEBILL_MAIN_URL.'/apps/system/js/dropzone_sitebill.js"></script>';
 	$params = $item_array['parameters'];
-	//$this->writeLog(__METHOD__.'table name = '.$this->get_context()->table_name);
+    
+    $element=array();
+    $element['parameters']['accepted']='.xlsx';
+    $element['type']='uploads';
+    
+    //$this->writeLog(__METHOD__.'table name = '.$this->get_context()->table_name);
 
 	$params['model_name'] = $this->get_context()->table_name;
 	$params['primary_key'] = $this->get_context()->primary_key;
@@ -39,7 +44,7 @@ class DropZone extends ajax_common {
 	    $max_file_size = (int) str_replace('M', '', ini_get('upload_max_filesize'));
 	}
 
-	$html = $this->getDropzonePlugin($this->get_session_key(), array('element' => $item_array['name'], 'model_name' => $params['model_name'], 'primary_key' => $params['primary_key'], 'max_file_size' => $max_file_size, 'min_img_count' => (int) $params['min_img_count']));
+	$html = $this->getDropzonePlugin($this->get_session_key(), array('element' => $element, 'model_name' => $params['model_name'], 'primary_key' => $params['primary_key'], 'max_file_size' => $max_file_size, 'min_img_count' => (int) $params['min_img_count']));
 	if (is_array($item_array['value']) && count($item_array['value']) > 0) {
 	    $table_name = $item_array['table_name'];
 	    $primary_key = $item_array['primary_key'];
@@ -495,7 +500,7 @@ class DropZone extends ajax_common {
     }
 
     function getDropzonePlugin($session_code, $params = array()) {
-	$element = $params['element'];
+        $element = $params['element'];
 	$model_name = $params['model_name'];
 	$primary_key = $params['primary_key'];
 
@@ -535,7 +540,8 @@ class DropZone extends ajax_common {
     				{
     					maxFilesize: ' . $params['max_file_size'] . ',
 						url: "' . SITEBILL_MAIN_URL . '/js/ajax.php?action=dropzone_xls&uploader_type=dropzone&model_name=' . $model_name . '&session=' . $session_code . '&element=' . $element . '",
-	    				addRemoveLinks: true
+	    				' . ($params['element']['parameters']['accepted'] != '' ? 'acceptedFiles: \'' . $params['element']['parameters']['accepted'] . '\',' : '') . '
+                            addRemoveLinks: true
 					});
 					$("div#' . $id . ' .dz-remove").click(function(){
 							var _this=$(this);

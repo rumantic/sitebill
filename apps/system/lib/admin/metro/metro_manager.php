@@ -50,6 +50,38 @@ class Metro_Manager extends Object_Manager {
         $default_params['grid_item'] = array('metro_id', 'name', 'city_id');
         return parent::grid(array(), $default_params);
     }
+    
+    /**
+     * Delete data
+     * @param string $table_name
+     * @param string $primary_key
+     * @param int $primary_key_value
+     */
+    function delete_data($table_name, $primary_key, $primary_key_value) {
+        $search_queries = array(
+            Multilanguage::_('TABLE_ADS', 'system') => 'SELECT COUNT(*) AS rs FROM ' . DB_PREFIX . '_data WHERE metro_id=?',
+        );
+        $ans = array();
+        $DBC = DBC::getInstance();
+
+        foreach ($search_queries as $k => $v) {
+            $query = str_replace('?', $primary_key_value, $v);
+            $stmt = $DBC->query($query);
+            if ($stmt) {
+                $ar = $DBC->fetch($stmt);
+                $rs = $ar['rs'];
+                if ($rs != 0) {
+                    $ans[] = sprintf(Multilanguage::_('MESSAGE_CANT_DELETE', 'system'), $k);
+                }
+            }
+        }
+        if (empty($ans)) {
+            return parent::delete_data($table_name, $primary_key, $primary_key_value);
+        } else {
+            $this->riseError(implode('<br />', $ans));
+        }
+    }
+    
 
     /**
      * Get metro model

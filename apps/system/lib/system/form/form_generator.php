@@ -1,5 +1,7 @@
 <?php
 
+use system\lib\system\form\Form_Injector;
+
 /**
  * Form generator
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
@@ -9,6 +11,12 @@ class Form_Generator extends SiteBill {
     protected $form_id = null;
     protected $use_placeholders = false;
     protected $bootstrap_version = '2';
+    protected $form_decorator;
+
+    public function getFormDecorator(){
+        return $this->form_decorator;
+    }
+    static $cache;
 
     protected function generateFormId() {
         $this->form_id = 'frm_' . md5(time() . rand(10, 99));
@@ -24,9 +32,9 @@ class Form_Generator extends SiteBill {
      * Total values count in select
      * @var array
      */
+
     var $total_in_select = array();
     private $class_bootstrap3_input = "";
-
     /**
      * Construct
      * @param void
@@ -34,6 +42,21 @@ class Form_Generator extends SiteBill {
      */
     function __construct() {
         $this->SiteBill();
+        require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/form/form_decorator.php';
+        if(!defined('ADMIN')){
+            if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/local_form_decorator.php')){
+                require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/local_form_decorator.php';
+                $decorator_class='Local_Form_Decorator';
+            }else{
+                $decorator_class='Form_Decorator';
+            }
+        }else{
+            $decorator_class='Form_Decorator';
+        }
+
+        $this->form_decorator=new $decorator_class();
+        $this->form_decorator->setFormGenerator($this);
+
         $this->generateFormId();
         $bootstrap_version = trim($this->getConfigValue('bootstrap_version'));
         if (intval($this->getConfigValue('form_hint_enable'))) {
@@ -112,12 +135,12 @@ class Form_Generator extends SiteBill {
                 $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/md5.js';
             } elseif ($item_array['type'] == 'docuploads') {
                 $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.js';
-                $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js';
-                $styles[] = SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css';
+                $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=1';
+                $styles[] = SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css?v=1';
             } elseif ($item_array['type'] == 'uploads') {
                 $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.js';
-                $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js';
-                $styles[] = SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css';
+                $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=1';
+                $styles[] = SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css?v=1';
             } elseif ($item_array['type'] == 'destination') {
                 $scripts[] = SITEBILL_MAIN_URL . '/apps/destination/js/destination.js';
             } elseif ($item_array['type'] == 'tlocation') {
@@ -160,29 +183,45 @@ class Form_Generator extends SiteBill {
     }
 
     function compile_price_element($item_array) {
-        $value = number_format((int) str_replace(' ', '', $item_array['value']), 0, ',', ' ');
-        $id = $this->form_id . '_' . $item_array['name'];
-        $string = '';
-        if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
-            $string .= '<script src="' . SITEBILL_MAIN_URL . '/apps/system/js/autoNumeric.js"></script>';
+      global $smarty;
+        $tpl=$this->get_field_tpl($item_array['type'],$item_array['table_name'],$item_array['name']);
+        $value = $item_array['value'];
+        $value = floatval(str_replace(' ', '', $item_array['value']));
+        if($value == 0){
+            $value = '';
         }
-
-        $string .= '<script type="text/javascript">$(document).ready(function() {$("#' . $id . '").autoNumeric({aSep: \' \', vMax: \'999999999999\', vMin: \'0\'});});</script>';
+        $item_array['value']=$value;
+        $id = $this->form_id . '_' . $item_array['name'];
+        if($tpl){
+          $smarty->assign('id',$id);
+          $smarty->assign('classes',$this->classes);
+          $smarty->assign('item_array',$item_array);
+          $smarty->assign('theme',$this->getConfigValue('theme'));
+          $smarty->assign('NO_DYNAMIC_INCS',defined('NO_DYNAMIC_INCS') ? NO_DYNAMIC_INCS : false);
+          $string=$smarty->fetch($tpl);
+        }else{
+          $string = '';
+          if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
+              $string .= '<script src="' . SITEBILL_MAIN_URL . '/apps/system/js/autoNumeric.js"></script>';
+          }
+          $string .= '<script type="text/javascript">$(document).ready(function() {$("#' . $id . '").autoNumeric({aSep: \' \', vMax: \'999999999999\', vMin: \'0\'});});</script>'.
+                      '<input type="text" id="' . $id . '" class="price_field ' . $this->classes['input'] . '" name="' . $item_array['name'] . '" value="' . ($value != 0 ? $value : '') . '" />';
+        }
         return array(
             'title' => $item_array['title'],
             'required' => ($item_array['required'] == "on" ? 1 : 0),
-            'html' => $string . '<input type="text" id="' . $id . '" class="price_field ' . $this->classes['input'] . '" name="' . $item_array['name'] . '" value="' . ($value != 0 ? $value : '') . '" />',
+            'html' => $string,
             'tab' => (isset($item_array['tab']) ? $item_array['tab'] : ''),
             'id' => $this->form_id . '_' . $item_array['name'],
-            'type' => $item_array['type']
+            'type' => $item_array['type'],
         );
     }
 
     function compile_textarea_editor_element($item_array) {
-        $parameters = $item_array['parameters'];
-        //sleep(1);
+      global $smarty;
+        $tpl=$this->get_field_tpl($item_array['type'],$item_array['table_name'],$item_array['name']);
+
         $id = $item_array['name'] . '_' . md5(time() . '_' . rand(10, 99));
-        $rs = '';
         if (isset($item_array['editor']) AND ( $item_array['editor'] !== 'editor')) {
             if ($this->getConfigValue($item_array['editor']) != '') {
                 $editor_code = $this->getConfigValue($item_array['editor']);
@@ -192,80 +231,6 @@ class Form_Generator extends SiteBill {
         } else {
             $editor_code = $this->getConfigValue('editor');
         }
-        if ($editor_code == 'ckeditor') {
-            if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
-                $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/ckeditor/ckeditor.js"></script>';
-                $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/ckeditor/adapters/jquery.js"></script>';
-            }
-
-            $rs .= '<script type="text/javascript">
-		    	$(document).ready(function() {
-        			$("textarea#' . $id . '").ckeditor({
-		filebrowserBrowseUrl : \'/ckfinder/ckfinder.html\',
-        filebrowserImageBrowseUrl : \'/ckfinder/ckfinder.html?Type=Images\',
-        filebrowserFlashBrowseUrl : \'/ckfinder/ckfinder.html?Type=Flash\',
-        filebrowserUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files\',
-        filebrowserImageUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images\',
-        filebrowserFlashUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Flash\'
-    				});
-				});
-    		</script>';
-        } elseif ($editor_code == 'wysibb') {
-            if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
-                $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/wysibb/jquery.wysibb.min.js"></script>';
-                $rs .= '<link rel="stylesheet" href="' . SITEBILL_MAIN_URL . '/wysibb/theme/default/wbbtheme.css" />';
-            }
-
-            $rs .= '<script type="text/javascript">
-		    	$(document).ready(function() {
-        			$("textarea#' . $id . '").wysibb({
-					buttons: "bold,italic,underline,|,img,link,|,code,quote"
-					});
-				});
-    		</script>';
-        } elseif ($editor_code == 'bbeditor') {
-            if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
-                $rs .= '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/bbeditor.css" />';
-                $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/jquery.bbcode.js" type="text/javascript"></script>';
-            }
-
-            $rs .= '<script type="text/javascript">
-			  $(document).ready(function(){
-			    $("textarea#' . $id . '").bbcode({tag_bold:true,tag_italic:true,tag_underline:true,tag_link:true,tag_image:true,button_image:false});
-			    process();
-			  });
-			
-			  var bbcode="";
-			  function process()
-			  {
-			    if (bbcode != $("textarea#' . $id . '").val())
-			      {
-			        bbcode = $("textarea#' . $id . '").val();
-			        $.get("' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/bbParser.php",
-			        {
-			          bbcode: bbcode
-			        },
-			        function(txt){
-			          $("#test' . $id . '").html(txt);
-			        })
-			      }
-			    setTimeout("process()", 2000);
-			  }
-			</script>';
-        } else {
-            if (isset($parameters['width']) && (int) $parameters['width'] != 0) {
-                $width = $parameters['width'];
-            } else {
-                $width = 350;
-            }
-            if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
-                $rs .= '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/js/cleditor/jquery.cleditor.css" />';
-                $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/js/cleditor/jquery.cleditor.min.js"></script>';
-            }
-
-            $rs .= '<script type="text/javascript">$(document).ready(function() {$("textarea#' . $id . '").cleditor({width:' . $width . '});});</script>';
-        }
-
 
         if ($item_array['rows'] == '') {
             $item_array['rows'] = 10;
@@ -275,18 +240,112 @@ class Form_Generator extends SiteBill {
             $item_array['cols'] = 30;
         }
 
-        $rs .= '<textarea id="' . $id . '" class="input" name="' . $item_array['name'] . '" rows="' . $item_array['rows'] . '" cols="' . $item_array['cols'] . '">' . $item_array['value'] . '</textarea>';
+        if($tpl){
+          $smarty->assign('id',$id);
+          $smarty->assign('editor_code',$editor_code);
+          $smarty->assign('classes',$this->classes);
+          $smarty->assign('item_array',$item_array);
+          $smarty->assign('theme',$this->getConfigValue('theme'));
+          $smarty->assign('NO_DYNAMIC_INCS',defined('NO_DYNAMIC_INCS') ? NO_DYNAMIC_INCS : false);
+          $rs=$smarty->fetch($tpl);
+        }else{
+          $parameters = $item_array['parameters'];
+          //sleep(1);
+          $rs = '';
+          if ($editor_code == 'ckeditor') {
+              if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
+                  $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/ckeditor/ckeditor.js"></script>';
+                  $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/ckeditor/adapters/jquery.js"></script>';
+              }
+
+              $rs .= '<script type="text/javascript">
+                  $(document).ready(function() {
+                      $("textarea#' . $id . '").ckeditor({
+          filebrowserBrowseUrl : \'/ckfinder/ckfinder.html\',
+          filebrowserImageBrowseUrl : \'/ckfinder/ckfinder.html?Type=Images\',
+          filebrowserFlashBrowseUrl : \'/ckfinder/ckfinder.html?Type=Flash\',
+          filebrowserUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files\',
+          filebrowserImageUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images\',
+          filebrowserFlashUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Flash\'
+                      });
+                  });
+              </script>';
+          } elseif ($editor_code == 'wysibb') {
+              if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
+                  $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/wysibb/jquery.wysibb.min.js"></script>';
+                  $rs .= '<link rel="stylesheet" href="' . SITEBILL_MAIN_URL . '/wysibb/theme/default/wbbtheme.css" />';
+              }
+
+              $rs .= '<script type="text/javascript">
+                  $(document).ready(function() {
+                      $("textarea#' . $id . '").wysibb({
+                      buttons: "bold,italic,underline,|,img,link,|,code,quote"
+                      });
+                  });
+              </script>';
+          } elseif ($editor_code == 'bbeditor') {
+              if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
+                  $rs .= '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/bbeditor.css" />';
+                  $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/jquery.bbcode.js" type="text/javascript"></script>';
+              }
+
+              $rs .= '<script type="text/javascript">
+                $(document).ready(function(){
+                  $("textarea#' . $id . '").bbcode({tag_bold:true,tag_italic:true,tag_underline:true,tag_link:true,tag_image:true,button_image:false});
+                  process();
+                });
+
+                var bbcode="";
+                function process()
+                {
+                  if (bbcode != $("textarea#' . $id . '").val())
+                    {
+                      bbcode = $("textarea#' . $id . '").val();
+                      $.get("' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/bbParser.php",
+                      {
+                        bbcode: bbcode
+                      },
+                      function(txt){
+                        $("#test' . $id . '").html(txt);
+                      })
+                    }
+                  setTimeout("process()", 2000);
+                }
+              </script>';
+          } else {
+              if (isset($parameters['width']) && (int) $parameters['width'] != 0) {
+                  $width = $parameters['width'];
+              } else {
+                  $width = 350;
+              }
+              if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
+                  $rs .= '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/js/cleditor/jquery.cleditor.css" />';
+                  $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/js/cleditor/jquery.cleditor.min.js"></script>';
+              }
+
+              $rs .= '<script type="text/javascript">$(document).ready(function() {$("textarea#' . $id . '").cleditor({width:' . $width . '});});</script>';
+          }
+
+
+
+          $rs .= '<textarea id="' . $id . '" class="input" name="' . $item_array['name'] . '" rows="' . $item_array['rows'] . '" cols="' . $item_array['cols'] . '">' . $item_array['value'] . '</textarea>';
+        }
         return array(
             'title' => $item_array['title'],
             'required' => ($item_array['required'] == "on" ? 1 : 0),
             'html' => $rs,
             'tab' => (isset($item_array['tab']) ? $item_array['tab'] : ''),
-            'type' => $item_array['type']
+            'type' => $item_array['type'],
         );
     }
 
     function compile_textarea_element($item_array) {
+        global $smarty;
+        $tpl=$this->get_field_tpl($item_array['type'],$item_array['table_name'],$item_array['name']);
         $parameters = array();
+        $str = '';
+        $str2 = '';
+        $id = $this->form_id . '_' . $item_array['name'];
         if (isset($item_array['parameters'])) {
             $parameters = $item_array['parameters'];
         }
@@ -305,17 +364,26 @@ class Form_Generator extends SiteBill {
         if (isset($parameters['cols']) && (int) $parameters['cols'] != 0) {
             $item_array['cols'] = (int) $parameters['cols'];
         }
-        $str = '';
-        $id = $this->form_id . '_' . $item_array['name'];
-        if (isset($item_array['lined']) && 1 === (int) $parameters['lined']) {
-            $fields = explode('|', $parameters['fields']);
 
-            //$id=md5(time().rand(100, 999));
-            $str = '<script type="text/javascript">
-        	$(document).ready(function() {
-        		$( "#' . $id . '" ).SitebillLineEditor({fields: ["' . implode('","', $fields) . '"]});
-        	});
-        	</script>';
+        if($tpl){
+          $smarty->assign('id',$id);
+          $smarty->assign('classes',$this->classes);
+          $smarty->assign('item_array',$item_array);
+          $smarty->assign('theme',$this->getConfigValue('theme'));
+          $smarty->assign('NO_DYNAMIC_INCS',defined('NO_DYNAMIC_INCS') ? NO_DYNAMIC_INCS : false);
+          $str2=$smarty->fetch($tpl);
+        }else{
+          if (isset($item_array['lined']) && 1 === (int) $parameters['lined']) {
+              $fields = explode('|', $parameters['fields']);
+
+              //$id=md5(time().rand(100, 999));
+              $str = '<script type="text/javascript">
+              $(document).ready(function() {
+                  $( "#' . $id . '" ).SitebillLineEditor({fields: ["' . implode('","', $fields) . '"]});
+              });
+              </script>';
+          }
+          $str2='<textarea id="' . $id . '" class="' . $this->classes['textarea'] . '" name="' . $item_array['name'] . '" rows="' . $item_array['rows'] . '" cols="' . $item_array['cols'] . '"' . ((isset($parameters['styles']) && $parameters['styles'] != '') ? ' style="' . $parameters['styles'] . '"' : '') . '>' . htmlspecialchars($item_array['value']) . '</textarea>';
         }
         if (isset($parameters['modal_input']) && $parameters['modal_input'] == 'search_params') {
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/mysearch/admin/modal_input.php');
@@ -326,16 +394,16 @@ class Form_Generator extends SiteBill {
                 'required' => ($item_array['required'] == "on" ? 1 : 0),
                 'html' => $str . $modal_input->get_form(),
                 'tab' => (isset($item_array['tab']) ? $item_array['tab'] : ''),
-                'id' => $id
+                'id' => $id,
             );
         } else {
             return array(
                 'title' => $item_array['title'],
                 'type' => $item_array['type'],
                 'required' => ($item_array['required'] == "on" ? 1 : 0),
-                'html' => $str . '<textarea id="' . $id . '" class="' . $this->classes['textarea'] . '" name="' . $item_array['name'] . '" rows="' . $item_array['rows'] . '" cols="' . $item_array['cols'] . '"' . ((isset($parameters['styles']) && $parameters['styles'] != '') ? ' style="' . $parameters['styles'] . '"' : '') . '>' . htmlspecialchars($item_array['value']) . '</textarea>',
+                'html' => $str . $str2,
                 'tab' => (isset($item_array['tab']) ? $item_array['tab'] : ''),
-                'id' => $id
+                'id' => $id,
             );
         }
     }
@@ -346,7 +414,10 @@ class Form_Generator extends SiteBill {
         $id = 'captcha_refresh_' . md5(time() . rand(100, 999));
         if ($captcha_type == 2) {
             return FALSE;
-        } elseif ($captcha_type == 3) {
+        } /*elseif ($captcha_type == 4) {
+
+            $string .= '<div class="g-recaptcha" data-sitekey="'.$this->getConfigValue('google_recaptcha_key').'"></div>';
+        }*/ elseif ($captcha_type == 3) {
 
             $captcha_session_key = $this->generateCaptchaSessionKey();
 
@@ -363,14 +434,14 @@ class Form_Generator extends SiteBill {
 
             $js_string .= '<script type="text/javascript">';
             $js_string .= '$(document).ready(function(){
-	    		$("#' . $id . '").click(function(){
-					//var new_key=new Date().getTime();
-					//var hash = CryptoJS.MD5(String(new_key));
-	    			var hash = "s"+new Date().getTime();
-	    			$(this).prevAll(".capcha_img").eq(0).attr("src", estate_folder+\'/apps/third/kcaptcha/index.php?captcha_session_key=\' + hash);
-	        		$(this).nextAll("input[name=captcha_session_key]").val(hash);
-	    		});
-	    	});';
+                $("#' . $id . '").click(function(){
+                    //var new_key=new Date().getTime();
+                    //var hash = CryptoJS.MD5(String(new_key));
+                    var hash = "s"+new Date().getTime();
+                    $(this).prevAll(".capcha_img").eq(0).attr("src", estate_folder+\'/apps/third/kcaptcha/index.php?captcha_session_key=\' + hash);
+                    $(this).nextAll("input[name=captcha_session_key]").val(hash);
+                });
+            });';
             $js_string .= '</script>';
             $string .= $js_string;
 
@@ -390,14 +461,14 @@ class Form_Generator extends SiteBill {
 
             $js_string .= '<script type="text/javascript">';
             $js_string .= '$(document).ready(function(){
-	    		$("#' . $id . '").click(function(){
-					//var new_key=new Date().getTime();
-					//var hash = CryptoJS.MD5(String(new_key));
-	    			var hash = "s"+new Date().getTime();
-	    			$(this).prevAll(".capcha_img").eq(0).attr("src", estate_folder+\'/captcha.php?captcha_session_key=\' + hash);
-	        		$(this).nextAll("input[name=captcha_session_key]").val(hash);
-	    		});
-	    	});';
+                $("#' . $id . '").click(function(){
+                    //var new_key=new Date().getTime();
+                    //var hash = CryptoJS.MD5(String(new_key));
+                    var hash = "s"+new Date().getTime();
+                    $(this).prevAll(".capcha_img").eq(0).attr("src", estate_folder+\'/captcha.php?captcha_session_key=\' + hash);
+                    $(this).nextAll("input[name=captcha_session_key]").val(hash);
+                });
+            });';
             $js_string .= '</script>';
             $string .= $js_string;
 
@@ -407,6 +478,14 @@ class Form_Generator extends SiteBill {
         $html_array['hidden'] = '<input type="hidden" name="captcha_session_key" value="' . $captcha_session_key . '">';
         $html_array['input'] = '<input placeholder="' . $item_array['title'] . '" type="text" class="' . $this->classes['input'] . '" name="' . $item_array['name'] . '" value=""  />';
         $html_array['js_string'] = $js_string;
+
+        /*if ($captcha_type == 4){
+            $html_array['refresh'] = '';
+            $html_array['hidden'] = '';
+            $html_array['input'] = $string;
+            $html_array['js_string'] = '';
+            $html_array['src']='';
+        }*/
 
         $this->clear_captcha_session_table();
 
@@ -423,37 +502,89 @@ class Form_Generator extends SiteBill {
     }
 
     function compile_safe_string_element($item_array) {
+        global $smarty;
+        $tpl=$this->get_field_tpl($item_array['type'],$item_array['table_name'],$item_array['name']);
+        $html='';
+        if($tpl){
+          $smarty->assign('id',$this->form_id . '_' . $item_array['name']);
+          $smarty->assign('classes',$this->classes);
+          $smarty->assign('item_array',$item_array);
+          $smarty->assign('theme',$this->getConfigValue('theme'));
+          $smarty->assign('NO_DYNAMIC_INCS',defined('NO_DYNAMIC_INCS') ? NO_DYNAMIC_INCS : false);
+          $html=$smarty->fetch($tpl);
+        }else{
 
         $value = htmlspecialchars($item_array['value'], ENT_QUOTES, SITE_ENCODING);
         $params = array();
         if (isset($item_array['parameters'])) {
             $params = $item_array['parameters'];
         }
+        if ( $params['dadata'] == 1 ) {
+            $test = "<link rel='stylesheet prefetch' href='https://cdn.jsdelivr.net/npm/suggestions-jquery@latest/dist/css/suggestions.min.css'>\n";
+            //$test .= "<script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js'></script>";
+            $test .= "<script src='https://cdn.jsdelivr.net/npm/suggestions-jquery@latest/dist/js/jquery.suggestions.min.js'></script>";
+            if (file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/js/dadata/dadata.js') ) {
+                $test .= "<script src='".SITEBILL_MAIN_URL."/template/frontend/".$this->getConfigValue('theme')."/js/dadata/dadata.js?t=".time()."'></script>";
+            } else {
+                $test .= "<script src='".SITEBILL_MAIN_URL."/apps/system/js/dadata/dadata.js?t=".time()."'></script>";
+            }
+            $test .= '<script type="text/javascript">
+$(document).ready(function () {
+    $("#'. $this->form_id . '_' . $item_array['name'] .'").suggestions({
+        token: "f26c98c6b12d1deb3c1ea1205db88e5cf6e652a0",
+        type: "ADDRESS",
+        onSelect: showSelected
+    });
+});
+</script>
+';
 
-        $html = '<input id="' . $this->form_id . '_' . $item_array['name'] . '" placeholder="' . $item_array['title'] . '" type="text" class="' . $this->classes['input'] . '" name="' . $item_array['name'] . '" value="' . $value . '"' . ((isset($params['styles']) && $params['styles'] != '') ? ' style="' . $params['styles'] . '"' : '') . ((isset($params['onclick']) && $params['onclick'] != '') ? ' onclick="' . $params['onclick'] . '"' : '') . ((isset($params['onchange']) && $params['onchange'] != '') ? ' onchange="' . $params['onchange'] . '"' : '') . ' />';
 
-        /* if(intval($params['meashurable'])==1){
-          $vars=explode(',', $params['meashurable_vars']);
-          $def=trim($params['meashurable_def']);
-          $html.='<div class="meashtype" data-variants="sqm,ar,ha">';
-          foreach($vars as $var){
-          $html.='<input type="radio" name="_meash_'.$item_array['name'].'" value="'.$var.'"'.($var==$def ? ' checked="checked"' : '').'>'.$var.'';
-          }
-          $html.='</div>';
-          } */
-        /* return array(
-          'title'=>$item_array['title'],
-          'required'=>($item_array['required'] == "on" ? 1 : 0),
-          'html'=>
-          'tab'=>(isset($item_array['tab']) ? $item_array['tab'] : '')
-          ); */
+        }
+        $html = $test.'<input id="' . $this->form_id . '_' . $item_array['name'] . '" placeholder="' . $item_array['title'] . '" type="text" class="' . $this->classes['input'] . '" name="' . $item_array['name'] . '" value="' . $value . '"' . ((isset($params['styles']) && $params['styles'] != '') ? ' style="' . $params['styles'] . '"' : '') . ((isset($params['onclick']) && $params['onclick'] != '') ? ' onclick="' . $params['onclick'] . '"' : '') . ((isset($params['onchange']) && $params['onchange'] != '') ? ' onchange="' . $params['onchange'] . '"' : '') . ' />';
+        /*$dp=array();
+        $dp['id']=$this->form_id.'_'.$item_array['name'];
+        $dp['placeholder']=$item_array['title'];
+        $dp['class']=$this->classes['input'];
+
+        $dp['class']=$this->classes['input'];
+        if(isset($params['styles']) && $params['styles']!=''){
+            $dp['styles']=$params['styles'];
+        }
+        if(isset($params['onchange']) && $params['onchange']!=''){
+            $dp['onchange']=$params['onchange'];
+        }
+        if(isset($params['onclick']) && $params['onclick']!=''){
+            $dp['onclick']=$params['onclick'];
+        }
+
+        $html=$this->form_decorator->decorateTextInput($item_array['name'], $value, $dp);*/
+
+      //  $html='<input id="'.$this->form_id.'_'.$item_array['name'].'" placeholder="'.$item_array['title'].'" type="text" class="'.$this->classes['input'].'" name="'.$item_array['name'].'" value="'.$value.'"'.((isset($params['styles']) && $params['styles']!='') ? ' style="'.$params['styles'].'"' : '').((isset($params['onclick']) && $params['onclick']!='') ? ' onclick="'.$params['onclick'].'"' : '').((isset($params['onchange']) && $params['onchange']!='') ? ' onchange="'.$params['onchange'].'"' : '').' />';
+
+        /*if(intval($params['meashurable'])==1){
+            $vars=explode(',', $params['meashurable_vars']);
+            $def=trim($params['meashurable_def']);
+            $html.='<div class="meashtype" data-variants="sqm,ar,ha">';
+            foreach($vars as $var){
+                $html.='<input type="radio" name="_meash_'.$item_array['name'].'" value="'.$var.'"'.($var==$def ? ' checked="checked"' : '').'>'.$var.'';
+            }
+            $html.='</div>';
+        }*/
+        /*return array(
+                'title'=>$item_array['title'],
+                'required'=>($item_array['required'] == "on" ? 1 : 0),
+                'html'=>
+                'tab'=>(isset($item_array['tab']) ? $item_array['tab'] : '')
+        );*/
+        }
         return array(
             'title' => $item_array['title'],
             'required' => ($item_array['required'] == "on" ? 1 : 0),
             'html' => $html,
             'tab' => (isset($item_array['tab']) ? $item_array['tab'] : ''),
             'id' => $this->form_id . '_' . $item_array['name'],
-            'type' => $item_array['type']
+            'type' => $item_array['type'],
         );
     }
 
@@ -476,36 +607,36 @@ class Form_Generator extends SiteBill {
         }
         if ($value != 0) {
             $html .= '<div class="contractor" style="display: none;">
-			<div class="input text">
-    			<label for="ContractorSearchPhone">Введите от 4 цифр телефона для поиска</label>
-    			<input name="data[Contractor][search_phone]" class="search-contractor" type="text" id="ContractorSearchPhone" maxlength="17" value="">
-    		</div>
-			<div class="found-contractors" style="display: none;"></div>
-		</div>';
+            <div class="input text">
+                <label for="ContractorSearchPhone">Введите от 4 цифр телефона для поиска</label>
+                <input name="data[Contractor][search_phone]" class="search-contractor" type="text" id="ContractorSearchPhone" maxlength="17" value="">
+            </div>
+            <div class="found-contractors" style="display: none;"></div>
+        </div>';
             if (defined('ADMIN_MODE')) {
                 $html .= '<div class="new-contractor" style="display: none;">
-			<div class="input text"><label for="ContractorFio">Имя</label><input alt="fio" class="search-contractor" maxlength="255" type="text" id="ContractorFio"></div>
-    		<div class="input tel"><label for="ContractorPhone">Телефон</label><input alt="phone" class="search-contractor" maxlength="255" type="tel" id="ContractorPhone">
-    				</div>
-    		<button class="new-contractor-button-save" style="display: block;">Создать</button>
-    	</div>
+            <div class="input text"><label for="ContractorFio">Имя</label><input alt="fio" class="search-contractor" maxlength="255" type="text" id="ContractorFio"></div>
+            <div class="input tel"><label for="ContractorPhone">Телефон</label><input alt="phone" class="search-contractor" maxlength="255" type="tel" id="ContractorPhone">
+                    </div>
+            <button class="new-contractor-button-save" style="display: block;">Создать</button>
+        </div>
     <button class="new-contractor-button" style="display: block;">Создать нового</button>';
             }
 
             $html .= '<button class="search-contractor-button" style="display: none;">Искать</button>';
         } else {
             $html .= '<div class="contractor" style="display: block;">
-			<div class="input text"><label for="ContractorSearchPhone">Введите от 4 цифр телефона для поиска</label>
-    			<input name="data[Contractor][search_phone]" class="search-contractor" type="text" id="ContractorSearchPhone" maxlength="17" autocomplete="off" value="">
-    		</div>
-			<div class="found-contractors" style="display: none;"></div>
-		</div>';
+            <div class="input text"><label for="ContractorSearchPhone">Введите от 4 цифр телефона для поиска</label>
+                <input name="data[Contractor][search_phone]" class="search-contractor" type="text" id="ContractorSearchPhone" maxlength="17" autocomplete="off" value="">
+            </div>
+            <div class="found-contractors" style="display: none;"></div>
+        </div>';
             if (defined('ADMIN_MODE')) {
                 $html .= '<div class="new-contractor" style="display: none;">
-			<div class="input text"><label for="ContractorFio">Имя</label><input alt="fio" class="search-contractor" maxlength="255" type="text" id="ContractorFio"></div>        
-    		<div class="input tel"><label for="ContractorPhone">Телефон</label><input alt="phone" class="search-contractor" maxlength="255" type="tel" id="ContractorPhone">
-    				</div> 
-    		<button class="new-contractor-button-save" style="display: block;">Создать</button></div>
+            <div class="input text"><label for="ContractorFio">Имя</label><input alt="fio" class="search-contractor" maxlength="255" type="text" id="ContractorFio"></div>
+            <div class="input tel"><label for="ContractorPhone">Телефон</label><input alt="phone" class="search-contractor" maxlength="255" type="tel" id="ContractorPhone">
+                    </div>
+            <button class="new-contractor-button-save" style="display: block;">Создать</button></div>
     <button class="new-contractor-button" style="display: block;">Создать нового</button>';
             }
             $html .= '<button class="search-contractor-button" style="display: none;">Искать</button>';
@@ -537,8 +668,8 @@ class Form_Generator extends SiteBill {
         $collection = array();
         if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
             $script_code[] = '<script src="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.js"></script>';
-            $script_code[] = '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css">';
-            $script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js"></script>';
+            $script_code[] = '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css?v=1">';
+            $script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=1"></script>';
         }
 
         //$html.='<script src="'.SITEBILL_MAIN_URL.'/apps/system/js/dropzone_sitebill.js"></script>';
@@ -557,31 +688,31 @@ class Form_Generator extends SiteBill {
             $primary_key_value = $item_array['primary_key_value'];
             $class = 'uploaded_' . md5(time() . rand(100, 999));
             $html .= '<div class="dz-preview-uploaded ' . $class . '">';
-            $html .= '<a class="btn btn-mini btn-warning dz-preview-clear" onClick="DataImagelist.dz_clearDocs(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');">Удалить все</a>';
+            $html .= '<a class="btn btn-mini btn-warning dz-preview-clear" onClick="DataImagelist.dz_clearDocs(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');">'._e('Удалить все').'</a>';
             $html .= '<ul class="dz-preview-uploaded-list">';
 
 
 
             foreach ($item_array['value'] as $ita) {
                 $html .= '<li class="dz-preview-uploaded-item dz-preview-uploaded-item-docs">
-    					<div class="dz-preview-uploaded-item-image-preview">
-							<div class="dz-preview-uploaded-item-doc">
-								<a href="' . SITEBILL_MAIN_URL . '/img/mediadocs/' . $ita['normal'] . '" download>' . $ita['normal'] . '</a>
-							</div>
-							<div class="dz-preview-uploaded-item-description" onDblClick="DataImagelist.dz_dblClick(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');">
-								' . ($ita['title'] == '' ? 'Описание' : $ita['title']) . '
-							</div>
-							<div class="dz-preview-uploaded-item-description-editable" style="display: none;">
-								<input type="text" value="' . ($ita['title'] == '' ? 'Описание' : $ita['title']) . '" />
-								<button class="btn btn-success btn-small save_desc"><i class="icon-white icon-ok"></i></button>
-								<button class="btn btn-danger btn-small canc_desc"><i class="icon-white icon-remove"></i></button>
-							</div>
-							<a href="javascript:void(0);" onClick="DataImagelist.dz_upImage(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small go_up" title="Выше"><i class="icon icon-chevron-left"></i></a>
-							<a href="javascript:void(0);" onClick="DataImagelist.dz_deleteDoc(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small remove" title="Удалить"><i class="icon icon-remove"></i></a>
-							<a href="javascript:void(0);" onClick="DataImagelist.dz_downImage(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small go_down" title="Ниже"><i class="icon icon-chevron-right"></i></a>
-							<a href="javascript:void(0);" onClick="DataImagelist.dz_makeMain(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small go_down" title="Сделать главной"><i class="icon icon-star"></i></a>
-						</div>
-						</li>';
+                        <div class="dz-preview-uploaded-item-image-preview">
+                            <div class="dz-preview-uploaded-item-doc">
+                                <a href="' . SITEBILL_MAIN_URL . '/img/mediadocs/' . $ita['normal'] . '" download>' . $ita['normal'] . '</a>
+                            </div>
+                            <div class="dz-preview-uploaded-item-description" onDblClick="DataImagelist.dz_dblClick(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');">
+                                ' . ($ita['title'] == '' ? _e('Описание') : $ita['title']) . '
+                            </div>
+                            <div class="dz-preview-uploaded-item-description-editable" style="display: none;">
+                                <input type="text" value="' . ($ita['title'] == '' ? _e('Описание') : $ita['title']) . '" />
+                                <button class="btn btn-success btn-small save_desc"><i class="icon-white icon-ok"></i></button>
+                                <button class="btn btn-danger btn-small canc_desc"><i class="icon-white icon-remove"></i></button>
+                            </div>
+                            <a href="javascript:void(0);" onClick="DataImagelist.dz_upImage(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small go_up" title="Выше"><i class="icon icon-chevron-left"></i></a>
+                            <a href="javascript:void(0);" onClick="DataImagelist.dz_deleteDoc(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small remove" title="Удалить"><i class="icon icon-remove"></i></a>
+                            <a href="javascript:void(0);" onClick="DataImagelist.dz_downImage(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small go_down" title="Ниже"><i class="icon icon-chevron-right"></i></a>
+                            <a href="javascript:void(0);" onClick="DataImagelist.dz_makeMain(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small go_down" title="Сделать главной"><i class="icon icon-star"></i></a>
+                        </div>
+                        </li>';
             }
             $html .= '</ul>';
             $html .= '</div>';
@@ -619,8 +750,8 @@ class Form_Generator extends SiteBill {
         $collection = array();
         if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
             $script_code[] = '<script src="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.js"></script>';
-            $script_code[] = '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css">';
-            $script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js"></script>';
+            $script_code[] = '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css?v=1">';
+            $script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=1"></script>';
         }
 
         $params = $item_array['parameters'];
@@ -661,18 +792,23 @@ class Form_Generator extends SiteBill {
             $html .= '<ul class="dz-preview-uploaded-list">';
             $bootstrap_version = trim($this->getConfigValue('bootstrap_version'));
             foreach ($image_list as $ita) {
+                if ( filter_var($ita['preview'], FILTER_VALIDATE_URL) ) {
+                    $img_url = $ita['preview'];
+                } else {
+                    $img_url = SITEBILL_MAIN_URL . '/img/data/' . $ita['preview'];
+                }
                 $html .= '<li class="dz-preview-uploaded-item">
     					<div class="dz-preview-uploaded-item-image-preview">
 							<div class="dz-preview-uploaded-item-image">
-								<img src="' . SITEBILL_MAIN_URL . '/img/data/' . $ita['preview'] . '" />  
+								<img src="' . $img_url . '" />
 							</div>
-							<div class="dz-preview-uploaded-item-description" onDblClick="DataImagelist.dz_dblClick(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');">
-								' . ($ita['title'] == '' ? 'Описание' : $ita['title']) . '
+							<div class="get_field_tpl" onDblClick="DataImagelist.dz_dblClick(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');">
+								' . ($ita['title'] == '' ? _e('Описание') : $ita['title']) . '
 							</div>
 							<div class="dz-preview-uploaded-item-description-editable" style="display: none;">
-								<input type="text" value="' . ($ita['title'] == '' ? 'Описание' : $ita['title']) . '" /> 
-								<button class="btn btn-success btn-small save_desc"><i class="icon-white icon-ok"></i></button> 
-								<button class="btn btn-danger btn-small canc_desc"><i class="icon-white icon-remove"></i></button> 
+								<input type="text" value="' . ($ita['title'] == '' ? _e('Описание') : $ita['title']) . '" />
+								<button class="btn btn-success btn-small save_desc"><i class="icon-white icon-ok"></i></button>
+								<button class="btn btn-danger btn-small canc_desc"><i class="icon-white icon-remove"></i></button>
 							</div>
 							<a href="javascript:void(0);" onClick="DataImagelist.dz_upImage(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small go_up" title="Выше">' . (($bootstrap_version == '3' && !defined('ADMIN_MODE')) ? '<span class="glyphicon glyphicon-chevron-left"></span>' : '<i class="icon icon-chevron-left"></i>') . '</a>
 <a href="javascript:void(0);" onClick="DataImagelist.dz_deleteImage(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small remove" title="Удалить">' . (($bootstrap_version == '3' && !defined('ADMIN_MODE')) ? '<span class="glyphicon glyphicon-remove"></span>' : '<i class="icon icon-remove"></i>') . '</a>
@@ -734,39 +870,53 @@ class Form_Generator extends SiteBill {
     }
 
     function compile_gadres_element($item_array) {
+      global $smarty;
+      $tpl=$this->get_field_tpl($item_array['type'],$item_array['table_name'],$item_array['name']);
+      $id = md5(rand(1000, 9999) . time());
+      $str='';
+      if($tpl){
+        $smarty->assign('id',$id);
+        $smarty->assign('classes',$this->classes);
+        $smarty->assign('item_array',$item_array);
+        $smarty->assign('theme',$this->getConfigValue('theme'));
+        $smarty->assign('NO_DYNAMIC_INCS',defined('NO_DYNAMIC_INCS') ? NO_DYNAMIC_INCS : false);
+        $str=$smarty->fetch($tpl);
+      }else{
+
         $params = $item_array['parameters'];
         $value = htmlspecialchars($item_array['value'], ENT_QUOTES, SITE_ENCODING);
-        $id = md5(rand(1000, 9999) . time());
         $str = '<script>$(document).ready(function(){$( "#gadres_' . $id . '" ).autocomplete({
-			open: function() { 
-	            $(".ui-menu")
-	                .width($( this ).width());
-	        } ,
-			source: function( request, response ) {
-				var answer=[];
-				var city_id=$( "#gadres_' . $id . '" ).parents("form").eq(0).find("[name=city_id]").val();
-				$.ajax({
-					url: estate_folder + "/apps/geodata/js/ajax.php",
-					type: "POST",
-					dataType: "json",
-					data: {input: encodeURIComponent(request.term), action: "geocode_me", city_id: city_id},
-					success: function(data) {
-						$.map(data,function(n,i){
-							var o={};
-							o.value=n;
-							o.label=n;
-							answer.push(o);
-						});
-						response(answer);
-					}
-				});
-	    	},
-			minLength: 3,
-		});});</script>';
+            open: function() {
+                $(".ui-menu")
+                    .width($( this ).width());
+            } ,
+            source: function( request, response ) {
+                var answer=[];
+                var city_id=$( "#gadres_' . $id . '" ).parents("form").eq(0).find("[name=city_id]").val();
+                $.ajax({
+                    url: estate_folder + "/apps/geodata/js/ajax.php",
+                    type: "POST",
+                    dataType: "json",
+                    data: {input: encodeURIComponent(request.term), action: "geocode_me", city_id: city_id},
+                    success: function(data) {
+                        $.map(data,function(n,i){
+                            var o={};
+                            o.value=n;
+                            o.label=n;
+                            answer.push(o);
+                        });
+                        response(answer);
+                    }
+                });
+            },
+            minLength: 3,
+        });});</script>';
+        $str.='<input type="hidden" name="gadres[' . $item_array['name'] . ']" value="' . $value . '"><input class="' . $this->classes['input'] . '" id="gadres_' . $id . '" type="text" name="' . $item_array['name'] . '" value="" placeholder="' . $value . '"' . ((isset($params['styles']) && $params['styles'] != '') ? ' style="' . $params['styles'] . '"' : '') . ' />';
+      }
         return array(
             'title' => $item_array['title'],
             'required' => ($item_array['required'] == "on" ? 1 : 0),
-            'html' => $str . '<input type="hidden" name="gadres[' . $item_array['name'] . ']" value="' . $value . '"><input class="' . $this->classes['input'] . '" id="gadres_' . $id . '" type="text" name="' . $item_array['name'] . '" value="" placeholder="' . $value . '"' . ((isset($params['styles']) && $params['styles'] != '') ? ' style="' . $params['styles'] . '"' : '') . ' />',
+            'html' => $str,
             'tab' => (isset($item_array['tab']) ? $item_array['tab'] : ''),
             'type' => $item_array['type']
         );
@@ -1311,19 +1461,48 @@ class Form_Generator extends SiteBill {
         );
     }
 
+    function get_field_tpl($type,$tablename,$fieldname,$formname=''){
+        $tpl='';
+        //var_dump(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/fields/name-'.$tablename.'.'.$fieldname.'.tpl');
+        if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/fields/name-'.$tablename.'.'.$fieldname.'.tpl')){
+            $tpl=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/fields/name-'.$tablename.'.'.$fieldname.'.tpl';
+        }elseif(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/fields/type-'.$type.'.tpl')){
+            $tpl=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/fields/type-'.$type.'.tpl';
+
+        }elseif(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/system/fields/name-'.$tablename.'.'.$fieldname.'.tpl')){
+            $tpl=SITEBILL_DOCUMENT_ROOT.'/apps/system/fields/name-'.$tablename.'.'.$fieldname.'.tpl';
+        }elseif(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/system/fields/type-'.$type.'.tpl')){
+            $tpl=SITEBILL_DOCUMENT_ROOT.'/apps/system/fields/type-'.$type.'.tpl';
+        }
+        return $tpl;
+    }
+
+
     function compile_parameter_element($item_array) {
+      global $smarty;
+      $tpl=$this->get_field_tpl($item_array['type'],$item_array['table_name'],$item_array['name']);
+      $id = md5(rand(1000, 9999) . time());
+      $html='';
+      if($tpl){
+        $smarty->assign('id',$id);
+        $smarty->assign('classes',$this->classes);
+        $smarty->assign('item_array',$item_array);
+        $smarty->assign('theme',$this->getConfigValue('theme'));
+        $smarty->assign('NO_DYNAMIC_INCS',defined('NO_DYNAMIC_INCS') ? NO_DYNAMIC_INCS : false);
+        $html=$smarty->fetch($tpl);
+      }else{
 
         //$value=htmlspecialchars($item_array['value']);
         $html = '';
         $html .= '<script type="text/javascript">';
         $html .= '$(document).ready(function(){
-    		$(document).on("click", ".paramsrow a", function(){$(this).parents(".paramsrow").eq(0).remove();return false;});
-    		$("#add_column_params").click(function(){
-    			var pr=$(this).parents("#paramsblock").eq(0).find(".paramsrow:last").clone();
-    			$(this).before(pr);
-    			return false;
-    		});
-    	});';
+            $(document).on("click", ".paramsrow a", function(){$(this).parents(".paramsrow").eq(0).remove();return false;});
+            $("#add_column_params").click(function(){
+                var pr=$(this).parents("#paramsblock").eq(0).find(".paramsrow:last").clone();
+                $(this).before(pr);
+                return false;
+            });
+        });';
         $html .= '</script>';
         $html .= '<div id="paramsblock">';
         if (is_array($item_array['value']) && count($item_array['value']) > 0) {
@@ -1340,7 +1519,7 @@ class Form_Generator extends SiteBill {
         $html .= '</div>';
         $html .= '<button id="add_column_params">Add</button></div>';
 
-
+      }
         return array(
             'title' => $item_array['title'],
             'required' => 0,
@@ -1430,12 +1609,33 @@ class Form_Generator extends SiteBill {
         $str = '';
         $map_options = array();
 
-        if (isset($parameters['map_width']) && (int) $parameters['map_width'] != 0) {
+        if(isset($parameters['map_width']) && trim($parameters['map_width'])!=0){
+            if(preg_match('/(\d+)%$/', $parameters['map_width'], $matches)){
+                $map_options[]='width: \''.trim($parameters['map_width']).'\'';
+            }elseif(preg_match('/(\d+)px$/', $parameters['map_width'], $matches)){
+                $map_options[]='width: \''.trim($parameters['map_width']).'\'';
+            }elseif(intval($parameters['map_width'])>0){
+                $map_options[]='width: \''.intval($parameters['map_width']).'px\'';
+            }
+
+        }
+        if(isset($parameters['map_height']) && trim($parameters['map_height'])!=0){
+            if(preg_match('/(\d+)%$/', $parameters['map_height'], $matches)){
+                $map_options[]='height: \''.trim($parameters['map_height']).'\'';
+            }elseif(preg_match('/(\d+)px$/', $parameters['map_height'], $matches)){
+                $map_options[]='height: \''.trim($parameters['map_height']).'\'';
+            }elseif(intval($parameters['map_height'])>0){
+                $map_options[]='height: \''.intval($parameters['map_height']).'px\'';
+            }
+
+        }
+
+        /*if (isset($parameters['map_width']) && (int) $parameters['map_width'] != 0) {
             $map_options[] = 'width: ' . (int) $parameters['map_width'];
         }
         if (isset($parameters['map_height']) && (int) $parameters['map_height'] != 0) {
             $map_options[] = 'height: ' . (int) $parameters['map_height'];
-        }
+        }*/
         if (isset($parameters['map_view_type']) && trim($parameters['map_view_type']) != '') {
             $map_options[] = 'map_view_type: \'' . trim($parameters['map_view_type']) . '\'';
         }
@@ -1452,9 +1652,36 @@ class Form_Generator extends SiteBill {
             $map_options[] = 'no_scroll_zoom: 1';
         }
 
+        $mtype = '';
+        if(1 == $this->getConfigValue('use_google_map')){
+            $mtype = 'google';
+            //$mtype = 'leaflet_osm';
+        }else{
+            $mtype = 'yandex';
+        }
+        //$this->template->assert('map_type', '');
 
-        $map_options[] = 'map_type: ' . (1 == $this->getConfigValue('use_google_map') ? '\'google\'' : '\'yandex\'');
+
+        $map_options[] = 'map_type: ' . '\''.$mtype.'\'';
         $id = md5(time() . rand(100, 999));
+
+
+        /*$str = '<div id="geodata_'.$id.'">';
+        $str .= '<input type="hidden" geodata="lat" class="' . $this->classes['input'] . '" name="' . $item_array['name'] . '[lat]" value="' . (isset($value['lat']) ? $value['lat'] : '') . '" />';
+        //$str.= $map_lat_input;
+        $str .= '</div>';*/
+
+
+
+
+
+
+
+
+
+
+
+
         $map_div_open = '<div id="geodata_' . $id . '" coords="' . $this->getConfigValue('apps.geodata.new_map_center') . '" zoom="' . $this->getConfigValue('apps.geodata.map_zoom_default') . '" class="geodata_form_el">';
         $map_div_close = '</div>';
         $str .= $map_div;
@@ -1506,7 +1733,7 @@ class Form_Generator extends SiteBill {
         $script_code = array();
         $collection = array();
         if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
-            $script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js"></script>';
+            $script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=1"></script>';
         }
 
         $html = '';
@@ -1643,11 +1870,11 @@ class Form_Generator extends SiteBill {
             $string = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/jquery.maskedinput.min.js"></script>';
         }
         $string .= '<script type="text/javascript">
-		    	$(document).ready(function() {
-    				$.mask.definitions["h"] = "[0-9]";
-		    		$("#' . $id . '").mask("' . $mask . '");
-		    	});
-    		</script>';
+                $(document).ready(function() {
+                    $.mask.definitions["h"] = "[0-9]";
+                    $("#' . $id . '").mask("' . $mask . '");
+                });
+            </script>';
         return array(
             'title' => $item_array['title'],
             'required' => ($item_array['required'] == "on" ? 1 : 0),
@@ -1796,10 +2023,16 @@ class Form_Generator extends SiteBill {
         } else {
             $zero_title = '';
         }
+        
+        if(isset($item_array['parameters']['nonzerotitle'])){
+			$nonzerotitle = $item_array['parameters']['nonzerotitle'];
+		}else{
+            $nonzerotitle = '';
+        }
 
         $html = '';
         if ($type == 'leveled') {
-            $html = $Structure_Manager->getCategorySelectBoxLeveled($item_array['name'], $item_array['value']);
+            $html = $Structure_Manager->getCategorySelectBoxLeveled($item_array['name'], $item_array['value'], array('zerotitle' => $zero_title, 'nonzerotitle' => $nonzerotitle));
         } else {
             $html = $Structure_Manager->getCategorySelectBoxWithName($item_array['name'], $item_array['value'], false, array(), $zero_title);
         }
@@ -1839,6 +2072,19 @@ class Form_Generator extends SiteBill {
             'type' => $item_array['type']
         );
     }
+
+    function compile_injector_element($item_array, $model) {
+        $form_injector = new Form_Injector();
+
+        return array(
+            'title' => $item_array['title'],
+            'required' => ($item_array['required'] == "on" ? 1 : 0),
+            'html' => $form_injector->compile($item_array, $this, $model),
+            'tab' => (isset($item_array['tab']) ? $item_array['tab'] : ''),
+            'type' => $item_array['type']
+        );
+    }
+
 
     function compile_select_box_by_query_multiple_element($item_array) {
         return array(
@@ -1933,7 +2179,7 @@ class Form_Generator extends SiteBill {
 
         $elements = array();
         $scripts = array();
-        $default_tab_name = $this->getConfigValue('default_tab_name');
+        $default_tab_name = _e($this->getConfigValue('default_tab_name'));
         $tabs = array();
         //$tabs[$default_tab_name]=$default_tab_name;
         //print_r($form_data);
@@ -2148,13 +2394,18 @@ class Form_Generator extends SiteBill {
                 case 'structure':
                     $rs = $this->compile_structure_element($item_array);
                     break;
+
+                case 'injector':
+                    $rs = $this->compile_injector_element($item_array, $form_data);
+                    break;
+
                 default:
                     $rs = FALSE;
                     break;
             }
 
             if ($rs === FALSE) {
-                
+
             } elseif (is_object($rs)) {
                 if (isset($rs->collection) && count($rs->collection) != 0) {
 
@@ -2191,6 +2442,7 @@ class Form_Generator extends SiteBill {
                 $rs['name'] = $item_array['name'];
                 $rs['active_in_topic'] = (isset($item_array['active_in_topic']) ? $item_array['active_in_topic'] : '');
                 $rs['type'] = $item_array['type'];
+                $rs['parameters'] = $item_array['parameters'];
                 if ($item_array['type'] == 'hidden' || $item_array['type'] == 'primary_key') {
                     $elements['private'][$item_array['name']] = $rs;
                 } else {
@@ -2364,6 +2616,10 @@ class Form_Generator extends SiteBill {
 
                 case 'values_list':
                     $rs = $this->get_safe_text_input($item_array);
+                    break;
+
+                case 'injector':
+                    $rs = $this->get_injector_row($item_array);
                     break;
             }
 
@@ -2578,6 +2834,11 @@ class Form_Generator extends SiteBill {
     function get_single_select_box_by_query($item_array, $model = null) {
 
         $lang = $this->getCurrentLang();
+        $item_md5 = md5(serialize($item_array).$lang);
+        if ( isset(self::$cache[$item_md5]) ) {
+            return self::$cache[$item_md5];
+        }
+
         /* $links=array(
           'country_id'=>array(
           array('linked_element'=>'region_id', 'linked_field'=>'country_id'),
@@ -2644,6 +2905,13 @@ class Form_Generator extends SiteBill {
             $depended_element_name = '';
             if (isset($parameters['depended']) && $parameters['depended'] != '') {
                 $depended_element_name = trim($parameters['depended']);
+                list($a, $b)=explode(',', $depended_element_name);
+                if($b!=''){
+                    $depended_element_name=$a;
+                    $depended_element_name_key=$b;
+                }else{
+                    $depended_element_name_key=$depended_element_name;
+                }
             }
         } else {
             /* switch($item_array['name']){
@@ -2766,7 +3034,7 @@ class Form_Generator extends SiteBill {
                 if (1 === intval($this->getConfigValue('apps.language.use_langs')) && 0 === intval($parameters['no_ml'])) {
                     $curlang = $this->getCurrentLang();
                     if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                        
+
                     } else {
                         if (isset($form_data_c[$item_array['primary_key_table']][$value_name . '_' . $lang])) {
                             $value_name_l = $value_name . '_' . $lang;
@@ -2796,8 +3064,11 @@ class Form_Generator extends SiteBill {
                     $onchange[] = 'LinkedElements.refresh(this, \'' . $lnks['linked_element'] . '\', \'' . $lnks['linked_field'] . '\', \'' . $item_array['table_name'] . '\');';
                 }
             }
+            if (isset($item_array['onchange'])) {
+                $onchange[] = $item_array['onchange'];
+            }
             $this->total_in_select[$item_array['name']] = 0;
-            $rs .= '<select class="' . $this->classes['select'] . '" name="' . $item_array['name'] . '" id="' . $item_array['name'] . '" onchange="' . implode(' ', $onchange) . ' ' . (isset($item_array['onchange']) ? $item_array['onchange'] : '') . '"' . (isset($item_array['onclick']) ? ' onClick="' . $item_array['onclick'] . '"' : ' ') . '>';
+            $rs .= '<select class="' . $this->classes['select'] . '" name="' . $item_array['name'] . '" id="' . $item_array['name'] . '" onchange="' . implode(' ', $onchange) . ' ' . '"' . (isset($item_array['onclick']) ? ' onClick="' . $item_array['onclick'] . '"' : ' ') . '>';
             if ($lang != 'ru') {
                 $lang_key = 'title_default_' . $lang;
                 if ($item_array[$lang_key] != '') {
@@ -2817,7 +3088,7 @@ class Form_Generator extends SiteBill {
             if (1 === intval($this->getConfigValue('apps.language.use_langs')) && (!isset($parameters['no_ml']) || 0 === intval($parameters['no_ml']))) {
                 $curlang = $this->getCurrentLang();
                 if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                    
+
                 } else {
                     require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
                     $ATH = new Admin_Table_Helper();
@@ -2830,11 +3101,28 @@ class Form_Generator extends SiteBill {
             }
 
 
+            $ret=array();
 
             if ($depended_element_name != '') {
                 $depended_value = $model[$depended_element_name]['value'];
+                if(isset($parameters['use_query']) && $parameters['use_query'] != '' ){
+                  $query=$parameters['use_query'];
+                  if($_REQUEST['debug']==1)var_dump($query);
+                  $stmt = $DBC->query($query, array($value));
+                  if ($stmt) {
+                      while ($ar = $DBC->fetch($stmt)) {
+                            if($ar[$depended_element_name]==$depended_value){
+                              //var_dump($ar[$depended_element_name],$depended_value);
+
+                                $ret[] = array($item_array['primary_key_name']=>$ar[$item_array['primary_key_name']],$value_name=>$ar[$value_name]);
+                              }
+                          }
+                  }
+                  //var_dump($ret);
+                  //die();
+                }else{
                 if ((int) $depended_value != 0) {
-                    $query = 'SELECT `' . $item_array['primary_key_name'] . '`, `' . $value_name_l . '` AS ' . $value_name . ' FROM ' . DB_PREFIX . '_' . $item_array['primary_key_table'] . ' WHERE `' . $depended_element_name . '`=?';
+                    $query = 'SELECT `' . $item_array['primary_key_name'] . '`, `' . $value_name_l . '` AS ' . $value_name . ' FROM ' . DB_PREFIX . '_' . $item_array['primary_key_table'] . ' WHERE `' . $depended_element_name . '`=?'.($parameters['addwhere']>'' ? ' and '.$parameters['addwhere'] : '');
 
                     $sorts = array();
                     if (isset($parameters['sort']) && $parameters['sort'] != '') {
@@ -2865,12 +3153,27 @@ class Form_Generator extends SiteBill {
                     }
                     //echo $query;
                     $stmt = $DBC->query($query, array((int) $depended_value));
+                    if ($stmt) {
+                        while ($ar = $DBC->fetch($stmt)) {
+                            if($ar[$depended_element_name]==$depended_value){
+                                $ret[] = array($item_array['primary_key_name']=>$ar[$item_array['primary_key_name']],$value_name=>$ar[$value_name]);
+                            }
+                            }
+                    }
                 } else {
                     $query = 'SELECT `' . $item_array['primary_key_name'] . '`, `' . $item_array['value_name'] . '` FROM ' . DB_PREFIX . '_' . $item_array['primary_key_table'] . ' WHERE 1=0';
                     $stmt = $DBC->query($query);
+                    if ($stmt) {
+                        while ($ar = $DBC->fetch($stmt)) {
+                          if($ar[$depended_element_name]==$depended_value) {
+                               $ret[] = array($item_array['primary_key_name']=>$ar[$item_array['primary_key_name']],$value_name=>$ar[$value_name]);
+                          }
+                            }
+                    }
                 }
+              }
             } else {
-                $query = 'SELECT `' . $item_array['primary_key_name'] . '`, `' . $value_name_l . '` AS ' . $value_name . ' FROM ' . DB_PREFIX . '_' . $item_array['primary_key_table'];
+                $query = 'SELECT `' . $item_array['primary_key_name'] . '`, `' . $value_name_l . '` AS ' . $value_name . ' FROM ' . DB_PREFIX . '_' . $item_array['primary_key_table'].((isset($parameters['addwhere']) && $parameters['addwhere'] != '') ? ' WHERE '.$parameters['addwhere'] : '');
                 $sorts = array();
                 if (isset($parameters['sort']) && $parameters['sort'] != '') {
                     if (isset($parameters['sort_dir']) && $parameters['sort_dir'] == 'desc') {
@@ -2893,22 +3196,27 @@ class Form_Generator extends SiteBill {
                 }
 
                 $stmt = $DBC->query($query);
+                if ($stmt) {
+                    while ($ar = $DBC->fetch($stmt)) {
+                      $ret[] = $ar;
+                        }
+                }
             }
 
-
-            if ($stmt) {
-                while ($ar = $DBC->fetch($stmt)) {
+            if ($ret) {
+                foreach($ret as $k=>$v){
+                //while ($ar = $DBC->fetch($stmt)) {
                     $this->total_in_select[$item_array['name']] ++;
-                    $value = $ar[$item_array['value_name']];
+                    $value = $v[$item_array['value_name']];
                     $value = trim($value);
                     //$value = htmlspecialchars_decode($value);
                     $value = htmlspecialchars($value, ENT_QUOTES, SITE_ENCODING);
-                    if ($ar[$item_array['primary_key_name']] == $item_array['value']) {
+                    if ($v[$item_array['primary_key_name']] == $item_array['value']) {
                         $selected = "selected";
                     } else {
                         $selected = "";
                     }
-                    $rs .= '<option value="' . $ar[$item_array['primary_key_name']] . '" ' . $selected . '>' . $value . '</option>';
+                    $rs .= '<option value="' . $v[$item_array['primary_key_name']] . '" ' . $selected . '>' . $value . '</option>';
                 }
             }
 
@@ -2977,6 +3285,27 @@ class Form_Generator extends SiteBill {
                 $rs .= '</select>';
                 $rs .= '</div>';
             } else {
+                
+                
+                $table_name = $item_array['table_name'];
+                $field_name = $item_array['name'];
+                
+                $realquery = '';
+                /*
+                if($table_name == 'data'){
+                    
+                    if($field_name == 'region_id'){
+                        $realquery = 'SELECT * FROM ' . DB_PREFIX . '_region WHERE country_id=' . intval($model['country_id']['value']) . ' ORDER BY name';
+                    }
+                    
+                }
+                */
+                
+                
+                
+                
+                
+                //print_r($item_array);
 
                 $this->total_in_select[$item_array['name']] = 0;
                 $rs .= '<div id="' . $item_array['name'] . '_div">';
@@ -2999,6 +3328,10 @@ class Form_Generator extends SiteBill {
                 $rs .= '<option value="' . $item_array['value_default'] . '">' . $item_array['title_default'] . '</option>';
                 $DBC = DBC::getInstance();
                 $query = $item_array['query'];
+                
+                if($realquery != ''){
+                    $query = $realquery;
+                }
                 /* if(isset($parameters['ml_query'])){
                   $query=$parameters['ml_query'];
                   $curr_lang=$this->getCurrentLang();
@@ -3036,20 +3369,30 @@ class Form_Generator extends SiteBill {
                 $rs .= '</select>';
                 $rs .= '</div>';
             }
+            //echo 'single<br>';
+            //print_r($item_array).'<br>';
+            //echo '<hr>';
+            //echo $item_md5;
+            //echo '<hr>';
 
-
-
+            self::$cache[$item_md5] = $rs;
             return $rs;
         }
     }
 
-    function get_select_by_query_multi($item_array) {
 
-        $rs = '';
-        if ($item_array['parameters']['mode'] == 'checkbox') {
+    function get_select_by_query_multi($item_array){
+
+        $rs='';
+        if($item_array['parameters']['mode']=='checkbox'){
             $checkbox_mode = true;
         } else {
             $checkbox_mode = false;
+        }
+
+        $size = 0;
+        if(isset($item_array['parameters']['multiselect_size']) && intval($item_array['parameters']['multiselect_size']) > 0){
+            $size = intval($item_array['parameters']['multiselect_size']);
         }
 
         //
@@ -3080,14 +3423,14 @@ class Form_Generator extends SiteBill {
                             $selected = true;
                         }
                     }
-                    $rs .= '<div class="multiselect_set_item"><input type="checkbox"' . ($selected ? ' checked="checked"' : '') . ' name="' . $item_array['name'] . '[]" value="' . $ar[$item_array['primary_key_name']] . '"><span>' . $value . '</span></div>';
+                    $rs .= '<div class="multiselect_set_item"'.($item_array['parameters']['data_field']>'' ? ' data-'.$item_array['parameters']['data_field'].'="'.$ar[$item_array['parameters']['data_field']].'"' : '').'><input type="checkbox"' . ($selected ? ' checked="checked"' : '') . ' name="' . $item_array['name'] . '[]" value="' . $ar[$item_array['primary_key_name']] . '"><span>' . $value . '</span></div>';
                 }
             }
             $rs .= '</div>';
             //$rs .= '</select>';
         } else {
             $rs .= '<div class="multiselect_set multiselect_set_s multiselect_set_' . $item_array['name'] . '">';
-            $rs .= '<select name="' . $item_array['name'] . '[]" id="' . $item_array['name'] . '" multiple="multiple">';
+            $rs .= '<select size="'.$size.'" name="' . $item_array['name'] . '[]" id="' . $item_array['name'] . '" multiple="multiple" class="' . $this->classes['select'] . '">';
             if ($stmt) {
                 while ($ar = $DBC->fetch($stmt)) {
                     $this->total_in_select[$item_array['name']] ++;
@@ -3126,7 +3469,7 @@ class Form_Generator extends SiteBill {
 
         $this->total_in_select[$item_array['name']] = 0;
         $rs .= '<div id="' . $item_array['name'] . '_div">';
-        $rs .= '<select data-placeholder="' . $item_array['title_default'] . '" class="' . $this->classes['select'] . '" name="' . $item_array['name'] . '[]" id="' . $item_array['name'] . '"' . (isset($item_array['onchange']) ? ' onchange="' . $item_array['onchange'] . '"' : '') . ' multiple="multiple">';
+        $rs .= '<select data-placeholder="' . $item_array['title_default'] . '" data-none-selected-text="' . $item_array['title_default'] . '" class="' . $this->classes['select'] . '" name="' . $item_array['name'] . '[]" id="' . $item_array['name'] . '"' . (isset($item_array['onchange']) ? ' onchange="' . $item_array['onchange'] . '"' : '') . ' multiple="multiple">';
         $DBC = DBC::getInstance();
         $query = $item_array['query'];
         $stmt = $DBC->query($query);
@@ -3334,6 +3677,25 @@ class Form_Generator extends SiteBill {
     }
 
     /**
+     * Get injector row
+     * @param array $item_array
+     * @return string
+     */
+    function get_injector_row($item_array) {
+        $form_injector = new Form_Injector();
+
+
+        $rs = '<tr>';
+        $rs .= '<td colspan="2">';
+        $rs .= $form_injector->compile();
+        $rs .= '</td>';
+        $rs .= '</tr>';
+
+        return $rs;
+    }
+
+
+    /**
      * Get select box structure row
      * @param array $item_array
      * @return string
@@ -3495,7 +3857,7 @@ class Form_Generator extends SiteBill {
 
         $rs .= '</td>';
         $rs .= '<td>';
-        $rs .= '<textarea name="' . $item_array['name'] . '" rows="' . $item_array['rows'] . '" cols="' . $item_array['cols'] . '">' . $item_array['value'] . '</textarea>';
+        $rs .= '<textarea name="' . $item_array['name'] . '" rows="' . $item_array['rows'] . '" cols="' . $item_array['cols'] . '">' . htmlspecialchars($item_array['value']) . '</textarea>';
         $rs .= '</td>';
         $rs .= '</tr>';
 
@@ -3527,45 +3889,45 @@ class Form_Generator extends SiteBill {
             }
 
             $rs .= '<script type="text/javascript">
-		    	$(document).ready(function() {
-        			$("textarea#' . $id . '").ckeditor({
-		filebrowserBrowseUrl : \'/ckfinder/ckfinder.html\',
+                $(document).ready(function() {
+                    $("textarea#' . $id . '").ckeditor({
+        filebrowserBrowseUrl : \'/ckfinder/ckfinder.html\',
         filebrowserImageBrowseUrl : \'/ckfinder/ckfinder.html?Type=Images\',
         filebrowserFlashBrowseUrl : \'/ckfinder/ckfinder.html?Type=Flash\',
         filebrowserUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files\',
         filebrowserImageUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images\',
-        filebrowserFlashUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Flash\'	
-    				});
-				});
-    		</script>';
+        filebrowserFlashUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Flash\'
+                    });
+                });
+            </script>';
         } elseif ($editor_code == 'bbeditor') {
             if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
                 $rs .= '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/bbeditor.css" />';
                 $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/jquery.bbcode.js" type="text/javascript"></script>';
             }
             $rs .= '<script type="text/javascript">
-			  $(document).ready(function(){
-			    $("textarea#' . $id . '").bbcode({tag_bold:true,tag_italic:true,tag_underline:true,tag_link:true,tag_image:true,button_image:false});
-			    process();
-			  });
-			  
-			  var bbcode="";
-			  function process()
-			  {
-			    if (bbcode != $("textarea#' . $id . '").val())
-			      {
-			        bbcode = $("textarea#' . $id . '").val();
-			        $.get("' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/bbParser.php",
-			        {
-			          bbcode: bbcode
-			        },
-			        function(txt){
-			          $("#test' . $id . '").html(txt);
-			        })
-			      }
-			    setTimeout("process()", 2000);
-			  }
-			</script>';
+              $(document).ready(function(){
+                $("textarea#' . $id . '").bbcode({tag_bold:true,tag_italic:true,tag_underline:true,tag_link:true,tag_image:true,button_image:false});
+                process();
+              });
+
+              var bbcode="";
+              function process()
+              {
+                if (bbcode != $("textarea#' . $id . '").val())
+                  {
+                    bbcode = $("textarea#' . $id . '").val();
+                    $.get("' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/bbParser.php",
+                    {
+                      bbcode: bbcode
+                    },
+                    function(txt){
+                      $("#test' . $id . '").html(txt);
+                    })
+                  }
+                setTimeout("process()", 2000);
+              }
+            </script>';
             /*
               $rs .= '<tr>';
               $rs .= '<td>';
@@ -3582,11 +3944,11 @@ class Form_Generator extends SiteBill {
             }
 
             $rs .= '<script type="text/javascript">
-      			$(document).ready(function() {
-        			$("textarea#' . $id . '").cleditor();
-				});
-    		</script>
-        	';
+                $(document).ready(function() {
+                    $("textarea#' . $id . '").cleditor();
+                });
+            </script>
+            ';
         }
         $rs .= '<tr  class="row3"  alt="' . $item_array['name'] . '">';
         $rs .= '<td>';
@@ -3627,14 +3989,28 @@ class Form_Generator extends SiteBill {
         $rs .= '</td>';
         $rs .= '<td>';
 
-        foreach ($item_array['grade_values'] as $item_id) {
-            if ($item_array['value'] == $item_id) {
-                $checked = 'checked';
-            } else {
-                $checked = '';
-            }
-            $rs .= '<span>' . $item_id . '</span><input type="radio" name="' . $item_array['name'] . '" value="' . $item_id . '" ' . $checked . '>&nbsp;&nbsp;&nbsp;';
+        $vals = array();
+
+        if (isset($item_array['grade_values'])) {
+            $vals = $item_array['grade_values'];
+        } elseif (isset($item_array['select_data'])) {
+            $vals = $item_array['select_data'];
         }
+
+        if (!empty($vals)) {
+            foreach ($vals as $item_id => $item_id_name) {
+                if ($item_array['value'] == $item_id) {
+                    $checked = 'checked';
+                } else {
+                    $checked = '';
+                }
+                $rs .= '<span>' . $item_id_name . '</span><input type="radio" name="' . $item_array['name'] . '" value="' . $item_id . '" ' . $checked . '>&nbsp;&nbsp;&nbsp;';
+            }
+        } else {
+            $html .= '<input type="text" name="' . $item_array['name'] . '" value="' . $item_array['value'] . '" />';
+        }
+
+
         $rs .= '</td>';
         $rs .= '</tr>';
 
@@ -3646,13 +4022,27 @@ class Form_Generator extends SiteBill {
      * @param array $item_array
      * @return string
      */
-    function get_checkbox($item_array) {
-        $rs = '<input id="' . $this->form_id . '_' . $item_array['name'] . '" type="checkbox" name="' . $item_array['name'] . '" value="' . $item_array['value'] . '"';
-        if ($item_array['value'] == 1) {
+    function get_checkbox ( $item_array ) {
+
+        $dp=array();
+        $dp['id']=$this->form_id.'_'.$item_array['name'];
+        $dp['placeholder']=$item_array['title'];
+        $dp['class']=$this->classes['input'];
+
+        $dp['class']=$this->classes['checkbox'];
+        $isChecked=false;
+        if($item_array['value']==1){
+            $isChecked=true;
+        }
+
+        $html=$this->form_decorator->decorateCheckboxInput($item_array['name'], $item_array['value'], $isChecked, $dp);
+
+        /*$rs = '<input id="'.$this->form_id.'_'.$item_array['name'].'" type="checkbox" name="'.$item_array['name'].'" value="'.$item_array['value'].'"';
+        if ( $item_array['value'] == 1 ) {
             $rs .= ' checked ';
         }
-        $rs .= '/>';
-        return $rs;
+        $rs .= '/>';*/
+        return $html;
     }
 
     /**
@@ -3667,10 +4057,11 @@ class Form_Generator extends SiteBill {
         }
 
         if (isset($parameters['multiselect']) && 1 == (int) $parameters['multiselect']) {
-            foreach ($item_array['select_data'] as $item_id => $item_value) {
-                $rs .= '<input type="checkbox" name="' . $item_array['name'] . '[]" value="' . $item_id . '"' . ((isset($item_array['values_array']) && in_array($item_id, $item_array['values_array'])) ? ' checked="checked"' : '') . '>' . $item_value . '<br/>';
-            }
-        } else {
+            $rs.=$this->form_decorator->decorateMultiselectItem($item_array['name'], $item_array['select_data'], $item_array['values_array']);
+            /*foreach ( $item_array['select_data'] as $item_id => $item_value ) {
+                $rs .= '<input type="checkbox" name="'.$item_array['name'].'[]" value="'.$item_id.'"'.((isset($item_array['values_array']) && in_array($item_id, $item_array['values_array'])) ? ' checked="checked"' : '').'>'.$item_value.'<br/>';
+            }*/
+        }else{
 
             $rs = '<select class="' . $this->classes['select'] . '" name="' . $item_array['name'] . '">';
             if (!empty($item_array['select_data'])) {
@@ -3754,15 +4145,15 @@ class Form_Generator extends SiteBill {
 
             $string .= '<script type="text/javascript">';
             $string .= '$(document).ready(function(){
-				$(".captcha_refresh").click(function(){
-					var new_key=new Date().getTime();
-					var hash = CryptoJS.MD5(String(new_key));
-					var parent=$(this).parents("td").eq(0);
-					parent.find(".capcha_img").eq(0).attr("src", estate_folder+\'/apps/third/kcaptcha/index.php?captcha_session_key=\' + hash);
-					parent.find("input[name=captcha_session_key]").val(hash);
-				});
-				
-			});';
+                $(".captcha_refresh").click(function(){
+                    var new_key=new Date().getTime();
+                    var hash = CryptoJS.MD5(String(new_key));
+                    var parent=$(this).parents("td").eq(0);
+                    parent.find(".capcha_img").eq(0).attr("src", estate_folder+\'/apps/third/kcaptcha/index.php?captcha_session_key=\' + hash);
+                    parent.find("input[name=captcha_session_key]").val(hash);
+                });
+
+            });';
             $string .= '</script>';
         } else {
             $string = '';
@@ -3784,20 +4175,20 @@ class Form_Generator extends SiteBill {
 
             $string .= '<script type="text/javascript">';
             $string .= '$(document).ready(function(){
-				$(".captcha_refresh").click(function(){
-					var new_key=new Date().getTime();
-					var hash = CryptoJS.MD5(String(new_key));
-					var parent=$(this).parents("td").eq(0);
-					parent.find(".capcha_img").eq(0).attr("src", estate_folder+\'/captcha.php?captcha_session_key=\' + hash);
-					parent.find("input[name=captcha_session_key]").val(hash);
-				});
-				/*$("#captcha_refresh").click(function(){
-					var new_key=new Date().getTime();
-					var hash = CryptoJS.MD5(String(new_key));
-					document.getElementById("capcha_img").src = estate_folder+\'/captcha.php?captcha_session_key=\' + hash;
-					$("input[name=captcha_session_key]").val(hash);
-				});*/
-			});';
+                $(".captcha_refresh").click(function(){
+                    var new_key=new Date().getTime();
+                    var hash = CryptoJS.MD5(String(new_key));
+                    var parent=$(this).parents("td").eq(0);
+                    parent.find(".capcha_img").eq(0).attr("src", estate_folder+\'/captcha.php?captcha_session_key=\' + hash);
+                    parent.find("input[name=captcha_session_key]").val(hash);
+                });
+                /*$("#captcha_refresh").click(function(){
+                    var new_key=new Date().getTime();
+                    var hash = CryptoJS.MD5(String(new_key));
+                    document.getElementById("capcha_img").src = estate_folder+\'/captcha.php?captcha_session_key=\' + hash;
+                    $("input[name=captcha_session_key]").val(hash);
+                });*/
+            });';
             $string .= '</script>';
         }
         $this->clear_captcha_session_table();
@@ -3875,11 +4266,11 @@ class Form_Generator extends SiteBill {
           </script>
           '; */
         $string .= '
-    		<script type="text/javascript">
-      			$(document).ready(function() {
-					$( "#' . $item_array['name'] . '" ).datepicker({dateFormat: "dd.mm.yy"});
-      			});
-    		</script>
+            <script type="text/javascript">
+                $(document).ready(function() {
+                    $( "#' . $item_array['name'] . '" ).datepicker({dateFormat: "dd.mm.yy"});
+                });
+            </script>
         ';
         //echo $item_array['value'];
         /* if($item_array['value']==='' || $item_array['value']===0){
@@ -3987,23 +4378,33 @@ class Form_Generator extends SiteBill {
         }
 
         $string .= '
-    		<script type="text/javascript">
-      			$(document).ready(function() {
-					$( "#' . $item_array['name'] . '" ).datetimepicker({
-						autoclose: true,
-						pick12HourFormat: false,
-				     	language: "ru",
-						' . $tpp . '
-    
-				    });
-      			});
-    		</script>
+            <script type="text/javascript">
+                $(document).ready(function() {
+                    $( "#' . $item_array['name'] . '" ).datetimepicker({
+                        autoclose: true,
+                        pick12HourFormat: false,
+                        language: "ru",
+                        ' . $tpp . '
+
+                    });
+                });
+            </script>
         ';
+        
+        $bootstrap_version = trim($this->getConfigValue('bootstrap_version'));
+        if ($bootstrap_version == '3' && !defined('ADMIN_MODE')) {
+            $html = '<div id="' . $item_array['name'] . '" class="input-group input-append date"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><div class="add-on input-group-addon"><span class="glyphicon glyphicon-calendar"></span></div></div>';
+        } else {
+            $html = '<div id="' . $item_array['name'] . '" class="input-append date"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><span class="add-on"><i data-time-icon="icon-time" data-date-icon="icon-calendar"></i></span></div>';
+        }
+        
+        //$html = '<div><input id="' . $item_array['name'] . '" class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input></div>';
 
         return array(
             'title' => $item_array['title'],
             'required' => ($item_array['required'] == "on" ? 1 : 0),
-            'html' => $string . '<div id="' . $item_array['name'] . '" class="input-append date"><input class="' . $this->classes['input'] . '" data-format-code="' . $date_formattype_code . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><span class="add-on"><i data-time-icon="icon-time" data-date-icon="icon-calendar"></i></span></div>',
+            /*'html' => $string . '<div id="' . $item_array['name'] . '" class="input-append date"><input class="' . $this->classes['input'] . '" data-format-code="' . $date_formattype_code . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><span class="add-on"><i data-time-icon="icon-time" data-date-icon="icon-calendar"></i></span></div>',*/
+            'html' => $string . $html,
             'tab' => (isset($item_array['tab']) ? $item_array['tab'] : ''),
             'type' => $item_array['type']
         );
@@ -4036,16 +4437,16 @@ class Form_Generator extends SiteBill {
         }
 
         $string .= '
-    		<script type="text/javascript">
-      			$(document).ready(function() {
-					$( "#' . $item_array['name'] . '" ).datetimepicker({
-						pick12HourFormat: false,
-				     	language: "ru",
-						' . $tpp . '
-    
-				    });
-      			});
-    		</script>
+            <script type="text/javascript">
+                $(document).ready(function() {
+                    $( "#' . $item_array['name'] . '" ).datetimepicker({
+                        pick12HourFormat: false,
+                        language: "ru",
+                        ' . $tpp . '
+
+                    });
+                });
+            </script>
         ';
 
         return array(
@@ -4113,16 +4514,16 @@ class Form_Generator extends SiteBill {
         }
 
         $string .= '
-    		<script type="text/javascript">
-      			$(document).ready(function() {
-					$( "#' . $item_array['name'] . '" ).datetimepicker({
-						pick12HourFormat: false,
-				     	language: "ru",
-						' . $tpp . '
-						
-				    });
-      			});
-    		</script>
+            <script type="text/javascript">
+                $(document).ready(function() {
+                    $( "#' . $item_array['name'] . '" ).datetimepicker({
+                        pick12HourFormat: false,
+                        language: "ru",
+                        ' . $tpp . '
+
+                    });
+                });
+            </script>
         ';
 
         return array(
@@ -4814,54 +5215,34 @@ class Form_Generator extends SiteBill {
         return $rs;
     }
 
-    function getAgreementFormBlock() {
-        if ($this->getConfigValue('post_form_agreement_enable_note')) {
-            if (Multilanguage::is_set('L_AGREEMENT_TEXT_FORM_NOTE')) {
-                $text = Multilanguage::_('L_AGREEMENT_TEXT_FORM_NOTE');
-                return '<div class="agreement_form_block"><div class="agreement_form_block_note">' . $text . '</div></div>';
-            }
-        } else {
-            if (Multilanguage::is_set('L_AGREEMENT_TEXT_FORM')) {
-                $text = Multilanguage::_('L_AGREEMENT_TEXT_FORM');
-            } else {
-                $text = $this->getConfigValue('post_form_agreement_text_add');
-            }
-            $id = md5(time() . rand(100, 999));
+    function getAgreementFormBlock(){
 
-            return '<div class="agreement_form_block"><input type="hidden" name="agreement_el" value="1"><div class="agreement_form_block_input"><input id="agreement_form_block_input_' . $id . '" type="checkbox" name="agreement" value="1"></div><label for="agreement_form_block_input_' . $id . '">' . $text . '</label></div>';
+        if($this->getConfigValue('post_form_agreement_enable_note')){
+            if(Multilanguage::is_set('L_AGREEMENT_TEXT_FORM_NOTE')){
+                $text=Multilanguage::_('L_AGREEMENT_TEXT_FORM_NOTE');
+                /*if(!empty($this->form_decorator) && method_exists($this->form_decorator, 'decorateAgreementFormBlockNote')){
+                    return $this->form_decorator->decorateAgreementFormBlockNote($text);
+                }else{
+                    return '<div class="agreement_form_block"><div class="agreement_form_block_note">'.$text.'</div></div>';
+                }*/
+                return $this->form_decorator->decorateAgreementFormBlockNote($text);
+            }
+        }else{
+            if(Multilanguage::is_set('L_AGREEMENT_TEXT_FORM')){
+                $text=Multilanguage::_('L_AGREEMENT_TEXT_FORM');
+            }else{
+                $text=$this->getConfigValue('post_form_agreement_text_add');
+            }
+
+            $id=md5(time().rand(100,999));
+            /*if(!empty($this->form_decorator) && method_exists($this->form_decorator, 'decorateAgreementFormBlockCheckbox')){
+                return $this->form_decorator->decorateAgreementFormBlockCheckbox($text, $id);
+            }else{
+                return '<div class="agreement_form_block"><input type="hidden" name="agreement_el" value="1"><div class="agreement_form_block_input"><input id="agreement_form_block_input_'.$id.'" type="checkbox" name="agreement" value="1"></div><label for="agreement_form_block_input_'.$id.'">'.$text.'</label></div>';
+            }*/
+            return $this->form_decorator->decorateAgreementFormBlockCheckbox($text, $id);
         }
+
     }
 
 }
-
-/* class SForm extends SiteBill {
-  protected $elements=array();
-  protected $fname='';
-
-  public function compile(){
-
-  }
-  }
-
-  class SForm_Element extends SForm {
-
-  }
-
-  class SForm_Element_Safestring extends SForm_Element {
-  public function title(){
-
-  }
-
-  public function html(){
-  return '<input type="text" value="" name="">';
-  }
-  }
-
-  class SForm_Element_Textarea extends SForm_Element {
-
-  }
-
-  class SForm_Element_Checkbox extends SForm_Element {
-
-  } */
-?>

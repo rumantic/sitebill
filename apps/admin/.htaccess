@@ -1,0 +1,7 @@
+<IfModule mod_rewrite.c>
+RewriteEngine Off
+</ifModule>
+<Files ~ "\.(tpl)$">
+Order allow,deny
+Deny from all
+</Files>

@@ -28,11 +28,11 @@ class User_Object_Manager extends Object_Manager {
         }
 
         if (!$config_manager->check_config_item('user_pic_width')) {
-            $config_manager->addParamToConfig('user_pic_width', '160', 'Ширина картинки пользователя');
+            $config_manager->addParamToConfig('user_pic_width', '270', 'Ширина картинки пользователя');
         }
 
         if (!$config_manager->check_config_item('user_pic_height')) {
-            $config_manager->addParamToConfig('user_pic_height', '160', 'Высота картинки пользователя');
+            $config_manager->addParamToConfig('user_pic_height', '270', 'Высота картинки пользователя');
         }
     }
 
@@ -64,6 +64,9 @@ class User_Object_Manager extends Object_Manager {
             if ($this->getError()) {
                 $rs = $this->get_form($form_data[$this->table_name], 'edit');
             } else {
+                if ( $this->isRedirectDisabled() ) {
+                    return true;
+                }
                 header('location: ' . SITEBILL_MAIN_URL . '/admin/?action=user');
                 exit();
                 $rs .= $this->grid();
@@ -178,7 +181,7 @@ class User_Object_Manager extends Object_Manager {
                     $subject = sprintf(Multilanguage::_('NEW_REG_EMAILACCEPT_TITLE', 'system'), $_SERVER['HTTP_HOST']);
 
                     $to = $form_data[$this->table_name]['email']['value'];
-                    $from = $this->getConfigValue('order_email_acceptor');
+                    $from = $this->getConfigValue('system_email');
                     $this->sendFirmMail($to, $from, $subject, $message);
                     $query = "delete from " . DB_PREFIX . "_cache where parameter='{$activation_code}'";
                     $stmt = $DBC->query($query);
@@ -220,6 +223,9 @@ class User_Object_Manager extends Object_Manager {
                 $this->set_new_user_id($new_user_id);
 
                 if (1 == $this->getConfigValue('use_registration_email_confirm')) {
+                    
+                    $password = $form_data[$this->table_name]['newpass']['value'];
+                    
                     $activation_code = md5(time() . '_' . rand(100, 999));
                     $query = "UPDATE " . DB_PREFIX . "_user SET pass='" . $activation_code . "' WHERE user_id=" . $new_user_id;
                     $stmt = $DBC->query($query);
@@ -232,11 +238,11 @@ class User_Object_Manager extends Object_Manager {
                     $mail_pass = $form_data[$this->table_name]['newpass']['value'];
 
                     $activation_link = '<a href="http://' . $_SERVER['HTTP_HOST'] . SITEBILL_MAIN_URL . '/register?do=activate&activation_code=' . $activation_code . '&email=' . $form_data[$this->table_name]['email']['value'] . '">http://' . $_SERVER['HTTP_HOST'] . SITEBILL_MAIN_URL . '/register?do=activate&activation_code=' . $activation_code . '&email=' . $form_data[$this->table_name]['email']['value'] . '</a>';
-                    $message = sprintf(Multilanguage::_('NEW_REG_EMAILACCEPT_BODY', 'system'), $mail_login, $mail_pass, $activation_link);
+                    $message = sprintf(Multilanguage::_('NEW_REG_EMAILACCEPT_BODY', 'system'), $activation_link);
                     $subject = sprintf(Multilanguage::_('NEW_REG_EMAILACCEPT_TITLE', 'system'), $_SERVER['HTTP_HOST']);
 
                     $to = $form_data[$this->table_name]['email']['value'];
-                    $from = $this->getConfigValue('order_email_acceptor');
+                    $from = $this->getConfigValue('system_email');
 
                     $this->sendFirmMail($to, $from, $subject, $message);
 
@@ -245,6 +251,10 @@ class User_Object_Manager extends Object_Manager {
                     $query = "insert into " . DB_PREFIX . "_cache (parameter, `value`) values ('$activation_code', '$password')";
                     $stmt = $DBC->query($query);
                 }
+                if ( $this->isRedirectDisabled() ) {
+                    return true;
+                }
+                
                 header('location: ' . SITEBILL_MAIN_URL . '/admin/?action=user');
                 exit();
                 $rs .= $this->grid();
@@ -282,9 +292,13 @@ class User_Object_Manager extends Object_Manager {
      * @return boolean
      */
     function edit_data($form_data, $language_id = 0, $primary_key_value = false) {
+        if ( !$primary_key_value ) {
+            $primary_key_value = $this->getRequestValue($this->primary_key);
+        }
+
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
-        $queryp = $data_model->get_prepared_edit_query(DB_PREFIX . '_' . $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data, $language_id);
+        $queryp = $data_model->get_prepared_edit_query(DB_PREFIX . '_' . $this->table_name, $this->primary_key, $primary_key_value, $form_data, $language_id);
         $DBC = DBC::getInstance();
 
         $stmt = $DBC->query($queryp['q'], $queryp['p'], $row, $success);
@@ -294,26 +308,192 @@ class User_Object_Manager extends Object_Manager {
         }
 
         if (isset($_POST['delpic'])) {
-            $user_id = (int) $this->getRequestValue($this->primary_key);
+            $user_id = (int) $primary_key_value;
             $this->deleteUserpic($user_id);
         }
 
         foreach ($form_data as $form_item) {
             if ($form_item['type'] == 'uploads') {
-                $imgs_uploads = $this->appendUploads($this->table_name, $form_item, $this->primary_key, (int) $this->getRequestValue($this->primary_key));
+                $imgs_uploads = $this->appendUploads($this->table_name, $form_item, $this->primary_key, (int) $primary_key_value);
                 $this->set_imgs($imgs_uploads);
             }
         }
 
         if (strlen($form_data['imgfile']['value']) > 0) {
             //$this->user_image_dir = $form_data['imgfile']['path']; 
-            $this->update_photo($this->getRequestValue($this->primary_key));
+            $this->update_photo($primary_key_value);
         }
 
         if ($form_data['newpass']['value'] != '') {
-            $this->editPassword($this->getRequestValue($this->primary_key), $form_data['newpass']['value']);
+            $this->editPassword($primary_key_value, $form_data['newpass']['value']);
         }
     }
+
+    function load_profile($record_id) {
+        $data = $this->load_by_id($record_id);
+
+        return $data;
+    }
+
+
+    function appendUploadsUser($table, $pk_field, $record_id, $name_template = '') {
+        $field_name = 'imgfile';
+        $session_key = (string) $this->get_session_key();
+
+
+        $action = $table;
+        if (!isset($record_id) || $record_id == 0) {
+            return false;
+        }
+
+        $DBC = DBC::getInstance();
+
+        $path = SITEBILL_DOCUMENT_ROOT . '/img/data/user/';
+        $uploadify_path = SITEBILL_DOCUMENT_ROOT . $this->uploadify_dir;
+
+        $ra = array();
+        $uploads = $this->load_uploadify_images($session_key, $field_name);
+        if (!$uploads) {
+            $uploads = $this->getExternalUploadifyImageArray();
+            if (!$uploads) {
+                return false;
+            }
+        }
+
+        $max_img_count = 1;
+
+        $attached_yet = array();
+        
+        $i = 0;
+        $max_filesize = (int) str_replace('M', '', ini_get('upload_max_filesize'));
+        if (isset($parameters['max_file_size']) && (int) $parameters['max_file_size'] != 0) {
+            $max_filesize = (int) $parameters['max_file_size'];
+        }
+
+        if ($max_img_count > -1) {
+            $last_count = $max_img_count - count($attached_yet);
+            if ($last_count > 0) {
+                $uploads = array_slice($uploads, 0, $last_count);
+            } else {
+                $uploads = array();
+            }
+        }
+        if (!empty($uploads)) {
+
+            $folder_name = '';
+
+            $uniq_file_name = uniqid() . '_' . time();
+
+            foreach ($uploads as $image_name) {
+                $i++;
+                $need_prv = 0;
+                $preview_name = '';
+                $filesize = filesize($uploadify_path . $image_name) / (1024 * 1024);
+                if ($filesize > $max_filesize) {
+                    continue;
+                }
+                if (!empty($image_name)) {
+                    $arr = explode('.', $image_name);
+                    $ext = strtolower(end($arr));
+
+
+
+                    if (function_exists('exif_read_data')) {
+                        $exif = @exif_read_data($uploadify_path . $image_name, 0, true);
+                        if (isset($exif['IFD0']) && isset($exif['IFD0']['Orientation']) && false === empty($exif['IFD0']['Orientation'])) {
+                            switch ($exif['IFD0']['Orientation']) {
+                                case 8:
+                                    $this->rotateImageInDestination($uploadify_path . $image_name, $uploadify_path . $image_name, 90);
+                                    break;
+                                case 3:
+                                    $this->rotateImageInDestination($uploadify_path . $image_name, $uploadify_path . $image_name, 180);
+                                    break;
+                                case 6:
+                                    $this->rotateImageInDestination($uploadify_path . $image_name, $uploadify_path . $image_name, -90);
+                                    break;
+                            }
+                        }
+                    }
+                    //$ext=strtolower($arr[count($arr)-1]);
+                    if ((1 == $this->getConfigValue('seo_photo_name_enable')) AND ( $name_template != '')) {
+                        $name_template = substr($name_template, 0, 150);
+                        if ($i == 0) {
+                            $preview_name_no_ext = $name_template;
+                            $prv_no_ext = $name_template . "_prev";
+                        } else {
+                            $preview_name_no_ext = $name_template . "_" . $i;
+                            $prv_no_ext = $name_template . "_prev" . $i;
+                        }
+
+                        if (file_exists($path . $preview_name_no_ext . "." . $ext)) {
+                            $rand = rand(0, 1000);
+                            while (file_exists($path . $preview_name_no_ext . "_" . $rand . "." . $ext)) {
+                                $rand = rand(0, 1000);
+                            }
+                            $preview_name = $preview_name_no_ext . "_" . $rand . "." . $ext;
+                            $prv = $prv_no_ext . "_" . $rand . "." . $ext;
+                        } else {
+                            $preview_name = $preview_name_no_ext . "." . $ext;
+                            $prv = $prv_no_ext . "." . $ext;
+                        }
+                    } else {
+                        $nm = $uniq_file_name . '_' . $i;
+                        $preview_name = 'img' . $nm . "." . $ext;
+                        $prv = "prv" . $nm . "." . $ext;
+                        $preview_name_tmp = "_tmp" . uniqid() . '_' . time() . "_" . $i . "." . $ext;
+                    }
+
+                    if (in_array($ext, array('jpg', 'jpeg', 'gif', 'png'))) {
+                        $big_width = $this->getConfigValue('user_pic_width');
+                        $big_height = $this->getConfigValue('user_pic_height');
+
+                        if (isset($parameters['norm_width']) && (int) $parameters['norm_width'] != 0) {
+                            $big_width = (int) $parameters['norm_width'];
+                        }
+
+                        if (isset($parameters['norm_height']) && (int) $parameters['norm_height'] != 0) {
+                            $big_height = (int) $parameters['norm_height'];
+                        }
+
+                        if (isset($parameters['prev_width']) && (int) $parameters['prev_width'] != 0) {
+                            $preview_width = (int) $parameters['prev_width'];
+                        }
+
+                        if (isset($parameters['prev_height']) && (int) $parameters['prev_height'] != 0) {
+                            $preview_height = (int) $parameters['prev_height'];
+                        }
+
+                        if ($folder_name != '') {
+                            $preview_name = $folder_name . '/' . $preview_name;
+                            $prv = $folder_name . '/' . $prv;
+                        }
+                        if (intval($parameters['normal_smart_resizing']) == 1) {
+                            $rn = $this->makePreview($uploadify_path . $image_name, $path . $preview_name, $big_width, $big_height, $ext, 'smart');
+                        } else {
+                            $rn = $this->makePreview($uploadify_path . $image_name, $path . $preview_name, $big_width, $big_height, $ext, 1);
+                        }
+
+                        if ($rn) {
+                            chmod($path . $preview_name, 0644);
+                            /**/
+                            $ra[$i]['normal'] = $preview_name;
+                            $ra[$i]['preview'] = $preview_name;
+                        }
+                    }
+                    if ($rn) {
+                        $attached_yet[] = array('normal' => $preview_name, 'type' => 'graphic', 'mime' => $ext);
+                    }
+                }
+            }
+
+            $query = 'UPDATE ' . DB_PREFIX . '_' . $table . ' SET `' . $field_name . '`=? WHERE `' . $pk_field . '`=?';
+            $stmt = $DBC->query($query, array($preview_name, $record_id));
+        }
+
+        $this->delete_uploadify_images($session_key, $field_name);
+        return $ra;
+    }
+    
 
     protected function deleteUserpic($user_id) {
         $DBC = DBC::getInstance();
@@ -415,15 +595,17 @@ class User_Object_Manager extends Object_Manager {
                 }
             }
         } else {
-            if ($this->getRequestValue('do') != 'edit_done') {
-                if (!$this->checkEmail($form_data['email']['value'])) {
-                    $this->riseError('Такой email уже зарегистрирован');
-                    return false;
-                }
-            } else {
-                if (!$this->checkDiffEmail($form_data['email']['value'], $form_data['user_id']['value'])) {
-                    $this->riseError('Такой email уже зарегистрирован');
-                    return false;
+            if (isset($form_data['email'])) {
+                if ($this->getRequestValue('do') != 'edit_done') {
+                    if (!$this->checkEmail($form_data['email']['value'])) {
+                        $this->riseError('Такой email уже зарегистрирован');
+                        return false;
+                    }
+                } else {
+                    if (!$this->checkDiffEmail($form_data['email']['value'], $form_data['user_id']['value'])) {
+                        $this->riseError('Такой email уже зарегистрирован!');
+                        return false;
+                    }
                 }
             }
         }
@@ -432,7 +614,6 @@ class User_Object_Manager extends Object_Manager {
             $this->riseError($data_model->GetErrorMessage());
             return false;
         }
-
 
         if (!preg_match('/^([a-zA-Z0-9-_\.@]*)$/', $form_data['login']['value'])) {
             $this->riseError('Логин может содержать только латинские буквы, цифры, подчеркивание, тире, амперсанд и точку');
@@ -637,6 +818,7 @@ class User_Object_Manager extends Object_Manager {
           $form_data['user']['active']['type'] = 'checkbox';
           } */
 
+
         return $form_data;
     }
 
@@ -670,6 +852,7 @@ class User_Object_Manager extends Object_Manager {
             $form_user['user']['group_id']['value_default'] = 0;
             $form_user['user']['group_id']['required'] = 'on';
             $form_user['user']['group_id']['unique'] = 'off';
+            $form_user['user']['group_id']['group_id'] = '1';
         }
 
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/company/admin/admin.php')) {
@@ -696,6 +879,15 @@ class User_Object_Manager extends Object_Manager {
         $form_user['user']['notify']['type'] = 'checkbox';
         $form_user['user']['notify']['required'] = 'off';
         $form_user['user']['notify']['unique'] = 'off';
+        $form_user['user']['notify']['group_id'] = '1';
+        
+        $form_user['user']['active']['name'] = 'active';
+        $form_user['user']['active']['title'] = 'Активен';
+        $form_user['user']['active']['value'] = 0;
+        $form_user['user']['active']['type'] = 'checkbox';
+        $form_user['user']['active']['required'] = 'off';
+        $form_user['user']['active']['unique'] = 'off';
+        $form_user['user']['active']['group_id'] = '1';
 
         $form_user['user']['login']['name'] = 'login';
         $form_user['user']['login']['title'] = 'Login';

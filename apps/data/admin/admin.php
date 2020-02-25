@@ -25,7 +25,62 @@ class data_admin extends Object_Manager {
         $this->data_model_object = $data_model;
         $this->data_model = $data_model->get_kvartira_model($this->getConfigValue('ajax_form_in_admin'));
         $this->data_model[$this->table_name]['user_id']['type'] = 'hidden';
+        $this->data_model[$this->table_name]['user_id']['name'] = 'user_id';
         $this->data_model[$this->table_name]['user_id']['value'] = $this->getSessionUserId();
+        
+        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
+        $config_admin = new config_admin();
+
+        if (!$config_admin->check_config_item('apps.data.notify_admin_added')) {
+            $config_admin->addParamToConfig('apps.data.notify_admin_added', '0', 'Уведомлять администратора о новых объявлениях из ЛК', 1);
+        }
+
+        if (!$config_admin->check_config_item('apps.data.disable_excel_import')) {
+            $config_admin->addParamToConfig('apps.data.disable_excel_import', '0', 'Выключить функцию импорта из excel в ЛК', 1);
+        }
+        if (!$config_admin->check_config_item('apps.data.disable_excel_export')) {
+            $config_admin->addParamToConfig('apps.data.disable_excel_export', '0', 'Выключить функцию экспорта в excel в ЛК', 1);
+        }
+        if (!$config_admin->check_config_item('apps.data.disable_format_grid')) {
+            $config_admin->addParamToConfig('apps.data.disable_format_grid', '0', 'Выключить функцию выбора колонок в таблице в ЛК', 1);
+        }
+        if (!$config_admin->check_config_item('apps.data.disable_pdf')) {
+            $config_admin->addParamToConfig('apps.data.disable_pdf', '0', 'Выключить функцию экспорта в PDF в ЛК', 1);
+        }
+        if (!$config_admin->check_config_item('apps.data.disable_add_button')) {
+            $config_admin->addParamToConfig('apps.data.disable_add_button', '0', 'Выключить кнопку добавления объявлений в ЛК', 1);
+        }
+        if (!$config_admin->check_config_item('apps.data.disable_all_button')) {
+            $config_admin->addParamToConfig('apps.data.disable_all_button', '0', 'Выключить кнопку ВСЕ в ЛК', 1);
+        }
+        if (!$config_admin->check_config_item('apps.data.disable_memory_button')) {
+            $config_admin->addParamToConfig('apps.data.disable_memory_button', '0', 'Выключить кнопку Сохраненные списки в ЛК', 1);
+        }
+        if (!$config_admin->check_config_item('apps.data.disable_delete_button')) {
+            $config_admin->addParamToConfig('apps.data.disable_delete_button', '0', 'Выключить кнопку Удаления в ЛК', 1);
+        }
+        if (!$config_admin->check_config_item('apps.data.disable_edit_button')) {
+            $config_admin->addParamToConfig('apps.data.disable_edit_button', '0', 'Выключить кнопку Редактирования в ЛК', 1);
+        }
+        
+        $config_admin->addParamToConfig('apps.data.excel_limit', '500', 'Максимальное количество записей выгружаемых через Excel');
+        
+        if (!$config_admin->check_config_item('apps.data.check_unique_enable')) {
+            $config_admin->addParamToConfig('apps.data.check_unique_enable', '0', 'Включить проверку уникальности текста', 1);
+        }
+        if (!$config_admin->check_config_item('apps.data.check_unique_percent')) {
+            $config_admin->addParamToConfig('apps.data.check_unique_percent', '10', 'Минимальное значение уникальности текста %');
+        }
+        if (!$config_admin->check_config_item('apps.data.unique_text_required')) {
+            $config_admin->addParamToConfig('apps.data.unique_text_required', 'Текст объявления не уникален', 'Сообщение об ошибке при проверке уникальности');
+        }
+        if ( $this->getConfigValue('dadata_autocomplete_force') ) {
+            $this->data_model['data'] = $this->prepare_model_for_dadata($this->data_model['data']);
+        }
+        
+        if (!$config_admin->check_config_item('apps.data.default_sort')) {
+            $config_admin->addParamToConfig('apps.data.default_sort', '', 'Сортировка по-умолчанию. Указывается в виде системное имя поля|направление сортировки');
+        }
     }
 
     public function _preload() {
@@ -49,6 +104,7 @@ class data_admin extends Object_Manager {
         }
 
         $params['grid_controls'] = array('edit', 'delete', 'memorylist');
+        
         $params['url'] = '/' . $REQUESTURIPATH;
         //$params['pager_url']='account/data';
 
@@ -76,8 +132,11 @@ class data_admin extends Object_Manager {
             $used_fields = json_decode($ar['grid_fields']);
             $params['grid_item'] = $used_fields;
         }
-
+        
         $rs .= parent::grid($params, $default_params);
+        if ( $this->getConfigValue('apps.billing.enable') ) {
+            $rs .= $this->template->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/billing/site/template/billing_panel.tpl');
+        }
 
         return $rs;
     }
@@ -89,6 +148,11 @@ class data_admin extends Object_Manager {
      * @param int $primary_key_value
      */
     function delete_data($table_name, $primary_key, $primary_key_value) {
+        if ( $this->getConfigValue('apps.data.disable_delete_button') ) {
+            $this->riseError(_e('Функция удаления отключена'));
+            return false;
+        }
+        
         if ($this->need_check_access($table_name)) {
             if (!$this->check_access($table_name, $this->get_check_access_user_id($table_name), 'delete', $primary_key, $primary_key_value)) {
                 $this->riseError('ID = ' . $primary_key_value . ', ' . Multilanguage::_('L_ACCESS_DENIED'));
@@ -103,6 +167,7 @@ class data_admin extends Object_Manager {
         if (!preg_match('/all[\/]?$/', $REQUESTURIPATH)) {
             $params['grid_conditions']['user_id'] = $this->getSessionUserId();
         }
+        $params['per_page'] = $this->getConfigValue('apps.data.excel_limit');
         parent::_exportAction($params);
     }
 
@@ -117,11 +182,25 @@ class data_admin extends Object_Manager {
      * @return boolean
      */
     function edit_data($form_data, $language_id = 0, $primary_key_value = false) {
+        if ( $this->getConfigValue('apps.data.disable_edit_button') ) {
+            $this->riseError(_e('Функция редактирования отключена'));
+            return false;
+        }
+        
         $id = intval($this->getRequestValue('id'));
+        if($id==0){
+            $id = intval($form_data[$this->primary_key]['value']);
+        }
+        
         if ($id == 0) {
             return false;
         }
         $status_changed = false;
+        
+        $moderate_first = false;
+        if (1 == $this->getConfigValue('moderate_first')) {
+            $moderate_first = true;
+        }
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
@@ -130,7 +209,10 @@ class data_admin extends Object_Manager {
         $account = new Account();
         $user_balance = $account->getAccountValue($this->getSessionUserId());
 
-        $form_data['price']['value'] = str_replace(' ', '', $form_data['price']['value']);
+        if(isset($form_data['price'])){
+            $form_data['price']['value'] = str_replace(' ', '', $form_data['price']['value']);
+        }
+        
 
         $form_data_tmp = $form_data;
 
@@ -145,8 +227,29 @@ class data_admin extends Object_Manager {
                 $account->minusMoney($this->getSessionUserId(), $this->getConfigValue('special_advert_cost'));
             }
         }
+        
+        if(!$moderate_first){
+            //проверяем возможность установки активного статуса в зависимости от наличия услуги списания за размещения
+            if(isset($form_data['active']) && ($form_data_tmp['active']['value'] == 0 and $form_data['active']['value'] == 1)){
+                if ($this->getConfigValue('apps.billing.enable')) {
+                    if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/tariff/tariff.xml') and $this->getConfigValue('apps.tariff.enable') and file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/billing/billing.xml')) {
+                        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/billing/lib/billing.php');
+                        $billing = new Billing();
 
-        if (1 == $this->getConfigValue('moderate_first')) {
+                        if(!$billing->checkAdvAbonent($_SESSION['user_id'], $id)){
+                            $this->riseError('Вы не можете изменить статус активности');
+                            return false;
+                        }else{
+                            $billing->setAdvAbonentState($_SESSION['user_id'], $id);
+                        }
+                    }
+                }
+        
+                
+            }
+        }
+        
+        if ($moderate_first) {
             $form_data['active']['value'] = 0;
         }
 
@@ -210,6 +313,47 @@ class data_admin extends Object_Manager {
         $ims = $this->editImageMulti('data', 'data', 'id', $id);
         if (is_array($ims) && count($ims) > 0) {
             $imgs = array_merge($imgs, $ims);
+        }
+        
+        foreach ($form_data as $form_item) {
+            if ($form_item['type'] == 'docuploads') {
+                $imgs_uploads = $this->appendDocUploads('data', $form_item, 'id', $id);
+            }
+        }
+        
+        $mutiitems = array();
+        foreach ($form_data as $k => $form_item) {
+            if ($form_item['type'] == 'select_by_query_multi') {
+                $vals = $form_item['value'];
+                if (!is_array($vals)) {
+                    $vals = (array) $mutiitems[$k];
+                }
+                if (!empty($vals)) {
+                    $mutiitems[$k] = $vals;
+                } else {
+                    $mutiitems[$k] = array();
+                }
+            }
+        }
+
+        if (!empty($mutiitems)) {
+            $keys = array_keys($mutiitems);
+
+            $params = array();
+            $params[] = 'data';
+            $params = array_merge($params, $keys);
+            $params[] = $id;
+            $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name` IN (' . implode(', ', array_fill(0, count($keys), '?')) . ') AND `primary_id`=?';
+            $stmt = $DBC->query($query, $params);
+
+            $query = 'INSERT INTO ' . DB_PREFIX . '_multiple_field (`table_name`, `field_name`, `primary_id`, `field_value`) VALUES (?,?,?,?)';
+            foreach ($mutiitems as $key => $vals) {
+                if (!empty($vals)) {
+                    foreach ($vals as $val) {
+                        $stmt = $DBC->query($query, array('data', $key, $id, $val));
+                    }
+                }
+            }
         }
 
 
@@ -307,6 +451,11 @@ class data_admin extends Object_Manager {
     }
     
     protected function _editAction() {
+        if ( $this->getConfigValue('apps.data.disable_edit_button') ) {
+            $this->riseError(_e('Функция редактирования отключена'));
+            return false;
+        }
+        
         $id = intval($this->getRequestValue('id'));
         $user_id = $this->getSessionUserId();
 
@@ -331,9 +480,6 @@ class data_admin extends Object_Manager {
         $form_data = $this->data_model;
 
 
-        if ($this->getConfigValue('more_fields_in_lk')) {
-            $form_data = $this->init_more_fields($form_data);
-        }
         $form_data['data']['fio']['required'] = 'off';
 
 
@@ -377,6 +523,11 @@ class data_admin extends Object_Manager {
     }
     
     protected function _edit_doneAction() {
+        if ( $this->getConfigValue('apps.data.disable_edit_button') ) {
+            $this->riseError(_e('Функция редактирования отключена'));
+            return false;
+        }
+        
         $user_id = $this->getSessionUserId();
         $id = intval($this->getRequestValue('id'));
 
@@ -403,9 +554,6 @@ class data_admin extends Object_Manager {
         $form_data = $this->data_model;
 
 
-        if ($this->getConfigValue('more_fields_in_lk')) {
-            $form_data = $this->init_more_fields($form_data);
-        }
         $form_data['data']['fio']['required'] = 'off';
 
 
@@ -447,8 +595,14 @@ class data_admin extends Object_Manager {
             }
         }
 
-
-        $form_data['data']['user_id']['value'] = $user_id;
+        if(isset($form_data['data']['user_id'])){
+            if(1==$this->getConfigValue('enable_curator_mode')){
+                unset($form_data['data']['user_id']);
+            }else{
+                $form_data['data']['user_id']['value'] = $user_id;
+            }
+        }
+        
 
         $y_id = '';
         if (strpos($form_data['data']['youtube']['value'], 'youtube.com') !== FALSE) {
@@ -505,7 +659,58 @@ class data_admin extends Object_Manager {
         return $rs;
     }
     
+    function checkUniquety($form_data) {
+        $unque_fields = trim($this->getConfigValue('apps.realty.uniq_params'));
+        //$unque_fields='city_id,topic_id,price';
 
+        $fields = array();
+        if ('' !== $unque_fields) {
+            $matches = array();
+            preg_match_all('/([^,\s]+)/i', $unque_fields, $matches);
+            if (!empty($matches[1])) {
+                $fields = $matches[1];
+            }
+        }
+
+        if (!empty($fields)) {
+            $where = array();
+            foreach ($fields as $f) {
+                if (isset($form_data[$f])) {
+                    if ($form_data[$f]['dbtype'] == 1 || ($form_data[$f]['dbtype'] != 'notable' && $form_data[$f]['dbtype'] != '0')) {
+                        $where[] = '`' . $f . '`=?';
+                        $where_val[] = $form_data[$f]['value'];
+                    }
+                }
+            }
+        } elseif (isset($form_data['city_id']) && isset($form_data['street_id']) && isset($form_data['number'])) {
+            $where[] = '`city_id`=?';
+            $where_val[] = (int) $form_data['city_id']['value'];
+            $where[] = '`street_id`=?';
+            $where_val[] = (int) $form_data['street_id']['value'];
+            $where[] = '`number`=?';
+            $where_val[] = $form_data['number']['value'];
+        } else {
+            return TRUE;
+        }
+
+        $DBC = DBC::getInstance();
+
+        $uns = array();
+        $query = 'SELECT id FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE ' . implode(' AND ', $where);
+
+        $stmt = $DBC->query($query, $where_val);
+        if ($stmt) {
+            while ($ar = $DBC->fetch($stmt)) {
+                $uns[] = $ar['id'];
+            }
+        }
+        if (count($uns) > 0) {
+            $this->riseError('Такое объявление уже существует (' . implode(',', $uns) . ')');
+            return FALSE;
+        }
+        return TRUE;
+    }
+    
     protected function _new_doneAction() {
         /* $rtoken=$_POST['csrftoken'];
           $rhash=$_POST['csrfhash'];
@@ -532,9 +737,6 @@ class data_admin extends Object_Manager {
         $form_data = $this->data_model;
 
 
-        if ($this->getConfigValue('more_fields_in_lk')) {
-            $form_data = $this->init_more_fields($form_data);
-        }
 
         if (isset($form_data['data']['fio'])) {
             $form_data['data']['fio']['required'] = 'off';
@@ -576,7 +778,7 @@ class data_admin extends Object_Manager {
             }
         }
 
-
+       
         $form_data['data']['user_id']['value'] = $user_id;
         $form_data['data']['user_id']['type'] = 'hidden';
         $form_data['data']['date_added']['value'] = date('Y-m-d H:i:s', time());
@@ -641,6 +843,11 @@ class data_admin extends Object_Manager {
         $user_id = $this->getSessionUserId();
         $id = intval($this->getRequestValue('id'));
         $rs = '';
+        
+        if ( $this->getConfigValue('apps.data.disable_delete_button') ) {
+            return _e('Функция удаления отключена');
+        }
+        
         if (!$this->check_access_to_data($user_id, $id)) {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
@@ -670,40 +877,26 @@ class data_admin extends Object_Manager {
         exit();
         $rs .= $this->grid($user_id, $this->getRequestValue('topic_id'));
         return $rs;
-    }
+    }  
 
     protected function _newAction() {
-
-        /* $breadcrumbs=array();
-          if(Multilanguage::is_set('LT_HOME', '_template')){
-          $breadcrumbs[]='<a href="'.$folder.'/">'.Multilanguage::_('LT_HOME', '_template').'</a>';
-          }else{
-          $breadcrumbs[]='<a href="'.$folder.'/">'.Multilanguage::_('L_HOME').'</a>';
-          }
-
-          if(Multilanguage::is_set('LT_PRIVATE_ACCOUNT', '_template')){
-          $breadcrumbs[]='<a href="'.$folder.'/account/">'.Multilanguage::_('LT_PRIVATE_ACCOUNT', '_template').'</a>';
-          }else{
-          $breadcrumbs[]='<a href="'.$folder.'/account/">'.Multilanguage::_('PRIVATE_ACCOUNT', 'system').'</a>';
-          }
-
-          if(Multilanguage::is_set('LT_MY_ADS', '_template')){
-          $breadcrumbs[]='<a href="'.$folder.'/account/data/">'.Multilanguage::_('LT_MY_ADS', '_template').'</a>';
-          }else{
-          $breadcrumbs[]='<a href="'.$folder.'/account/data/">'.Multilanguage::_('MY_ADS', 'system').'</a>';
-          }
-
-          if(Multilanguage::is_set('LT_MY_ADV_ADD', '_template')){
-          $breadcrumbs[]=Multilanguage::_('LT_MY_ADV_ADD', '_template');
-          }else{
-          $breadcrumbs[]=Multilanguage::_('MY_ADV_ADD', 'system');
-          }
-
-          $this->template->assert('breadcrumbs', $this->get_breadcrumbs($breadcrumbs)); */
 
         $user_id = $this->getSessionUserId();
         $rs = '';
 
+        if ($this->getConfigValue('advert_cost') > 0 ) {
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/account.php');
+            $account = new Account();
+            $account_value = $account->getAccountValue($this->getSessionUserId());
+
+            $rs .= '<p><b>Стоимость размещения одного объявления ' . $this->getConfigValue('advert_cost') . ' ' . $this->getConfigValue('ue_name') . '</b></p>';
+
+            if ($account_value < $this->getConfigValue('advert_cost')) {
+                $rs .= '<p>Ваш баланс ' . $account_value . ' ' . $this->getConfigValue('ue_name') . '</p>';
+                $rs .= '<b>На вашем счету не хватает средств для размещения объявления, <a href="' . SITEBILL_MAIN_URL . '/account/balance/?do=add_bill">пополнить</a></b></td>';
+                return $rs;
+            }
+        }
 
 
 
@@ -712,9 +905,6 @@ class data_admin extends Object_Manager {
         $form_data = $this->data_model;
         // var_dump($form_data['data']['square_rooms']);
 
-        if ($this->getConfigValue('more_fields_in_lk')) {
-            $form_data = $this->init_more_fields($form_data);
-        }
         $form_data['data']['fio']['required'] = 'off';
 
 
@@ -736,9 +926,10 @@ class data_admin extends Object_Manager {
                 $billing = new Billing();
 
                 $user_limits = $billing->getUserLimits($user_id, 'limit_data');
+                $new_tariff_message = 'Вы можете <a href="'.SITEBILL_MAIN_URL.'/billing/tarifflist/" class="btn btn-success">подключить другой тариф</a> с большими лимитами.';
 
                 if ($user_limits && $user_limits['total'] >= $user_limits['limits']) {
-                    $rs = 'Превышен лимит объявлений. Вы разместили все <b>' . $user_limits['total'] . '</b> из доступных <b>' . $user_limits['limits'] . '</b> объявлений за <b>' . $user_limits['period_key'] . '</b>';
+                    $rs = '<h1>Превышен лимит объявлений. Вы разместили все <b>' . $user_limits['total'] . '</b> из доступных <b>' . $user_limits['limits'] . '</b> объявлений за <b>' . $user_limits['period_key'] . '</b> '.$new_tariff_message.'</h1>' ;
                     return $rs;
                 }
                 if (method_exists($billing, 'getUserAdvLimits')) {
@@ -746,9 +937,14 @@ class data_admin extends Object_Manager {
                     $user_limits = $billing->getUserAdvLimits($user_id, 'advlimit_data');
 
                     if ($user_limits && $user_limits['total'] >= $user_limits['limits']) {
-                        $rs = 'Превышен лимит объявлений. Вы разместили все <b>' . $user_limits['total'] . '</b> из доступных <b>' . $user_limits['limits'] . '</b> объявлений';
+                        $rs = '<h1>Превышен лимит объявлений. Вы разместили все <b>' . $user_limits['total'] . '</b> из доступных <b>' . $user_limits['limits'] . '</b> объявлений на вашем тарифе. '.$new_tariff_message.'</h1>';
                         return $rs;
                     }
+                }
+                //Проверяем достаточно ли денег на счету для размещения нового объекта
+                if(!$billing->checkAdvAbonent($_SESSION['user_id'])){
+                    $rs = '<h1>Недостаточно средств на счету для размещения объекта</h1>';
+                    return $rs;
                 }
             } else {
                 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/account.php');
@@ -771,6 +967,76 @@ class data_admin extends Object_Manager {
         $rs = $this->get_form($form_data['data']);
         return $rs;
     }
+    
+    function mass_delete_data($table_name, $primary_key, $ids) {
+        
+        if ( $this->getConfigValue('apps.data.disable_delete_button') ) {
+            return _e('Функция удаления отключена');
+        }
+        
+        
+        $cuser_id = (int) $_SESSION['user_id'];
+        
+        if($cuser_id==0){
+            return '';
+        }
+        $errors = '';
+        
+        if (count($ids) > 0) {
+            foreach ($ids as $k => $id) {
+                if (!$this->check_access_to_data($cuser_id, $id)) {
+                    unset($ids[$k]);
+                }
+            }
+        }
+        
+        if(count($ids)==0){
+            header('location: '.SITEBILL_MAIN_URL.'/account/data/');
+            exit();
+        }
+
+        if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
+            $DBC = DBC::getInstance();
+            $query = 'UPDATE ' . DB_PREFIX . '_data SET archived=1 WHERE `id` IN (' . implode(',', $ids) . ')';
+            $stmt = $DBC->query($query);
+            header('location: '.SITEBILL_MAIN_URL.'/account/data/');
+            exit();
+        } else {
+            foreach ($ids as $id) {
+                $log_id = false;
+                if ($this->getConfigValue('apps.realtylog.enable')) {
+                    require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylog/admin/admin.php';
+                    $Logger = new realtylog_admin();
+                    $log_id = $Logger->addLog($id, $cuser_id, 'delete', $table_name);
+                }
+                if ($this->getConfigValue('apps.realtylogv2.enable')) {
+
+                    require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylogv2/admin/admin.php';
+
+                    $Logger = new realtylogv2_admin();
+
+                    $log_id = $Logger->addLog($id, $cuser_id, 'delete', $table_name, $primary_key);
+                }
+                $this->delete_data($table_name, $primary_key, $id);
+                if ($this->getError()) {
+                    if ($log_id !== false) {
+                        $Logger->deleteLog($log_id);
+                    }
+                    $errors .= '<div align="center">' . Multilanguage::_('L_ERROR_ON_DELETE') . ' ID=' . $id . ': ' . $this->GetErrorMessage() . '<br>';
+                    $errors .= '</div>';
+                    $this->error_message = false;
+                }
+            }
+            if ($errors != '') {
+                $rs .= $errors . '<div align="center"><a href="'.SITEBILL_MAIN_URL.'/accoutn/data/">ОК</a></div>';
+            } else {
+                header('location: '.SITEBILL_MAIN_URL.'/account/data/');
+                exit();
+            }
+            return $rs;
+        }
+        return $rs;
+    }
 
     /**
      * Check access to data
@@ -780,6 +1046,65 @@ class data_admin extends Object_Manager {
      */
     function check_access_to_data($user_id, $data_id) {
         $DBC = DBC::getInstance();
+        $enable_curator_mode=false;
+        if (1 == $this->getConfigValue('enable_curator_mode')) {
+            $enable_curator_mode = true;
+            $has_access = 0;
+            
+            if(1 === intval($this->getConfigValue('curator_mode_fullaccess'))){
+                
+                $query = 'SELECT COUNT(d.id) AS _cnt FROM ' . DB_PREFIX . '_data d LEFT JOIN ' . DB_PREFIX . '_user u USING(user_id) WHERE d.id=? AND u.parent_user_id=?';
+                $stmt = $DBC->query($query, array($data_id, $user_id));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+                    if ($ar['_cnt'] > 0) {
+                        $has_access = 1;
+                    }
+                }
+            }else{
+                $query = 'SELECT COUNT(id) AS _cnt FROM ' . DB_PREFIX . '_cowork WHERE coworker_id=? AND object_type=? AND id=?';
+                $stmt = $DBC->query($query, array($user_id, 'data', $data_id));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+                    if ($ar['_cnt'] > 0) {
+                        $has_access = 1;
+                    }
+                }
+            }
+
+            
+        }
+        
+        $where=array();
+        $where_val=array();
+        
+        $where[]='`id`=?';
+        $where_val[]=$data_id;
+        if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
+            $where[]='`archived`=0';
+        }
+        
+        if($enable_curator_mode){
+            $where[]='(`user_id`=? OR (`user_id`!=? AND 1='.$has_access.'))';
+            $where_val[]=$user_id;
+            $where_val[]=$user_id;
+        }else{
+            $where[]='`user_id`=?';
+            $where_val[]=$user_id;
+        }
+        
+        $query = 'SELECT id FROM ' . DB_PREFIX . '_data WHERE '.implode(' AND ', $where);
+        $stmt = $DBC->query($query, $where_val);
+        
+        if ($stmt) {
+            $ar = $DBC->fetch($stmt);
+            if ($ar['id'] > 0) {
+                return true;
+            }
+        }
+        return false;
+        
+        /*$DBC = DBC::getInstance();
         if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
             $query = "SELECT id FROM " . DB_PREFIX . "_data WHERE user_id=? AND id=? AND archived=0";
         } else {
@@ -793,7 +1118,7 @@ class data_admin extends Object_Manager {
                 return true;
             }
         }
-        return false;
+        return false;*/
     }
 
     /**
@@ -830,6 +1155,13 @@ class data_admin extends Object_Manager {
      * @return boolean
      */
     function add_data($form_data, $language_id = 0) {
+        
+        $moderate_first = false;
+        
+        if (1 == $this->getConfigValue('moderate_first')) {
+            $moderate_first = true;
+        }
+        
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
 
@@ -847,6 +1179,22 @@ class data_admin extends Object_Manager {
         if ($this->getConfigValue('special_advert_cost') > 0 and $form_data['hot']['value'] == 1) {
             $need_money += $this->getConfigValue('special_advert_cost');
         }
+        
+        
+        if ($this->getConfigValue('apps.billing.enable')) {
+            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/tariff/tariff.xml') and $this->getConfigValue('apps.tariff.enable') and file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/billing/billing.xml')) {
+                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/billing/lib/billing.php');
+                $billing = new Billing();
+                
+                $need_money += $billing->getAdvAbonentPayment($_SESSION['user_id']);
+
+                /*if(!$billing->getAdvAbonent($_SESSION['user_id'])){
+                    $rs = 'Недостаточно средств на счету для размещения объекта';
+                    return $rs;
+                }*/
+            }
+        }
+        
         if ($user_balance < $need_money) {
             $this->riseError('Недостаточно средств на счете для операции. <a href="' . SITEBILL_MAIN_URL . '/account/balance/?do=add_bill_done&bill=' . $need_money . '">Пополнить баланс на ' . $need_money . ' ' . $this->getConfigValue('ue_name') . '</a>');
             return false;
@@ -854,7 +1202,9 @@ class data_admin extends Object_Manager {
 
 
         if (1 == $this->getConfigValue('moderate_first')) {
-            $form_data['active']['value'] = 0;
+            if(isset($form_data['active'])){
+                $form_data['active']['value'] = 0;
+            }
         }
 
         if (1 == $this->getConfigValue('apps.geodata.try_encode') && 1 == $this->getConfigValue('apps.geodata.enable')) {
@@ -876,12 +1226,20 @@ class data_admin extends Object_Manager {
 
         $new_record_id = $DBC->lastInsertId();
 
-        if (1 == $this->getConfigValue('moderate_first')) {
+        if ($moderate_first) {
             $this->notifyAboutModerationNeed($new_record_id, 'new');
         }
 
         if ($new_record_id > 0) {
             $this->setUpdatedAtDate($new_record_id);
+        }
+        
+        //если отключено модерирование и у пользователя есть доступ к установке активности
+        //и объект подается как активный, тогда производим списание за первый период размещения
+        if(!$moderate_first && isset($form_data['active']) && $form_data['active']['value'] == 1){
+            if ($this->getConfigValue('apps.billing.enable')) {
+                $billing->setAdvAbonentState($_SESSION['user_id'], $new_record_id);
+            }
         }
 
         $imgs = array();
@@ -898,6 +1256,50 @@ class data_admin extends Object_Manager {
         $ims = $this->editImageMulti('data', 'data', 'id', $new_record_id);
         if (is_array($ims) && count($ims) > 0) {
             $imgs = array_merge($imgs, $ims);
+        }
+        
+        foreach ($form_data as $form_item) {
+            if ($form_item['type'] == 'docuploads') {
+                $imgs_uploads = $this->appendDocUploads('data', $form_item, 'id', $new_record_id);
+            }
+        }
+        
+        $mutiitems = array();
+        foreach ($form_data as $k => $form_item) {
+            if ($form_item['type'] == 'select_by_query_multi') {
+                $vals = $form_item['value'];
+                if (!is_array($vals)) {
+                    $vals = (array) $mutiitems[$k];
+                }
+                if (!empty($vals)) {
+                    $mutiitems[$k] = $vals;
+                } else {
+                    $mutiitems[$k] = array();
+                }
+            }
+        }
+        
+        
+
+        if (!empty($mutiitems)) {
+            $keys = array_keys($mutiitems);
+
+            $params = array();
+            $params[] = 'data';
+            $params = array_merge($params, $keys);
+            $params[] = $new_record_id;
+            $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name` IN (' . implode(', ', array_fill(0, count($keys), '?')) . ') AND `primary_id`=?';
+            $stmt = $DBC->query($query, $params);
+
+            $query = 'INSERT INTO ' . DB_PREFIX . '_multiple_field (`table_name`, `field_name`, `primary_id`, `field_value`) VALUES (?,?,?,?)';
+            foreach ($mutiitems as $key => $vals) {
+                if (!empty($vals)) {
+                    foreach ($vals as $val) {
+                        $stmt = $DBC->query($query, array('data', $key, $new_record_id, $val));
+                        //echo $DBC->getLastError();
+                    }
+                }
+            }
         }
 
         if (1 == $this->getConfigValue('apps.seo.data_alias_enable') && ((isset($form_data['translit_alias']) && $form_data['translit_alias']['value'] == '') || !isset($form_data['translit_alias']))) {
@@ -980,7 +1382,7 @@ class data_admin extends Object_Manager {
         /* require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
           $mailer = new Mailer(); */
         $subject = $_SERVER['SERVER_NAME'] . ': объявление требует модерации';
-        $from = $this->getConfigValue('order_email_acceptor');
+        $from = $this->getConfigValue('system_email');
         $useremail = $this->getConfigValue('order_email_acceptor');
         $body = '';
         if ($action == 'edit') {

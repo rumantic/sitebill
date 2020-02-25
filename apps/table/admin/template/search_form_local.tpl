@@ -18,7 +18,7 @@
 	{/if}
 	{/foreach}
    </div>
-    <div class="row-fluid"><a href="#" class="btn reset_form">Очистить</a> <button type="submit" class="btn btn-primary pull-right">{$L_GOSEARCH}</button></div>
+    <div class="row-fluid"><a href="#" class="btn reset_form">{_e t="Очистить"}</a> <button type="submit" class="btn btn-primary pull-right">{$L_GOSEARCH}</button></div>
   </fieldset>
 </form>
 </div>

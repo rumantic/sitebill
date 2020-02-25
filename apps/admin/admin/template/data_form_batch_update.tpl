@@ -1,11 +1,7 @@
 <script type="text/javascript">
 {literal}
 $(document).ready(function(){
-	/*$("#formsubmit").click(function(){
-		$(this).hide();
-		$('<p class="loading">Сохраняю данные...</p>').insertAfter(this).slideDown("fast");
-	});*/
-	
+
 	$('.tooltipe_block').popover({trigger: 'hover'});
 });
 {/literal}

@@ -59,7 +59,7 @@ class Register extends Login {
         				$subject = sprintf(Multilanguage::_('NEW_REGISTER_TITLE','system'), $_SERVER['HTTP_HOST']);
         				 
         				$to = $this->getRequestValue('email');
-        				$from = $this->getConfigValue('order_email_acceptor');
+                        $from = $this->getConfigValue('system_email');
         				/*if ( $this->getConfigValue('use_smtp') ) {
         					$mailer->send_smtp($to, $from, $subject, $message, 1);
         				} else {
@@ -107,7 +107,7 @@ class Register extends Login {
             				$subject = sprintf(Multilanguage::_('NEW_REG_EMAILACCEPT_TITLE','system'), $_SERVER['HTTP_HOST']);
             				 
             				$to = $this->getRequestValue('email');
-            				$from = $this->getConfigValue('order_email_acceptor');
+							$from = $this->getConfigValue('system_email');
             				/*if ( $this->getConfigValue('use_smtp') ) {
             					$mailer->send_smtp($to, $from, $subject, $message, 1);
             				} else {
@@ -126,7 +126,7 @@ class Register extends Login {
             				$subject = sprintf(Multilanguage::_('NEW_REGISTER_TITLE','system'), $_SERVER['HTTP_HOST']);
             				 
             				$to = $this->getRequestValue('email');
-            				$from = $this->getConfigValue('order_email_acceptor');
+							$from = $this->getConfigValue('system_email');
             				/*if ( $this->getConfigValue('use_smtp') ) {
             					$mailer->send_smtp($to, $from, $subject, $message, 1);
             				} else {
@@ -142,7 +142,7 @@ class Register extends Login {
             				$subject = 'Новый пользователь '.$this->getRequestValue('login').' на сайте '.$_SERVER['HTTP_HOST'];
             				 
             				$to = $this->getConfigValue('order_email_acceptor');
-            				$from = $this->getConfigValue('order_email_acceptor');
+            				$from = $this->getConfigValue('system_email');
             				/*if ( $this->getConfigValue('use_smtp') ) {
             					$mailer->send_smtp($to, $from, $subject, $message, 1);
             				} else {

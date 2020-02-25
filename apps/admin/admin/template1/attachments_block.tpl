@@ -144,6 +144,7 @@
 {% } %}
 </script>
 {/literal}
+{if 1==0}
 <!-- The jQuery UI widget factory, can be omitted if jQuery UI is already included -->
 <script src="/apps/system/js/jquery-file-upload/js/vendor/jquery.ui.widget.js"></script>
 <!-- The Templates plugin is included to render the upload/download listings -->
@@ -173,3 +174,4 @@
 <script src="/apps/system/js/jquery-file-upload/js/jquery.fileupload-ui.js"></script>
 <!-- The main application script -->
 <script src="/apps/system/js/jquery-file-upload/js/main.js"></script>
+{/if}

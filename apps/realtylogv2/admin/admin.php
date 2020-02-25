@@ -85,9 +85,9 @@ class realtylogv2_admin extends Object_Manager {
 
     public function _preload() {
         if ($this->getConfigValue('apps.realtylogv2.enable')) {
-            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/login.php');
-            $Login = new Login();
-            $uid = $Login->getSessionUserId();
+            //require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/login.php');
+            //$Login = new Login();
+            $uid = intval($_SESSION['user_id']);
             //echo $uid;
             if ($uid != 0) {
                 $query = 'SELECT COUNT(realtylog_id) AS total FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE editor_id=' . $uid . ' AND action=\'delete\'';
@@ -348,29 +348,7 @@ class realtylogv2_admin extends Object_Manager {
 
 
         return $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/realtylogv2/admin/template/list.tpl');
-        /* require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/grid.php');
-          $common_grid = new Common_Grid($this);
 
-          // $common_grid->set_grid_table($this->table_name);
-
-
-          $common_grid->add_grid_item($this->primary_key);
-          $common_grid->add_grid_item('editor_id');
-          $common_grid->add_grid_item('id');
-          $common_grid->add_grid_item('action');
-          $common_grid->add_grid_item('log_date');
-
-          // $common_grid->set_conditions(array('action'=>'delete'));
-
-          //$common_grid->add_grid_control('edit');
-          //$common_grid->add_grid_control('delete');
-
-          $common_grid->setPagerParams(array('action'=>$this->action,'page'=>$this->getRequestValue('page'),'per_page'=>$this->getConfigValue('common_per_page')));
-
-          $common_grid->set_grid_query("select * from ".DB_PREFIX."_".$this->table_name." order by log_date desc");
-          $rs = $common_grid->construct_grid();
-          return $rs;
-         */
     }
 
     protected function getLogsList($page = 1, $per_page = 10, $type = '', $ids = 0, $search_params = false) {
@@ -384,14 +362,15 @@ class realtylogv2_admin extends Object_Manager {
         $rows = array();
 
         if (!in_array($type, array('delete', 'edit', 'new'))) {
-            $query = 'SELECT SQL_CALC_FOUND_ROWS `realtylog_id`, `id`, `user_id`, `log_date`, `action`, `log_data` FROM ' . DB_PREFIX . '_' . $this->table_name . ($ids != 0 ? ' WHERE id=?' : '') . ' ORDER BY log_date DESC LIMIT ' . (($page - 1) * $per_page) . ', ' . $per_page;
+            $query = 'SELECT SQL_CALC_FOUND_ROWS l.`realtylog_id`, l.`id`, l.`user_id`, u.`login`, l.`log_date`, l.`action`, l.`log_data` FROM ' . DB_PREFIX . '_' . $this->table_name . ' l LEFT JOIN `' . DB_PREFIX . '_user` u ON l.`editor_id`=u.`user_id`' . ($ids != 0 ? ' WHERE l.`id`=?' : '') . ' ORDER BY l.`log_date` DESC LIMIT ' . (($page - 1) * $per_page) . ', ' . $per_page;
+            
             if ($ids != 0) {
                 $stmt = $DBC->query($query, array($ids));
             } else {
                 $stmt = $DBC->query($query);
             }
         } else {
-            $query = 'SELECT SQL_CALC_FOUND_ROWS `realtylog_id`, `id`, `user_id`, `log_date`, `action`, `log_data` FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE `action`=?' . ($ids != 0 ? ' AND id=?' : '') . ' ORDER BY log_date DESC LIMIT ' . (($page - 1) * $per_page) . ', ' . $per_page;
+            $query = 'SELECT SQL_CALC_FOUND_ROWS l.`realtylog_id`, l.`id`, l.`user_id`, l.`editor_id`, l.`log_date`, l.`action`, l.`log_data` FROM ' . DB_PREFIX . '_' . $this->table_name . ' l WHERE l.`action`=?' . ($ids != 0 ? ' AND l.`id`=?' : '') . ' ORDER BY l.`log_date` DESC LIMIT ' . (($page - 1) * $per_page) . ', ' . $per_page;
 
             if ($ids != 0) {
                 $stmt = $DBC->query($query, array($type, $ids));
@@ -444,7 +423,9 @@ class realtylogv2_admin extends Object_Manager {
                     $_model = $data_model->init_model_data_from_var($ld, $ld['id'], $_model['data'], true);
                     $data_array[$ar['realtylog_id']] = $_model;
                     $data_array[$ar['realtylog_id']]['action'] = $ar['action'];
-                    
+                    $data_array[$ar['realtylog_id']]['editor'] = $ar['login'];
+                    $data_array[$ar['realtylog_id']]['log_date'] = $ar['log_date'];
+
                     if ( $search_params ) {
                         $search_success = false;
                         foreach ( $search_params['search']['columns'] as $search_column ) {
@@ -493,8 +474,13 @@ class realtylogv2_admin extends Object_Manager {
         $DBC = DBC::getInstance();
         $query = 'SELECT COUNT(`realtylog_id`) AS _cnt FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE `action`=?';
         $stmt = $DBC->query($query, array('delete'));
-        $ar = $DBC->fetch($stmt);
-        return intval($ar['_cnt']);
+        if($stmt){
+            $ar = $DBC->fetch($stmt);
+            return intval($ar['_cnt']);
+        }else{
+            return 0;
+        }
+        
     }
 
     function getLogs($data_id, $user_id = FALSE) {

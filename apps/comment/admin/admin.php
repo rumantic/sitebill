@@ -162,6 +162,22 @@ class comment_admin extends Object_Manager {
         return $comments;
     }
 
+    public function add_comment($object_type, $object_id, $user_id, $comment_text, $comment_date, $parent_comment_id = 0, $is_published = 1) {
+        $form_data = $this->data_model[$this->table_name];
+        $form_data['object_type']['value'] = $object_type;
+        $form_data['object_id']['value'] = $object_id;
+        $form_data['user_id']['value'] = $user_id;
+        $form_data['comment_text']['value'] = $comment_text;
+        $form_data['comment_date']['value'] = $comment_date;
+        $form_data['parent_comment_id']['value'] = $parent_comment_id;
+        $form_data['is_published']['value'] = $is_published;
+        $new_record_id = $this->add_data($form_data, 0);
+        if ($this->getError()) {
+            return false;
+        }
+        return $new_record_id;
+    }
+
     private function saveComment($admin = false) {
 
         $comments_delta_time = 30;

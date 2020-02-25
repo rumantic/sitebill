@@ -343,15 +343,17 @@ class table_admin extends Object_Manager {
     }
 
     protected function _importtableAction() {
-        if (!defined('DEVMODE')) {
+        
+        /*if (!defined('DEVMODE')) {
             return $this->_defaultAction();
-        }
+        }*/
+        
         $table_id = (int) $this->getRequestValue('table_id');
 
         if (isset($_POST['submit'])) {
-
+            
             if (!empty($_FILES)) {
-
+                
                 $tempFile = $_FILES['importfile']['tmp_name'];
                 $targetPath = SITEBILL_DOCUMENT_ROOT . '/cache/upl' . '/';
 
@@ -360,10 +362,11 @@ class table_admin extends Object_Manager {
                 $arr = explode('.', $_FILES['importfile']['name']);
                 $ext = strtolower(end($arr));
                 if ($ext != 'json') {
-                    return 'Импорт не удался';
+                    return 'Импорт не удался: расширение файла не *.json';
                 }
                 $content = file_get_contents($tempFile);
                 $columns = json_decode($content, true);
+                
                 if (isset($columns['elements']) && count($columns['elements']) > 0) {
                     $existing_columns = require_once SITEBILL_DOCUMENT_ROOT . '/apps/columns/admin/admin.php';
                     $CM = new columns_admin();
@@ -382,14 +385,19 @@ class table_admin extends Object_Manager {
                         foreach ($model[$tablec] as $it => $iv) {
                             $model[$p][$it]['value'] = $v[$it];
                         }
+                        $CM->clearError();
                         $CM->add_data($model[$p]);
+                        if ( $CM->getError() ) {
+                            $errors .= $CM->getError().'<br>';
+                        }
                     }
+                    return 'Импорт завершен<br>'.$errors;
                 } else {
-                    return 'Импорт не удался';
+                    return 'Импорт не удался, columns = '.'<pre>'.var_export($columns, true).'</pre>';
                 }
                 //var_dump();
                 //echo '<pre>';
-                //print_r(json_decode($content));
+                //print_r($columns);
             } else {
                 return 'Нет файла';
             }
@@ -404,9 +412,9 @@ class table_admin extends Object_Manager {
     }
 
     protected function _exporttableAction() {
-        if (!defined('DEVMODE')) {
+        /*if (!defined('DEVMODE')) {
             return $this->_defaultAction();
-        }
+        }*/
         $table_id = (int) $this->getRequestValue('table_id');
 
         $columns = array();
@@ -433,7 +441,13 @@ class table_admin extends Object_Manager {
         }
         exit();
     }
-
+    
+ 
+    /**
+     * Управление активностью полей в разделах в одной общей таблице
+     * @global type $smarty
+     * @return type
+     */
     protected function _activitymatrixAction() {
         if (!defined('DEVMODE')) {
             return $this->_defaultAction();
@@ -442,35 +456,106 @@ class table_admin extends Object_Manager {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
         $cs = $Structure_Manager->loadCategoryStructure();
+        
+        $active_topic_id = intval($this->getRequestValue('active_topic_id'));
+        if($active_topic_id > 0){
+            //print_r($cs);
+            $ch = $Structure_Manager->get_all_childs($active_topic_id, $cs);
+            $ch[] = $active_topic_id;
+            foreach($cs['catalog'] as $k=>$v){
+                if(!in_array($k, $ch)){
+                    unset($cs['catalog'][$k]);
+                }
+            }
+            //$cs['childs'][0] = array($topic_id);
+        }
+        
         $DBC = DBC::getInstance();
 
         if (strtolower($_SERVER['REQUEST_METHOD']) == 'post') {
             $rules = $_POST['rule'];
-            if (!empty($rules)) {
-
-                $query = 'SELECT `columns_id` FROM ' . DB_PREFIX . '_columns WHERE `table_id`=? AND `active`=1';
-                $stmt = $DBC->query($query, array($table_id));
+            
+            if($active_topic_id > 0 && empty($rules)){
+                $query = 'SELECT `columns_id`, `active_in_topic` FROM ' . DB_PREFIX . '_columns WHERE `table_id`=? AND `active`=1 AND `type` != ?';
+                $stmt = $DBC->query($query, array($table_id, 'select_box_structure'));
                 if ($stmt) {
                     while ($ar = $DBC->fetch($stmt)) {
-                        $columns[$ar['columns_id']] = '';
+                        if($ar['active_in_topic']!='' && $ar['active_in_topic']!='0'){
+                            $acts = explode(',', $ar['active_in_topic']);
+                        }else{
+                            $acts = array();
+                        }
+                        $columns[$ar['columns_id']] = array_diff($acts, $ch);
                     }
                 }
                 $query = 'UPDATE ' . DB_PREFIX . '_columns SET `active_in_topic`=? WHERE `columns_id`=?';
-                foreach ($columns as $cid => $v) {
-                    if (!isset($rules[$cid])) {
-                        
-                    } elseif (isset($rules[$cid]) && count($rules[$cid]) == count($cs['catalog'])) {
-                        
-                    } else {
-                        $columns[$cid] = implode(',', array_keys($rules[$cid]));
+                foreach($columns as $cid=>$v){
+                    if(!empty($v)){
+                        $s = implode(',', $v);
+                    }else{
+                        $s = '';
                     }
-                    $stmt = $DBC->query($query, array($columns[$cid], $cid));
+                    $stmt = $DBC->query($query, array($s, $cid));
                 }
-            } else {
-                $query = 'UPDATE ' . DB_PREFIX . '_columns SET `active_in_topic`=? WHERE `table_id`=? AND `active`=1';
-                $stmt = $DBC->query($query, array('', $table_id));
+            }elseif(empty($rules)){
+                $query = 'UPDATE ' . DB_PREFIX . '_columns SET `active_in_topic`=? WHERE `table_id`=? AND `active`=1 AND `type` != ?';
+                $stmt = $DBC->query($query, array('', $table_id, 'select_box_structure'));
+            }else{
+                $query = 'SELECT `columns_id`, `active_in_topic` FROM ' . DB_PREFIX . '_columns WHERE `table_id`=? AND `active`=1 AND `type` != ?';
+                $stmt = $DBC->query($query, array($table_id, 'select_box_structure'));
+                if ($stmt) {
+                    while ($ar = $DBC->fetch($stmt)) {
+                        if($ar['active_in_topic']!='' && $ar['active_in_topic']!='0'){
+                            $acts = explode(',', $ar['active_in_topic']);
+                        }else{
+                            $acts = array();
+                        }
+                        if($active_topic_id > 0){
+                            $columns[$ar['columns_id']] = array_diff($acts, $ch);
+                        }else{
+                            $columns[$ar['columns_id']] = $acts;
+                        }
+                    }
+                }
+                
+                
+                
+                $query = 'UPDATE ' . DB_PREFIX . '_columns SET `active_in_topic`=? WHERE `columns_id`=?';
+                foreach ($columns as $cid => $v) {
+                    if($active_topic_id > 0){
+                        
+                        
+                        if (!isset($rules[$cid]) || (isset($rules[$cid]) && count($rules[$cid]) == count($ch))) {
+                            if(empty($columns[$cid])){
+                                
+                            }else{
+                                $columns[$cid] = array_merge($columns[$cid], array_keys($rules[$cid]));
+                            }
+                        } else {
+                            $columns[$cid] = array_merge($columns[$cid], array_keys($rules[$cid]));
+                        }
+                        
+                    }else{
+                        if (!isset($rules[$cid])) {
+                            $columns[$cid] = array();
+                        } elseif (isset($rules[$cid]) && count($rules[$cid]) == count($cs['catalog'])) {
+                            $columns[$cid] = array();
+                        } else {
+                            $columns[$cid] = array_keys($rules[$cid]);
+                        }
+                        //$stmt = $DBC->query($query, array($columns[$cid], $cid));
+                    }
+                    //print_r($rules[$cid]);
+                    //print_r($columns[$cid]);
+                    if(!empty($columns[$cid])){
+                        $s = implode(',', $columns[$cid]);
+                    }else{
+                        $s = '';
+                    }
+                    $stmt = $DBC->query($query, array($s, $cid));
+                    
+                }
             }
-            //print_r($columns);
         }
 
 
@@ -498,26 +583,13 @@ class table_admin extends Object_Manager {
         foreach ($cs['catalog'] as $k => $v) {
             $names[$v['id']] = $this->get_category_breadcrumbs_string(array('topic_id' => $v['id']), $cs);
         }
-
+        $this->template->assign('active_topic_id', $active_topic_id);
         $this->template->assign('topics', $names);
         $this->template->assign('table_id', $table_id);
         //print_r($names);
 
         global $smarty;
         return $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/template/activity_matrix.tpl');
-
-
-        /* if(count($columns)>0){
-          $query='SELECT name FROM '.DB_PREFIX.'_table WHERE `table_id`=?';
-          $stmt=$DBC->query($query, array($table_id));
-          $ar=$DBC->fetch($stmt);
-          $file_name=$ar['name'].'.model.json';
-          header('Content-Type: text');
-          header('Content-Disposition: attachment; filename="'.$file_name.'"');
-          echo json_encode(array('elements'=>$columns));
-
-          }
-          exit(); */
     }
 
     /*
@@ -587,23 +659,44 @@ class table_admin extends Object_Manager {
             return $this->_defaultAction();
         }
         $langs = array_values(Multilanguage::availableLanguages());
-        $needle_filds = array('title', 'hint', 'value', 'title_default', 'select_data', 'tab');
-
-        $queries = array();
-        foreach ($needle_filds as $nf) {
-            foreach ($langs as $lng) {
-                if ($nf != 'select_data') {
-                    $queries[] = 'ALTER TABLE  `' . DB_PREFIX . '_columns` ADD  `' . $nf . '_' . $lng . '` VARCHAR( 255 ) NOT NULL ;';
-                } else {
-                    $queries[] = 'ALTER TABLE  `' . DB_PREFIX . '_columns` ADD  `' . $nf . '_' . $lng . '` TEXT NOT NULL ;';
+        
+        $default_lng = '';
+        if(1 == $this->getConfigValue('apps.language.use_default_as_ru')){
+            $default_lng = 'ru';
+        }elseif('' != trim($this->getConfigValue('apps.language.use_as_default'))){
+            $default_lng = trim($this->getConfigValue('apps.language.use_as_default'));
+        }
+        
+        if($default_lng != ''){
+            foreach ($langs as $k => $lng) {
+                if ($lng == $default_lng) {
+                    unset($langs[$k]);
+                    break;
                 }
             }
         }
-        $DBC = DBC::getInstance();
+        
+        if(!empty($langs)){
+            $needle_filds = array('title', 'hint', 'value', 'title_default', 'select_data', 'tab');
 
-        foreach ($queries as $query) {
-            $stmt = $DBC->query($query);
+            $queries = array();
+            foreach ($needle_filds as $nf) {
+                foreach ($langs as $lng) {
+                    if ($nf != 'select_data') {
+                        $queries[] = 'ALTER TABLE  `' . DB_PREFIX . '_columns` ADD  `' . $nf . '_' . $lng . '` VARCHAR( 255 ) NOT NULL ;';
+                    } else {
+                        $queries[] = 'ALTER TABLE  `' . DB_PREFIX . '_columns` ADD  `' . $nf . '_' . $lng . '` TEXT NOT NULL ;';
+                    }
+                }
+            }
+            $DBC = DBC::getInstance();
+
+            foreach ($queries as $query) {
+                $stmt = $DBC->query($query);
+            }
         }
+        
+        
 
         return $this->_defaultAction();
     }
@@ -712,9 +805,9 @@ class table_admin extends Object_Manager {
     }
 
     protected function _copytableAction() {
-        if (!defined('DEVMODE')) {
+        /*if (!defined('DEVMODE')) {
             return $this->_defaultAction();
-        }
+        }*/
         $table_id = (int) $this->getRequestValue('table_id');
         if (isset($_POST['submit'])) {
             $new_name = trim($this->getRequestValue('name'));
@@ -1166,6 +1259,16 @@ class table_admin extends Object_Manager {
             $columns_admin->data_model['columns']['action']['value'] = $item['action'];
             $columns_admin->data_model['columns']['hint']['value'] = $item['hint'];
             $columns_admin->data_model['columns']['tab']['value'] = $item['tab'];
+            if ($item['active_in_topic'] != '') {
+                $columns_admin->data_model['columns']['active_in_topic']['value'] = $item['active_in_topic'];
+            } else {
+                unset($columns_admin->data_model['columns']['active_in_topic']);
+            }
+            if ($item['group_id'] != '') {
+                $columns_admin->data_model['columns']['group_id']['value'] = $item['group_id'];
+            } else {
+                unset($columns_admin->data_model['columns']['group_id']);
+            }
 
             $columns_admin->data_model['columns']['sort_order']['value'] = 0;
             if ($item['required'] == 'on') {
@@ -1324,44 +1427,55 @@ class table_admin extends Object_Manager {
                 $rs .= '<a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="#formeditoracc_' . $item_array['name'] . '">';
                 $rs .= $item_array['name'] . ($item_array['description'] != '' ? ' (' . $item_array['description'] . ')' : '');
                 $rs .= '</a>';
+                $rs .= '<div class="model-accordion-controls">';
                 if (defined('DEVMODE')) {
-                    $rs .= '<a class="btn btn-success" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=fieldrules&table_id=' . $primary_key_value . '" title="Редактировать"><i class="icon-white icon-user"></i> <sup>beta</sup></a> ';
+                    $rs .= '<a class="btn btn-mini btn-success" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=fieldrules&table_id=' . $primary_key_value . '" title="Редактировать"><i class="icon-white icon-user"></i> <sup>beta</sup></a> ';
                 }
 
-                $rs .= '<a class="btn btn-info" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=edit&table_id=' . $primary_key_value . '" title="Редактировать"><i class="icon-white icon-pencil"></i></a> ';
-                $rs .= '<a class="btn btn-info" href="' . SITEBILL_MAIN_URL . '/admin/?action=columns&do=new&table_id=' . $primary_key_value . '" title="Добавить колонку"><i class="icon-white icon-plus"></i></a> ';
-                $rs .= '<a class="btn btn-danger" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=delete&table_id=' . $primary_key_value . '" title="Удалить" onclick="if ( confirm(\'Действительно хотите удалить запись?\') ) {return true;} else {return false;}"><i class="icon-white icon-remove"></i></a> ';
+                $rs .= '<a class="btn btn-mini btn-info" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=edit&table_id=' . $primary_key_value . '" title="Редактировать модель"><i class="icon-white icon-pencil"></i></a> ';
+                $rs .= '<a class="btn btn-mini btn-info" href="' . SITEBILL_MAIN_URL . '/admin/?action=columns&do=new&table_id=' . $primary_key_value . '" title="Добавить колонку в модель"><i class="icon-white icon-plus"></i></a> ';
+                if (defined('DEVMODE')) {
+                    $rs .= '<a class="btn btn-mini btn-info" href="' . SITEBILL_MAIN_URL . '/admin/?action=columns&do=many&table_id=' . $primary_key_value . '" title="Добавить несколько колонок в модель"><i class="icon-white icon-plus"></i><i class="icon-white icon-plus"></i></a> ';
+                }
+                $rs .= '<a class="btn btn-mini btn-danger" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=delete&table_id=' . $primary_key_value . '" title="Удалить модель" onclick="if ( confirm(\'Действительно хотите удалить запись?\') ) {return true;} else {return false;}"><i class="icon-white icon-remove"></i></a> ';
 
                 if (isset($custom_admin_entity_menu[$item_array['name']])) {
-                    $rs .= '<a class="btn btn-success" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=handler&table=' . $item_array['name'] . '" title="Зарегистрированный обработчик"><i class="icon-white icon-asterisk"></i></a> ';
+                    $rs .= '<a class="btn btn-mini btn-success" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=handler&table=' . $item_array['name'] . '" title="Зарегистрированный обработчик"><i class="icon-white icon-asterisk"></i></a> ';
                 } else {
-                    $rs .= '<a class="btn" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=handler&table=' . $item_array['name'] . '" title="Обработчик по-умолчанию"><i class="icon-white icon-asterisk"></i></a> ';
+                    $rs .= '<a class="btn btn-mini" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=handler&table=' . $item_array['name'] . '" title="Обработчик по-умолчанию"><i class="icon-white icon-asterisk"></i></a> ';
                 }
 
                 if ($this->helper->check_table_exist($item_array['name'])) {
                     //$rs .= '<a class="btn btn-info update_table" href="#" title="Сохранить сортировку"><i class="icon-white icon-refresh"></i></a> ';
-                    $rs .= '<a class="btn btn-info" href="?action=table&do=structure&subdo=update_table&table_name=' . $item_array['name'] . '" title="Обновить таблицу" ><i class="icon-white icon-list-alt"></i></a>';
+                    $rs .= '<a class="btn btn-mini btn-info" href="?action=table&do=structure&subdo=update_table&table_name=' . $item_array['name'] . '" title="Обновить таблицу" ><i class="icon-white icon-repeat"></i></a>';
                 } else {
-                    $rs .= '<a href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=structure&subdo=create_table&table_name=' . $item_array['name'] . '" title="Создать таблицу"><img src="' . SITEBILL_MAIN_URL . '/apps/table/img/create_table.png" border="0" class="admin_control"></a>';
+                    $rs .= '<a class="btn btn-mini" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=structure&subdo=create_table&table_name=' . $item_array['name'] . '" title="Создать таблицу"><i class="icon-white icon-list-alt"></i></a>';
                 }
+                $rs .= ' <div class="btn-group"><a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">Управление моделью <sup>beta</sup><span class="caret"></span></a>';
+                $rs .= '<ul class="dropdown-menu">';
+                $rs .= '<li><a href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=copytable&table_id=' . $primary_key_value . '">Копировать модель</a></li>';
+                $rs .= '<li><a href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=exporttable&table_id=' . $primary_key_value . '">Экспортировать модель</a></li>';
+                $rs .= '<li><a href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=importtable&table_id=' . $primary_key_value . '">Импортировать модель</a></li>';
+                
+                //$rs .= '<li><a href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=createmany&table_id=' . $primary_key_value . '">Создать несколько</a></li>';
+                
+                $rs .= '</ul>';
+                $rs .= '</div> ';
                 if (defined('DEVMODE')) {
-                    $rs .= '<a class="btn btn-warning" href="?action=table&do=structure&subdo=clear_table&table_name=' . $item_array['name'] . '" title="Очистить" onclick="if ( confirm(\'Действительно хотите очистить таблицу? Будут удалены все поля таблицы не входящие в текущую модель и данные, содержащиеся в этих полях.\') ) {return true;} else {return false;}"><i class="icon-white icon-cog"></i><sup>beta</sup></a> ';
-                    $rs .= '<a class="btn" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=copytable&table_id=' . $primary_key_value . '" title="Копировать модель (BETA)"><i class="icon-white icon-book"></i> <sup>beta</sup></a> ';
-                    $rs .= '<a class="btn" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=exporttable&table_id=' . $primary_key_value . '" title="Экспортировать модель (BETA)">Экспорт <sup>beta</sup></a> ';
-                    $rs .= '<a class="btn" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=importtable&table_id=' . $primary_key_value . '" title="Импортировать модель (BETA)">Импорт <sup>beta</sup></a> ';
-                    $rs .= '<a class="btn" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=activitymatrix&table_id=' . $primary_key_value . '" title="Матрица разделов">Матрица разделов <sup>beta</sup></a> ';
+                    $rs .= '<a class="btn btn-mini btn-warning" href="?action=table&do=structure&subdo=clear_table&table_name=' . $item_array['name'] . '" title="Очистить" onclick="if ( confirm(\'Действительно хотите очистить таблицу? Будут удалены все поля таблицы не входящие в текущую модель и данные, содержащиеся в этих полях.\') ) {return true;} else {return false;}"><i class="icon-white icon-cog"></i><sup>beta</sup></a> ';
+                    $rs .= '<a class="btn btn-mini" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=activitymatrix&table_id=' . $primary_key_value . '" title="Матрица разделов">Матрица разделов <sup>beta</sup></a> ';
                 }
 
 
-                $rs .= '<div class="btn-group"><a class="btn dropdown-toggle" data-toggle="dropdown" href="#">Быстрое добавление<span class="caret"></span></a>
-  <ul class="dropdown-menu">
-    <li><a href="' . SITEBILL_MAIN_URL . '/admin/?action=columns&do=add_meta&table_id=' . $primary_key_value . '">Добавить мета поля (3 поля)</a></li>
-    		
-  </ul>
-</div> ';
+                $rs .= '<div class="btn-group"><a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">Быстрое добавление<span class="caret"></span></a>';
+                $rs .= '<ul class="dropdown-menu">';
+                $rs .= '<li><a href="' . SITEBILL_MAIN_URL . '/admin/?action=columns&do=add_meta&table_id=' . $primary_key_value . '">Добавить мета поля (3 поля)</a></li>';
+                $rs .= '</ul>';
+                $rs .= '</div> ';
                 if ($control_langs) {
-                    $rs .= '<a class="btn" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=edit_langs&table_id=' . $primary_key_value . '" title="Быстрые переводы">Быстрые переводы</a> ';
+                    $rs .= '<a class="btn btn-mini" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=edit_langs&table_id=' . $primary_key_value . '" title="Быстрые переводы">Быстрые переводы</a> ';
                 }
+                $rs .= '</div>';
 
                 $rs .= '</div>';
                 $rs .= '<div id="formeditoracc_' . $item_array['name'] . '" class="accordion-body' . ($current_table == $item_array['name'] ? ' in' : '') . ' collapse">';
@@ -1670,6 +1784,12 @@ class table_admin extends Object_Manager {
                 } else {
                     $rs .= '<td><a class="state_change btn" href="required" title="Обязательное" alt="' . $primary_key_value . '"><i class="icon-white icon-ok-circle"></i></a></td>';
                 }
+                //$rs .= '<td>'.$item_array['unique'].'</td>';
+                if ($item_array['unique'] == 1) {
+                    $rs .= '<td>Уникальное</td>';
+                } else {
+                    $rs .= '<td></td>';
+                }
                 $rs .= '<td><a href="#" id="' . $item_array['name'] . '" data-type="text" data-pk="' . $item_array['columns_id'] . '" class="editable editable-click addeditable" style="display: inline;">' . $item_array['title'] . '</a></td>';
                 $rs .= '<td class="field_tab" alt="' . $primary_key_value . '">' . ($item_array['tab'] != '' ? '<span class="defined">' . $item_array['tab'] . '</span>' : '<span class="undefined">Не указано</span>') . '</td>';
 
@@ -1689,8 +1809,12 @@ class table_admin extends Object_Manager {
 
                 $rs .= '</tr>';
             }
-            $rs .= '<tfoot><tr><td colspan="8"><button class="delete_checked_columns btn btn-danger"><i class="icon-white icon-remove"></i>' . Multilanguage::_('L_DELETE_CHECKED') . '</button> 
+            $rs .= '<tfoot>'
+                    . '<tr>'
+                    . '<td colspan="8">'
+                    . '<button class="delete_checked_columns btn btn-danger"><i class="icon-white icon-remove"></i>' . Multilanguage::_('L_DELETE_CHECKED') . '</button> 
 					<button class="activity_set_columns btn btn-inverse"><i class="icon-white icon-th"></i> Установить активность в категориях <sup>(beta)</sup></button> 
+                    <button class="addml_multi btn btn-inverse"><i class="icon-white icon-th"></i> ML</button> 
 					</td></tr></tfoot>';
             $rs .= '</tbody>';
             $rs .= '</table>';

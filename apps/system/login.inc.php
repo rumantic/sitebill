@@ -55,22 +55,24 @@ class Sitebill_Auth extends SiteBill {
     			require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/permission/permission.php');
     			$permission = new Permission();
     			if ( !$permission->get_access($ar['user_id'], 'admin_panel', 'login') ) {
-    				return false;
+    				setcookie('logged_user_id', '', time()-60*60*24*5, '/', self::$_cookiedomain);
+    				setcookie('logged_user_token', '', time()-60*60*24*5, '/', self::$_cookiedomain);
+                    return false;
     			}
     			
     			$session_key = $this->GenerateSessionKey($ar['user_id']);
     			$_SESSION['key'] = $session_key;
-    			$id=$ar['user_id'];
+    			//$id=$ar['user_id'];
+                
+                $this->loadUserInfo($ar['user_id']);
     				
-    			$_SESSION['user_id_value']=$id;
+    			/*$_SESSION['user_id_value']=$id;
     			$_SESSION['user_id']=$id;
     			$_SESSION['current_user_group_id']=$ar['group_id'];
     			$_SESSION['current_user_name']=$ar['fio'];
     			$_SESSION['current_user_group_name']=$ar['system_name'];
-    				
-    			/*$query='SELECT system_name FROM '.DB_PREFIX.'_group WHERE group_id=?';
-    			$stmt=$DBC->query($query, array($ar['group_id']));
-    			$ar=$DBC->fetch($stmt);*/
+    				*/
+    		
     			
     			return true;
     			
@@ -130,15 +132,22 @@ class Sitebill_Auth extends SiteBill {
     		}
     		return true;
     	} else {
-    		
-    		if ( empty($_SESSION['user_id'])) {
-    			
-    			if($this->restoreUser()){
-    				
-    				return true;
+            //var_dump($_SESSION);
+            if ( empty($_SESSION['user_id'])) {
+                if($this->restoreUser()){
+                    //print_r($_SESSION);
+                    /*require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/permission/permission.php');
+                    $permission = new Permission();
+                    if ( !$permission->get_access($_SESSION['user_id_value'], 'admin_panel', 'login') ) {
+                        unset($_SESSION['user_id']);
+                        setcookie('logged_user_id', '', time()-60*60*24*5, '/', self::$_cookiedomain);
+                        setcookie('logged_user_token', '', time()-60*60*24*5, '/', self::$_cookiedomain);
+                        $this->riseError('not login');
+                        return $this->getAuthForm();
+                    }*/
+                    return true;
     			}else{
-    				
-    				if(strtolower($_SERVER['REQUEST_METHOD'])=='post'){
+                    if(strtolower($_SERVER['REQUEST_METHOD'])=='post'){
     					if(1===intval($this->getConfigValue('use_captcha_admin_entry'))){
     						$c['captcha']['name'] = 'captcha';
     						$c['captcha']['title'] = Multilanguage::_('CAPTCHA_TITLE', 'system');
@@ -174,11 +183,36 @@ class Sitebill_Auth extends SiteBill {
     			}
     	
     		}else {
+                
+                if(!$this->isStillActive($_SESSION['user_id'])){
+                    require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/user/logout.php';
+                    $Logout=new Logout();
+                    $Logout->main();
+                }else{
+                    $this->loadUserInfo($_SESSION['user_id']);
+                    if(isset($_COOKIE['user_favorites']) && $_COOKIE['user_favorites']!=''){
+                        $cc=unserialize($_COOKIE['user_favorites']);
+                        $_SESSION['favorites']=$cc[(int)$_SESSION['user_id']];
+                    } 
+                }
     			
     			require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/permission/permission.php');
     			$permission = new Permission();
-    			if ( !$permission->get_access($_SESSION['user_id_value'], 'admin_panel', 'login') ) {
+                
+    			if ( !$permission->get_access($_SESSION['user_id'], 'admin_panel', 'login') ) {
     				unset($_SESSION['user_id']);
+                    unset($_SESSION['user_id']);
+                    unset($_SESSION['user_id_value']);
+                    unset($_SESSION['group']);
+                    unset($_SESSION['session_key']);
+                    unset($_SESSION['key']);
+                    unset($_SESSION['Sitebill_User']);
+                    unset($_SESSION['current_user_group_name']);
+                    unset($_SESSION['current_user_group_id']);
+                    unset($_SESSION['current_user_name']);
+                    //unset($_COOKIE['logged_user_id'])
+                    setcookie('logged_user_id', '', time()-60*60*24*5, '/', SiteBill::$_cookiedomain);
+                    setcookie('logged_user_token', '', time()-60*60*24*5, '/', SiteBill::$_cookiedomain);
     				$this->riseError('not login');
     				return $this->getAuthForm();
     			}
@@ -236,6 +270,12 @@ class Sitebill_Auth extends SiteBill {
     	return $session_key;
     }
     
+    function saveLastAuthDate($id){
+        $DBC=DBC::getInstance();
+        $query = 'UPDATE '.DB_PREFIX.'_user SET `last_auth_date`=? WHERE `user_id`=?';
+    	$stmt=$DBC->query($query, array(date('Y-m-d H:i:s'), $id));
+    }
+    
     /**
      * Check auth
      * @param string $login login
@@ -252,10 +292,34 @@ class Sitebill_Auth extends SiteBill {
         $password = md5($password);
         $DBC=DBC::getInstance();
         //$sql = "SELECT user_id, group_id FROM re_user WHERE login=? AND password=?";
-        $sql = 'SELECT u.login, u.user_id, u.fio, u.group_id, g.system_name, g.name FROM '.DB_PREFIX.'_user u LEFT JOIN '.DB_PREFIX.'_group g USING(group_id) WHERE (u.login=? OR u.email=?) AND u.password=?';
+        //$sql = 'SELECT u.login, u.user_id, u.fio, u.group_id, g.system_name, g.name FROM '.DB_PREFIX.'_user u LEFT JOIN '.DB_PREFIX.'_group g USING(group_id) WHERE (u.login=? OR u.email=?) AND u.password=?';
         //$sql = 'SELECT u.login, u.user_id, u.fio, u.group_id, g.system_name, g.name, u.`auth_salt` FROM '.DB_PREFIX.'_user u LEFT JOIN '.DB_PREFIX.'_group g USING(group_id) WHERE (u.login=? OR u.email=?) AND u.password=?';
         
-        $stmt=$DBC->query($sql, array($login, $login, $password));
+        $what=array();
+        $where=array();
+        
+        $what[]='u.`login`';
+        $what[]='u.`user_id`';
+        $what[]='u.`fio`';
+        $what[]='u.`group_id`';
+        $what[]='g.`system_name`';
+        $what[]='g.`name` AS gname';
+        $what[]='u.`email`';
+        
+        $where[]='(u.`login`=? OR u.`email`=?)';
+        $where_val[]=$login;
+        $where_val[]=$login;
+        
+        $where[]='u.`password`=?';
+        $where_val[]=$password;
+        if(1==$this->getConfigValue('use_registration_email_confirm')){
+            $where[]='u.`active`=1';
+        }
+        
+        $sql = 'SELECT '.implode(',', $what).' FROM '.DB_PREFIX.'_user u LEFT JOIN '.DB_PREFIX.'_group g USING(group_id) WHERE '.implode(' AND ', $where);
+        $stmt=$DBC->query($sql, $where_val);
+        
+        //$stmt=$DBC->query($sql, array($login, $login, $password));
         if($stmt){
         	$ar=$DBC->fetch($stmt);
         	if ( $ar['user_id'] > 0 ) {
@@ -268,32 +332,23 @@ class Sitebill_Auth extends SiteBill {
         		//$Sitebill_User->setSessionKey($session_key);
         		$_SESSION['key'] = $session_key;
         		$id=$ar['user_id'];
+                
+                $this->loadUserInfo($id);
+                $this->saveLastAuthDate($id);
+                
         		
-        		$_SESSION['user_id_value']=$id;
-        		//$sql = 'SELECT system_name FROM '.DB_PREFIX.'_group WHERE group_id=(SELECT group_id FROM '.DB_PREFIX.'_user WHERE login=?)';
-        		//$stmt=$DBC->query($sql, array($login));
-        		//$ar=$DBC->fetch($stmt);
+        		/*$_SESSION['user_id_value']=$id;
+        		
         		$_SESSION['user_id']=$ar['user_id'];
         		$_SESSION['current_user_group_id']=$ar['group_id'];
         		$_SESSION['current_user_group_name']=$ar['system_name'];
-        		$_SESSION['current_user_name']=$ar['fio'];
+        		$_SESSION['current_user_name']=$ar['fio'];*/
         		
         		if($this->hard_mode){
         			$auth_hash=md5(rand(10000, 99999));
         			$sql = 'UPDATE '.DB_PREFIX.'_user SET `auth_hash`=? WHERE `user_id`=? ';
         			$stmt=$DBC->query($sql, array($auth_hash, $id));
         		}
-        		/**/
-        		/*
-        		$_SESSION['Sitebill_User']=array();
-        		$_SESSION['Sitebill_User']['name']=$ar['fio'];
-        		$_SESSION['Sitebill_User']['group_id']=$ar['group_id'];
-        		$_SESSION['Sitebill_User']['group_name']=$ar['name'];
-        		$_SESSION['Sitebill_User']['login']=$ar['login'];
-        		$_SESSION['Sitebill_User']['user_id']=(int)$ar['user_id'];
-        		$_SESSION['Sitebill_User']['group_system_name']=$ar['system_name'];
-        		$_SESSION['Sitebill_User']['auth_time']=date('Y-m-d H:i:s', time());
-        		*/
         		if($rememberme==1){
         			
         			
@@ -324,6 +379,102 @@ class Sitebill_Auth extends SiteBill {
         }
         
         return false;
+    }
+    
+    function isStillActive($user_id){
+        //return true;
+        $DBC=DBC::getInstance();        
+        if(1==$this->getConfigValue('use_registration_email_confirm')){
+            $query='SELECT `user_id` FROM '.DB_PREFIX.'_user WHERE `user_id`=? AND `active`=?';
+            $stmt=$DBC->query($query, array($user_id, 1));
+        }else{
+            $query='SELECT `user_id` FROM '.DB_PREFIX.'_user WHERE `user_id`=?';
+            $stmt=$DBC->query($query, array($user_id));
+        }
+        if($stmt){
+            return true;
+        }
+        return false;
+    }
+    
+    function loadUserInfo($user_id){
+        //var_dump($user_id);
+        $DBC=DBC::getInstance();
+        $what=array();
+        $where=array();
+        $where_val=array();
+        $add_fieds=array();
+
+        if(''!=trim($this->getConfigValue('login_user_data_ad'))){
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
+            $ATH = new Admin_Table_Helper();
+            $form_data = $ATH->load_model('user', true);
+            $form_data = $form_data['user'];
+            $fields_str=explode(',', str_replace("\n", ',', $this->getConfigValue('login_user_data_ad')));
+            
+            foreach($fields_str as $k){
+                if(''!=trim($k) && isset($form_data[trim($k)]) && $form_data[trim($k)]['dbtype']!='notable' && $form_data[trim($k)]['dbtype']!='0'){
+                    $add_fieds[]=trim($k);
+                }
+            }
+        }
+        
+        $getTariffInfo=false;
+
+        if(!empty($add_fieds)){
+            foreach($add_fieds as $k){
+                if($k=='tariff_id'){
+                    $getTariffInfo=true;
+                }
+                $what[]='u.`'.$k.'`';
+            }
+        }
+        
+        $what[]='u.`login`';
+        $what[]='u.`user_id`';
+        $what[]='u.`fio`';
+        $what[]='u.`group_id`';
+        $what[]='g.`system_name`';
+        $what[]='g.`name` AS gname';
+        $what[]='u.`email`';
+
+        $query = 'SELECT '.implode(',', $what).' FROM '.DB_PREFIX.'_user u LEFT JOIN '.DB_PREFIX.'_group g USING(group_id) WHERE `user_id`=?';
+        $stmt=$DBC->query($query, array($user_id));
+                
+        if($stmt){
+            $ar=$DBC->fetch($stmt);
+            $udata=$ar;
+            $_SESSION['user_id']=$udata['user_id'];
+                		
+            $_SESSION['current_user_name']=$udata['fio'];
+            $_SESSION['current_user_group_name']=$udata['system_name'];
+            if($_SESSION['current_user_group_name']=='admin'){
+                $_SESSION['user_id_value']=$udata['user_id'];
+            }
+            $_SESSION['user_id_value']=$udata['user_id'];
+            $_SESSION['current_user_login']=$udata['login'];
+            $_SESSION['current_user_email']=$udata['email'];
+            $_SESSION['current_user_group_id']=$udata['group_id'];
+            $_SESSION['current_user_group_title']=$udata['gname'];
+
+            $_SESSION['current_user_tariff_info']=array();
+            if($getTariffInfo && $udata['tariff_id']>0){
+                $query = 'SELECT title FROM '.DB_PREFIX.'_tariff WHERE tariff_id=?';
+                $stmt=$DBC->query($query, array($udata['tariff_id']));
+                if($stmt){
+                    $ar=$DBC->fetch($stmt);
+                    $_SESSION['current_user_tariff_info']=array('tariff_id'=>$udata['tariff_id'], 'title'=>$ar['title']);
+                }
+            }
+            
+            $add_user_data=array();
+            if(!empty($add_fieds)){
+                foreach($add_fieds as $k){
+                    $add_user_data[$k]=$udata[$k];
+                }
+            }
+            $_SESSION['current_user_info']=$add_user_data;
+        }
     }
     
     /**

@@ -78,7 +78,24 @@
                 </ul>
             </li>
         {/if}
+        {if $admin_menua.components}
+            <li {if $admin_menua.components.active}class="active open"{/if}>
+                <a href="#" class="dropdown-toggle">
+                    <i class="icon-legal"></i>
+                    <span class="menu-text"> Компоненты </span>
+                    <b class="arrow icon-angle-down"></b>
+                </a>
 
+                <ul class="submenu">
+
+                    {foreach from=$admin_menua.components.childs item=ama}
+                        <li  {if $ama.active}class="active"{/if}>
+                            <a href="{$ama.href}">{$ama.title}</a>
+                        </li>
+                    {/foreach}
+                </ul>
+            </li>
+        {/if}
         {if $admin_menua.content}
             <li {if $admin_menua.content.active}class="active open"{/if}>
                 <a href="#" class="dropdown-toggle">

@@ -285,7 +285,7 @@ CREATE IF NOT EXIST TABLE `" . DB_PREFIX . "_menu_structure` (
         //$rs .= $form_generator->compile_form($form_data);
         $el = $form_generator->compile_form_elements($form_data);
         //print_r($el);
-        foreach ($el['public'][$this->getConfigValue('default_tab_name')] as $elp) {
+        foreach ($el['public'][_e($this->getConfigValue('default_tab_name'))] as $elp) {
             $rs .= '<div class="form_element control-group" alt="' . $elp['name'] . '">';
             $rs .= '<label class="control-label">' . $elp['title'] . ($elp['required'] == 1 ? '<span style="color: red;">*</span>' : '') . ($elp['hint'] != '' ? ' <a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-info btn-mini" data-content="' . $elp['hint'] . '"> <i class="icon-question-sign icon-white"></i></a>' : '') . '</label>';
             $rs .= '<div class="form_element_html controls">' . $elp['html'] . '</div>';

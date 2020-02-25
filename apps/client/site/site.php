@@ -164,7 +164,17 @@ class client_site extends client_admin {
                 }
             }
             if ($this->getConfigValue('order_email_acceptor') != '') {
-                $email[$this->getConfigValue('order_email_acceptor')] = $this->getConfigValue('order_email_acceptor');
+
+                //Если указано несколько почтовых ящиков для получения в $to через запятую, то делаем из него массив
+                if (preg_match('/,/', $this->getConfigValue('order_email_acceptor'))) {
+                    $to_array = explode(',', $this->getConfigValue('order_email_acceptor'));
+                    $to = array();
+                    foreach ($to_array as $k => $to_email_string) {
+                        $email[$to_email_string] = $to_email_string;
+                    }
+                } else {
+                    $email[$this->getConfigValue('order_email_acceptor')]=$this->getConfigValue('order_email_acceptor');
+                }
             }
         }
 
@@ -237,7 +247,7 @@ class client_site extends client_admin {
                               $mailer = new Mailer(); */
                             $subject = $_SERVER['SERVER_NAME'] . ': Новая заявка от клиента';
                             $to = $this->get_email_list();
-                            $from = $this->getConfigValue('order_email_acceptor');
+                            $from = $this->getConfigValue('system_email');
 
                             /* if ( $this->getConfigValue('use_smtp') ) {
                               $mailer->send_smtp($to, $from, $subject, $order_mail_body, 1);

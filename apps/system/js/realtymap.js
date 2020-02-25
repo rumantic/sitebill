@@ -28,7 +28,8 @@ function RealtyMap(version){
 	   marker_htm: '<div class="marker"><div class="marker-inner"></div></div>',
 	   use_clusters: false,
 	   adopt_bounds: true,
-	   custom_center: []
+	   custom_center: [],
+	   gridSize: 64
 	};
 	
 	this.markersVariants={
@@ -106,7 +107,9 @@ function RealtyMap(version){
 	this.createMap=function(){
 		if(this.type=='google'){
 			this.createGoogleMap();
-		}else{
+		}else if(this.type=='leaflet_osm'){
+            this.createLeafletOsmMap();
+        }else{
 	    	this.createYandexMap();
 	    }
 	};
@@ -276,6 +279,51 @@ function RealtyMap(version){
 
 		this.map = new google.maps.Map(this.map_element, mapOptions);
 	};
+    this._putLeafletOsmMarker=function(latlng, markerOpts){
+        
+        
+            
+            
+            
+        if(markerOpts.content != undefined){
+			var content=this.stripslashes(markerOpts.content);
+		}else{
+			var content='';
+		}
+		
+		if(markerOpts.icon != undefined && this.markersVariants[markerOpts.icon] != undefined){
+			var micon=this.markersVariants[markerOpts.icon].icon;
+			var marker_offset=this.markersVariants[markerOpts.icon].offset;
+			var marker_size=this.markersVariants[markerOpts.icon].size;
+		}else{
+			var micon=this.markersVariants._default.icon;
+			var marker_offset=this.markersVariants._default.offset;
+			var marker_size=this.markersVariants._default.size;
+		}
+		
+		if(markerOpts.hint != undefined){
+			var hintContent=markerOpts.hint;
+		}else{
+			var hintContent='';
+		}
+		
+		if(markerOpts.ids != undefined){
+			var ids=markerOpts.ids;
+		}else{
+			var ids=[];
+		}
+		
+		
+		var marker = L.marker(latlng, {ids: ids}).addTo(this.map);
+        if(hintContent != ''){
+            marker.bindTooltip(hintContent);
+        }
+        if(content != ''){
+			marker.bindPopup(content, {'maxWidth': '500', 'minWidth': '300', 'className' : 'custom'});
+		}
+
+		return marker;
+    };
 	this._putGoogleMarker=function(latlng, markerOpts/*content, hintContent, hasInfoWindow, icon*/){
 		if(markerOpts.content != undefined){
 			var content=this.stripslashes(markerOpts.content);
@@ -464,12 +512,14 @@ function RealtyMap(version){
 			var baloonContent={
 				iconContent: '',
 				balloonContentBody: '<div class="cluster-listing scrollable">'+content+'</div>',
-	            hintContent: hintContent
+	            hintContent: hintContent/*,
+				clusterCaption: markerOpts.clusterTitle*/
 			}
 		}else{
 			var baloonContent={
 				iconContent: '',
-				hintContent: hintContent
+				hintContent: hintContent/*,
+				clusterCaption: markerOpts.clusterTitle*/
 			}
 		}
 		
@@ -520,6 +570,9 @@ function RealtyMap(version){
 				/*if(markers_array[i].marker_size!=undefined){
 					markerOpts.marker_size=markers_array[i].marker_size;
 				}*/
+                if(this.clustered_data[i].ids != undefined){
+					markerOpts.clusterTitle='ID '+this.clustered_data[i].ids.join(',');
+				}
 				
 				var myPlacemark=self._putYandexMarker(latlng, markerOpts);
 				this.markers.push(myPlacemark);
@@ -638,7 +691,8 @@ function RealtyMap(version){
 		            groupByCoordinates: false,
 		            clusterDisableClickZoom: false,
 		            clusterHideIconOnBalloonOpen: false,
-		            geoObjectHideIconOnBalloonOpen: false
+		            geoObjectHideIconOnBalloonOpen: false,
+					gridSize: _this.options.gridSize
 		        });
 			}
 			
@@ -649,6 +703,68 @@ function RealtyMap(version){
 	    	
 		});
 	};
+    this.appendDataLeafletOsmMap=function(){
+        var markers = [];
+        var count = 0;
+        for(var i in this.clustered_data){
+			
+			var llat=this.clustered_data[i].lat;
+			var llng=this.clustered_data[i].lng;
+			var lat_lng=[llat, llng];
+			last_lat_lng=lat_lng;
+			
+			var markerOpts={};
+			if(this.stripslashes(this.clustered_data[i].html)!=''){
+				markerOpts.content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
+			}else{
+				markerOpts.content='';
+			}
+			
+			if(typeof this.clustered_data[i].ids != 'undefined'){
+				markerOpts.ids=this.clustered_data[i].ids;
+			}
+			
+			markerOpts.hint='Объектов '+this.clustered_data[i].count;
+			
+			/*if(markers_array[0].showPopup!=undefined){
+				markerOpts.showPopup=markers_array[0].showPopup;
+			}*/
+			/*if(this.clustered_data[i].icon!=undefined){
+				markerOpts.icon=this.clustered_data[i].icon;
+			}*/
+			
+			var marker=self._putLeafletOsmMarker(lat_lng, markerOpts);
+            
+                           
+        		
+			this.markers.push(marker);
+			if(this.options.use_clusters){
+				//console.log(this.clusterer);
+				this.clusterer.addLayer(marker);
+			}
+            markers.push(lat_lng);
+	        
+	        //var content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
+	        //this.makeInfoWin(marker, infowindow, content);
+	        count++;
+		}
+		
+		if(this.options.use_clusters){
+			this.map.addLayer(this.clusterer);
+		}
+		
+        
+        if(count==1){
+			this.map.setView(last_lat_lng, this.options.defaultZoom);
+		}else if(!this.options.adopt_bounds){
+			var lat_lng=new L.LatLng(this.options.custom_center[0], this.options.custom_center[1]);
+            this.map.setView(lat_lng, this.options.defaultZoom);
+		}else{
+			this.map.fitBounds(markers);
+		}
+        
+        //this.bounds=new google.maps.LatLngBounds();
+    };
 	this.appendDataGoogleMap=function(){
 		this.bounds=new google.maps.LatLngBounds();
 		
@@ -721,18 +837,43 @@ function RealtyMap(version){
 			if(this.markers.length>0){
 				for(var i in this.markers){
 					this.markers[i].setMap(null);
-					delete this.markers[i];
+                    delete this.markers[i];
 				}
 			}
-		}else{
+		}else if(this.type=='leaflet_osm'){
+            if(this.markers.length>0){
+				for(var i in this.markers){
+                    this.map.removeLayer(this.markers[i]);
+                    delete this.markers[i];					
+				}
+			}
+         }else if(this.type=='yandex'){
 			if(this.markers.length>0){
 				for(var i in this.markers){
 					this.map.geoObjects.remove(this.markers[i]);
-					delete this.markers[i];
+                    delete this.markers[i];
 				}
 			}
-		}
+		}        
 	};
+    this.createLeafletOsmMap=function(){
+        if(this.clustered_data.length==0 && !this.options.ajax){
+			$(this.map_element).hide();
+			return;
+		}
+        this.map = L.map(this.map_element).setView([0, 0], this.options.defaultZoom);
+        this.map.addLayer(new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'}));
+		
+		if(this.options.use_clusters){
+			this.clusterer = L.markerClusterGroup();
+			
+			//this.clusterer = new MarkerClusterer(this.map, [], {gridSize: 50, maxZoom: 15, imagePath: estate_folder+'/apps/third/google/markerclusterer/images/m'});
+		}
+		
+        this.appendDataLeafletOsmMap();
+    };
+	//var_dump(this.clusterer);
+	
 	this.createGoogleMap=function(){
 		
 		if(this.clustered_data.length==0 && !this.options.ajax){
@@ -751,12 +892,12 @@ function RealtyMap(version){
 			this.clusterer = new MarkerClusterer(this.map, [], {gridSize: 50, maxZoom: 15, imagePath: estate_folder+'/apps/third/google/markerclusterer/images/m'});
 		}
 		this.appendDataGoogleMap();
-	}
+	};
 	
 	var self=this;
-	
-	return {
-		init: function(el, data, type){
+    
+    return {
+        init: function(el, data, type){
 			self.map_element=document.getElementById(el);
 			self.type=type || 'google';
 			self.locations=data || [];
@@ -844,5 +985,5 @@ function RealtyMap(version){
 		 getMarkers: function(){
 			 return self.markers;
 		 }
-	}
+    };
 }

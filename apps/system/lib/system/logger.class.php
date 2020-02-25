@@ -27,4 +27,29 @@ class Logger {
 		}
 	}
 
+	public static function activity ($message) {
+        $DBC = DBC::getInstance();
+        $ip = getenv(HTTP_X_FORWARDED_FOR);
+        if ($ip == '') {
+            $ip = $_SERVER['REMOTE_ADDR'];
+        }
+
+        $user_id = intval($_SESSION['user_id']);
+        $query = 'INSERT INTO ' . DB_PREFIX . '_activitylog (`message`, `user_id`, `ipaddr`) VALUES (?, ?, ?)';
+        $stmt = $DBC->query($query, array($message, $user_id, $ip));
+        // echo $DBC->getLastError();
+
+    }
+
+    public static function emaillog ($to, $from, $subject, $body, $user_id = 0) {
+	    if ( is_array($to) ) {
+	        $to = implode(',', $to);
+        }
+	    self::activity("Send email: $to, ($subject)");
+        $DBC = DBC::getInstance();
+        $query = 'INSERT INTO ' . DB_PREFIX . '_emails (`to`, `from`, `subject`, `message`, `user_id`) VALUES (?, ?, ?, ?, ?)';
+        $stmt = $DBC->query($query, array($to, $from, $subject, $body, $user_id));
+        // echo $DBC->getLastError();
+    }
+
 }

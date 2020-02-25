@@ -60,6 +60,15 @@ class page_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.page.count_on_main')) {
             $config_admin->addParamToConfig('apps.page.count_on_main', '3', 'Количество объектов на главной');
         }
+        
+        if (!$config_admin->check_config_item('apps.page.blog_enable')) {
+            $config_admin->addParamToConfig('apps.page.blog_enable', '1', 'Включить вывод /blog/', 1);
+        }
+        if (!$config_admin->check_config_item('apps.page.recommendations_enable')) {
+            $config_admin->addParamToConfig('apps.page.recommendations_enable', '1', 'Включить вывод /recommendations/', 1);
+        }
+        
+        
     }
 
     public function sitemap($sitemap) {

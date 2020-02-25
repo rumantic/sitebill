@@ -391,9 +391,10 @@ $(document).ready(function(){
 		var _depel=$(this).data('depel');
 		var _depelkey=$(this).data('depelkey');
 		var _noptappend=$(this).data('notappend');
-		
-		
-		$(this).autocomplete({
+		var _default_field = 'name';
+
+
+			$(this).autocomplete({
 			open: function() { 
 	            $('.ui-menu').width(_this.width());
 	        } ,
@@ -410,13 +411,16 @@ $(document).ready(function(){
 					dataType: 'json',
 					data: 'action=get_geolist&from='+_table+'&term='+encodeURIComponent(request.term)+'&depelkey='+_depelkey+'&dep_val='+dep_val+'&model='+_model,
 					success: function(json) {
-						
+
 						$.map(json,function(n,i){
+							if ( n.field != null ) {
+								_default_field = n.field;
+							}
 							
 							var o={};
 							o.id=n[_pk];
-							o.value=n.name;
-							o.label=n.name;
+							o.value=n[_default_field];
+							o.label=n[_default_field];
 							answer.push(o);
 						});
 						response(answer);

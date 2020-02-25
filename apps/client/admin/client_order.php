@@ -91,7 +91,7 @@ class Client_Order extends client_site {
                         $order_table .= '</table>';
                         $subject = $_SERVER['SERVER_NAME'] . ': Новая заявка от клиента / ' . $client_admin->data_model['client']['type_id']['select_data'][$order_model];
                         $to = $this->get_email_list();
-                        $from = $this->getConfigValue('order_email_acceptor');
+                        $from = $this->getConfigValue('system_email');
                         $this->sendFirmMail($to, $from, $subject, $order_table);
 
                         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/client/client.xml')) {
@@ -143,6 +143,9 @@ class Client_Order extends client_site {
         if (!$check_status) {
             return $check_status;
         }
+        if ( $this->getConfigValue('apps.client.antispam_disable') ) {
+            return true;
+        }
         if ($this->getConfigValue('apps.akismet.enable')) {
             require_once (SITEBILL_DOCUMENT_ROOT . '/apps/akismet/admin/admin.php');
             $akismet_admin = new akismet_admin();
@@ -191,7 +194,12 @@ class Client_Order extends client_site {
                 $customentity->custom_construct($order_model);
                 if ($this->check_data($form_data_entity)) {
                     $pk = $customentity->add_data($form_data_entity);
-                }
+                    if (isset($form_data['captcha'])) {
+                        unset($form_data['captcha']);
+                    }
+                }/* else{
+                  var_dump($this->GetErrorMessage());
+                  } */
             }
         }
 
@@ -270,7 +278,7 @@ class Client_Order extends client_site {
                 unset($form_data['phone']);
                 $client_admin->data_model['client']['order_text']['value'] = $order_table;
 
-                $client_admin->add_data($client_admin->data_model['client']);
+                $client_order_id = $client_admin->add_data($client_admin->data_model['client']);
                 $this->writeLog(array('apps_name' => 'apps.client', 'method' => __METHOD__, 'message' => 'add client record', 'type' => NOTICE));
 
                 if ($client_admin->getError()) {
@@ -281,16 +289,26 @@ class Client_Order extends client_site {
                     $subject = $_SERVER['SERVER_NAME'] . ': Новая заявка от клиента / ' . $client_admin->data_model['client']['type_id']['select_data'][$order_model];
                     $to = $this->get_email_list();
 
-                    $from = $this->getConfigValue('order_email_acceptor');
+                    $from = $this->getConfigValue('system_email');
                     $order_mail_body = $order_table;
+                    if (isset($client_admin->data_model['client']['src_page'])) {
+                        $order_mail_body.='<p>Заявка отправлена со страницы: '.$client_admin->data_model['client']['src_page']['value'].'</p>';
+                    }
                     $this->writeLog(array('apps_name' => 'apps.client', 'method' => __METHOD__, 'message' => 'send_email to' . $to, 'type' => NOTICE));
                     $this->sendFirmMail($to, $from, $subject, $order_mail_body);
+                    
+                    $this->afterClientOrderSave($order_model, $client_order_id, $form_data, $client_admin->data_model['client']);
+                    
                     return json_encode(array('status' => 'ok', 'message' => '<div class="alert alert-success">' . Multilanguage::_('L_MESSAGE_ORDER_ACCEPTED_EXT') . '</div>'));
                 }
             } else {
                 
             }
         }
+    }
+    
+    function afterClientOrderSave($order_model_name, $client_order_id, $form_data, $client_form_data){
+    
     }
 
     /* function get_client_form($form, $options=array()){
@@ -393,7 +411,15 @@ class Client_Order extends client_site {
         if (!$form_data) {
             return '';
         }
+        
+        $options_form_class='form-horizontal';
+        
         if (!empty($options)) {
+            
+            if(isset($options['form_class'])){
+                $options_form_class=htmlspecialchars($options['form_class']);
+            }
+            
             foreach ($options as $k => $opt) {
                 if (isset($form_data[$k])) {
                     $form_data[$k]['value'] = htmlspecialchars($opt);
@@ -416,7 +442,7 @@ class Client_Order extends client_site {
         if (1 == $this->getConfigValue('apps.geodata.enable')) {
             $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/geodata/js/geodata.js"></script>';
         }
-        $rs .= '<form method="post" class="client_form form-horizontal" action="" enctype="multipart/form-data" id="client_form">';
+        $rs .= '<form method="post" class="client_form '.$options_form_class.'" action="" enctype="multipart/form-data" id="client_form">';
 
         if ($this->getError()) {
             $smarty->assign('form_error', $form_generator->get_error_message_row($this->GetErrorMessage()));
@@ -435,7 +461,11 @@ class Client_Order extends client_site {
         $el['controls']['submit'] = array('html' => '<input type="submit" class="btn btn-primary" value="' . $button_title . '">');
         $smarty->assign('form_elements', $el);
         $custom_template_name = basename($custom_template);
-        if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $custom_template_name . '.tpl') and $custom_template) {
+        $custom_template_name = trim($custom_template_name, '.');
+
+        if ($custom_template == '') {
+            $tpl_name = $this->getAdminTplFolder() . '/data_form.tpl';
+        } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $custom_template_name . '.tpl') and $custom_template) {
             $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $custom_template_name . '.tpl';
         } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $model_name . '_form.tpl')) {
             $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $model_name . '_form.tpl';

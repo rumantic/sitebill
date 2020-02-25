@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install>
-	<name>yandexrealty</name>
-	<creationDate>June 2012</creationDate>
-	<author>The Sitebill Development Team</author>
-	<authorEmail>abushyk@gmail.com</authorEmail>
-	<authorUrl>http://www.sitebill.ru</authorUrl>
-	<copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
-	<license>http://www.sitebill.ru/licenses/sitebill.html</license>
+    <name>yandexrealty</name>
+    <creationDate>June 2012</creationDate>
+    <author>The Sitebill Development Team</author>
+    <authorEmail>abushyk@gmail.com</authorEmail>
+    <authorUrl>http://www.sitebill.ru</authorUrl>
+    <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
+    <license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>true</backendMenu>
-	<version status="beta">1.7.1</version>
-	<administration>
-		<!-- Administration Menu Section -->
-		<menu>Выгрузка Яндекс.Недвижимость</menu>
-	</administration>	
+    <version status="beta">1.8.25</version>
+    <administration>
+        <!-- Administration Menu Section -->
+        <menu>Выгрузка Яндекс.Недвижимость</menu>
+    </administration>	
 </install>

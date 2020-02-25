@@ -4,9 +4,9 @@
  * User data manager
  * @author http://www.sitebill.ru
  */
-require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/sitebill_krascap_editor.php');
+//require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/sitebill_krascap_editor.php');
 
-class User_Data_Manager extends SiteBill_Rent_Editor {
+class User_Data_Manager extends Object_Manager {
 
     public $table_name = 'data';
     public $primary_key = 'id';
@@ -20,7 +20,7 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         //require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/grid/grid_constructor.php';
         //$this->_grid_constructor = new Grid_Constructor();
-       
+
         $data_model = new Data_Model();
         $this->data_model = $data_model->get_kvartira_model($this->getConfigValue('ajax_form_in_admin'));
         if ($this->getConfigValue('hide_contact_input_user_data')) {
@@ -28,9 +28,12 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
             unset($this->data_model['data']['phone']);
             unset($this->data_model['data']['email']);
         }
+        if ( $this->getConfigValue('dadata_autocomplete_force') ) {
+            $this->data_model['data'] = $this->prepare_model_for_dadata($this->data_model['data']);
+        }
     }
 
-    protected function _before_edit_done_action($form_data) {
+    public function _before_edit_done_action($form_data) {
         return $form_data;
     }
 
@@ -38,7 +41,7 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         return $form_data;
     }
 
-    protected function _before_check_action($form_data, $type = 'new') {
+    public function _before_check_action($form_data, $type = 'new') {
         return $form_data;
     }
 
@@ -86,10 +89,296 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
             $query = 'UPDATE ' . DB_PREFIX . '_company SET limit_up=? WHERE company_id=?';
             $stmt = $DBC->query($query, array($new_limit_up, $company_profile['company_id']['value']));
 
-            $rs .= $this->grid($user_id, $this->getRequestValue('topic_id'));
+            $rs .= $this->grid_e($user_id, $this->getRequestValue('topic_id'));
         }
         return $rs;
     }
+
+    
+    protected function _deprotect_imagesAction(){
+        
+        if(1==intval($this->getConfigValue('is_watermark'))){
+            return $this->formatAnswer_deprotect_images(0, 'denied');
+        }
+        if(0==intval($this->getConfigValue('watermark_user_control'))){
+            return $this->formatAnswer_deprotect_images(0, 'denied');
+        }
+        
+        $user_id = $this->getSessionUserId();
+        $id = intval($this->getRequestValue('id'));
+        
+        if (!$this->check_access_to_data($user_id, $id)) {
+            return Multilanguage::_('L_ACCESS_DENIED');
+        }
+        
+        $need_clear_watermark = false;
+            
+        $DBC = DBC::getInstance();
+        $query = 'SELECT watermark_images FROM ' . DB_PREFIX . '_data WHERE id=?';
+        $stmt = $DBC->query($query, array($id));
+        if($stmt){
+            $ar = $DBC->fetch($stmt);
+            if($ar['watermark_images'] == 0){
+                return $this->formatAnswer_deprotect_images(0, 'nonprotected');
+            }else{
+                $need_clear_watermark = true;
+            }
+            
+        }else{
+            return $this->formatAnswer_deprotect_images(0, 'denied');
+        }
+        
+        if(!$need_clear_watermark){
+            return $this->formatAnswer_deprotect_images(0, 'denied');
+        }
+        
+        
+        $fold = $this->notwatermarked_folder;
+        
+       
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
+        $data_model = new Data_Model();
+        $form_data = $this->data_model;
+        
+        $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, 'id', $id, $form_data['data']);
+        
+       
+        foreach($form_data[$this->table_name] as $name=>$item){
+            if($item['type']=='uploads'){
+                if(is_array($item['value']) && !empty($item['value'])){
+                    foreach($item['value'] as $val){
+                        $images[] = $val['normal'];
+                    }
+                }
+            }
+        }
+        
+        $query = 'UPDATE ' . DB_PREFIX . '_data SET watermark_images=0 WHERE id=?';
+        $stmt = $DBC->query($query, array($id));
+        if(!$stmt){
+            return $this->formatAnswer_deprotect_images(0, 'denied');
+        }
+        
+        $restored_count = 0;
+        
+        if(!empty($images)){
+            if($this->nowatermark_folder_with_id){
+                $dest=$fold.$id.'/';
+            }else{
+                $dest=$fold;
+            }
+            
+            foreach ($images as $image){
+                if(file_exists($dest.$image)){
+                    copy($dest.$image, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$image);
+                    @unlink($dest.$image);
+                    $restored_count++;
+                }
+            }
+        }
+        
+        return $this->formatAnswer_deprotect_images(1, 'done', count($images), $restored_count);
+        
+    }
+    
+    public function formatAnswer_protect_images($status, $code, $updated_photo_count=0){
+        if($status==0){
+            switch($code){
+                case 'denied' : {
+                   return 'Обшибка. Доступ запрещен.';
+                   break;
+                }
+                case 'protected' : {
+                    return 'Обшибка. Защита уже включена.';
+                   break;
+                }
+            }
+        }else{
+            return 'Защита включена. Обработано '.$updated_photo_count.' фото';
+        }
+    }
+    
+    public function formatAnswer_deprotect_images($status, $code, $updated_photo_count=0, $restored_photo_count=0){
+        if($status==0){
+            switch($code){
+                case 'denied' : {
+                   return 'Обшибка. Доступ запрещен.';
+                   break;
+                }
+                case 'protected' : {
+                    return 'Обшибка. Защита не использовалась для этого объекта.';
+                   break;
+                }
+            }
+        }else{
+            return 'Защита выключена. Восстановлено '.$restored_photo_count.' из '.$updated_photo_count.' фото';
+        }
+    }
+    
+    public function protectImagesByWatermark($id){
+        
+        $images = array();
+        
+        $fold = $this->notwatermarked_folder;
+        
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
+        $data_model = new Data_Model();
+        $form_data = $this->data_model;
+        
+        $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, 'id', $id, $form_data['data']);
+        
+        $fields = array();
+        foreach($form_data[$this->table_name] as $name=>$item){
+            if($item['type']=='uploads'){
+                if(is_array($item['value']) && !empty($item['value'])){
+                    foreach($item['value'] as $val){
+                        $images[] = $val['normal'];
+                    }
+                }
+            }
+        }
+        
+        /*$query = 'UPDATE ' . DB_PREFIX . '_data SET watermark_images=1 WHERE id=?';
+        $stmt = $DBC->query($query, array($id));
+        if(!$stmt){
+            return $this->formatAnswer_protect_images(0, 'denied');
+        }*/
+        
+        if(!empty($images)){
+            
+            if($this->nowatermark_folder_with_id){
+                $copy_path=$fold.$id.'/';
+                mkdir($copy_path);
+            }else{
+                $copy_path=$fold;
+            }
+            
+            foreach ($images as $image){
+                copy(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$image, $copy_path.$image);
+                
+                require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/watermark/watermark.php';
+                $Watermark = new Watermark();
+                $Watermark->setPosition($this->getConfigValue('apps.watermark.position'));
+                $Watermark->setOffsets(array(
+                    $this->getConfigValue('apps.watermark.offset_left'),
+                    $this->getConfigValue('apps.watermark.offset_top'),
+                    $this->getConfigValue('apps.watermark.offset_right'),
+                    $this->getConfigValue('apps.watermark.offset_bottom')
+                ));
+                $Watermark->printWatermark(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$image);
+            }
+        }
+        
+        return count($images);
+    }
+    
+    protected function _protect_imagesAction(){
+        
+        $status = 0;
+        $error_msg = '';
+        
+        if(1==intval($this->getConfigValue('is_watermark'))){
+            return $this->formatAnswer_protect_images(0, 'denied');
+        }
+        if(0==intval($this->getConfigValue('watermark_user_control'))){
+            return $this->formatAnswer_protect_images(0, 'denied');
+        }
+        $need_watermark = false;
+        
+        $user_id = $this->getSessionUserId();
+        $id = intval($this->getRequestValue('id'));
+        
+        if (!$this->check_access_to_data($user_id, $id)) {
+            return Multilanguage::_('L_ACCESS_DENIED');
+        }
+            
+        $DBC = DBC::getInstance();
+        $query = 'SELECT watermark_images FROM ' . DB_PREFIX . '_data WHERE id=?';
+        $stmt = $DBC->query($query, array($id));
+        if($stmt){
+            $ar = $DBC->fetch($stmt);
+            if($ar['watermark_images'] == 1){
+                return $this->formatAnswer_protect_images(0, 'protected');
+            }else{
+                $need_watermark = true;
+            }
+            
+        }else{
+            return $this->formatAnswer_protect_images(0, 'denied');
+        }
+        
+       
+        if(!$need_watermark){
+            return $this->formatAnswer_protect_images(0, 'denied');
+        }
+        
+        
+        //$fold = $this->notwatermarked_folder;
+        
+        
+        $query = 'UPDATE ' . DB_PREFIX . '_data SET watermark_images=1 WHERE id=?';
+        $stmt = $DBC->query($query, array($id));
+        if(!$stmt){
+            return $this->formatAnswer_protect_images(0, 'denied');
+        }
+        
+        $resp = $this->protectImagesByWatermark($id);
+        
+        return $this->formatAnswer_protect_images(1, 'done', count($resp));
+        
+        
+        /*require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
+        $data_model = new Data_Model();
+        $form_data = $this->data_model;
+        
+        $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, 'id', $id, $form_data['data']);
+        
+        $fields = array();
+        foreach($form_data[$this->table_name] as $name=>$item){
+            if($item['type']=='uploads'){
+                if(is_array($item['value']) && !empty($item['value'])){
+                    foreach($item['value'] as $val){
+                        $images[] = $val['normal'];
+                    }
+                }
+            }
+        }
+        
+        $query = 'UPDATE ' . DB_PREFIX . '_data SET watermark_images=1 WHERE id=?';
+        $stmt = $DBC->query($query, array($id));
+        if(!$stmt){
+            return $this->formatAnswer_protect_images(0, 'denied');
+        }
+        
+        if(!empty($images)){
+            
+            if($this->nowatermark_folder_with_id){
+                $copy_path=$fold.$id.'/';
+                mkdir($copy_path);
+            }else{
+                $copy_path=$fold;
+            }
+            
+            foreach ($images as $image){
+                copy(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$image, $copy_path.$image);
+                
+                require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/watermark/watermark.php';
+                $Watermark = new Watermark();
+                $Watermark->setPosition($this->getConfigValue('apps.watermark.position'));
+                $Watermark->setOffsets(array(
+                    $this->getConfigValue('apps.watermark.offset_left'),
+                    $this->getConfigValue('apps.watermark.offset_top'),
+                    $this->getConfigValue('apps.watermark.offset_right'),
+                    $this->getConfigValue('apps.watermark.offset_bottom')
+                ));
+                $Watermark->printWatermark(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$image);
+            }
+        }
+        
+        return $this->formatAnswer_protect_images(1, 'done', count($images));*/
+       
+    }
+
 
     protected function _edit_doneAction() {
         $user_id = $this->getSessionUserId();
@@ -162,8 +451,10 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
             }
         }
 
+        if (isset($form_data['data']['user_id'])) {
+            $form_data['data']['user_id']['value'] = $user_id;
+        }
 
-        $form_data['data']['user_id']['value'] = $user_id;
 
         $y_id = '';
         if (strpos($form_data['data']['youtube']['value'], 'youtube.com') !== FALSE) {
@@ -172,12 +463,12 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
                 parse_str($d['query'], $a);
                 $y_id = $a['v'];
             }
-        }elseif(strpos($form_data['data']['youtube']['value'], 'youtu.be') !== FALSE){
-			$d = parse_url($form_data['data']['youtube']['value']);
-			if (isset($d['path']) && trim($d['path'], '/')!='' && strpos(trim($d['path'], '/'), '/')===false) {
-				$y_id=trim($d['path'], '/');
-			}
-		}else{
+        } elseif (strpos($form_data['data']['youtube']['value'], 'youtu.be') !== FALSE) {
+            $d = parse_url($form_data['data']['youtube']['value']);
+            if (isset($d['path']) && trim($d['path'], '/') != '' && strpos(trim($d['path'], '/'), '/') === false) {
+                $y_id = trim($d['path'], '/');
+            }
+        } else {
 
             if (preg_match('/.*([-_A-Za-z0-9]+).*/', $form_data['data']['youtube']['value'], $matches)) {
                 $y_id = $matches[0];
@@ -291,39 +582,51 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
     }
 
     protected function _new_doneAction() {
-    	/*$rtoken=$_POST['csrftoken'];
-    	$rhash=$_POST['csrfhash'];
-    	var_dump($rtoken);
-    	var_dump($rhash);
-    	
-    	if($rtoken==''){
-    		exit();
-    	}
-    	
-    	if(md5($rtoken.$_SESSION['csrfsecret'])!=$rhash){
-    		exit();
-    	}*/
-    	
-    	
-    	
+        /* $rtoken=$_POST['csrftoken'];
+          $rhash=$_POST['csrfhash'];
+          var_dump($rtoken);
+          var_dump($rhash);
+
+          if($rtoken==''){
+          exit();
+          }
+
+          if(md5($rtoken.$_SESSION['csrfsecret'])!=$rhash){
+          exit();
+          } */
+
+
+
         $user_id = $this->getSessionUserId();
-		$user_id = intval($_SESSION['user_id']);
+        $user_id = intval($_SESSION['user_id']);
+        
+        if ($this->getConfigValue('apps.billing.enable')) {
+            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/tariff/tariff.xml') and $this->getConfigValue('apps.tariff.enable') and file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/billing/billing.xml')) {
+                if(!$this->checkAdvAbonent()){
+                    $rs = 'Недостаточно средств на счету';
+                    return $rs;
+                }
+            }
+        }
+          
+        
+                
         $rs = '';
 
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         $form_data = $this->data_model;
-        
+
 
         if ($this->getConfigValue('more_fields_in_lk')) {
             $form_data = $this->init_more_fields($form_data);
         }
 
-       	if(isset($form_data['data']['fio'])){
-       		$form_data['data']['fio']['required'] = 'off';
-       	}
-        
+        if (isset($form_data['data']['fio'])) {
+            $form_data['data']['fio']['required'] = 'off';
+        }
+
 
 
         if ($this->getConfigValue('special_advert_cost') > 0 && isset($form_data['data']['hot'])) {
@@ -360,7 +663,7 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
             }
         }
 
-        
+
         $form_data['data']['user_id']['value'] = $user_id;
         $form_data['data']['user_id']['type'] = 'hidden';
         $form_data['data']['date_added']['value'] = date('Y-m-d H:i:s', time());
@@ -373,17 +676,18 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
                 parse_str($d['query'], $a);
                 $y_id = $a['v'];
             }
-        }elseif(strpos($form_data['data']['youtube']['value'], 'youtu.be') !== FALSE){
-        	$d = parse_url($form_data['data']['youtube']['value']);
-        	if (isset($d['path']) && trim($d['path'], '/')!='' && strpos(trim($d['path'], '/'), '/')===false) {
-        		$y_id=trim($d['path'], '/');
-        	}
+        } elseif (strpos($form_data['data']['youtube']['value'], 'youtu.be') !== FALSE) {
+            $d = parse_url($form_data['data']['youtube']['value']);
+            if (isset($d['path']) && trim($d['path'], '/') != '' && strpos(trim($d['path'], '/'), '/') === false) {
+                $y_id = trim($d['path'], '/');
+            }
         } else {
 
             if (preg_match('/.*([-_A-Za-z0-9]+).*/', $form_data['data']['youtube']['value'], $matches)) {
                 $y_id = $matches[0];
             }
         }
+
         $form_data['data']['youtube']['value'] = $y_id;
 
         $data_model->forse_auto_add_values($form_data['data']);
@@ -400,7 +704,14 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
                 $form_data['data'] = $this->removeTemporaryFields($form_data['data'], $remove_this_names);
                 $rs = $this->get_form($form_data['data']);
             } else {
-                if($this->getConfigValue('apps.realtylog.enable')){
+                
+                if ($this->getConfigValue('apps.billing.enable')) {
+                    if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/tariff/tariff.xml') and $this->getConfigValue('apps.tariff.enable') and file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/billing/billing.xml')) {
+                        $this->setAdvAbonent($new_record_id);
+                    }
+                }
+        
+                if ($this->getConfigValue('apps.realtylog.enable')) {
                     require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylog/admin/admin.php';
                     $Logger = new realtylog_admin();
                     $Logger->addLog($new_record_id, $user_id, 'new', 'data');
@@ -408,6 +719,12 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
                 if (1 == $this->getConfigValue('notify_about_added_realty')) {
                     $this->notifyUserAboutAdding($form_data['data']['user_id']['value'], $new_record_id, $form_data['data']['topic_id']['value']);
                 }
+                if (1 != $this->getConfigValue('moderate_first')) {
+                    $this->notifyAboutNewAdvert($new_record_id);
+                }
+                /* TODO:
+                 * добавить нотификацию админу о новом объекте
+                 */
 
                 if ($this->getConfigValue('apps.realtylogv2.enable')) {
                     require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylogv2/admin/admin.php';
@@ -452,49 +769,106 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         }
         header('location: ' . SITEBILL_MAIN_URL . '/account/data/');
         exit();
-        $rs .= $this->grid($user_id, $this->getRequestValue('topic_id'));
+        $rs .= $this->grid_e($user_id, $this->getRequestValue('topic_id'));
         return $rs;
     }
+    
+    /*protected function setAdvAbonent($id){
+        if ($this->getConfigValue('apps.billing.enable')) {
+            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/tariff/tariff.xml') and $this->getConfigValue('apps.tariff.enable') and file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/billing/billing.xml')) {
+                
+                $has_abonent_payment = false;
+                //проверяем возможность оплаты
+                foreach($_SESSION['current_user_tariff_info']['services'] as $service_code=>$service){
+                    if(preg_match('/^advabonent_/', $service_code, $matches)){
+                        $has_abonent_payment = true;
+                        $service_info = $service;
+                        break;
+
+                    }
+                }
+                
+                if($has_abonent_payment){
+                    $advcost = floatval($service['cost']);
+                    $advlong = intval($service['period']);
+                    $DBC = DBC::getInstance();
+                    $now = date('Y-m-d H:i:s', time()-$advlong*24*3600);
+                    //$query = 'INSERT INTO '.DB_PREFIX.'_billing_log2 (`user_id`, `item_id`, `date`) VALUES (?,?,?)';
+                    $query = 'UPDATE '.DB_PREFIX.'_data SET `abonent_payment`=? WHERE id=?';
+                    $stmt = $DBC->query($query, array($now, $id));
+
+                    $query = 'UPDATE '.DB_PREFIX.'_user SET `account`=(`account`-'.$advcost.') WHERE user_id=?';
+                    $stmt = $DBC->query($query, array($_SESSION['user_id']));
+                }
+            }
+        }
+    }*/
+    
+    /*protected function checkAdvAbonent($id = 0){
+        if ($this->getConfigValue('apps.billing.enable')) {
+            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/tariff/tariff.xml') and $this->getConfigValue('apps.tariff.enable') and file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/billing/billing.xml')) {
+                
+                $has_abonent_payment = false;
+                //проверяем возможность оплаты
+                foreach($_SESSION['current_user_tariff_info']['services'] as $service_code=>$service){
+                    if(preg_match('/^advabonent_/', $service_code, $matches)){
+                        $has_abonent_payment = true;
+                        $service_info = $service;
+                        break;
+
+                    }
+                }
+
+                if($has_abonent_payment){
+                    $advcost = floatval($service['cost']);
+                    $advlong = intval($service['period']);
+                    $DBC = DBC::getInstance();
+
+                    if($id>0){
+                        $now = date('Y-m-d H:i:s', time()-$advlong*24*3600);
+                        //$query = 'SELECT COUNT(item_id) AS _c FROM '.DB_PREFIX.'_billing_log2 WHERE user_id=? AND item_id=? AND `date`>?';
+                        
+                        $query = 'SELECT COUNT(id) AS _c FROM '.DB_PREFIX.'_data WHERE user_id=? AND id=? AND `abonent_payment`>?';
+                        
+                        $stmt = $DBC->query($query, array($_SESSION['user_id'], $id, $now));
+                        if($stmt){
+                            $ar = $DBC->fetch($stmt);
+                            if($ar['_c']>0){
+                                return true;
+                            }
+                        }
+                    }
+
+
+
+                    $query = 'SELECT (`account`-'.$advcost.') AS rst FROM '.DB_PREFIX.'_user WHERE user_id=?';
+                    $stmt = $DBC->query($query, array($_SESSION['user_id']));
+                    if($stmt){
+                        $ar = $DBC->fetch($stmt);
+                        $rst = $ar['rst'];
+                        if($rst<0){
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        
+        return true;
+    }*/
 
     protected function _newAction() {
-    	
-    	/*$breadcrumbs=array();
-    	if(Multilanguage::is_set('LT_HOME', '_template')){
-    		$breadcrumbs[]='<a href="'.$folder.'/">'.Multilanguage::_('LT_HOME', '_template').'</a>';
-    	}else{
-    		$breadcrumbs[]='<a href="'.$folder.'/">'.Multilanguage::_('L_HOME').'</a>';
-    	}
-    	
-    	if(Multilanguage::is_set('LT_PRIVATE_ACCOUNT', '_template')){
-    		$breadcrumbs[]='<a href="'.$folder.'/account/">'.Multilanguage::_('LT_PRIVATE_ACCOUNT', '_template').'</a>';
-    	}else{
-    		$breadcrumbs[]='<a href="'.$folder.'/account/">'.Multilanguage::_('PRIVATE_ACCOUNT', 'system').'</a>';
-    	}
-    	
-    	if(Multilanguage::is_set('LT_MY_ADS', '_template')){
-    		$breadcrumbs[]='<a href="'.$folder.'/account/data/">'.Multilanguage::_('LT_MY_ADS', '_template').'</a>';
-    	}else{
-    		$breadcrumbs[]='<a href="'.$folder.'/account/data/">'.Multilanguage::_('MY_ADS', 'system').'</a>';
-    	}
-    	
-    	if(Multilanguage::is_set('LT_MY_ADV_ADD', '_template')){
-    		$breadcrumbs[]=Multilanguage::_('LT_MY_ADV_ADD', '_template');
-    	}else{
-    		$breadcrumbs[]=Multilanguage::_('MY_ADV_ADD', 'system');
-    	}
-    	
-    	$this->template->assert('breadcrumbs', $this->get_breadcrumbs($breadcrumbs));*/
-    	
+
         $user_id = $this->getSessionUserId();
         $rs = '';
 
-        
+
 
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         $form_data = $this->data_model;
-       // var_dump($form_data['data']['square_rooms']);
+        // var_dump($form_data['data']['square_rooms']);
 
         if ($this->getConfigValue('more_fields_in_lk')) {
             $form_data = $this->init_more_fields($form_data);
@@ -534,6 +908,14 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
                         return $rs;
                     }
                 }
+                
+                if(!$billing->checkAdvAbonent($_SESSION['user_id'])){
+                    $rs = 'Недостаточно средств на счету для размещения объекта';
+                    return $rs;
+                }
+                
+                
+                
             } else {
                 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/account.php');
                 $Account = new Account;
@@ -557,10 +939,10 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
     }
 
     protected function _defaultAction() {
-    	
+
         $user_id = $this->getSessionUserId();
         $rs = '';
-        $rs .= $this->grid($user_id, $this->getRequestValue('topic_id'));
+        $rs .= $this->grid_e($user_id, $this->getRequestValue('topic_id'));
         return $rs;
     }
 
@@ -569,7 +951,7 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
      * @param void
      * @return string
      */
-    function main( $params = array() ) {
+    function main($params = array()) {
 
         $user_id = $this->getSessionUserId();
         $user_id = intval($_SESSION['user_id']);
@@ -589,13 +971,18 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         }
         $rs .= $this->$action();
 
-       
+
         return $rs;
     }
 
     function checkUniquety($form_data) {
         $unque_fields = trim($this->getConfigValue('apps.realty.uniq_params'));
         //$unque_fields='city_id,topic_id,price';
+        
+        $id = 0;
+		if(intval($form_data['id']) != 0){
+			$id = intval($form_data['id']);
+		}
 
         $fields = array();
         if ('' !== $unque_fields) {
@@ -605,9 +992,11 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
                 $fields = $matches[1];
             }
         }
+        
+        $where = array();
+        $where_val = array();
 
         if (!empty($fields)) {
-            $where = array();
             foreach ($fields as $f) {
                 if (isset($form_data[$f])) {
                     if ($form_data[$f]['dbtype'] == 1 || ($form_data[$f]['dbtype'] != 'notable' && $form_data[$f]['dbtype'] != '0')) {
@@ -616,6 +1005,10 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
                     }
                 }
             }
+            if($id > 0){
+				$where[] = '`id`<>?';
+				$where_val[] = $id;
+			}
         } elseif (isset($form_data['city_id']) && isset($form_data['street_id']) && isset($form_data['number'])) {
             $where[] = '`city_id`=?';
             $where_val[] = (int) $form_data['city_id']['value'];
@@ -623,33 +1016,78 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
             $where_val[] = (int) $form_data['street_id']['value'];
             $where[] = '`number`=?';
             $where_val[] = $form_data['number']['value'];
+            if($id > 0){
+				$where[] = '`id`<>?';
+				$where_val[] = $id;
+			}
         } else {
             return TRUE;
         }
 
         $DBC = DBC::getInstance();
-        $query = 'SELECT COUNT(id) AS cnt FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE ' . implode(' AND ', $where);
-        $stmt = $DBC->query($query, $where_val);
 
+        $uns = array();
+        $query = 'SELECT id FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE ' . implode(' AND ', $where);
+
+        $stmt = $DBC->query($query, $where_val);
         if ($stmt) {
-            $ar = $DBC->fetch($stmt);
-            if ($ar['cnt'] > 0) {
-                $this->riseError('Такое объявление уже существует');
-                return FALSE;
+            while ($ar = $DBC->fetch($stmt)) {
+                $uns[] = $ar['id'];
             }
         }
+        if (count($uns) > 0) {
+            $this->riseError('Такое объявление уже существует (' . implode(',', $uns) . ')');
+            return FALSE;
+        }
         return TRUE;
-        /* $DBC=DBC::getInstance();
-          $query='SELECT COUNT(id) AS cnt FROM '.DB_PREFIX.'_data WHERE city_id=? AND street_id=? AND number=?';
-          $stmt=$DBC->query($query, array((int)$form_data['city_id']['value'], (int)$form_data['street_id']['value'], (int)$form_data['number']['value']));
-          if($stmt){
-          $ar=$DBC->fetch($stmt);
-          if($ar['cnt']>0){
-          $this->riseError('Такое объявление уже существует');
-          return FALSE;
-          }
-          }
-          return TRUE; */
+    }
+
+    private function notifyAboutNewAdvert($id) {
+
+        /* require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
+          $mailer = new Mailer(); */
+        $subject = $_SERVER['SERVER_NAME'] . ': добавлено новое объявление';
+
+        $from = $this->getConfigValue('system_email');
+        $useremail = $this->getConfigValue('order_email_acceptor');
+        $body = '';
+        $body .= 'Было добавлено объявление с ID ' . $id . '<br />';
+
+        $data_model = new Data_Model();
+        $model = $data_model->get_kvartira_model(false, true);
+        $model = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $id, $model[$this->table_name]);
+
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/view.php');
+        $table_view = new Table_View();
+        $table_view->setAbsoluteUrls();
+        $body .= '<table border="1" cellpadding="2" cellspacing="2" class="table table-striped table-hover">';
+        $body .= $table_view->compile_view($model);
+        $body .= '</table>';
+
+        $body .= $this->getConfigValue('email_signature');
+
+
+        $this->template->assign('target_url', $this->getServerFullUrl() . '/admin/?action=data&do=edit&id=' . $id);
+        if ($action == 'edit') {
+            $this->template->assign('edit_action', 1);
+        }
+        $this->template->assign('id', $id);
+        $this->template->assign('HTTP_HOST', $_SERVER['HTTP_HOST']);
+        $email_template_fetched = $this->fetch_email_template('new_adv_nomoderate');
+
+        if ($email_template_fetched) {
+            $subject = $email_template_fetched['subject'];
+            $message = $email_template_fetched['message'];
+
+            $message_array['apps_name'] = 'new_adv_nomoderate';
+            $message_array['method'] = __METHOD__;
+            $message_array['message'] = "subject = $subject, message = $message";
+            $message_array['type'] = '';
+            ////$this->writeLog($message_array);
+        }
+
+        $this->sendFirmMail($useremail, $from, $subject, $body);
+        return;
     }
 
     private function notifyAboutModerationNeed($id, $action = 'new') {
@@ -657,44 +1095,44 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         /* require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
           $mailer = new Mailer(); */
         $subject = $_SERVER['SERVER_NAME'] . ': объявление требует модерации';
-        $from = $this->getConfigValue('order_email_acceptor');
+        $from = $this->getConfigValue('system_email');
         $useremail = $this->getConfigValue('order_email_acceptor');
         $body = '';
         if ($action == 'edit') {
-            $body.='Было изменено объявление с ID ' . $id . '<br />';
-            $body.='Объявление снято с публикации и ожидает модерации.<br />';
+            $body .= 'Было изменено объявление с ID ' . $id . '<br />';
+            $body .= 'Объявление снято с публикации и ожидает модерации.<br />';
         } else {
-            $body.='Было добавлено объявление с ID ' . $id . '<br />';
-            $body.='Объявление ожидает модерации.<br />';
+            $body .= 'Было добавлено объявление с ID ' . $id . '<br />';
+            $body .= 'Объявление ожидает модерации.<br />';
         }
 
 
-        $body.=$this->getConfigValue('email_signature');
+        $body .= $this->getConfigValue('email_signature');
         /* if ( $this->getConfigValue('use_smtp') ) {
           $mailer->send_smtp($useremail, $from, $subject, $body, 1);
           } else {
           $mailer->send_simple($useremail, $from, $subject, $body, 1);
           } */
-	
-	$this->template->assign('target_url', $this->getServerFullUrl().'/admin/?action=data&do=edit&id='.$id);
-	if ( $action == 'edit' ) {
-	    $this->template->assign('edit_action', 1);
-	}
-	$this->template->assign('id', $id);
-	$this->template->assign('HTTP_HOST', $_SERVER['HTTP_HOST']);
-	$email_template_fetched = $this->fetch_email_template('need_moderate');
 
-	if ( $email_template_fetched ) {
-	    $subject = $email_template_fetched['subject'];
-	    $message = $email_template_fetched['message'];
+        $this->template->assign('target_url', $this->getServerFullUrl() . '/admin/?action=data&do=edit&id=' . $id);
+        if ($action == 'edit') {
+            $this->template->assign('edit_action', 1);
+        }
+        $this->template->assign('id', $id);
+        $this->template->assign('HTTP_HOST', $_SERVER['HTTP_HOST']);
+        $email_template_fetched = $this->fetch_email_template('need_moderate');
 
-	    $message_array['apps_name'] = 'need_moderate';
-	    $message_array['method'] = __METHOD__;
-	    $message_array['message'] = "subject = $subject, message = $message";
-	    $message_array['type'] = '';
-	    ////$this->writeLog($message_array);
-	}
-	
+        if ($email_template_fetched) {
+            $subject = $email_template_fetched['subject'];
+            $message = $email_template_fetched['message'];
+
+            $message_array['apps_name'] = 'need_moderate';
+            $message_array['method'] = __METHOD__;
+            $message_array['message'] = "subject = $subject, message = $message";
+            $message_array['type'] = '';
+            ////$this->writeLog($message_array);
+        }
+
         $this->sendFirmMail($useremail, $from, $subject, $body);
         return;
     }
@@ -762,13 +1200,13 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
             $body = $smarty->fetch($tpl);
         } else {
             $body = '';
-            $body.=sprintf(Multilanguage::_('DEAR_FIO', 'system'), $fio) . '<br />';
-            $body.=Multilanguage::_('YOUR_ADV_ADD', 'system') . '<br />';
-            $body.=Multilanguage::_('YOUR_ADV_LINK', 'system') . ' <a href="' . $href . '">' . $href . '</a><br />';
+            $body .= sprintf(Multilanguage::_('DEAR_FIO', 'system'), $fio) . '<br />';
+            $body .= Multilanguage::_('YOUR_ADV_ADD', 'system') . '<br />';
+            $body .= Multilanguage::_('YOUR_ADV_LINK', 'system') . ' <a href="' . $href . '">' . $href . '</a><br />';
             if (1 == $this->getConfigValue('moderate_first')) {
-                $body.=Multilanguage::_('ADV_NEED_MODERATING_FIRST', 'system') . '<br />';
+                $body .= Multilanguage::_('ADV_NEED_MODERATING_FIRST', 'system') . '<br />';
             }
-            $body.=$this->getConfigValue('email_signature');
+            $body .= $this->getConfigValue('email_signature');
         }
 
 
@@ -784,30 +1222,30 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
           } else {
           $mailer->send_simple($useremail, $from, $subject, $body, 1);
           } */
-	
-	$this->template->assign('target_url', $href);
-	$this->template->assign('edit_url', $this->getServerFullUrl().'/account/data/?do=edit&id='.$id);
-	$this->template->assign('moderate_first', $this->getConfigValue('moderate_first'));
-	$this->template->assign('HTTP_HOST', $_SERVER['HTTP_HOST']);
-	$email_template_fetched = $this->fetch_email_template('user_notify_about_adding');
 
-	if ( $email_template_fetched ) {
-	    $subject = $email_template_fetched['subject'];
-	    $message = $email_template_fetched['message'];
+        $this->template->assign('target_url', $href);
+        $this->template->assign('edit_url', $this->getServerFullUrl() . '/account/data/?do=edit&id=' . $id);
+        $this->template->assign('moderate_first', $this->getConfigValue('moderate_first'));
+        $this->template->assign('HTTP_HOST', $_SERVER['HTTP_HOST']);
+        $email_template_fetched = $this->fetch_email_template('user_notify_about_adding');
 
-	    $message_array['apps_name'] = 'user_notify_about_adding';
-	    $message_array['method'] = __METHOD__;
-	    $message_array['message'] = "subject = $subject, message = $message";
-	    $message_array['type'] = '';
-	    //$this->writeLog($message_array);
-	}
-	
+        if ($email_template_fetched) {
+            $subject = $email_template_fetched['subject'];
+            $message = $email_template_fetched['message'];
+
+            $message_array['apps_name'] = 'user_notify_about_adding';
+            $message_array['method'] = __METHOD__;
+            $message_array['message'] = "subject = $subject, message = $message";
+            $message_array['type'] = '';
+            //$this->writeLog($message_array);
+        }
+
         $this->sendFirmMail($useremail, $from, $subject, $body);
         return;
     }
 
     protected function removeTemporaryFields(&$model, $remove_this_names = array()) {
-        if (count($remove_this_names) > 0) {
+        if (is_array($remove_this_names) && count($remove_this_names) > 0) {
             foreach ($remove_this_names as $r) {
                 unset($model[$r]);
             }
@@ -822,23 +1260,33 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
      * @param int $primary_key_value
      */
     function delete_data($table_name, $primary_key, $primary_key_value) {
-        $DBC = DBC::getInstance();
 
+        $DBC = DBC::getInstance();
 
         $data_model = new Data_Model();
         $model = $data_model->get_kvartira_model(false, true);
 
-
-
         $model = $data_model->init_model_data_from_db($table_name, $primary_key, $primary_key_value, $model[$table_name]);
-        $uploads = array();
+
         $uploadify = false;
+        $uploads = array();
+        $docuploads = array();
+        $avtars = array();
+        $multiitems = array();
         foreach ($model as $model_field) {
             if ($model_field['type'] == 'uploads' && !empty($model_field['value'])) {
                 foreach ($model_field['value'] as $upload) {
                     $uploads[] = $upload['preview'];
                     $uploads[] = $upload['normal'];
                 }
+            } elseif ($model_field['type'] == 'docuploads' && !empty($model_field['value'])) {
+                foreach ($model_field['value'] as $upload) {
+                    $docuploads[] = $upload['normal'];
+                }
+            } elseif ($model_field['type'] == 'avatar' && $model_field['value'] != '') {
+                $avtars[] = $model_field['value'];
+            } elseif ($model_field['type'] == 'select_by_query_multi') {
+                $multiitems[] = $model_field['name'];
             } elseif ($model_field['type'] == 'uploadify_image') {
                 $uploadify = true;
             }
@@ -853,13 +1301,33 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         if (!empty($uploads)) {
             foreach ($uploads as $upload) {
                 @unlink(SITEBILL_DOCUMENT_ROOT . '/img/data/' . $upload);
+                @unlink($this->notwatermarked_folder . $upload);
             }
+        }
+
+        if (!empty($docuploads)) {
+            foreach ($docuploads as $upload) {
+                @unlink(SITEBILL_DOCUMENT_ROOT . '/img/mediadocs/' . $upload);
+            }
+        }
+        if (!empty($avtars)) {
+            foreach ($avtars as $avtar) {
+                @unlink(SITEBILL_DOCUMENT_ROOT . '/img/data/' . $avtar);
+            }
+        }
+        if (!empty($multiitems)) {
+
+            $params = array();
+            $params[] = $table_name;
+            $params = array_merge($params, $multiitems);
+            $params[] = $primary_key_value;
+            $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name` IN (' . implode(', ', array_fill(0, count($multiitems), '?')) . ') AND `primary_id`=?';
+            $stmt = $DBC->query($query, $params);
         }
 
         if ($uploadify) {
             $imgs_ids = array();
             $query = 'SELECT image_id FROM ' . DB_PREFIX . '_' . $table_name . '_image WHERE ' . $primary_key . '=?';
-            ;
             $stmt = $DBC->query($query, array($primary_key_value));
             if ($stmt) {
                 while ($ar = $DBC->fetch($stmt)) {
@@ -883,13 +1351,63 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
      */
     function check_access_to_data($user_id, $data_id) {
         $DBC = DBC::getInstance();
-        if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
-            $query = "SELECT id FROM " . DB_PREFIX . "_data WHERE user_id=? AND id=? AND archived=0";
-        } else {
-            $query = "SELECT id FROM " . DB_PREFIX . "_data WHERE user_id=? AND id=?";
+        $enable_curator_mode = false;
+        if (1 == $this->getConfigValue('enable_curator_mode')) {
+            $enable_curator_mode = true;
+            $has_access = 0;
+            
+            if(1 === intval($this->getConfigValue('curator_mode_fullaccess'))){
+                
+                $query = 'SELECT COUNT(d.id) AS _cnt FROM ' . DB_PREFIX . '_data d LEFT JOIN ' . DB_PREFIX . '_user u USING(user_id) WHERE d.id=? AND u.parent_user_id=?';
+                $stmt = $DBC->query($query, array($data_id, $user_id));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+                    if ($ar['_cnt'] > 0) {
+                        $has_access = 1;
+                    }
+                }
+            }else{
+                $query = 'SELECT COUNT(id) AS _cnt FROM ' . DB_PREFIX . '_cowork WHERE coworker_id=? AND object_type=? AND id=?';
+                $stmt = $DBC->query($query, array($user_id, 'data', $data_id));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+                    if ($ar['_cnt'] > 0) {
+                        $has_access = 1;
+                    }
+                }
+            }
+
+            
         }
 
-        $stmt = $DBC->query($query, array($user_id, $data_id));
+        $where = array();
+        $where_val = array();
+
+        $where[] = '`id`=?';
+        $where_val[] = $data_id;
+        if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
+            $where[] = '`archived`=0';
+        }
+
+        if ($enable_curator_mode) {
+            $where[] = '(`user_id`=? OR (`user_id`!=? AND 1=' . $has_access . '))';
+            $where_val[] = $user_id;
+            $where_val[] = $user_id;
+        } else {
+            $where[] = '`user_id`=?';
+            $where_val[] = $user_id;
+        }
+
+        /* if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
+          $query = "SELECT id FROM " . DB_PREFIX . "_data WHERE user_id=? AND id=? AND archived=0";
+          } else {
+          $query = "SELECT id FROM " . DB_PREFIX . "_data WHERE user_id=? AND id=?";
+          }
+          $stmt = $DBC->query($query, array($user_id, $data_id)); */
+
+        $query = 'SELECT id FROM ' . DB_PREFIX . '_data WHERE ' . implode(' AND ', $where);
+        $stmt = $DBC->query($query, $where_val);
+
         if ($stmt) {
             $ar = $DBC->fetch($stmt);
             if ($ar['id'] > 0) {
@@ -926,14 +1444,14 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         }
         return false;
     }
-    
+
     /**
      * Return grid
      * @param int $user_id user id
      * @param int $current_category_id current category id
      * @return string
      */
-    function grid($user_id, $current_category_id) {
+    function grid_e($user_id, $current_category_id) {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
         $category_tree = $Structure_Manager->get_category_tree_control($current_category_id, $user_id);
@@ -955,16 +1473,16 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
 
             $rs .= '</table>';
         } else {
-        	$this->template->assert('category_tree_account', $category_tree);
+            $this->template->assert('category_tree_account', $category_tree);
             $rs .= $this->get_data_grid($user_id, $current_category_id);
         }
 
 
 
         $rs .= '</div>';
-		//global $smarty;
-		//$smarty->assign();
-        
+        //global $smarty;
+        //$smarty->assign();
+
 
         return $rs;
     }
@@ -975,6 +1493,9 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
      * @return string
      */
     function get_data_grid($user_id, $current_category_id = false) {
+
+        $FM = new frontend_main();
+        $params = $FM->gatherRequestParams();
         $gid = intval($_SESSION['current_user_group_id']);
         $searched_user_id = intval($this->getRequestValue('user_id'));
         $aggregroup = -1;
@@ -1017,37 +1538,73 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         //$grid_constructor=$this->_grid_constructor;
         $grid_constructor = $this->_getGridConstructor();
 
-        $params['topic_id'] = $this->getRequestValue('topic_id');
-        $params['order'] = $this->getRequestValue('order');
-        $params['region_id'] = $this->getRequestValue('region_id');
-        $params['city_id'] = $this->getRequestValue('city_id');
-        $params['district_id'] = $this->getRequestValue('district_id');
-        $params['metro_id'] = $this->getRequestValue('metro_id');
-        $params['street_id'] = $this->getRequestValue('street_id');
-        $params['page'] = $this->getRequestValue('page');
-        $params['asc'] = $this->getRequestValue('asc');
-        $params['price'] = $this->getRequestValue('price');
-        $params['price_min'] = $this->getRequestValue('price_min');
-        $params['active'] = $this->getRequestValue('active');
+
+
+        /* $params['topic_id'] = $this->getRequestValue('topic_id');
+          $params['order'] = $this->getRequestValue('order');
+          $params['region_id'] = $this->getRequestValue('region_id');
+          $params['city_id'] = $this->getRequestValue('city_id');
+          $params['district_id'] = $this->getRequestValue('district_id');
+          $params['metro_id'] = $this->getRequestValue('metro_id');
+          $params['street_id'] = $this->getRequestValue('street_id');
+          $params['page'] = $this->getRequestValue('page');
+          $params['asc'] = $this->getRequestValue('asc');
+          $params['price'] = $this->getRequestValue('price');
+          $params['price_min'] = $this->getRequestValue('price_min');
+          $params['active'] = $this->getRequestValue('active'); */
         /* if(!empty($incusers)){
           $params['agg_user_id'] = $incusers;
           }else{
           $params['user_id'] = $user_id;
           } */
 
-
+        $params['active'] = $this->getRequestValue('active');
         $params['id'] = (int) $this->getRequestValue('id');
-        
-      //$params['per_page'] = 2;
-        
+
+        //$params['per_page'] = 2;
+
         if ((int) $this->getRequestValue('page_limit') != 0) {
             $params['page_limit'] = (int) $this->getRequestValue('page_limit');
+        }else{
+            if(0!=intval($this->getConfigValue('per_page_account'))){
+                $params['page_limit'] = intval($this->getConfigValue('per_page_account'));
+            }
         }
         $params['admin'] = true;
         if ($this->getRequestValue('srch_export_cian') == 'on' || $this->getRequestValue('srch_export_cian') == '1') {
             $params['srch_export_cian'] = 1;
         }
-        
+
+        $coworked = array();
+        if (1 == $this->getConfigValue('enable_curator_mode')) {
+            
+            $DBC = DBC::getInstance();
+            
+            if(1 == $this->getConfigValue('curator_mode_fullaccess')){
+                $query = 'SELECT user_id FROM ' . DB_PREFIX . '_user WHERE parent_user_id=?';
+                $stmt = $DBC->query($query, array($user_id));
+                if ($stmt) {
+                    while ($ar = $DBC->fetch($stmt)) {
+                        $coworked[] = $ar['user_id'];
+                    }
+                }
+                $params['coworked_users'] = $coworked;
+            }else{
+                $query = 'SELECT id FROM ' . DB_PREFIX . '_cowork WHERE coworker_id=? AND object_type=?';
+                $stmt = $DBC->query($query, array($user_id, 'data'));
+                if ($stmt) {
+                    while ($ar = $DBC->fetch($stmt)) {
+                        $coworked[] = $ar['id'];
+                    }
+                }
+                $params['coworked_ids'] = $coworked;
+            }
+            
+            
+            
+        }
+
+
         //$params['pager_url']='account/data';
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
@@ -1055,26 +1612,26 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         $category_structure = $Structure_Manager->loadCategoryStructure();
 
         $res = $grid_constructor->get_sitebill_adv_ext($params);
-        if(!empty($res) && $this->getConfigValue('apps.mailbox.enable')==1){
-        	$ids=array();
-        	foreach($res as $i=>$d){
-        		$ids[$d[$this->primary_key]]=$i;
-        		$res[$i]['_mailbox_cnt']['l']=SITEBILL_MAIN_URL.'/mailbox/?realty_id='.$d[$this->primary_key];
-        	}
-        	$DBC=DBC::getInstance();
-        	$query='SELECT COUNT(mailbox_id) AS _cnt, realty_id, `status` FROM '.DB_PREFIX.'_mailbox WHERE realty_id IN ('.implode(',', array_keys($ids)).') GROUP BY realty_id, `status`';
-        	$stmt=$DBC->query($query);
-        	if($stmt){
-        		while($ar=$DBC->fetch($stmt)){
-					if($ar['status']==1){
-						$res[$ids[$ar['realty_id']]]['_mailbox_cnt']['r']=$ar['_cnt'];
-						$res[$ids[$ar['realty_id']]]['_mailbox_cnt']['t']+=$ar['_cnt'];
-					}else{
-						$res[$ids[$ar['realty_id']]]['_mailbox_cnt']['u']=$ar['_cnt'];
-						$res[$ids[$ar['realty_id']]]['_mailbox_cnt']['t']+=$ar['_cnt'];
-					}
-        		}
-        	}
+        if (!empty($res) && $this->getConfigValue('apps.mailbox.enable') == 1) {
+            $ids = array();
+            foreach ($res as $i => $d) {
+                $ids[$d[$this->primary_key]] = $i;
+                $res[$i]['_mailbox_cnt']['l'] = SITEBILL_MAIN_URL . '/mailbox/?realty_id=' . $d[$this->primary_key];
+            }
+            $DBC = DBC::getInstance();
+            $query = 'SELECT COUNT(mailbox_id) AS _cnt, realty_id, `status` FROM ' . DB_PREFIX . '_mailbox WHERE realty_id IN (' . implode(',', array_keys($ids)) . ') GROUP BY realty_id, `status`';
+            $stmt = $DBC->query($query);
+            if ($stmt) {
+                while ($ar = $DBC->fetch($stmt)) {
+                    if ($ar['status'] == 1) {
+                        $res[$ids[$ar['realty_id']]]['_mailbox_cnt']['r'] = $ar['_cnt'];
+                        $res[$ids[$ar['realty_id']]]['_mailbox_cnt']['t'] += $ar['_cnt'];
+                    } else {
+                        $res[$ids[$ar['realty_id']]]['_mailbox_cnt']['u'] = $ar['_cnt'];
+                        $res[$ids[$ar['realty_id']]]['_mailbox_cnt']['t'] += $ar['_cnt'];
+                    }
+                }
+            }
         }
         $this->template->assign('grid_items', $res);
         //$this->template->assign('category_tree', $grid_constructor->get_category_tree( $params, $category_structure ) );
@@ -1116,7 +1673,10 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
      * @param array $form_data form data
      * @return boolean
      */
-    function add_data($form_data) {
+    function add_data($form_data, $language_id = 0) {
+
+        $curator_id = 0;
+
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
 
@@ -1134,15 +1694,56 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         if ($this->getConfigValue('special_advert_cost') > 0 and $form_data['hot']['value'] == 1) {
             $need_money += $this->getConfigValue('special_advert_cost');
         }
+        
+        if ($this->getConfigValue('apps.billing.enable')) {
+            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/tariff/tariff.xml') and $this->getConfigValue('apps.tariff.enable') and file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/billing/billing.xml')) {
+                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/billing/lib/billing.php');
+                $billing = new Billing();
+                
+                $need_money += $billing->getAdvAbonentPayment($_SESSION['user_id']);
+            }
+        }
+        
         if ($user_balance < $need_money) {
             $this->riseError('Недостаточно средств на счете для операции. <a href="' . SITEBILL_MAIN_URL . '/account/balance/?do=add_bill_done&bill=' . $need_money . '">Пополнить баланс на ' . $need_money . ' ' . $this->getConfigValue('ue_name') . '</a>');
             return false;
         }
+        
+ 
 
-
+        $moderation_mode = false;
         if (1 == $this->getConfigValue('moderate_first')) {
-            $form_data['active']['value'] = 0;
+            $moderation_mode = true;
         }
+
+        $user_id = intval($_SESSION['user_id']);
+        $DBC = DBC::getInstance();
+        $query = 'SELECT free_from_moderation FROM ' . DB_PREFIX . '_user WHERE user_id=?';
+        $stmt = $DBC->query($query, array($user_id));
+        if ($stmt) {
+            $ar = $DBC->fetch($stmt);
+            if ($ar['free_from_moderation'] == 1) {
+                $moderation_mode = false;
+            }
+        }
+
+        if ($moderation_mode) {
+            if(isset($form_data['active'])){
+                $form_data['active']['value'] = 0;
+            }
+        }
+
+        if (1 == $this->getConfigValue('enable_curator_mode') && 0 === intval($this->getConfigValue('curator_mode_fullaccess'))) {
+            $query = 'SELECT parent_user_id FROM ' . DB_PREFIX . '_user WHERE user_id=?';
+            $stmt = $DBC->query($query, array($user_id));
+            if ($stmt) {
+                $ar = $DBC->fetch($stmt);
+                if (intval($ar['parent_user_id']) > 0) {
+                    $curator_id = intval($ar['parent_user_id']);
+                }
+            }
+        }
+
 
         if (1 == $this->getConfigValue('apps.geodata.try_encode') && 1 == $this->getConfigValue('apps.geodata.enable')) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/geodata/admin/admin.php';
@@ -1163,12 +1764,18 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
 
         $new_record_id = $DBC->lastInsertId();
 
-        if (1 == $this->getConfigValue('moderate_first')) {
+        if ($moderation_mode) {
             $this->notifyAboutModerationNeed($new_record_id, 'new');
         }
 
         if ($new_record_id > 0) {
             $this->setUpdatedAtDate($new_record_id);
+        }
+
+        if ($curator_id > 0) {
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/components/cowork/cowork.php';
+            $CW = new Cowork();
+            $CW->setCoworkerToObject($this->table_name, $new_record_id, $curator_id);
         }
 
         $imgs = array();
@@ -1185,6 +1792,48 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         $ims = $this->editImageMulti('data', 'data', 'id', $new_record_id);
         if (is_array($ims) && count($ims) > 0) {
             $imgs = array_merge($imgs, $ims);
+        }
+
+        foreach ($form_data as $form_item) {
+            if ($form_item['type'] == 'docuploads') {
+                $imgs_uploads = $this->appendDocUploads('data', $form_item, 'id', $new_record_id);
+            }
+        }
+
+        $mutiitems = array();
+        foreach ($form_data as $k => $form_item) {
+            if ($form_item['type'] == 'select_by_query_multi') {
+                $vals = $form_item['value'];
+                if (!is_array($vals)) {
+                    $vals = (array) $mutiitems[$k];
+                }
+                if (!empty($vals)) {
+                    $mutiitems[$k] = $vals;
+                } else {
+                    $mutiitems[$k] = array();
+                }
+            }
+        }
+
+        if (!empty($mutiitems)) {
+            $keys = array_keys($mutiitems);
+
+            $params = array();
+            $params[] = 'data';
+            $params = array_merge($params, $keys);
+            $params[] = $new_record_id;
+            $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name` IN (' . implode(', ', array_fill(0, count($keys), '?')) . ') AND `primary_id`=?';
+            $stmt = $DBC->query($query, $params);
+
+            $query = 'INSERT INTO ' . DB_PREFIX . '_multiple_field (`table_name`, `field_name`, `primary_id`, `field_value`) VALUES (?,?,?,?)';
+            foreach ($mutiitems as $key => $vals) {
+                if (!empty($vals)) {
+                    foreach ($vals as $val) {
+                        $stmt = $DBC->query($query, array('data', $key, $new_record_id, $val));
+                        //echo $DBC->getLastError();
+                    }
+                }
+            }
         }
 
         if (1 == $this->getConfigValue('apps.seo.data_alias_enable') && ((isset($form_data['translit_alias']) && $form_data['translit_alias']['value'] == '') || !isset($form_data['translit_alias']))) {
@@ -1239,7 +1888,69 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
                     }
                 }
             }
+        }else{
+            
+            /*$need_watermark = false;
+            
+            if(1==intval($this->getConfigValue('watermark_user_control'))){
+                $DBC = DBC::getInstance();
+                $query = 'SELECT watermark_images FROM ' . DB_PREFIX . '_data WHERE id=?';
+                $stmt = $DBC->query($query, array($new_record_id));
+                if($stmt){
+                    $ar = $DBC->fetch($stmt);
+                    if($ar['watermark_images'] == 1){
+                        $need_watermark = true;
+                    }
+                }
+            }
+            
+            if(!empty($imgs) && $need_watermark){
+                
+                $filespath = SITEBILL_DOCUMENT_ROOT . '/img/data/';
+                $copy_folder = $this->notwatermarked_folder;
+                if($this->nowatermark_folder_with_id){
+                    $copy_folder = $copy_folder.$new_record_id.'/';
+                }
+                
+                if (!is_dir($copy_folder)) {
+                    mkdir($copy_folder);
+                }
+                require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/watermark/watermark.php';
+                $Watermark = new Watermark();
+                $Watermark->setPosition($this->getConfigValue('apps.watermark.position'));
+                $Watermark->setOffsets(array(
+                    $this->getConfigValue('apps.watermark.offset_left'),
+                    $this->getConfigValue('apps.watermark.offset_top'),
+                    $this->getConfigValue('apps.watermark.offset_right'),
+                    $this->getConfigValue('apps.watermark.offset_bottom')
+                ));
+                foreach ($imgs as $v) {
+                    $parts = explode('/', $v['normal']);
+
+                    if(count($parts)>1){
+                        $nam = end($parts);
+                        $parts = array_slice($parts, 0, count($parts)-1);
+                        for($i=1; $i<=count($parts); $i++){
+                            $locs = $copy_folder . '/' . implode('/', array_slice($parts, 0, $i));
+                            if (!is_dir($locs)) {
+                                mkdir($locs);
+                            }
+                        }
+
+                    }
+                    copy($filespath . $v['normal'], $copy_folder . $v['normal']);
+
+                    $Watermark->printWatermark(MEDIA_FOLDER . '/' . $v['normal']);
+                }
+                
+            }
+            
+            */
         }
+
+        /* if (!$moderation_mode) {
+          $this->notifyAboutNewAdvert($new_record_id);
+          } */
 
         if ($new_record_id > 0) {
             if ($this->getConfigValue('advert_cost') > 0) {
@@ -1254,6 +1965,11 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
                 $Twitter = new twitter_admin();
                 $Twitter->sendTwit($new_record_id);
             }
+            if ($this->getConfigValue('apps.telegram.enable') && 1 == (int) $this->getConfigValue('apps.telegram.allow_posting_from_account')) {
+                require_once SITEBILL_DOCUMENT_ROOT . '/apps/telegram/admin/admin.php';
+                $Telegram = new telegram_admin();
+                $Telegram->sendPost($new_record_id);
+            }
         }
         return $new_record_id;
 
@@ -1266,7 +1982,7 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
      * @param array $form_data form data
      * @return boolean
      */
-    function edit_data($form_data) {
+    function edit_data($form_data, $language_id = 0, $primary_key_value = false) {
         $id = intval($this->getRequestValue('id'));
         if ($id == 0) {
             return false;
@@ -1280,7 +1996,10 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         $account = new Account();
         $user_balance = $account->getAccountValue($this->getSessionUserId());
 
-        $form_data['price']['value'] = str_replace(' ', '', $form_data['price']['value']);
+        if(isset($form_data['price'])){
+            $form_data['price']['value'] = str_replace(' ', '', $form_data['price']['value']);
+        }
+        
 
         $form_data_tmp = $form_data;
 
@@ -1295,8 +2014,33 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
                 $account->minusMoney($this->getSessionUserId(), $this->getConfigValue('special_advert_cost'));
             }
         }
+        if(isset($form_data['active']) && ($form_data_tmp['active']['value'] == 0 and $form_data['active']['value'] == 1)){
+            if(!$this->checkAdvAbonent($id)){
+                $this->riseError('Вы не можете изменить статус активности');
+                return;
+            }else{
+                $this->setAdvAbonent($id);
+            }
+            
+        }
 
+        $moderation_mode = false;
         if (1 == $this->getConfigValue('moderate_first')) {
+            $moderation_mode = true;
+        }
+
+        $user_id = intval($_SESSION['user_id']);
+        $DBC = DBC::getInstance();
+        $query = 'SELECT free_from_moderation FROM ' . DB_PREFIX . '_user WHERE user_id=?';
+        $stmt = $DBC->query($query, array($user_id));
+        if ($stmt) {
+            $ar = $DBC->fetch($stmt);
+            if ($ar['free_from_moderation'] == 1) {
+                $moderation_mode = false;
+            }
+        }
+
+        if ($moderation_mode) {
             $form_data['active']['value'] = 0;
         }
 
@@ -1334,7 +2078,7 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
 
 
 
-        if (1 == $this->getConfigValue('moderate_first')) {
+        if ($moderation_mode) {
             $this->notifyAboutModerationNeed($id, 'edit');
         }
 
@@ -1342,7 +2086,7 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
             $this->setStatusDate($id);
         }
 
-        if ($success_mark && 0 === intval($this->getConfigValue('apps.billing.enable'))) {
+        if ($success_mark && (0 === intval($this->getConfigValue('apps.billing.enable')) || (1 === intval($this->getConfigValue('apps.billing.enable')) && 0 === $this->getConfigValue('apps.upper.enable')))) {
             $this->setUpdatedAtDate($id);
         }
 
@@ -1360,6 +2104,48 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         $ims = $this->editImageMulti('data', 'data', 'id', $id);
         if (is_array($ims) && count($ims) > 0) {
             $imgs = array_merge($imgs, $ims);
+        }
+
+        foreach ($form_data as $form_item) {
+            if ($form_item['type'] == 'docuploads') {
+                $imgs_uploads = $this->appendDocUploads('data', $form_item, 'id', $id);
+            }
+        }
+
+        $mutiitems = array();
+        foreach ($form_data as $k => $form_item) {
+            if ($form_item['type'] == 'select_by_query_multi') {
+                $vals = $form_item['value'];
+                if (!is_array($vals)) {
+                    $vals = (array) $mutiitems[$k];
+                }
+                if (!empty($vals)) {
+                    $mutiitems[$k] = $vals;
+                } else {
+                    $mutiitems[$k] = array();
+                }
+            }
+        }
+
+        if (!empty($mutiitems)) {
+            $keys = array_keys($mutiitems);
+
+            $params = array();
+            $params[] = 'data';
+            $params = array_merge($params, $keys);
+            $params[] = $id;
+            $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name` IN (' . implode(', ', array_fill(0, count($keys), '?')) . ') AND `primary_id`=?';
+            $stmt = $DBC->query($query, $params);
+
+            $query = 'INSERT INTO ' . DB_PREFIX . '_multiple_field (`table_name`, `field_name`, `primary_id`, `field_value`) VALUES (?,?,?,?)';
+            foreach ($mutiitems as $key => $vals) {
+                if (!empty($vals)) {
+                    foreach ($vals as $val) {
+                        $stmt = $DBC->query($query, array('data', $key, $id, $val));
+                        //echo $DBC->getLastError();
+                    }
+                }
+            }
         }
 
 
@@ -1415,6 +2201,64 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
                     }
                 }
             }
+        }else{
+            
+            /*$need_watermark = false;
+            
+            if(1==intval($this->getConfigValue('watermark_user_control'))){
+                $DBC = DBC::getInstance();
+                $query = 'SELECT watermark_images FROM ' . DB_PREFIX . '_data WHERE id=?';
+                $stmt = $DBC->query($query, array($id));
+                if($stmt){
+                    $ar = $DBC->fetch($stmt);
+                    if($ar['watermark_images'] == 1){
+                        $need_watermark = true;
+                    }
+                }
+            }
+            
+            if(!empty($imgs) && $need_watermark){
+                
+                $filespath = SITEBILL_DOCUMENT_ROOT . '/img/data/';
+                $copy_folder = $this->notwatermarked_folder;
+                if($this->nowatermark_folder_with_id){
+                    $copy_folder = $copy_folder.$id.'/';
+                }
+                
+                if (!is_dir($copy_folder)) {
+                    mkdir($copy_folder);
+                }
+                require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/watermark/watermark.php';
+                $Watermark = new Watermark();
+                $Watermark->setPosition($this->getConfigValue('apps.watermark.position'));
+                $Watermark->setOffsets(array(
+                    $this->getConfigValue('apps.watermark.offset_left'),
+                    $this->getConfigValue('apps.watermark.offset_top'),
+                    $this->getConfigValue('apps.watermark.offset_right'),
+                    $this->getConfigValue('apps.watermark.offset_bottom')
+                ));
+                foreach ($imgs as $v) {
+                    $parts = explode('/', $v['normal']);
+
+                    if(count($parts)>1){
+                        $nam = end($parts);
+                        $parts = array_slice($parts, 0, count($parts)-1);
+                        for($i=1; $i<=count($parts); $i++){
+                            $locs = $copy_folder . '/' . implode('/', array_slice($parts, 0, $i));
+                            if (!is_dir($locs)) {
+                                mkdir($locs);
+                            }
+                        }
+
+                    }
+                    copy($filespath . $v['normal'], $copy_folder . $v['normal']);
+
+                    $Watermark->printWatermark(MEDIA_FOLDER . '/' . $v['normal']);
+                }
+                
+            }*/
+            
+            
         }
     }
 
@@ -1429,6 +2273,9 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
 
     public function setUpdatedAtDate($id) {
         $field = trim($this->getConfigValue('apps.realty.updated_at_field'));
+        /*
+         * $type = 1|0 - 1-date, 0-dtdatetime
+         */
         $type = intval($this->getConfigValue('apps.realty.updated_at_field_type'));
         $update_date_added = intval($this->getConfigValue('apps.realty.update_date_added'));
 
@@ -1502,7 +2349,7 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         return '';
     }
 
-    function get_form($form_data = array(), $do = 'new') {
+    function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
         $_SESSION['allow_disable_root_structure_select'] = true;
         if (1 == $this->getConfigValue('divide_step_form')) {
             return $this->_get_form_step_divided($form_data, $do);
@@ -1602,7 +2449,7 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         if ($topic_id != 0 && $current_id != 0) {
 
             $href = $this->getRealtyHREF($current_id, true, array('topic_id' => $topic_id, 'alias' => $form_data['translit_alias']['value']));
-			$rs .= '<a class="btn btn-success pull-right" href="' . $href . '" target="_blank">' . Multilanguage::_('L_SEE_AT_SITE') . '</a>';
+            $rs .= '<a class="btn btn-success pull-right" href="' . $href . '" target="_blank">' . Multilanguage::_('L_SEE_AT_SITE') . '</a>';
         }
 
         if ($step < $steps_total) {
@@ -1703,11 +2550,11 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         $current_id = (int) $form_data['id']['value'];
 
         if ($topic_id != 0 && $current_id != 0) {
-			$href = $this->getRealtyHREF($current_id, true, array('topic_id' => $topic_id, 'alias' => $form_data['translit_alias']['value']));
-			$rs .= '<a class="btn btn-success form-cntrl form-cntrl-siteview" href="' . $href . '" target="_blank">' . Multilanguage::_('L_SEE_AT_SITE') . '</a>';
+            $href = $this->getRealtyHREF($current_id, true, array('topic_id' => $topic_id, 'alias' => $form_data['translit_alias']['value']));
+            $rs .= '<a class="btn btn-success form-cntrl form-cntrl-siteview" href="' . $href . '" target="_blank">' . Multilanguage::_('L_SEE_AT_SITE') . '</a>';
         }
 
-        $rs .= '<form method="post" class="form-horizontal" action="' . SITEBILL_MAIN_URL . '/account/data'.SiteBill::$_trslashes.'" enctype="multipart/form-data">';
+        $rs .= '<form method="post" class="form-horizontal" action="' . SITEBILL_MAIN_URL . '/account/data' . SiteBill::$_trslashes . '" enctype="multipart/form-data">';
 
         if ($this->getConfigValue('advert_cost') > 0 and ( $do == 'new' or $do == 'new_done' )) {
 
@@ -1727,41 +2574,41 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
         }
 
         $el = $form_generator->compile_form_elements($form_data);
-		$el['form_header'] = $rs;
-		$el['form_header_action'] = SITEBILL_MAIN_URL.'/account/data/';
-		$el['form_header_class'] = 'form-horizontal';
-		$el['form_header_enctype'] = 'multipart/form-data';
+        $el['form_header'] = $rs;
+        $el['form_header_action'] = SITEBILL_MAIN_URL . '/account/data/';
+        $el['form_header_class'] = 'form-horizontal';
+        $el['form_header_enctype'] = 'multipart/form-data';
         $el['form_footer'] = '</form>';
-		if ($do == 'new') {
+        if ($do == 'new') {
             $el['private'][] = array('html' => '<input type="hidden" name="do" value="new_done" />');
         } else {
             $el['private'][] = array('html' => '<input type="hidden" name="do" value="edit_done" />');
             //$el['private'][]=array('html'=>'<input type="hidden" name="id" value="'.$form_data['id']['value'].'">');
         }
-        
-        /*$token = md5(uniqid(mt_rand() . microtime()));
-        $hash = md5($token.$_SESSION['csrfsecret']);
-        $el['private'][] = array('html' => '<input type="hidden" name="csrftoken" value="'.$token.'" />');
-        $el['private'][] = array('html' => '<input type="hidden" name="csrfhash" value="'.$hash.'" />');
-        */
+
+        /* $token = md5(uniqid(mt_rand() . microtime()));
+          $hash = md5($token.$_SESSION['csrfsecret']);
+          $el['private'][] = array('html' => '<input type="hidden" name="csrftoken" value="'.$token.'" />');
+          $el['private'][] = array('html' => '<input type="hidden" name="csrfhash" value="'.$hash.'" />');
+         */
         $el['controls']['submit'] = array('html' => '<input class="btn btn-primary" type="submit" name="submit" id="formsubmit" onClick="return SitebillCore.formsubmit(this);" value="' . $button_title . '" />');
 
         $smarty->assign('do', $do);
         $smarty->assign('id', $form_data['id']['value']);
         $smarty->assign('form_elements', $el);
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data_front.tpl')) {
-        	
-        	$tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data_front.tpl';
+
+            $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data_front.tpl';
         } else {
-            /*if (defined('RUN_WITH3BOOTSTRAP') && RUN_WITH3BOOTSTRAP == 1) {
-                $tpl_name = $this->getAdminTplFolder() . '/data_form.tpl';
-            } else {
-                $tpl_name = $this->getAdminTplFolder() . '/data_form_front.tpl';
-            }*/
-        	
+            /* if (defined('RUN_WITH3BOOTSTRAP') && RUN_WITH3BOOTSTRAP == 1) {
+              $tpl_name = $this->getAdminTplFolder() . '/data_form.tpl';
+              } else {
+              $tpl_name = $this->getAdminTplFolder() . '/data_form_front.tpl';
+              } */
+
             $tpl_name = $this->getAdminTplFolder() . '/data_form_front.tpl';
         }
-        
+
         return $smarty->fetch($tpl_name);
     }
 
@@ -1816,14 +2663,76 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
             if ($stmt) {
                 $ar = $DBC->fetch($stmt);
                 if (preg_match('/' . $alias . '-(\d+)/', $ar['translit_alias'], $matches)) {
-                    $alias.='-' . ((int) $matches[1] + 1);
+                    $alias .= '-' . ((int) $matches[1] + 1);
                 } else {
-                    $alias.='-1';
+                    $alias .= '-1';
                 }
             }
         }
         //echo $alias;
         return $alias;
+    }
+    
+    function mass_delete_data($table_name, $primary_key, $ids) {
+        
+        $cuser_id = (int) $_SESSION['user_id'];
+        
+        if($cuser_id==0){
+            return '';
+        }
+        $errors = '';
+        
+        if (count($ids) > 0) {
+            foreach ($ids as $k => $id) {
+                if (!$this->check_access_to_data($cuser_id, $id)) {
+                    unset($ids[$k]);
+                }
+            }
+        } 
+
+        if (count($ids) > 0) {
+            if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
+                $DBC = DBC::getInstance();
+                $query = 'UPDATE ' . DB_PREFIX . '_data SET archived=1 WHERE `id` IN (' . implode(',', $ids) . ')';
+                $stmt = $DBC->query($query);
+                header('location: '.SITEBILL_MAIN_URL.'/account/data/');
+                exit();
+            } else {
+                foreach ($ids as $id) {
+                    $log_id = false;
+                    if ($this->getConfigValue('apps.realtylog.enable')) {
+                        require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylog/admin/admin.php';
+                        $Logger = new realtylog_admin();
+                        $log_id = $Logger->addLog($id, $cuser_id, 'delete', $table_name);
+                    }
+                    if ($this->getConfigValue('apps.realtylogv2.enable')) {
+
+                        require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylogv2/admin/admin.php';
+
+                        $Logger = new realtylogv2_admin();
+
+                        $log_id = $Logger->addLog($id, $cuser_id, 'delete', $table_name, $primary_key);
+                    }
+                    $this->delete_data($table_name, $primary_key, $id);
+                    if ($this->getError()) {
+                        if ($log_id !== false) {
+                            $Logger->deleteLog($log_id);
+                        }
+                        $errors .= '<div align="center">' . Multilanguage::_('L_ERROR_ON_DELETE') . ' ID=' . $id . ': ' . $this->GetErrorMessage() . '<br>';
+                        $errors .= '</div>';
+                        $this->error_message = false;
+                    }
+                }
+                if ($errors != '') {
+                    $rs .= $errors . '<div align="center"><a href="'.SITEBILL_MAIN_URL.'/accoutn/data/">ОК</a></div>';
+                } else {
+                    header('location: '.SITEBILL_MAIN_URL.'/account/data/');
+                    exit();
+                }
+                return $rs;
+            }
+            return $rs;
+        }
     }
 
     protected function saveTranslitAlias($id) {
@@ -1840,11 +2749,11 @@ class User_Data_Manager extends SiteBill_Rent_Editor {
 
             if ($old_alias == '') {
                 if ('' != $this->getConfigValue('apps.seo.allow_custom_realty_aliase_fields')) {
-                	$fields=explode(',',$this->getConfigValue('apps.seo.allow_custom_realty_aliase_fields'));
-                	foreach($fields as $k=>$v){
-                		$fields[$k]=trim($v);
-                	}
-                	$new_alias = $this->createTranslitAliasByFields($id, $fields);
+                    $fields = explode(',', $this->getConfigValue('apps.seo.allow_custom_realty_aliase_fields'));
+                    foreach ($fields as $k => $v) {
+                        $fields[$k] = trim($v);
+                    }
+                    $new_alias = $this->createTranslitAliasByFields($id, $fields);
                 }
 
                 if ('' != $new_alias) {

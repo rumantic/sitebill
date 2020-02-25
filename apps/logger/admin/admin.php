@@ -168,6 +168,8 @@ class logger_admin extends Object_Manager {
           `logger_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
           `log_time` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           `apps_name` varchar(255) NOT NULL DEFAULT '',
+          `ipaddr` varchar(255) NOT NULL DEFAULT '',
+          `user_id` int(11) not null default 0,
           `method` varchar(255) NOT NULL DEFAULT '',
 		  `message` text,
           `type` int(11) not null default 0,
@@ -207,7 +209,9 @@ class logger_admin extends Object_Manager {
     public function write_log($message_array = array()) {
         self::clean_log();
         $DBC = DBC::getInstance();
-        $ip = getenv(HTTP_X_FORWARDED_FOR);
+        if ( defined(HTTP_X_FORWARDED_FOR) ) {
+            $ip = getenv(HTTP_X_FORWARDED_FOR);
+        }
         if ($ip == '') {
             $ip = $_SERVER['REMOTE_ADDR'];
         }

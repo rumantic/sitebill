@@ -60,23 +60,23 @@ class getrent_site extends getrent_admin {
         if (preg_match('/^getrent[\/]?/', $REQUESTURIPATH)) {
 
             $breadcrumbs[] = '<a href="/">' . Multilanguage::_('L_HOME') . '</a>';
-            $breadcrumbs[] = $this->getConfigValue('apps.getrent.folder_title');
+            $breadcrumbs[] = _e($this->getConfigValue('apps.getrent.folder_title'));
 
             if ('' != $this->getConfigValue('apps.getrent.meta_title')) {
-                $this->template->assert('meta_title', $this->getConfigValue('apps.getrent.meta_title'));
+                $this->template->assert('meta_title', _e($this->getConfigValue('apps.getrent.meta_title')));
             } else {
-                $this->template->assert('meta_title', $this->getConfigValue('apps.getrent.title'));
+                $this->template->assert('meta_title', _e($this->getConfigValue('apps.getrent.title')));
             }
 
             if ('' != $this->getConfigValue('apps.getrent.meta_keywords')) {
-                $this->template->assert('meta_keywords', $this->getConfigValue('apps.getrent.meta_keywords'));
+                $this->template->assert('meta_keywords', _e($this->getConfigValue('apps.getrent.meta_keywords')));
             }
 
             if ('' != $this->getConfigValue('apps.getrent.meta_description')) {
-                $this->template->assert('meta_description', $this->getConfigValue('apps.getrent.meta_description'));
+                $this->template->assert('meta_description', _e($this->getConfigValue('apps.getrent.meta_description')));
             }
 
-            $this->template->assert('title', $this->getConfigValue('apps.getrent.title'));
+            $this->template->assert('title', _e($this->getConfigValue('apps.getrent.title')));
             $this->template->assert('breadcrumbs', implode(' / ', $breadcrumbs));
 
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
@@ -127,7 +127,7 @@ class getrent_site extends getrent_admin {
 
     protected function _defaultAction() {
         global $smarty;
-        $smarty->assign('description', $this->getConfigValue('apps.getrent.description'));
+        $smarty->assign('description', _e($this->getConfigValue('apps.getrent.description')));
         $rs = '';
         $form_data = $this->data_model;
         unset($form_data[$this->table_name]['created_at']);
@@ -161,7 +161,7 @@ class getrent_site extends getrent_admin {
                 $smarty->template_dir = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme');
                 $subject = $_SERVER['SERVER_NAME'] . ': Новая заявка от клиента';
                 $to = $this->get_email_list();
-                $from = $this->getConfigValue('order_email_acceptor');
+                $from = $this->getConfigValue('system_email');
                 $this->sendFirmMail($to, $from, $subject, $order_mail_body);
                 if (1 == $this->getConfigValue('apps.client.allow-redirect_url_for_orders')) {
                     header('location: ' . SITEBILL_MAIN_URL . '/getrent/online-getrent/');
@@ -231,6 +231,8 @@ class getrent_site extends getrent_admin {
     }
 
     function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
+        $action = SITEBILL_MAIN_URL.'/getrent'.self::$_trslashes;
+        $action='';
         $rs = '';
         $_SESSION['allow_disable_root_structure_select'] = true;
         global $smarty;

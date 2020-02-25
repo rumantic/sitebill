@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install>
-	<name>third</name>
-	<creationDate>May 2016</creationDate>
-	<author>The Sitebill Development Team</author>
-	<authorEmail>kondin@etown.ru</authorEmail>
-	<authorUrl>http://www.sitebill.ru</authorUrl>
-	<copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
-	<license>http://www.sitebill.ru/licenses/sitebill.html</license>
+    <name>third</name>
+    <creationDate>May 2016</creationDate>
+    <author>The Sitebill Development Team</author>
+    <authorEmail>kondin@etown.ru</authorEmail>
+    <authorUrl>http://www.sitebill.ru</authorUrl>
+    <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
+    <license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>false</backendMenu>
-	<version status="beta">1.0.4</version>
-	<administration>
-		<!-- Administration Menu Section -->
-		<menu>Third-party libraries</menu>
-	</administration>	
+    <version status="beta">1.2.3</version>
+    <administration>
+        <!-- Administration Menu Section -->
+        <menu>Third-party libraries</menu>
+    </administration>	
 </install>

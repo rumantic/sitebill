@@ -41,8 +41,8 @@ class gridmanager_admin extends table_admin {
     public function getGridColumns() {
         $ret = array();
         $DBC = DBC::getInstance();
-        $q = 'SELECT c.name FROM ' . DB_PREFIX . '_' . $this->table_name . ' g LEFT JOIN ' . DB_PREFIX . '_columns c USING(columns_id) WHERE c.table_id=(SELECT table_id FROM ' . DB_PREFIX . '_table WHERE `name`=\'data\' LIMIT 1) ORDER BY g.gridmanager_id ASC';
-        $stmt = $DBC->query($q);
+        $q = 'SELECT c.name FROM ' . DB_PREFIX . '_' . $this->table_name . ' g LEFT JOIN ' . DB_PREFIX . '_columns c USING(columns_id) WHERE c.table_id=(SELECT table_id FROM ' . DB_PREFIX . '_table WHERE `name`=? LIMIT 1) ORDER BY g.gridmanager_id ASC';
+        $stmt = $DBC->query($q, array('data'));
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
                 $ret[] = $ar['name'];
@@ -55,6 +55,7 @@ class gridmanager_admin extends table_admin {
                 'price'
             );
         }
+        //print_r($ret);
         return $ret;
     }
 
@@ -94,7 +95,7 @@ class gridmanager_admin extends table_admin {
 
         $q = 'SELECT c.name FROM ' . DB_PREFIX . '_' . $this->table_name . ' g LEFT JOIN ' . DB_PREFIX . '_columns c USING(columns_id) WHERE c.table_id=(SELECT table_id FROM ' . DB_PREFIX . '_table WHERE `name`=\'data\' LIMIT 1) ORDER BY g.gridmanager_id ASC';
 
-
+        $model_data = $this->helper->load_model('data');
 
         $stmt = $DBC->query($q);
         if ($stmt) {
@@ -102,10 +103,12 @@ class gridmanager_admin extends table_admin {
                 $ret[] = $ar['name'];
             }
         }
-
-        $model_data = $this->helper->load_model('data');
-
-
+        
+        foreach($ret as $nm){
+            $fields[$nm] = array('title' => $model_data['data'][$nm]['title']);
+            $fields[$nm]['checked'] = 1;
+            unset($model_data['data'][$nm]);
+        }
 
         foreach ($model_data['data'] as $k => $v) {
             $fields[$k] = array('title' => $v['title']);
@@ -113,6 +116,7 @@ class gridmanager_admin extends table_admin {
                 $fields[$k]['checked'] = 1;
             }
         }
+        
         $this->template->assert('fields', $fields);
         global $smarty;
         $form_body = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/template/gridmanager_list.tpl');
@@ -126,6 +130,7 @@ class gridmanager_admin extends table_admin {
         $topic_id = $this->getRequestValue('topic_id');
         $form_title = preg_replace('/[^A-Za-zА-Яа-я0-9єії\-_ ]/', '', SiteBill::iconv('utf-8', SITE_ENCODING, $this->getRequestValue('form_title')));
         $fields = $this->getRequestValue('fields');
+        
         if (count($fields) == 0) {
             $q = "DELETE FROM " . DB_PREFIX . "_table_searchform WHERE `searchform_id`=" . $form_id;
             $stmt = $DBC->query($q);

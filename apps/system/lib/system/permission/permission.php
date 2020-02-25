@@ -17,7 +17,7 @@ class Permission extends Sitebill {
         if ( empty(self::$structure) or empty(self::$group_users) ) {
         	$this->load();
         }
-        $this->nobody_group_id = 999; 
+        $this->nobody_group_id = 0;
     }
     
     /**
@@ -54,6 +54,10 @@ class Permission extends Sitebill {
         	}
         }
         return true;
+    }
+    
+    function get_structure () {
+        return self::$structure;
     }
     
     function clear_menu_array( $menu_array, $user_id ) {
@@ -179,6 +183,13 @@ class Permission extends Sitebill {
     		}
     	}
     }
+
+    function is_admin($user_id) {
+        if ( $this->get_access($user_id, null, null) ) {
+            return true;
+        }
+        return false;
+    }
     
     
     /**
@@ -189,11 +200,21 @@ class Permission extends Sitebill {
      * @return boolean
      */
     function get_access ( $user_id, $component_name, $function_name ) {
-        $group_id = self::$group_users[$user_id];
+        
+        $group_id='';
+                
+        if(isset(self::$group_users[$user_id])){
+            $group_id = self::$group_users[$user_id];
+        }
         
         if ( $group_id == '' ) {
             $group_id = $this->nobody_group_id;
         }
+
+        if(!isset(self::$structure[$group_id])){
+            return false;
+        }
+        
         if ( self::$structure[$group_id]['group_name'] == 'admin' ) {
         	return true;
         	

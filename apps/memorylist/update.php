@@ -11,6 +11,8 @@ class memorylist_update extends memorylist_admin {
   `memorylist_id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(10) UNSIGNED NOT NULL,
   `title` varchar(255) NOT NULL,
+  `domain` varchar(255) NOT NULL,
+  `deal_id` int(10) UNSIGNED NOT NULL,
   `created_at` datetime NOT NULL,
   PRIMARY KEY (`memorylist_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -20,6 +22,8 @@ class memorylist_update extends memorylist_admin {
   `id` int(10) UNSIGNED NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 ";
+	$query_data[] = "ALTER TABLE `" . DB_PREFIX . "_memorylist`  ADD COLUMN `domain` varchar(255);";
+	$query_data[] = "ALTER TABLE `" . DB_PREFIX . "_memorylist`  ADD COLUMN `deal_id` int(11) not null default 0;";
 	$query_data[] = "ALTER TABLE `" . DB_PREFIX . "_memorylist_item`  ADD UNIQUE KEY `memorylist_id` (`memorylist_id`,`id`);";
 
 	$rs = 'Обновление базы данных<br/>';

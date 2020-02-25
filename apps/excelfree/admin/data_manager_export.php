@@ -34,7 +34,7 @@ class Data_Manager_Export extends Object_Manager {
         $this->data_model['data']['topic_id']['value'] = 0;
         $this->data_model['data']['topic_id']['length'] = 40;
         //$this->data_model['data']['topic_id']['type'] = 'select_box_structure';
-        $this->data_model['data']['topic_id']['type'] = 'structure_chain';
+        //$this->data_model['data']['topic_id']['type'] = 'structure_chain';
         $this->data_model['data']['topic_id']['query'] = 'select * from '.DB_PREFIX.'_topic';
         $this->data_model['data']['topic_id']['value_name'] = 'name';
         $this->data_model['data']['topic_id']['title_default'] = Multilanguage::_('L_CHOOSE_TOPIC');
@@ -154,7 +154,7 @@ class Data_Manager_Export extends Object_Manager {
                     $id = $this->add_value($model_array[$key]['primary_key_table'],$model_array[$key]['value_name'],$model_array[$key]['primary_key_name'],$data[$value]);
                 }
                 $this->setRequestValue($key, $id);
-            } elseif($model_array[$key]['type'] == 'structure_chain') {
+            } elseif(/*$model_array[$key]['type'] == 'structure_chain'*/$model_array[$key]['name'] == 'topic_id') {
             	$chain=$data[$value];
             	if(empty($chain)){
             		$chain=$this->category_not_defined_title;
@@ -307,7 +307,7 @@ class Data_Manager_Export extends Object_Manager {
     	$rs .= '<input type="hidden" name="action" value="excelfree">';
 
     	$rs .= '<tr>';
-    	$rs .= '<td colspan="2"><h2>Отметить колонки, которые необходимо выгрузить</h2><p><input type="checkbox" id="check_all111" checked="checked">Выгрузить все</p>'.$this->get_export_columns_list().'</td>';
+    	$rs .= '<td colspan="2"><h2>Отметить колонки, которые необходимо выгрузить</h2><p><input class="ace" type="checkbox" id="check_all" checked="checked"><label for="check_all" class="lbl">Выгрузить все</label></p>'.$this->get_export_columns_list().'</td>';
     	
     	$rs .= '</tr>';
 
@@ -327,12 +327,12 @@ class Data_Manager_Export extends Object_Manager {
     			<option value="10000">10000</option>
     			</select>
     			';
-    	$rs .= '<input class="btn btn-success" type="submit" name="submit" id="formsubmit" onClick="return SitebillCore.formsubmit(this);" value="'.Multilanguage::_('LOAD_EXCEL_FILE','excelfree').'"></td>';
+    	$rs .= '<input class="btn btn-success" type="submit" value="'.Multilanguage::_('LOAD_EXCEL_FILE','excelfree').'"></td>';
     	$rs .= '</tr>';
     	
     	$rs .= '</table>';
     	$rs .= '</form>';
-    $rs.='<script>$(document).ready(function(){$("#check_all111").change(function(){if($(this).prop("checked")){$(".applied [type=checkbox]").prop("checked", true);}else{$(".applied [type=checkbox]").prop("checked", false);}});})</script>';
+    $rs.='<script>$(document).ready(function(){$("#check_all").change(function(){if($(this).prop("checked")){$(".applied [type=checkbox]").prop("checked", true);}else{$(".applied [type=checkbox]").prop("checked", false);}});})</script>';
     	return $rs;
     
     }
@@ -347,7 +347,7 @@ class Data_Manager_Export extends Object_Manager {
         $rs = '<table>';
         $rs .= '<tbody class="applied">';
         foreach ( $parameters as $key => $value ) {
-            $rs .= '<tr><td><input type="checkbox" name="template_fields['.$value['key'].']" checked/>'.$value['title'].'</td></tr>';
+            $rs .= '<tr><td><input id="excel_checkcol_'.$value['key'].'" class="ace" type="checkbox" name="template_fields['.$value['key'].']" checked="checked" /><label for="excel_checkcol_'.$value['key'].'" class="lbl">'.$value['title'].'</label></td></tr>';
         }
         $rs .= '</tbody>';
         $rs .= '</table>';
@@ -828,7 +828,7 @@ class Data_Manager_Export extends Object_Manager {
      * @param array $params
      * @return array
      */
-    function grid_array ( $params, $fields=array(), $set_per_page = 0, $current_page = 1 ) {
+    function grid_array_e ( $params, $fields=array(), $set_per_page = 0, $current_page = 1 ) {
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/grid.php');
     	$common_grid = new Common_Grid($this);
     
@@ -882,21 +882,30 @@ class Data_Manager_Export extends Object_Manager {
 	    }
 	    $form_data = $this->data_model;
 	    $form_data[$this->table_name]=$this->get_model(true);
-	    if ( $record_id > 0 ) {
-	    	$form_data[$this->table_name] = $this->data_model_object->init_model_data_from_db ( $this->table_name, $this->primary_key, $record_id, $form_data[$this->table_name], TRUE );
-	    }
-     	
-    	$x=$this->getCatalogChains();
+        
+	    $x=$this->getCatalogChains();
     	$catalogChain=$x['txt'];
-    	//print_r($categoryChain);
-	    foreach($form_data[$this->table_name] as &$fd){
-	    	if($fd['type']=='structure_chain'){
-	    		$fd['value_string']=$catalogChain[$fd['value']];
-	    		$fd['value']=$fd['value_string'];
-	    	}
-	    }
-	    
-        return $form_data[$this->table_name];
+        
+        if(is_array($record_id) && !empty($record_id)){
+            $return = $this->data_model_object->init_model_data_from_db_multi($this->table_name, $this->primary_key, $record_id, $form_data[$this->table_name], TRUE);
+            foreach($return as $k=>$item){
+                foreach($item as $kk=>$fd){
+                    if($fd['type']=='structure_chain' || $fd['type']=='select_box_structure'){
+                        $return[$k][$kk]['value_string']=$catalogChain[$fd['value']];
+                    }
+                }
+            }
+        }elseif ( $record_id > 0 ) {
+	    	$return = $this->data_model_object->init_model_data_from_db ( $this->table_name, $this->primary_key, $record_id, $form_data[$this->table_name], TRUE );
+            foreach($return as &$fd){
+                if($fd['type']=='structure_chain' || $fd['type']=='select_box_structure'){
+                    $fd['value_string']=$catalogChain[$fd['value']];
+                    $fd['value']=$fd['value_string'];
+                }
+            }
+        }
+     	
+        return $return;
     }
     
     //helper functions for working with topic chains
@@ -949,7 +958,11 @@ class Data_Manager_Export extends Object_Manager {
 	    	foreach($categoryChainArray as $ck=>$cca){
 	    		$results[$this->compareChains($cca, $chain_parts)]=$ck;
 	    	}
-	    	$max_intersect=count($results)-1;
+	    	//$max_intersect=count($results)-1;
+            $max_intersect=0;
+			if(count($results)>0){
+				$max_intersect=max(array_keys($results));
+			}
 	    	if($max_intersect>0){
 		    	$id=$results[$max_intersect];
 		    	$branch_items=explode('/',$categoryChainNUM[$id]);

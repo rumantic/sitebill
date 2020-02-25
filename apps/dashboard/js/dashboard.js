@@ -3,6 +3,7 @@ $(document).on('ready', function () {
         var data = {}, estate_folder='';
 	data.action = 'save';
         data.theme = $('#config_form').find('select[name="theme"]').val();
+        data.homepagetype = $('#config_form').find('select[name="homepagetype"]').val();
 
         $.ajax({
             url : estate_folder + "/apps/dashboard/js/ajax.php",

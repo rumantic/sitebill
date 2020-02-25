@@ -236,6 +236,9 @@ class Page_Navigator {
 	
 	public static function getPagingArray($total_records, $current_page=1, $per_page=10, $pager_params=array(), $url='', $settings=array()){
 		//echo $current_page;
+        if($current_page == 0){
+            $current_page = 1;
+        }
 		
 		if($url==''){
 			//$url=$_SERVER['REQUEST_URI'];

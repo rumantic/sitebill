@@ -2,39 +2,39 @@
 
 <h1>Карта сайта</h1>
 <div class="sitemap">
-<ul>
-    {if $map_page}
-	<li>Страницы</li>
-	<li>
-		<ul>
-			{section name=i loop=$map_page}
-			<li><a href="{$estate_folder}{$map_page[i].uri}">{$map_page[i].title}</a></li>
-			{/section}
-		</ul>
-	</li>
-	{/if}
-	{if $map_news}
-    <li><a href="{$estate_folder}news">Новости</a></li>
-    <li>
-        <ul>
-            {section name=i loop=$map_news}
-            <li><a href="{$estate_folder}news{$map_news[i].news_id}.html">{$map_news[i].title}</a></li>
-            {/section}
-        </ul>
-    </li>
-    <li><a href="{$estate_folder}rss">RSS</a></li>
-    {/if}
+    <ul>
+        {if $map_page}
+        <li>Страницы</li>
+        <li>
+            <ul>
+                {section name=i loop=$map_page}
+                <li><a href="{$estate_folder}/{$map_page[i].uri}">{$map_page[i].title}</a></li>
+                {/section}
+            </ul>
+        </li>
+        {/if}
+        {if $map_news}
+        <li><a href="{$estate_folder}/news">Новости</a></li>
+        <li>
+            <ul>
+                {section name=i loop=$map_news}
+                <li><a href="{$estate_folder}/news{$map_news[i].news_id}.html">{$map_news[i].title}</a></li>
+                {/section}
+            </ul>
+        </li>
+        <li><a href="{$estate_folder}/rss">RSS</a></li>
+        {/if}
 
-    {if $map_gallery}
-    <li><a href="{$estate_folder}gallery">Галерея</a></li>
-    <li>
-        <ul>
-            {section name=i loop=$map_gallery}
-            <li><a href="{$estate_folder}gallery_photo{$map_gallery[i].gallery_id}">{$map_gallery[i].title}</a></li>
-            {/section}
-        </ul>
-    </li>
-    {/if}
-	
-</ul>
+        {if $map_gallery}
+        <li><a href="{$estate_folder}/gallery">Галерея</a></li>
+        <li>
+            <ul>
+                {section name=i loop=$map_gallery}
+                <li><a href="{$estate_folder}/gallery_photo{$map_gallery[i].gallery_id}">{$map_gallery[i].title}</a></li>
+                {/section}
+            </ul>
+        </li>
+        {/if}
+
+    </ul>
 </div>

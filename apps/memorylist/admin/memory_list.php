@@ -66,9 +66,7 @@ class Memory_List extends Object_Manager {
         }
 
 
-        //set_include_path(SITEBILL_DOCUMENT_ROOT.'/apps/excel/lib/phpexcel/');
-        //include 'PHPExcel/IOFactory.php';
-        require_once SITEBILL_APPS_DIR . '/third/phpexcel/PHPExcel/IOFactory.php';
+        $objPHPExcel = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
 
         $ext = (int) $this->getRequestValue('ext');
         if ($ext == 1) {
@@ -87,7 +85,12 @@ class Memory_List extends Object_Manager {
             $tpl = SITEBILL_DOCUMENT_ROOT . '/apps/userdata/admin/template/xls_memorylist.xlsx';
         }
 
-        $objTPLExcel = PHPExcel_IOFactory::load($tpl);
+        try {
+            $objTPLExcel = \PhpOffice\PhpSpreadsheet\IOFactory::load($tpl);
+        } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+            die('Error loading file: ' . $e->getMessage());
+        }
+
         $objTPLWorksheet = $objTPLExcel->getActiveSheet();
 
         $sheetData = $objTPLWorksheet->toArray(null, true, true, true);
@@ -141,9 +144,7 @@ class Memory_List extends Object_Manager {
                         $value = strip_tags($grid_item[$field]['value']);
                     } elseif ($grid_item[$field]['type'] == 'uploadify_image') {
                         if (count($grid_item[$field]['image_array'] > 0)) {
-                            $objDrawing = new PHPExcel_Worksheet_Drawing();
-                            //$objDrawing->setName('Logo');
-                            //$objDrawing->setDescription('Logo');
+                            $objDrawing = new \PhpOffice\PhpSpreadsheet\Worksheet\Drawing();
                             $objDrawing->setPath(SITEBILL_DOCUMENT_ROOT . '/img/data/' . $grid_item[$field]['image_array'][0]['preview']);
                             $objDrawing->setHeight(100);
                             $colletter = $exported_fields_names_letters[$k];
@@ -196,8 +197,7 @@ class Memory_List extends Object_Manager {
         foreach ($exported_fields_names_letters as $k => $l) {
             $ActiveSheet->duplicateStyle($objTPLWorksheet->getStyle($l . '2'), $l . '2:' . $l . ($count + 1));
         }
-
-        $objWriter = new PHPExcel_Writer_Excel2007($objTPLExcel);
+        $objWriter = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($objTPLExcel);
         $xlsx_file_name = "data" . date('Y-m-d_H_i') . ".xlsx";
         $xlsx_output_file = SITEBILL_DOCUMENT_ROOT . "/cache/upl/" . $xlsx_file_name;
         $objWriter->save($xlsx_output_file);
@@ -252,8 +252,89 @@ class Memory_List extends Object_Manager {
         if (empty($ids)) {
             return;
         }
+        echo $this->compile_pdf($ids, $data_site, $USER_ID);
+        exit();
+    }
+    
+    /**
+     * Получение массива моделей объектов
+     * @param array $ids
+     * @return array
+     */
+    public function init_exported_data($ids){
+        require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+        $data_model = new Data_Model();
+        $form_data_shared = $data_model->get_kvartira_model(false, true);
+        $form_data_shared = $form_data_shared['data'];
 
-        $default_params['grid_item'] = array('id', 'topic_id', 'city_id', 'district_id', 'street_id', 'price', 'image');
+        require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
+        $data_model = new Data_Model();
+        $data = $data_model->init_model_data_from_db_multi('data', 'id', $ids, $form_data_shared, true, true, true);
+        return $data;
+    }
+    
+    /**
+     * Дополняет модель данных объявления дополнительными данными, например связанными данными из других объектов
+     * @param array $data
+     */
+    public function adopt_model_to_pdfexport($data){
+        return $data;
+    }
+    
+    /**
+     * Формирует pdf-страницу для списка объектов заданных массивом id
+     * @global object $smarty
+     * @param array $ids
+     * @param boolean $stuff
+     */
+    public function compile_rich_pdf ( $ids, $stuff = false ) {
+        global $smarty;
+        
+        $data = $this->init_exported_data($ids);
+
+        if(!empty($data)){
+            $data = $this->adopt_model_to_pdfexport($data);
+        }
+        
+        $tpl = '';
+        $tplfile = 'pdf_memory_list_grid_client.tpl';
+        if($stuff){
+            $tplfile = 'pdf_memory_list_grid_stuff.tpl';
+        }
+        
+        if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/memorylist/site/template/' . $tplfile)) {
+            $tpl = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/memorylist/site/template/' . $tplfile;
+        } else {
+            $tpl = SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/site/template/' . $tplfile;
+        }
+
+
+        $this->template->assign('_core_folder', SITEBILL_DOCUMENT_ROOT);
+        $this->template->assign('grid_items', $data);
+
+        $html = $smarty->fetch($tpl);
+        
+        $dompdfoptions = new \Dompdf\Options();
+        $dompdfoptions->set('isRemoteEnabled', TRUE);
+        $dompdf = new \Dompdf\Dompdf($dompdfoptions);
+        $dompdf->loadHtml($html);
+        $dompdf->render();
+        $output = $dompdf->output();
+        header("Content-type: application/pdf");
+        echo $output;
+        exit();
+    }
+
+    public function compile_pdf ( $ids, data_site $data_site, $USER_ID ) {
+        if ( $this->getConfigValue('apps.pdfreport.grid_item') != '' ) {
+            $default_params['grid_item'] = array_map('trim', explode(',', $this->getConfigValue('apps.pdfreport.grid_item')));
+            if ($this->getConfigValue('apps.pdfreport.custom_grid_item_disable')) {
+                $params['grid_item'] = $default_params['grid_item'];
+            }
+        } else {
+            $default_params['grid_item'] = array('id', 'topic_id', 'city_id', 'district_id', 'street_id', 'price', 'image');
+        }
+
         $REQUESTURIPATH = Sitebill::getClearRequestURI();
         if (!preg_match('/all[\/]?$/', $REQUESTURIPATH)) {
             $params['grid_conditions']['user_id'] = $this->getSessionUserId();
@@ -318,16 +399,17 @@ class Memory_List extends Object_Manager {
         //if (isset($params['grid_conditions']) && count($params['grid_conditions']) > 0) {
         $params_ids = array();
         $params_ids['id'] = $ids;
-
+        //print_r($ids);
         $common_grid->set_conditions($params_ids);
         //}
         //$common_grid->set_grid_query('SELECT * FROM '.DB_PREFIX.'_'.$this->table_name.' ORDER BY name ASC');
-        $common_grid->setPagerParams(array('action' => $data_site->action, 'page' => $this->getRequestValue('page'), 'per_page' => $this->getConfigValue('common_per_page')));
+        $common_grid->setPagerParams(array('action' => $data_site->action, 'page' => 1, 'per_page' => count($ids)));
 
         $rs = $common_grid->extended_items();
         //$common_grid->construct_query();
         $common_grid->construct_grid();
         $grid_array = $common_grid->construct_grid_array();
+        $grid_array = $common_grid->degradate_grid($grid_array);
 
         //echo '<pre>';
         //print_r($this->data_model);
@@ -347,47 +429,8 @@ class Memory_List extends Object_Manager {
         //echo '</pre>';
         //exit;
 
-        $data_site->createPDF($grid_array, $grid_array_transformed);
-
-        exit();
+        return $data_site->createPDF($grid_array, $grid_array_transformed);
     }
-
-    /* private function createPDF($data, $is_ext = 0) {
-      global $smarty;
-
-      $smarty->assign('grid_items', $data);
-
-      $smarty->assign('_core_folder', SITEBILL_DOCUMENT_ROOT);
-      $pdf_file_storage = SITEBILL_DOCUMENT_ROOT . '/cache/';
-
-      if ($is_ext == 1) {
-      $tplfile = 'account_data_grid_ext.tpl';
-      } else {
-      $tplfile = 'account_data_grid.tpl';
-      }
-
-
-      if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/' . $tplfile)) {
-      $html = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/' . $tplfile);
-      } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/pdfreport/admin/template/' . $tplfile)) {
-      $html = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/pdfreport/admin/template/' . $tplfile);
-      } else {
-      $html = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/pdfreport/admin/template/account_data_grid.tpl');
-      }
-
-      require_once(SITEBILL_DOCUMENT_ROOT . "/apps/pdfreport/lib/dompdf/dompdf_config.inc.php");
-
-
-      $dompdf = new DOMPDF();
-      $dompdf->set_paper('A4', 'landscape');
-      $dompdf->load_html($html);
-      $dompdf->render();
-
-      $output = $dompdf->output();
-      header("Content-type: application/pdf");
-      echo $output;
-      exit();
-      } */
 
     public function deleteMemorylist($id) {
         $memorylist_id = $id;
@@ -409,6 +452,9 @@ class Memory_List extends Object_Manager {
     }
 
     public function checkMemoryListOwner($memorylist_id, $user_id) {
+        if ( $this->getConfigValue('apps.memorylist.public_access_enable') ) {
+            return true;
+        }
         $DBC = DBC::getInstance();
         $query = 'SELECT COUNT(memorylist_id) AS cnt FROM ' . DB_PREFIX . '_' . $this->memorylist_table . ' WHERE memorylist_id=? AND user_id=?';
 
@@ -509,6 +555,97 @@ class Memory_List extends Object_Manager {
         }
         return false;
     }
+    
+    /**
+     * Получаем memory_list_id по входным параметрам
+     * Если такого листа еще нет, тогда метод попробует создать его и присвоит ему ИД
+     * 
+     * @param type $domain
+     * @param type $user_id
+     * @param type $deal_id
+     * @param type $title
+     */
+    public function get_domain_memory_list_id ( $domain, $user_id, $deal_id, $title ) {
+        $DBC = DBC::getInstance();
+        if ( $this->getConfigValue('apps.memorylist.public_access_enable') ) {
+            $query = 'SELECT memorylist_id FROM ' . DB_PREFIX . '_' . $this->memorylist_table . ' WHERE domain=? and deal_id=? limit 1';
+            $stmt = $DBC->query($query, array($domain, $deal_id), $success);
+        } else {
+            $query = 'SELECT memorylist_id FROM ' . DB_PREFIX . '_' . $this->memorylist_table . ' WHERE domain=? and user_id=? and deal_id=? limit 1';
+            $stmt = $DBC->query($query, array($domain, $user_id, $deal_id), $success);
+        }
+
+        if ( !$success ) {
+            $this->writeLog($DBC->getLastError());
+        }
+        if ($stmt) {
+            $ar = $DBC->fetch($stmt);
+            if ( $ar['memorylist_id'] > 0 ) {
+                return $ar['memorylist_id'];
+            }
+        }
+        $memorylist_id = $this->create_domain_memory_list($domain, $user_id, $deal_id, $title);
+        return $memorylist_id;
+    }
+    
+    public function create_domain_memory_list ( $domain, $user_id, $deal_id, $title ) {
+        $DBC = DBC::getInstance();
+        $query = 'INSERT INTO ' . DB_PREFIX . '_' . $this->memorylist_table . ' (user_id, title, created_at, domain, deal_id) VALUES (?, ?, ?, ?, ?)';
+        $stmt = $DBC->query($query, array($user_id, $title, date('Y-m-d H:i:s', time()), $domain, $deal_id));
+        if ($stmt) {
+            return $DBC->lastInsertId();
+        }
+        return false;
+    }
+    
+    public function toggle_item (  $memorylist_id, $data_id ) {
+        $DBC = DBC::getInstance();
+        $query = 'SELECT memorylist_id, id FROM ' . DB_PREFIX . '_' . $this->memorylist_item_table . ' WHERE memorylist_id=? and id=?';
+        $stmt = $DBC->query($query, array($memorylist_id, $data_id), $success);
+        if ( !$success ) {
+            $this->writeLog($DBC->getLastError());
+        }
+        if ($stmt) {
+            $ar = $DBC->fetch($stmt);
+            if ( $ar['memorylist_id'] > 0 ) {
+                $this->delete_item($memorylist_id, $data_id);
+                return 'remove';
+            }
+        }
+        $this->add_item($memorylist_id, $data_id);
+        return 'add';
+    }
+    
+    public function parse_memory_list ( $domain, $deal_id, $user_id, $primary_key, $rows ) {
+        $user_memory_list = $this->getUserMemoryLists_indexed_by_data_id($user_id, $domain, $deal_id);
+        foreach ($rows as $idx => $item) {
+            if ( isset($user_memory_list[$rows[$idx][$primary_key]['value']]) ) {
+                $rows[$idx][$primary_key]['collections'] = $deal_id;
+            }
+            //$ra['index'][$item[$primary_key]['value']] = $idx;
+        }
+        return $rows;
+    }
+    
+    public function delete_item($memorylist_id, $data_id) {
+        $DBC = DBC::getInstance();
+        $query = 'DELETE FROM ' . DB_PREFIX . '_' . $this->memorylist_item_table . ' WHERE memorylist_id=? and id=?';
+        $stmt = $DBC->query($query, array($memorylist_id, $data_id), $success);
+        if ( !$success ) {
+            $this->writeLog($DBC->getLastError());
+        }
+        return true;
+    }
+    public function add_item($memorylist_id, $data_id) {
+        $DBC = DBC::getInstance();
+        $query = 'INSERT INTO ' . DB_PREFIX . '_' . $this->memorylist_item_table . ' (memorylist_id, id) VALUES (?, ?)';
+        $stmt = $DBC->query($query, array($memorylist_id, $data_id), $success);
+        if ( !$success ) {
+            $this->writeLog($DBC->getLastError());
+        }
+        return true;
+    }
+    
 
     public function appendItems($memorylist_id, $items) {
         $DBC = DBC::getInstance();
@@ -534,13 +671,86 @@ class Memory_List extends Object_Manager {
         }
         return true;
     }
-
-    public function getUserMemoryLists($user_id) {
+    
+    public function getUserMemoryLists_indexed_by_data_id($user_id, $domain = false, $deal_id = false) {
         $DBC = DBC::getInstance();
         $mlids = array();
         $mls = array();
-        $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $this->memorylist_table . ' WHERE user_id=?';
-        $stmt = $DBC->query($query, array($user_id));
+        $mls_tmp = array();
+        if ( $this->getConfigValue('apps.memorylist.public_access_enable') ) {
+            $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $this->memorylist_table . ' WHERE user_id IS NOT NULL';
+            if ( $domain ) {
+                $query .= ' AND domain=? AND deal_id=?';
+                $dbc_array = array($domain, $deal_id);
+            } else {
+                $dbc_array = array();
+            }
+        } else {
+            $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $this->memorylist_table . ' WHERE user_id=?';
+            if ( $domain ) {
+                $query .= ' AND domain=? AND deal_id=?';
+                $dbc_array = array($user_id, $domain, $deal_id);
+            } else {
+                $dbc_array = array($user_id);
+            }
+        }
+
+
+        $stmt = $DBC->query($query, $dbc_array);
+        
+        if ($stmt) {
+            while ($ar = $DBC->fetch($stmt)) {
+                $mls_tmp[$ar['memorylist_id']] = $ar;
+            }
+        }
+
+        if (!empty($mls_tmp)) {
+            $mlids = array_keys($mls_tmp);
+        }
+
+        if (!empty($mlids)) {
+            $qar = array();
+            foreach ($mlids as $m) {
+                $qar[] = '?';
+            }
+            $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $this->memorylist_item_table . ' WHERE memorylist_id IN (' . implode(',', array_fill(0, count($qar), '?')) . ')';
+
+            $stmt = $DBC->query($query, $mlids);
+            if ($stmt) {
+                while ($ar = $DBC->fetch($stmt)) {
+                    $mls[$ar['id']]['items'][] = $ar;
+                }
+            }
+        }
+        return $mls;
+    }
+    
+
+    public function getUserMemoryLists($user_id, $domain = false, $deal_id = false) {
+        $DBC = DBC::getInstance();
+        $mlids = array();
+        $mls = array();
+        if ( $this->getConfigValue('apps.memorylist.public_access_enable') ) {
+            $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $this->memorylist_table . ' WHERE user_id IS NOT NULL';
+            if ( $domain ) {
+                $query .= ' AND domain=? AND deal_id=?';
+                $dbc_array = array($domain, $deal_id);
+            } else {
+                $dbc_array = array();
+            }
+        } else {
+            $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $this->memorylist_table . ' WHERE user_id=?';
+            if ( $domain ) {
+                $query .= ' AND domain=? AND deal_id=?';
+                $dbc_array = array($user_id, $domain, $deal_id);
+            } else {
+                $dbc_array = array($user_id);
+            }
+        }
+
+
+        $stmt = $DBC->query($query, $dbc_array);
+        
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
                 $mls[$ar['memorylist_id']] = $ar;
@@ -568,4 +778,24 @@ class Memory_List extends Object_Manager {
         return $mls;
     }
 
+    function select_data_ids_by_deal_id ($user_id, $domain, $deal_id) {
+        $DBC = DBC::getInstance();
+        $ids = array();
+
+        if ( $this->getConfigValue('apps.memorylist.public_access_enable') ) {
+            $query = "SELECT ml.* FROM ".DB_PREFIX."_memorylist_item ml, ".DB_PREFIX."_memorylist m WHERE m.memorylist_id=ml.memorylist_id AND m.domain=? AND m.deal_id=?";
+            $stmt = $DBC->query($query, array($domain, $deal_id));
+        } else {
+            $query = "SELECT ml.* FROM ".DB_PREFIX."_memorylist_item ml, ".DB_PREFIX."_memorylist m WHERE m.memorylist_id=ml.memorylist_id AND m.user_id=? AND m.domain=? AND m.deal_id=?";
+            $stmt = $DBC->query($query, array($user_id, $domain, $deal_id));
+        }
+
+
+        if ($stmt) {
+            while ($ar = $DBC->fetch($stmt)) {
+                $ids[] = $ar['id'];
+            }
+        }
+        return $ids;
+    }
 }

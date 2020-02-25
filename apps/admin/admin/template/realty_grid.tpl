@@ -779,12 +779,18 @@ $(document).ready(function(){
         
         Дом</td>
 		<td class="row_title">
-										<!-- #section:plugins/input.tag-input -->
-										<div class="inline-tags">
-											<input type="text" name="price" id="price" class="input-tag" value="" placeholder="..." />
-										</div>
-
-										<!-- /section:plugins/input.tag-input -->
+			<div class="inline-tags">
+				<div class="ranged-tags" data-field="price">
+    				<div class="ranged-tags-title"></div>
+    				<div class="ranged-tags-params" style="display: none;">
+	    				<input name="price[min]" type="text" class="tagged_input" value="{$smarty.session.tags_array.price.min}">
+	    				<input name="price[max]" type="text" class="tagged_input" value="{$smarty.session.tags_array.price.max}">
+	    				<a href="#" class="btn btn-danger clear" title="очистить фильтр"><i class="icon-remove"></i></a>
+	    				<a href="#" class="btn btn-success apply" title="применить фильтр"><i class="icon-ok"></i></a>
+	    				<a href="#" class="btn cancel" title="скрыть окно фильтра"><i class="icon-off"></i></a>
+    				</div>
+    			</div>
+			</div>
 										
 {literal}										
 <script type="text/javascript">

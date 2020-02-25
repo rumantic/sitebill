@@ -1,5 +1,4 @@
 <?php
-
 defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
 
 /**
@@ -13,7 +12,7 @@ class client_admin extends Object_Manager {
     /**
      * Constructor
      */
-    function __construct($realty_type = false) {
+    function __construct() {
         $this->SiteBill();
         Multilanguage::appendAppDictionary('client');
 
@@ -25,41 +24,16 @@ class client_admin extends Object_Manager {
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
 
-        if (!$config_admin->check_config_item('apps.client.enable')) {
-            $config_admin->addParamToConfig('apps.client.enable', '1', 'Включить приложение', 1);
-        }
-
-        if (!$config_admin->check_config_item('apps.client.namespace')) {
-            $config_admin->addParamToConfig('apps.client.namespace', 'client', 'Пространство имен приложения');
-        }
-
-        if (!$config_admin->check_config_item('apps.client.folder_title')) {
-            $config_admin->addParamToConfig('apps.client.folder_title', 'Заявки', 'Заголовок приложения в хлебных крошках');
-        }
-
-        if (!$config_admin->check_config_item('apps.client.allow-redirect_url_for_orders')) {
-            $config_admin->addParamToConfig('apps.client.allow-redirect_url_for_orders', '', 'Разрешить редирект на другую страницу при удачном завершении подачи заявки');
-        }
-
-        if (!$config_admin->check_config_item('apps.client.orders_email')) {
-            $config_admin->addParamToConfig('apps.client.orders_email', '', 'Email для уведомления о заявках (если несколько, то указать через запятую)');
-        }
-
-        if (!$config_admin->check_config_item('apps.client.notify_admin')) {
-            $config_admin->addParamToConfig('apps.client.notify_admin', '0', 'Уведомлять администраторов о заявках');
-        }
-
-        if (!$config_admin->check_config_item('apps.client.order_mode')) {
-            $config_admin->addParamToConfig('apps.client.order_mode', '0', 'Режим заявок', 1);
-        }
-
-        if (!$config_admin->check_config_item('apps.client.frontend_enable')) {
-            $config_admin->addParamToConfig('apps.client.frontend_enable', '0', 'Открыть доступ к выбору клиентов в ЛК', 1);
-        }
-        
-        if (!$config_admin->check_config_item('apps.client.create_client_on_user_register')) {
-            $config_admin->addParamToConfig('apps.client.create_client_on_user_register', '0', 'Создавать запись в таблице client с данными пользователя при регистрации', 1);
-        }
+        $config_admin->addParamToConfig('apps.client.enable', '1', 'Включить приложение', 1);
+        $config_admin->addParamToConfig('apps.client.namespace', 'client', 'Пространство имен приложения');
+        $config_admin->addParamToConfig('apps.client.folder_title', 'Заявки', 'Заголовок приложения в хлебных крошках');
+        $config_admin->addParamToConfig('apps.client.allow-redirect_url_for_orders', '', 'Разрешить редирект на другую страницу при удачном завершении подачи заявки', 1);
+        $config_admin->addParamToConfig('apps.client.orders_email', '', 'Email для уведомления о заявках (если несколько, то указать через запятую)');
+        $config_admin->addParamToConfig('apps.client.notify_admin', '0', 'Уведомлять администраторов о заявках', 1);
+        $config_admin->addParamToConfig('apps.client.order_mode', '0', 'Режим заявок', 1);
+        $config_admin->addParamToConfig('apps.client.frontend_enable', '0', 'Открыть доступ к выбору клиентов в ЛК', 1);
+        $config_admin->addParamToConfig('apps.client.create_client_on_user_register', '0', 'Создавать запись в таблице client с данными пользователя при регистрации', 1);
+        $config_admin->addParamToConfig('apps.client.antispam_disable', '0', 'Отключить проверку на спам-сообщения в заявках (не рекомендуется)', 1);
         
         //$this->install();
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/client/admin/client_model.php');
@@ -86,9 +60,20 @@ class client_admin extends Object_Manager {
         } else {
             $form_data = $Object->get_model($ajax);
         }
+        $this->redefine_primary_key($form_data);
 
 
         $this->data_model = $form_data;
+    }
+
+    function redefine_primary_key ( $form_data ) {
+        foreach ($form_data[$this->table_name] as $item => $item_array) {
+            if ( $item_array['type'] == 'primary_key' ) {
+                $this->primary_key = $item_array['name'];
+                return true;
+            }
+        }
+        return false;
     }
 
     function set_client_topic_id($topic_id) {
@@ -160,24 +145,6 @@ class client_admin extends Object_Manager {
         return $rs;
     }
 
-    /* protected function _editAction(){
-      $rs='';
-      require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
-      $data_model = new Data_Model();
-      $form_data = $this->data_model;
-      if ( $this->getRequestValue('language_id') > 0 and !$this->language->get_version($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $this->getRequestValue('language_id')) ) {
-      $rs = $this->get_form($form_data[$this->table_name], 'new', $this->getRequestValue('language_id'));
-      } else {
-      if ( $this->getRequestValue('language_id') > 0 ) {
-      $form_data[$this->table_name] = $data_model->init_model_data_from_db_language ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name], false, $this->getRequestValue('language_id') );
-      } else {
-      $form_data[$this->table_name] = $data_model->init_model_data_from_db ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name] );
-      }
-      $rs = $this->get_form($form_data[$this->table_name], 'edit');
-      }
-      return $rs;
-      } */
-
     protected function _deleteAction() {
         $rs = '';
 
@@ -191,6 +158,23 @@ class client_admin extends Object_Manager {
         }
         return $rs;
     }
+    
+    
+    protected function _newAction() {
+        $rs = '';
+
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
+        $data_model = new Data_Model();
+        $form_data = $this->data_model;
+        
+        if ($form_data[$this->table_name]['date']['type'] == 'date') {
+            $form_data[$this->table_name]['date']['value'] = time();
+        }
+
+        $rs = $this->get_form($form_data[$this->table_name]);
+        return $rs;
+    }
+    
 
     protected function _new_doneAction() {
         $rs = '';
@@ -251,15 +235,6 @@ class client_admin extends Object_Manager {
         }
     }
 
-    /* protected function _structureAction(){
-      return $this->structure_processor();
-      } */
-    /*
-      protected function _newAction(){
-      $form_data = $this->data_model;
-      return $this->get_form($form_data[$this->table_name]);
-      } */
-
     protected function _change_paramAction() {
         $form_data = $this->data_model;
         $id_array = array();
@@ -281,17 +256,30 @@ class client_admin extends Object_Manager {
         $data_model = new Data_Model();
         $form_data = $this->data_model;
 
-        if ('add_comment' == $this->getRequestValue('subaction')) {
-            $id = $this->addComment();
-            /* if((int)$id!=0){
-              SiteBill::appendAttachments('comment', (int)$id, $this->getRequestValue('attachments'));
-              } */
+        $default_request_items['client_id'] = $this->getRequestValue($this->primary_key);
+        $default_request_string = array();
+        foreach ( $default_request_items as $key => $value ) {
+            $default_request_string[] = "default_request[$key]=$value";
         }
+
+        $this->template->assert('default_request', implode('&', $default_request_string));
+
+        //$this->conctact_subaction();
+
         if ($this->getRequestValue('language_id') > 0) {
             $form_data[$this->table_name] = $data_model->init_model_data_from_db_language($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name], false, $this->getRequestValue('language_id'));
         } else {
             $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
         }
+
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/view.php');
+        $table_view = new Table_View();
+        $client_view = '';
+        $client_view .= '<table class="table">';
+        $client_view .= $table_view->compile_view($form_data[$this->table_name]);
+        $client_view .= '</table>';
+        $this->template->assert('client_view', $client_view);
+
         $rs = $this->show($form_data[$this->table_name]);
         return $rs;
     }
@@ -312,11 +300,6 @@ class client_admin extends Object_Manager {
         return $answer;
     }
 
-    private function addComment() {
-        require_once SITEBILL_DOCUMENT_ROOT . '/apps/comment/admin/admin.php';
-        $CA = new comment_admin();
-        return $CA->saveCommentNotAjax(true);
-    }
 
     function show($data) {
 
@@ -341,6 +324,8 @@ class client_admin extends Object_Manager {
         $this->template->assert('current_user_id', $this->getAdminUserId());
         $this->template->assert('client_comments', $comments);
         $this->template->assert('client_data', $data);
+        $this->template->assert('client_primary_key', $this->primary_key);
+        $this->template->assert('client_primary_value', $data[$this->primary_key]['value']);
         return $this->template->fetch($tpl_name);
     }
 
@@ -682,8 +667,14 @@ class client_admin extends Object_Manager {
         } elseif ($this->getRequestValue('action') == 'save_order_form' && 'post' == strtolower($_SERVER['REQUEST_METHOD'])) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/client/site/site.php';
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/client/admin/client_order.php';
+            if(file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/'.$this->getConfigValue('theme').'/apps/client/admin/local_client_order.php')){
+                require_once SITEBILL_DOCUMENT_ROOT . '/template/frontend/'.$this->getConfigValue('theme').'/apps/client/admin/local_client_order.php';
+                $Client_Order = new Local_Client_Order();
+            }else{
+                $Client_Order = new Client_Order();
+            }
 
-            $Client_Order = new Client_Order();
+            
             $model = $this->getRequestValue('model');
             $this->writeLog(array('apps_name' => 'apps.client', 'method' => __METHOD__, 'message' => 'save_order_form', 'type' => NOTICE));
 
@@ -782,20 +773,7 @@ class client_admin extends Object_Manager {
 
 
             return json_encode($ret);
-        }/* elseif ( $this->getRequestValue('action') == 'get_client_form' ) {
-
-          $form=$this->getRequestValue('form_id');
-          require_once SITEBILL_DOCUMENT_ROOT.'/apps/client/site/site.php';
-          require_once SITEBILL_DOCUMENT_ROOT.'/apps/client/admin/client_order.php';
-
-          $Client_Order=new Client_Order();
-          //$model=$this->getRequestValue('model');
-          //$options=$this->getRequestValue('options');
-
-          //$this->writeLog(array('apps_name'=>'apps.client', 'method' => __METHOD__, 'message' => 'get_order_form', 'type' => NOTICE));
-
-          return $Client_Order->get_client_form($form, $options);
-          } */ else {
+        } else {
             
         }
         return false;

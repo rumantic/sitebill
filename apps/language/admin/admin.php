@@ -10,7 +10,7 @@ require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.ph
 class language_admin extends Object_Manager {
 
     private $apps_path;
-    private $_lang_codes = array();
+    protected $_lang_codes = array();
 
     /**
      * Constructor
@@ -32,22 +32,17 @@ class language_admin extends Object_Manager {
 
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
-
-        if (!$config_admin->check_config_item('apps.language.use_langs')) {
-            $config_admin->addParamToConfig('apps.language.use_langs', '0', 'Использовать мультиязычность', 1);
-        }
-
-        if (!$config_admin->check_config_item('apps.language.languages')) {
-            $config_admin->addParamToConfig('apps.language.languages', '', 'Список языков (Пример: ru=Русский|en=English)');
-        }
-
-        if (!$config_admin->check_config_item('apps.language.default_lang_code')) {
-            $config_admin->addParamToConfig('apps.language.default_lang_code', '', 'Код языка по умолчанию');
-        }
-
-        if (!$config_admin->check_config_item('apps.language.use_default_as_ru')) {
-            $config_admin->addParamToConfig('apps.language.use_default_as_ru', 1, 'Использовать технические значения как RU', 1);
-        }
+        $config_admin->addParamToConfig('apps.language.use_langs', '0', 'Использовать мультиязычность', 1);
+        $config_admin->addParamToConfig('apps.language.languages', '', 'Список языков (Пример: ru=Русский|en=English)');
+        $config_admin->addParamToConfig('apps.language.default_lang_code', '', 'Код языка по умолчанию');
+        $config_admin->addParamToConfig('apps.language.use_default_as_ru', 1, 'Использовать технические значения как RU', 1);
+        $config_admin->addParamToConfig('apps.language.google_translate_api_key', '', 'Google Translate API key <a href=https://cloud.google.com/translate/docs/getting-started target=_blank>получить</a>');
+        $config_admin->addParamToConfig('apps.language.autotrans_enable', '1', 'Активировать автоперевод', 1);
+        $config_admin->addParamToConfig('apps.language.autotrans_api', '0', 'API переводов');
+        $config_admin->addParamToConfig('apps.language.yandex_translate_api_key', '', 'Yandex Translate API key <a href=https://translate.yandex.ru/developers/keys target=_blank>получить</a>');
+        $config_admin->addParamToConfig('apps.language.prefixmode', '0', 'Префиксный режим', 1);
+        $config_admin->addParamToConfig('apps.language.use_as_default', '', 'Код локали технических значений');
+        $config_admin->addParamToConfig('apps.language.language_prefix_list', '', 'Список префиксов языков (=ru|ukr=ua|eng=en)');
     }
 
     function _preload() {
@@ -58,6 +53,130 @@ class language_admin extends Object_Manager {
     function main() {
         $rs = $this->getTopMenu();
         switch ($this->getRequestValue('do')) {
+            /*case 'rebuild' : {
+                
+                
+                $system_dictionary = array();
+                $apps_dictionary = array();
+                $tpl_dictionary = array();
+                $tpl_app_dictionary = array();
+                
+                
+                $apps_dir = SITEBILL_DOCUMENT_ROOT . '/apps';
+                
+                if (is_file($apps_dir . '/language/' . $app_dir . '.xml')) {
+                    
+                }
+                
+                //Load all langs
+                $langs = Multilanguage::availableLanguages();
+                
+                if(empty($langs)){
+                    $langs['ru'] = 'ru';
+                }
+                
+                
+                
+                
+                
+                //Load all apps
+                $apps = array();
+                
+                
+                if (is_dir($apps_dir)) {
+                    if ($dh = opendir($apps_dir)) {
+                        while (($app_dir = readdir($dh)) !== false) {
+                            if (is_dir($apps_dir . '/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
+                                if (is_file($apps_dir . '/' . $app_dir . '/' . $app_dir . '.xml')) {
+
+                                    $xml = @simplexml_load_file($apps_dir . '/' . $app_dir . '/' . $app_dir . '.xml');
+                                    $apps[] = trim($xml->name);
+                                }
+                            }
+                        }
+                        closedir($dh);
+                    }
+                }
+                
+                //load all tpls
+                $tpls = array();
+                $tpl_dir = SITEBILL_DOCUMENT_ROOT . '/template/frontend';
+                if (is_dir($tpl_dir)) {
+                    if ($dh = opendir($tpl_dir)) {
+                        while (($app_dir = readdir($dh)) !== false) {
+                            if (is_dir($tpl_dir . '/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
+                                if (is_file($tpl_dir . '/' . $app_dir . '/language' . $app_dir . '.xml')) {
+
+                                    $xml = @simplexml_load_file($apps_dir . '/' . $app_dir . '/' . $app_dir . '.xml');
+                                    $apps[] = trim($xml->name);
+                                }
+                            }
+                        }
+                        closedir($dh);
+                    }
+                }
+        
+        
+                    $themes = '1';
+                    
+                $apps = array();
+                
+                $this->apps_dir = SITEBILL_DOCUMENT_ROOT . '/apps';
+        if (is_dir($this->apps_dir)) {
+            if ($dh = opendir($this->apps_dir)) {
+                while (($app_dir = readdir($dh)) !== false) {
+                    if (is_dir($this->apps_dir . '/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
+                        if (is_file($this->apps_dir . '/' . $app_dir . '/' . $app_dir . '.xml')) {
+
+                            $xml = @simplexml_load_file($this->apps_dir . '/' . $app_dir . '/' . $app_dir . '.xml');
+                            $apps[] = trim($xml->name);
+                        }
+                    }
+                }
+                closedir($dh);
+            }
+        }
+        
+        $words = array();
+        
+        if(!empty($apps)){
+            foreach($apps as $app){
+                $lang_files_dir = $this->apps_dir . '/' . $app . '/language';
+                
+                foreach($langs as $lang){
+                    $dic_file = $lang_files_dir.'/'.$lang.'/dictionary.ini';
+                    
+                    if(file_exists($dic_file)){
+                        $words[$app][$lang] = parse_ini_file($dic_file, true);
+                    }
+                    
+                    
+                }
+            }
+        }
+        
+        $tr = array();
+        
+        foreach ($words as $app => $appwords){
+            foreach ($appwords as $lang => $word){
+                foreach ($word as $wordcode => $wordvalue){
+                    $tr[] = array($wordcode, $wordvalue, $app, '', $lang);
+                }
+            }
+        }
+        $DBC = DBC::getInstance();
+        $query = 'INSERT INTO re_lang_word (`word_code`, `txt`, `app`, `tpl`, `lang`) VALUES (?,?,?,?,?)';
+        foreach($tr as $t){
+            $stmt = $DBC->query($query, $t);
+            echo $DBC->getLastError();
+        }
+        
+        echo '<pre>';
+        print_r($tr);
+        print_r($words);
+                
+                    break;
+                }*/
             case 'structure' : {
                     break;
                 }
@@ -162,6 +281,10 @@ class language_admin extends Object_Manager {
     }
 
     private function saveWords($app_name, $terms, $values) {
+        //echo '<pre>';
+        //print_r($terms);
+        //print_r($values);
+        //echo '</pre>';
         if (count($terms) == 0 || count($values) == 0 || $app_name == '') {
             return;
         }
@@ -200,8 +323,8 @@ class language_admin extends Object_Manager {
         //print_r($langs);
         //$langs=array_keys(array);
     }
-
-    private function clear($val) {
+    
+    protected function clear($val) {
         if (get_magic_quotes_gpc()) {
             $val = stripslashes($val);
         }
@@ -231,8 +354,27 @@ class language_admin extends Object_Manager {
                     }
                 }
             }
+            //Попробуем перевести, если нет соответствующих значений.
+            //Основной язык RU
+            foreach ( $x as $key => $item ) {
+                foreach ( $langs_array as $lang ) {
+                    if ( !isset($x[$key][$lang]) and $x[$key]['ru'] != '' ) {
+                        $x[$key][$lang] = $this->google_translate($x[$key]['ru'], $lang);
+                    }
+                    //echo $key.'<br>';
+                }
+            }
+            
             $keys = array_keys($x);
         }
+        /*
+        echo '<pre>';
+        print_r($dictionary);
+        print_r($x);
+        print_r($langs_array);
+        echo '</pre>';
+         * 
+         */
 
 
         global $smarty;
@@ -246,7 +388,7 @@ class language_admin extends Object_Manager {
 
         return $rs;
     }
-
+    
     private function getAppDictionaryEditForm($app_name, $dictionary) {
         global $smarty;
         $rs = '';

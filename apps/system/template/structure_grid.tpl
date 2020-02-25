@@ -316,7 +316,7 @@ Structure_Control={
 		}
 		tmp_element_html += '"></div>';
 		var ddh=$(tmp_element_html);
-		ddh.text(json.text+' [ID:'+json.id+'] ['+json.url+']');
+		ddh.text(json.text+' [ID:'+json.id+'] ['+json.url+']['+json.order+']');
 		ddh.append(buttons_block);
 		if(json.state=='closed'){
 			var bt=$('<button data-action="expand" type="button" style="display: block;">Expand</button>');

@@ -6,7 +6,18 @@ class Config_Mask {
 	public function get_model(){
 		
 		$data_model = array();
-		
+        
+        $data_model['apps.language.autotrans_api']['name'] = 'apps.language.autotrans_api';
+		$data_model['apps.language.autotrans_api']['type'] = 'select_box';
+		$data_model['apps.language.autotrans_api']['select_data'] = array('0'=>'Google', '1'=>'Yandex');
+        /*
+        $data_model['apps.news.user_enable_access_type']['name'] = 'apps.news.user_enable_access_type';
+		$data_model['apps.news.user_enable_access_type']['type'] = 'select_box';
+		$data_model['apps.news.user_enable_access_type']['select_data'] = array('0'=>'никому', '1'=>'не установлено', '2'=>'определенным группам', '3'=>'по признаку в профиле');
+		*/
+		$data_model['apps.yandexrealty.newflat']['name'] = 'apps.yandexrealty.newflat';
+		$data_model['apps.yandexrealty.newflat']['type'] = 'select_box';
+		$data_model['apps.yandexrealty.newflat']['select_data'] = array('0'=>'полю new_flat', '1'=>'из приложения ЖК', '2'=>'другому полю');
 		
 		
 		
@@ -20,7 +31,7 @@ class Config_Mask {
 		$data_model['captcha_type']['title'] = 'Тип капчи';
 		$data_model['captcha_type']['value'] = '';
 		$data_model['captcha_type']['type'] = 'select_box';
-		$data_model['captcha_type']['select_data'] = array('0'=>'стандартная', '2'=>'игнорировать капчу', '3'=>'KCaptcha');
+		$data_model['captcha_type']['select_data'] = array('0'=>'стандартная', '2'=>'игнорировать капчу', '3'=>'KCaptcha', '4'=>'reCaptcha');
 		
 		
 		$data_model['add_notification_email']['name'] = 'add_notification_email';
@@ -1155,6 +1166,7 @@ class Config_Mask {
 					}
 					closedir($dh);
 				}
+                asort($template_array);
 				self::$themes_array=$template_array;
 			}
 		}else{

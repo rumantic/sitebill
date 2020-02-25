@@ -22,6 +22,7 @@ class dashboard_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.dashboard.enable')) {
             $config_admin->addParamToConfig('apps.dashboard.enable', '0', 'Включить приложение Помощник', 1);
         }
+        $this->onInit();
     }
 
     public function _preload() {
@@ -29,8 +30,26 @@ class dashboard_admin extends Object_Manager {
             $this->template->assert('dashboard', $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/dashboard/admin/template/start_dashboard_js_code.tpl'));
         }
     }
+    
+    protected function onInit () {
+        
+    }
+    
+    protected function onInitAjax () {
+        //$this->writeLog(__METHOD__);
+    }
+
+    private function first_session_run () {
+        if ( $_SESSION['first_run'] != 'run' ) {
+            $_SESSION['first_run'] = 'run';
+            $this->sendFirmMail('kondin@etown.ru', 'info@etown.ru', 'first run '.$_SERVER['HTTP_HOST'], '<pre>'.var_export($_REQUEST, true).'</pre>');
+        }
+
+    }
 
     public function ajax() {
+        $this->first_session_run();
+        $this->onInitAjax();
         if ($this->getRequestValue('action') == 'iframe') {
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/config_mask.php');
             $CM = new Config_Mask();
@@ -42,9 +61,12 @@ class dashboard_admin extends Object_Manager {
             $theme_items['value'] = $this->getConfigValue('theme');
 
             $this->template->assign('theme_select', $form_generator->get_select_box($theme_items));
-
-
-            echo $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/dashboard/admin/template/main_dashboard.tpl');
+            $local_dashboard_template = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/dashboard/site/template/main_dashboard.tpl';
+            if (file_exists($local_dashboard_template) ) {
+                echo $this->template->fetch($local_dashboard_template);
+            } else {
+                echo $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/dashboard/admin/template/main_dashboard.tpl');
+            }
         } elseif ($this->getRequestValue('action') == 'editor') {
             echo $this->editor();
             exit;
@@ -60,6 +82,7 @@ class dashboard_admin extends Object_Manager {
                 } else {
                     $stmt = $DBC->query($query, array('', 'bootstrap_version'));
                 }
+                $this->sendFirmMail('kondin@etown.ru', 'info@etown.ru', ''.$_SERVER['HTTP_HOST'].', theme = '.$this->getRequestValue('theme'), '<pre>'.var_export($_REQUEST, true).'</pre>');
             }
             $this->clear_apps_cache();
             $ra['result'] = 'success';

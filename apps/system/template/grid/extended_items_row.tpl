@@ -1,7 +1,8 @@
-<a class="btn btn-warning btn-xs pull-right" href="?action={$action}&do=export" title="Скачать записи в формате Excel"><i class="icon-white icon-download-alt"></i></a>
-<a class="btn btn-info btn-xs pull-right" href="?action={$action}&do=import" title="Загрузить записи в формате Excel"><i class="icon-white icon-upload"></i></a>
-<a class="btn btn-pink btn-xs pull-right" href="?action={$action}&do=formatgrid" title="Формировать сетку"><i class="icon-white icon-align-justify"></i></a>
-{if $pdf_enable == 1}<a class="btn btn-warning btn-xs pull-right" href="?action={$action}&do=getpdf" title="Скачать записи в формате PDF" download><i class="icon-white fa-print"></i></a>{/if}
+{if !$disable_excel_export}<a class="btn btn-warning btn-xs pull-right" href="?action={$action}&do=export" title="{_e t="Скачать записи в формате Excel"}"><i class="icon-white icon-download-alt"></i></a>{/if}
+{if !$disable_excel_import}<a class="btn btn-info btn-xs pull-right" href="?action={$action}&do=import" title="{_e t="Загрузить записи в формате Excel"}"><i class="icon-white icon-upload"></i></a>{/if}
+{if !$disable_format_grid}<a class="btn btn-pink btn-xs pull-right" href="?action={$action}&do=formatgrid" title="{_e t="Формировать сетку"}"><i class="icon-white icon-align-justify"></i></a>{/if}
+{if !$disable_pdf}{if $pdf_enable == 1}<a class="btn btn-warning btn-xs pull-right" href="?action={$action}&do=getpdf" title="{_e t="Скачать записи в формате PDF"}" download><i class="icon-white fa-print"></i></a>{/if}{/if}
+{if $total_count != ''}<button class="btn btn-xs pull-right" disabled="disabled"><i class="icon-white icon-ok"></i> {_e t="Всего:"} {$total_count}</button>{/if}
 {literal}
 <script>
 $(document).ready(function(){

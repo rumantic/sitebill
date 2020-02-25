@@ -41,6 +41,12 @@ $smarty->cache_dir    = SITEBILL_DOCUMENT_ROOT.'/cache/smarty';
 $smarty->compile_dir  = SITEBILL_DOCUMENT_ROOT.'/cache/compile';
 
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/dashboard/admin/admin.php');
-$dashboard_admin = new dashboard_admin();
+$local_dashboard_admin = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/apps/dashboard/admin/admin.php';
+if (file_exists($local_dashboard_admin) ) {
+    require_once($local_dashboard_admin);
+    $dashboard_admin = new local_dashboard_admin();
+} else {
+    $dashboard_admin = new dashboard_admin();
+}
 $dashboard_admin->ajax();
 ?>

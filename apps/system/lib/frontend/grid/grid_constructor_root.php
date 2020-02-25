@@ -1014,11 +1014,7 @@ class Grid_Constructor_Root extends SiteBill {
     protected function FrontAction_grid_country($REQUESTURIPATH, $country_info) {
 
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-            $curlang = $this->getCurrentLang();
-            $lang_postfix = '_' . $curlang;
-            if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                $lang_postfix = '';
-            }
+            $lang_postfix = $this->getLangPostfix($this->getCurrentLang());
         } else {
             $lang_postfix = '';
         }
@@ -1087,11 +1083,7 @@ class Grid_Constructor_Root extends SiteBill {
 
     protected function FrontAction_grid_region($REQUESTURIPATH, $region_info) {
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-            $curlang = $this->getCurrentLang();
-            $lang_postfix = '_' . $curlang;
-            if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                $lang_postfix = '';
-            }
+            $lang_postfix = $this->getLangPostfix($this->getCurrentLang());
         } else {
             $lang_postfix = '';
         }
@@ -1227,11 +1219,7 @@ class Grid_Constructor_Root extends SiteBill {
 
     protected function FrontAction_grid_city($REQUESTURIPATH, $city_info) {
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-            $curlang = $this->getCurrentLang();
-            $lang_postfix = '_' . $curlang;
-            if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                $lang_postfix = '';
-            }
+            $lang_postfix = $this->getLangPostfix($this->getCurrentLang());
         } else {
             $lang_postfix = '';
         }
@@ -1307,11 +1295,8 @@ class Grid_Constructor_Root extends SiteBill {
         return false;
     }
 
-    protected function FrontAction_index() {
-        /* $grid_constructor=$this->_getGridConstructor();
-          $params=$this->gatherRequestParams();
-          $params['city_id']=1;
-          $grid_constructor->main($params); */
+    /*protected function FrontAction_index() {
+        
     }
 
     protected function FrontAction_add($REQUESTURIPATH) {
@@ -1554,11 +1539,7 @@ class Grid_Constructor_Root extends SiteBill {
 
     protected function FrontAction_grid_topic($REQUESTURIPATH, $topic_info) {
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-            $curlang = $this->getCurrentLang();
-            $lang_postfix = '_' . $curlang;
-            if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                $lang_postfix = '';
-            }
+            $lang_postfix = $this->getLangPostfix($this->getCurrentLang());
         }
 
 
@@ -1637,11 +1618,7 @@ class Grid_Constructor_Root extends SiteBill {
         $gorod_name = $info[2];
 
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-            $curlang = $this->getCurrentLang();
-            $lang_postfix = '_' . $curlang;
-            if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                $lang_postfix = '';
-            }
+            $lang_postfix = $this->getLangPostfix($this->getCurrentLang());
         }
 
 
@@ -1722,11 +1699,7 @@ class Grid_Constructor_Root extends SiteBill {
 
     protected function FrontAction_grid_predefined($REQUESTURIPATH, $predefined_info) {
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-            $curlang = $this->getCurrentLang();
-            $lang_postfix = '_' . $curlang;
-            if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                $lang_postfix = '';
-            }
+            $lang_postfix = $this->getLangPostfix($this->getCurrentLang());
         } else {
             $lang_postfix = '';
         }
@@ -1815,7 +1788,7 @@ class Grid_Constructor_Root extends SiteBill {
 
     public function FrontAction_grid_custom($REQUESTURIPATH) {
         return false;
-    }
+    }*/
 
     /**
      * Grid adv
@@ -1834,6 +1807,15 @@ class Grid_Constructor_Root extends SiteBill {
         $REQUESTURIPATH = Sitebill::getClearRequestURI();
 
         $grid_constructor = $this->_getGridConstructor();
+        
+        $uselangs = false;
+        if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
+            $uselangs = true;
+            $lang_postfix = $this->getLangPostfix($this->getCurrentLang());
+        } else {
+            $lang_postfix = '';
+        }
+            
 
         if ($REQUESTURIPATH == 'find') {
             //$grid_constructor->setCatchedRoute('system:find');
@@ -1970,15 +1952,7 @@ class Grid_Constructor_Root extends SiteBill {
             //$work_params=$Router->getWorkParams();
             //$this->setRequestValue('router_info', $work_params);
         } elseif ($predefined_url_catched) {
-            if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-                $curlang = $this->getCurrentLang();
-                $lang_postfix = '_' . $curlang;
-                if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                    $lang_postfix = '';
-                }
-            } else {
-                $lang_postfix = '';
-            }
+            
 
             if (isset($predefined_info['meta_title' . $lang_postfix]) && $predefined_info['meta_title' . $lang_postfix] != '') {
                 $meta_title = $predefined_info['meta_title' . $lang_postfix];
@@ -2040,15 +2014,6 @@ class Grid_Constructor_Root extends SiteBill {
             $this->setRequestValue('predefined_info', $predefined_info);
         } elseif ($country_url_catched) {
 
-            if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-                $curlang = $this->getCurrentLang();
-                $lang_postfix = '_' . $curlang;
-                if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                    $lang_postfix = '';
-                }
-            } else {
-                $lang_postfix = '';
-            }
             $meta_title = '';
             if (isset($country_info['meta_title' . $lang_postfix]) && $country_info['meta_title' . $lang_postfix] != '') {
                 $meta_title = $country_info['meta_title' . $lang_postfix];
@@ -2105,16 +2070,6 @@ class Grid_Constructor_Root extends SiteBill {
             $this->setRequestValue('country_view', $REQUESTURIPATH);
         } elseif ($city_url_catched) {
 
-            if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-                $curlang = $this->getCurrentLang();
-                $lang_postfix = '_' . $curlang;
-                if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                    $lang_postfix = '';
-                }
-            } else {
-                $lang_postfix = '';
-            }
-
             if (isset($city_info['public_title' . $lang_postfix]) && $city_info['public_title' . $lang_postfix] != '') {
                 $title = $city_info['public_title' . $lang_postfix];
             } elseif (isset($city_info['public_title']) && $city_info['public_title'] != '') {
@@ -2162,16 +2117,6 @@ class Grid_Constructor_Root extends SiteBill {
             $this->setRequestValue('city_view', $REQUESTURIPATH);
         } elseif ($metro_url_catched) {
 
-            if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-                $curlang = $this->getCurrentLang();
-                $lang_postfix = '_' . $curlang;
-                if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                    $lang_postfix = '';
-                }
-            } else {
-                $lang_postfix = '';
-            }
-
             if (isset($metro_info['public_title' . $lang_postfix]) && $metro_info['public_title' . $lang_postfix] != '') {
                 $title = $metro_info['public_title' . $lang_postfix];
             } elseif (isset($metro_info['public_title']) && $metro_info['public_title'] != '') {
@@ -2218,16 +2163,6 @@ class Grid_Constructor_Root extends SiteBill {
             $this->setRequestValue('metro_id', (int) $metro_info['metro_id']);
             $this->setRequestValue('metro_view', $REQUESTURIPATH);
         } elseif ($region_url_catched) {
-
-            if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-                $curlang = $this->getCurrentLang();
-                $lang_postfix = '_' . $curlang;
-                if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                    $lang_postfix = '';
-                }
-            } else {
-                $lang_postfix = '';
-            }
 
             if (isset($region_info['public_title']) && $region_info['public_title'] != '') {
                 $title = $region_info['public_title'];
@@ -2369,15 +2304,6 @@ class Grid_Constructor_Root extends SiteBill {
                 } else {
                     $topic = $this->getTopicFullInfo($this->getRequestValue('topic_id'));
                 }
-
-                if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-                    $curlang = $this->getCurrentLang();
-                    $lang_postfix = '_' . $curlang;
-                    if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                        $lang_postfix = '';
-                    }
-                }
-
 
                 if (isset($topic['meta_title' . $lang_postfix]) && $topic['meta_title' . $lang_postfix] != '') {
                     $meta_title = $topic['meta_title' . $lang_postfix];

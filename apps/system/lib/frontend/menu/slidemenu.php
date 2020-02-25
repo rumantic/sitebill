@@ -29,7 +29,7 @@ class Slide_Menu extends Structure_Manager {
         			if ( preg_match('/^http/', $category_structure['catalog'][$categoryID]['url']) ) {
         				$rs .= '<li><a href="'.$category_structure['catalog'][$categoryID]['url'].'">'.$category_structure['catalog'][$categoryID]['name'].'</a>';
         			} else {
-        				$rs .= '<li><a href="'.SITEBILL_MAIN_URL.'/'.$category_structure['catalog'][$categoryID]['url'].'">'.$category_structure['catalog'][$categoryID]['name'].'</a>';
+        				$rs .= '<li><a href="'.SITEBILL_MAIN_URL.'/'.$category_structure['catalog'][$categoryID]['url'].(false===strpos($category_structure['catalog'][$categoryID]['url'], '.') ? self::$_trslashes : '').'">'.$category_structure['catalog'][$categoryID]['name'].'</a>';
         			}
         			 
         		}else{
@@ -55,7 +55,8 @@ class Slide_Menu extends Structure_Manager {
      * @param $level
      * @param $current_category_id
      */
-    function getChildNodes($categoryID, $category_structure, $level, $current_category_id) {
+
+    function getChildNodes($categoryID, $category_structure, $level, $current_category_id, $superparent = 0) {
     	if ( !is_array($category_structure['childs'][$categoryID]) ) {
     		return '';
     	}
@@ -63,7 +64,12 @@ class Slide_Menu extends Structure_Manager {
         foreach ( $category_structure['childs'][$categoryID] as $child_id ) {
            // $rs .= '<li><a href="'.SITEBILL_MAIN_URL.'/?topic_id='.$child_id.'">'.$category_structure['catalog'][$child_id]['name'].'</a>';
        		if($category_structure['catalog'][$child_id]['url']!=''){
-            	$rs .= '<li><a href="'.SITEBILL_MAIN_URL.'/'.$category_structure['catalog'][$child_id]['url'].'">'.$category_structure['catalog'][$child_id]['name'].'</a>';
+                if ( preg_match('/^http/', $category_structure['catalog'][$child_id]['url']) ) {
+                    $rs .= '<li><a href="'.$category_structure['catalog'][$child_id]['url'].'">'.$category_structure['catalog'][$child_id]['name'].'</a>';
+                } else {
+                    $rs .= '<li><a href="'.SITEBILL_MAIN_URL.'/'.$category_structure['catalog'][$child_id]['url'].(false===strpos($category_structure['catalog'][$child_id]['url'], '.') ? self::$_trslashes : '').'">'.$category_structure['catalog'][$child_id]['name'].'</a>';
+                }
+            	//$rs .= '<li><a href="'.SITEBILL_MAIN_URL.'/'.$category_structure['catalog'][$child_id]['url'].(false===strpos($category_structure['catalog'][$child_id]['url'], '.') ? self::$_trslashes : '').'">'.$category_structure['catalog'][$child_id]['name'].'</a>';
             }else{
             	$rs .= '<li><a href="'.SITEBILL_MAIN_URL.'/topic'.$child_id.'.html">'.$category_structure['catalog'][$child_id]['name'].'</a>';
             }

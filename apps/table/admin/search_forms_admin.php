@@ -288,6 +288,10 @@ class search_forms_admin extends table_admin {
                 $_forms[] = $ar;
             }
         }
+        if ( !is_array($_forms) ) {
+            return $forms;
+        }
+
         if (count($_forms) > 0) {
             global $smarty;
             $model_data = $this->helper->load_model('data');
@@ -352,7 +356,7 @@ class search_forms_admin extends table_admin {
                 }
                 $form_body = $smarty->fetch($tpl);
                 $forms[$_f['title']]['body'] = $form_body;
-                $forms[$_f['title']]['id'] = $this->transliteMe($_f['title']);
+                $forms[$_f['title']]['id'] = $_f['title'];
 
                 if (count(array_intersect($_topic_id, $topic_id)) > 0) {
                     $forms[$_f['title']]['active'] = 1;

@@ -12,7 +12,12 @@ $(document).ready(function(){
 </style>
 {/literal}
 {/if}
-
+{if !isset($formwideclass)}
+{assign var=formwideclass value="col-md-12"}
+{/if}
+{if !isset($formsemiclass)}
+{assign var=formsemiclass value="col-md-6"}
+{/if}
 <div class="tabbed_form_block">
 {if $form_error ne ''}
 	<p class="error">{$form_error}</p>
@@ -24,7 +29,7 @@ $(document).ready(function(){
 		{$form_element_script}
 	{/foreach}
 {/if}
-<script type="text/javascript" src="{$estate_folder}/apps/system/js/form_tabs.js"></script>
+<script type="text/javascript" src="{$estate_folder}/apps/system/js/form_tabs.js?v=1"></script>
 {if $form_elements.public|count eq 1}
     <div class="tab-content tab-margin-top">
     {foreach from=$form_elements.public key=tab item=tab_elements}
@@ -32,11 +37,11 @@ $(document).ready(function(){
 					<div class="box">
 					<div class="row">
 					{foreach from=$tab_elements item=element}
-					<div class="{if $element.type=='textarea' or $element.type=='textarea_editor' or $element.type=='uploads' or $element.type=='docuploads' or $element.type=='geodata'}col-sm-12{else}col-sm-6{/if}">
+					<div class="{if $element.type=='textarea' or $element.type=='textarea_editor' or $element.type=='uploads' or $element.type=='docuploads' or $element.type=='geodata'}{$formwideclass}{else}{$formsemiclass}{/if}" alt="{$element.name}">
                     {if $element.type=='captcha'}
 						<div class="form-group" alt="{$element.name}">
 						{$element.title}{if $element.required eq 1}<span style="color: red;">*</span>{/if}{if $element.hint!=''} <a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-xs" data-content="{$element.hint}"> <i class="fa fa-question"></i></a>{/if}
-						<img id="capcha_img" class="capcha_img" src="{$element.html_array.src}" width="180" height="80" /><br/>
+						{if $element.html_array.src ne ''}<img id="capcha_img" class="capcha_img" src="{$element.html_array.src}" width="180" height="80" /><br/>{/if}
 						{$element.html_array.refresh}
 						
 						{$element.html_array.input}
@@ -70,7 +75,7 @@ $(document).ready(function(){
 						{/if}
 						{$element.html}
 					{else if  $element.type=='checkbox'}
-						<div class="checkbox">
+						<div class="checkbox" alt="{$element.name}">
 							<label>
 								{$element.html} {$element.title}
 							</label>
@@ -218,9 +223,9 @@ $(document).ready(function(){
 					<div class="box">
 					<div class="row">
 					{foreach from=$tab_elements item=element}
-					<div class="{if $element.type=='textarea' or $element.type=='textarea_editor' or $element.type=='uploads' or $element.type=='docuploads' or $element.type=='geodata'}col-sm-12{else}col-sm-6{/if}">
+					<div class="{if $element.type=='textarea' or $element.type=='textarea_editor' or $element.type=='uploads' or $element.type=='docuploads' or $element.type=='geodata'}{$formwideclass}{else}{$formsemiclass}{/if}" alt="{$element.name}">
                     {if $element.type=='captcha'}
-						<div class="form-group" alt="{$element.name}">
+						<div class="form-group">
 						{$element.title}{if $element.required eq 1}<span style="color: red;">*</span>{/if}{if $element.hint!=''} <a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-xs" data-content="{$element.hint}"> <i class="fa fa-question"></i></a>{/if}
 						<img id="capcha_img" class="capcha_img" src="{$element.html_array.src}" width="180" height="80" /><br/>
 						{$element.html_array.refresh}
@@ -262,7 +267,7 @@ $(document).ready(function(){
 							</label>
 						</div>
 					{else}
-						<div class="form-group" alt="{$element.name}">
+						<div class="form-group">
 							<label for="{$element.id}">{$element.title}{if $element.required eq 1}<span style="color: red;">*</span>{/if}{if $element.hint!=''} <a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-xs" data-content="{$element.hint}"> <i class="fa fa-question"></i></a>{/if}</label>
 							{$element.html}
 							{if $element.image_list ne ''}

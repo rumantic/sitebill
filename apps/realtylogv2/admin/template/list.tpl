@@ -56,16 +56,16 @@
 {foreach from=$data_array item=item key=log_id}
 <tr class="row3"><td><input type="checkbox" class="grid_check_one" value="{$log_id}"></td>
 
-<td>{$item.realtylog_id}</td>
+<td>{$item.realtylog_id.value}</td>
 <td>{$item.editor_id.value_string}</td>
-<td>{$item.id}</td>
-<td>{$item.action}</td>
-<td>{$item.log_date}</td>
+<td>{$item.id.value}</td>
+<td>{$item.action.value_string}</td>
+<td>{$item.log_date.value}</td>
 <td>
-<a class="btn btn-success" title="Просмотр" target="_blank" href="{$estate_folder}/admin/?action=realtylogv2&do=view&type={$smarty.request.type}&page={$smarty.request.page}&id={$item.realtylog_id}&data_id={$item.id.value}">
+<a class="btn btn-success" title="Просмотр" target="_blank" href="{$estate_folder}/admin/?action=realtylogv2&do=view&type={$smarty.request.type}&page={$smarty.request.page}&id={$item.realtylog_id.value}&data_id={$item.id.value}">
 			<i class="ace-icon fa fa-eye"></i>
 		</a>
-		<a onclick="return confirm('{$L_MESSAGE_REALLY_WANT_DELETE}');" href="{$estate_folder}/admin/?action=realtylogv2&do=remove_log&type={$smarty.request.type}&page={$smarty.request.page}&log_id={$item.realtylog_id}" class="btn btn-danger"><i class="icon-white icon-remove"></i></a>
+		<a onclick="return confirm('{$L_MESSAGE_REALLY_WANT_DELETE}');" href="{$estate_folder}/admin/?action=realtylogv2&do=remove_log&type={$smarty.request.type}&page={$smarty.request.page}&log_id={$item.realtylog_id.value}" class="btn btn-danger"><i class="icon-white icon-remove"></i></a>
 </td>
 </tr>
 {/foreach}
@@ -85,6 +85,9 @@
 		<th>Тип</th>
 		<th>Адрес</th>
 		<th>Цена</th>
+		<th>Редактор</th>
+		<th>Действие</th>
+		<th>Дата</th>
 		<th></th>
 	</tr>
 	</thead>
@@ -102,6 +105,9 @@
 		{if $item.number.value != ''}д. {$item.number.value} {/if}
 		</td>
 		<td>{$item.price.value}</td>
+		<td>{$item.editor}</td>
+		<td>{$item.action}</td>
+		<td>{$item.log_date}</td>
 		<td>
 		{if $data_array[$log_id].action == 'delete'}
 		<a class="btn btn-warning" title="Восстановить" href="{$estate_folder}/admin/?action=realtylogv2&do=restore&type={$smarty.request.type}&page={$smarty.request.page}&id={$log_id}&data_id={$item.id.value}">

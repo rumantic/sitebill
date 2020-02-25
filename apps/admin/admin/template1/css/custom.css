@@ -8,6 +8,8 @@
 	background-image: url("../img/dragon.png");
 	background-repeat: no-repeat;
 }
+
+
 .ttl {
 	float: left;
 	font-size: 85%;
@@ -15,7 +17,14 @@
 	margin-left: 5px;
 	margin-top: 3px;
 }
-
+@media only screen and (max-width: 422px){
+    .dragon {
+        display: none;
+    }
+    .ttl {
+        float: none !important;
+    }
+}
 div.custom_modal {
     width: 90%;
     left: 5%;
@@ -44,3 +53,34 @@ div.custom_modal .modal-body ul li.letter {
     width: 100%;
 }
 .ait_bc {margin-left: 15px;} .checkbox_collection {width: 210px;height: 200px;overflow-y: scroll;border: 1px solid silver;padding: 10px 5px;}
+
+a.scrollup {
+    width: 40px;
+    height: 40px;
+    opacity: 0.3;
+    position: fixed;
+    bottom: 50px;
+    /* display: none; */
+    text-indent: -9999px;
+    background: url(../img/icon_top.png) no-repeat;
+}
+.ace-thumbnails>li>.tools.tools-top {
+    top: -101%;
+    height: 100%;
+}
+.ace-thumbnails>li>.tools.tools-top a {
+    height: 100%;
+    width: 100%;
+    text-align: center;
+    vertical-align: middle;
+    padding: 0;
+    /* display: block; */
+    position: relative;
+}
+.ace-thumbnails>li>.tools.tools-top a .fa {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-top: -9px;
+    margin-left: -9px;
+}

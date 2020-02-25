@@ -221,7 +221,7 @@ $(document).ready(function(){
 		});
 		var min=null;
 		var max=null;
-		var txt='не задано';
+		var txt='{/literal}{_e t="не задано"}{literal}';
 		
 		_this.find('input').each(function(e){
 			var iname=$(this).attr('name');
@@ -373,7 +373,7 @@ $(document).ready(function(){
 		
 <table class="table table-hover standart_admin_grid" cellspacing="2" cellpadding="2">
 	<tr  class="row_head">
-		<td width="1%" class="row_title"><input type="checkbox" class="grid_check_all" /></td>
+		<td width="1%" class="row_title"><input type="checkbox" id="grid_check_all" class="grid_check_all ace" /><label for="grid_check_all" class="lbl"></label></td>
 		<td width="1%" class="row_title">
 			<!-- #section:plugins/input.tag-input -->
 			<div class="inline-tags">
@@ -581,16 +581,20 @@ $(document).ready(function(){
 
 	<tr valign="top" class="item {if $grid_items[i].hot}row3hot{else}row3{/if}{if $grid_items[i].active == 0} notactive{/if}">
 		<td>
-			<input type="checkbox" class="grid_check_one" value="{$grid_items[i].id}" />
+			<input id="grid_check_all_{$grid_items[i].id}" type="checkbox" class="grid_check_one ace" value="{$grid_items[i].id}" /><label for="grid_check_all_{$grid_items[i].id}" class="lbl"></label>
         	{if isset($grid_items[i].geo_lat) && isset($grid_items[i].geo_lng) && $grid_items[i].geo_lat!='' && $grid_items[i].geo_lng!=''}<i class="icon-globe"></i>{/if}</td>
 		</td>
 		<td>
-			<b><a href="{$grid_items[i].href}" target="_blank">{$grid_items[i].id}</a></b> 
-	        {if isset($grid_items[i].img) && $grid_items[i].img != ''} 
-	        <a href="{$estate_folder}/realty{$grid_items[i].id}.html">
-	        	<img src="{$estate_folder}/img/data/{$grid_items[i].img[0].preview}" width="50" class="prv">
-	        </a>
-	        {/if}
+			<b><a href="{$grid_items[i].href}" target="_blank">{$grid_items[i].id}</a></b>
+			{if isset($grid_items[i].img) && $grid_items[i].img != ''}
+				<a href="{$estate_folder}/realty{$grid_items[i].id}.html">
+					<img src="{if $grid_items[i].img[0].remote == 'true'}{$grid_items[i].img[0].preview}{else}{$estate_folder}/img/data/{$grid_items[i].img[0].preview}{/if}" width="50" class="prv">
+				</a>
+			{else if isset($grid_items[i].image_cache) && $grid_items[i].image_cache[0] != ''}
+				<a href="{$estate_folder}/realty{$grid_items[i].id}.html">
+					<img src="{$grid_items[i].image_cache[0]}" width="50" class="prv">
+				</a>
+			{/if}
 		
 		{if $show_uniq_id}
 		<td>{$grid_items[i].uniq_id}</td>
@@ -632,11 +636,11 @@ $(document).ready(function(){
 		</td>
 		{if $admin !=''}
 		<td nowrap>
-                            {if $data_adv_share_access_can_view_all and $grid_items[i].user_id != $data_adv_share_access_user_id}
-                                {*Если у нас включена опция data_adv_share_access и мы включили опцию data_adv_share_access_can_view_all и при этом 
-                                идентификатор пользователя текущего объявления в генерации грида отличается от пользователя админки, то прячем контролы
-                                *}
-                                {else}
+        {if $data_adv_share_access_can_view_all and $grid_items[i].user_id != $data_adv_share_access_user_id}
+            {*Если у нас включена опция data_adv_share_access и мы включили опцию data_adv_share_access_can_view_all и при этом 
+            идентификатор пользователя текущего объявления в генерации грида отличается от пользователя админки, то прячем контролы
+            *}
+        {else}
                     
 			<div class="btn-group">
 				<a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
@@ -655,22 +659,25 @@ $(document).ready(function(){
 								<li><img src="{$estate_folder}/img/contact-new.png" alt="{$L_CONTACTS_ARE_SHOWED}" title="{$L_CONTACTS_ARE_SHOWED}" border="0" width="16" height="16" /></li>
 							{/if}
 						
-						{/if}
-						{if isset($sms_enable) && $sms_enable}
-						<li><a class="btn btn-success" onclick="return confirm({literal}'{$L_MESSAGE_REALLY_WANT_SMS}'{/literal});" href="{$estate_folder_control}?do=structure&subdo=sms&id={$grid_items[i].id}"><img src="{$estate_folder}/img/sms16x16.png" alt="{$L_SENDSMS_LC}" title="{$L_SENDSMS_LC}" border="0" width="16" height="16" /> SMS</a></li>
-						{/if}
-						{if isset($show_up_icon) && $show_up_icon}
-						
-						<a class="btn btn-warning go_up" alt="{$grid_items[i].id}" href="#grow_up"><i class="icon-white icon-circle-arrow-up"></i></a>
-						{/if}
+                    {/if}
+                    {if isset($sms_enable) && $sms_enable}
+                    <li><a class="btn btn-success" onclick="return confirm({literal}'{$L_MESSAGE_REALLY_WANT_SMS}'{/literal});" href="{$estate_folder_control}?do=structure&subdo=sms&id={$grid_items[i].id}"><img src="{$estate_folder}/img/sms16x16.png" alt="{$L_SENDSMS_LC}" title="{$L_SENDSMS_LC}" border="0" width="16" height="16" /> SMS</a></li>
+                    {/if}
+                    {if isset($show_up_icon) && $show_up_icon}
+                    <a class="btn btn-warning go_up" alt="{$grid_items[i].id}" href="#grow_up"><i class="icon-white icon-circle-arrow-up"></i></a>
+                    {/if}
 				</ul>
-		</div>
+            </div>
                                 
-		<div class="btn-group">
-			<a title="Редактировать" href="{$estate_folder_control}?do=edit&id={$grid_items[i].id}" class="btn btn-info"><i class="icon-white icon-pencil"></i></a></li>
-			<a title="Удалить" onclick="return confirm('{$L_MESSAGE_REALLY_WANT_DELETE}');" href="{$estate_folder_control}?{if $topic_id != ''}topic_id={$topic_id}&{/if}do=delete&id={$grid_items[i].id}" class="btn btn-danger"><i class="icon-white icon-remove"></i></a></li>
-		</div>
-                            {/if}
+            <div class="btn-group">
+                <a title="Редактировать" href="{$estate_folder_control}?do=edit&id={$grid_items[i].id}" class="btn btn-info"><i class="icon-white icon-pencil"></i></a>
+                {if intval($grid_items[i].archived) === 1}
+                <a onclick="return confirm('{$L_MESSAGE_REALLY_WANT_DELETE}');" href="{$estate_folder_control}?action=data&do=delete_final&id={$grid_items[i].id}" class="btn btn-danger"><i class="icon-white icon-remove"></i></a>
+                {else}
+                <a onclick="return confirm('{$L_MESSAGE_REALLY_WANT_DELETE}');" href="{$estate_folder_control}?action=data&{if $topic_id != ''}topic_id={$topic_id}&{/if}do=delete&id={$grid_items[i].id}" class="btn btn-danger"><i class="icon-white icon-remove"></i></a>
+                {/if}
+            </div>
+        {/if}
 	</td>
 	{/if}
 	</tr>

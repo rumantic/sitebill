@@ -6,7 +6,7 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  */
 class user_news_admin extends news_admin {
     
-	function grid () {
+	function grid ($params = array(), $default_params = array()) {
     	
     	$params=array();
     	$params['action']=$this->action;

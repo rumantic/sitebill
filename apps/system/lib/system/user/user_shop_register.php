@@ -60,7 +60,7 @@ class User_Shop_Register extends User_Register {
 					    $body='Пользователь <a href="http://'.$_SERVER['HTTP_HOST'].'/admin/index.php?action=user&do=edit&user_id=7">'.($user_info_string!='' ? $user_info_string : $Login->getUserId()).'</a> зарегистрировался и хочет подавать объявления на сайте';
 	                    $subject = $_SERVER['SERVER_NAME'].': заявка пользователя';
 	                    $to = $this->getConfigValue('order_email_acceptor');
-	                    $from = $this->getConfigValue('order_email_acceptor');
+                        $from = $this->getConfigValue('system_email');
 	                    /*if ( $this->getConfigValue('use_smtp') ) {
 	                        $mailer->send_smtp($to, $from, $subject, $body, 1);
 	                    } else {

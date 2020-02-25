@@ -351,4 +351,3 @@ class User_Profile extends User_Object_Manager {
 	    return $rs;
 	}
 }
-?>

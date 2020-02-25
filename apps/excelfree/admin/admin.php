@@ -6,7 +6,6 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * Excel admin backend
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
-//set_include_path(SITEBILL_DOCUMENT_ROOT.'/apps/excelfree/lib/phpexcel/');
 class excelfree_admin extends Object_Manager {
 
     protected $data_manager_export;
@@ -68,7 +67,7 @@ class excelfree_admin extends Object_Manager {
         } elseif ($this->getRequestValue('do') == 'export') {
             $rs = $this->get_export_form();
         } else {
-            $rs = $this->get_form();
+            $rs = $this->get_form('');
         }
         //$this->load_xls();
 
@@ -83,7 +82,7 @@ class excelfree_admin extends Object_Manager {
     }
 
     function get_export_form() {
-        require_once SITEBILL_APPS_DIR . '/third/phpexcel/PHPExcel/IOFactory.php';
+        
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/grid/grid_constructor.php';
         $grid_constructor = new Grid_Constructor();
 
@@ -106,16 +105,20 @@ class excelfree_admin extends Object_Manager {
         $params['srch_date_from'] = $this->getRequestValue('srch_date_from') ? $this->getRequestValue('srch_date_from') : 0;
         $params['srch_date_to'] = $this->getRequestValue('srch_date_to') ? $this->getRequestValue('srch_date_to') : 0;
         $params['admin'] = true;
+        
+        
 
         //спец.параметр для for_press
         $params['for_press'] = $this->getRequestValue('for_press');
 
         $exported_template_fields = $this->getRequestValue('template_fields');
+        
         if (is_array($exported_template_fields) && count($exported_template_fields) > 0) {
             $exported_fields = array_keys($exported_template_fields);
         } else {
             $exported_fields = array();
         }
+        //print_r($exported_fields);
         $_model = $this->data_manager_export->get_model();
         if (in_array('tlocation', $exported_fields)) {
             foreach ($exported_fields as $k => $ef) {
@@ -143,55 +146,56 @@ class excelfree_admin extends Object_Manager {
             $ar = $DBC->fetch($stmt);
         }
         $cycle_total = $ar['total'];
-
-
+        
         for ($i = 0; $i <= $cycle_total; $i += $cycle_per_page) {
             $current_page++;
 
-            $data_a = $this->data_manager_export->grid_array($params, $exported_fields, $this->getRequestValue('per_page'), $current_page);
-            $objPHPExcel = new PHPExcel();
+            $data_a = $this->data_manager_export->grid_array_e($params, $exported_fields, $this->getRequestValue('per_page'), $current_page);
+            
+            $objPHPExcel = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+           
             $styleArray = array(
                 'font' => array(
                     'bold' => true,
                 ),
                 'alignment' => array(
-                    'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_LEFT,
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
                 ),
                 'borders' => array(
-                    'top' => array(
-                        'style' => PHPExcel_Style_Border::BORDER_THIN,
-                    ),
-                    'left' => array(
-                        'style' => PHPExcel_Style_Border::BORDER_THIN,
-                    ),
-                    'right' => array(
-                        'style' => PHPExcel_Style_Border::BORDER_THIN,
-                    ),
                     'bottom' => array(
-                        'style' => PHPExcel_Style_Border::BORDER_THIN,
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                        'color' => array(
+                            'rgb' => '808080'
+                        )
                     ),
                 ),
                 'fill' => array(
-                    'type' => PHPExcel_Style_Fill::FILL_GRADIENT_LINEAR,
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
                     'rotation' => 90,
-                    'startcolor' => array(
-                        'argb' => 'FFA0A0A0',
-                    ),
-                    'endcolor' => array(
-                        'argb' => 'FFFFFFFF',
-                    ),
+                    'color' => array(
+                        'rgb' => 'c5c5c5',
+                    )
                 ),
             );
 
-            $objPHPExcel->getActiveSheet()->getStyle('A1:AN1')->applyFromArray($styleArray);
+            //$objPHPExcel->getActiveSheet()->getStyle('A1:AN1')->applyFromArray($styleArray);
+            $fletter = 'A';
+            $lletter = $this->getNameFromNumber((count($exported_fields) - 1));
+            $objPHPExcel->getActiveSheet()->getStyle($fletter . '1:' . $lletter . '1')->applyFromArray($styleArray);
 
 
             $column = 0;
 
+            $arrayData=array();
+            $ai=0;
             foreach ($exported_fields as $ef) {
-                $objPHPExcel->getActiveSheet()->setCellValueByColumnAndRow($column, 1, SiteBill::iconv(SITE_ENCODING, 'utf-8', $_model[$ef]['title']));
+                //$objPHPExcel->getActiveSheet()->setCellValueByColumnAndRow($column, 1, SiteBill::iconv(SITE_ENCODING, 'utf-8', $_model[$ef]['title']));
+                $arrayData[]=SiteBill::iconv(SITE_ENCODING, 'utf-8', $_model[$ef]['title']);
                 $column++;
             }
+            
+            $objPHPExcel->getActiveSheet()->fromArray($arrayData,NULL,'A1');
+            
             $objPHPExcel->getActiveSheet()->getColumnDimension('A')->setAutoSize(true);
             $objPHPExcel->getActiveSheet()->getColumnDimension('B')->setAutoSize(true);
             $objPHPExcel->getActiveSheet()->getColumnDimension('C')->setAutoSize(true);
@@ -233,25 +237,63 @@ class excelfree_admin extends Object_Manager {
             $objPHPExcel->getActiveSheet()->getColumnDimension('AK')->setAutoSize(true);
             $objPHPExcel->getActiveSheet()->getColumnDimension('AL')->setAutoSize(true);
             $objPHPExcel->getActiveSheet()->getColumnDimension('AM')->setAutoSize(true);
+            
+            $arrayData=array();
+            $ai=0;
+            
+           
 
             foreach ($data_a as $item_id => $data_item_a) {
                 $row = $item_id + 2;
                 $column = 0;
-                foreach ($data_item_a as $key => $value) {
+                foreach ($data_item_a as $key => $item) {
+                    
+                    if ($item['type'] == 'select_by_query') {
+                        $value=$item['value_string'];
+                    } elseif ($item['type'] == 'structure' || $item['type'] == 'structure_chain') {
+                        $value=$item['value_string'];
+                    } elseif ($item['type'] == 'select_box_structure') {
+                        $value=$item['value_string'];
+                    } elseif ($item['type'] == 'date') {
+                        $value=$item['value_string'];
+                    } elseif ($item['type'] == 'client_id') {
+                        $value=$item['value_string'];
+                    } elseif ($item['type'] == 'select_box') {
+                        $value=$item['select_data'][$item['value']];
+                    } elseif ($item['type'] == 'photo') {
+                        $value='';
+                    } elseif ($item['type'] == 'checkbox') {
+                        $value=($item['value'] == 1 ? 1 : 0);
+                    } elseif ($item['type'] == 'uploads') {
+                        $value='';
+                    } elseif ($item['type'] == 'docuploads') {
+                        $value='';
+                    } else {
+                        if (is_array($item['value'])) {
+                            $value=implode(';', $item['value']);
+                        } else {
+                            $value=$item['value'];
+                        }
+                    }
 
-                    if (is_array($value)) {
+                    /*if (is_array($value)) {
                         if (is_array($value['value_string'])) {
                             $value = implode(',', $value['value_string']);
                         } else {
                             $value = $value['value_string'];
                         }
-                    }
-                    $objPHPExcel->getActiveSheet()->setCellValueByColumnAndRow($column, $row, SiteBill::iconv(SITE_ENCODING, 'utf-8', $value));
+                    }*/
+                    $arrayData[$ai][]=$value;
+                    //$objPHPExcel->getActiveSheet()->setCellValueByColumnAndRow($column, $row, SiteBill::iconv(SITE_ENCODING, 'utf-8', $value));
                     $column++;
+                    
                 }
+                $ai+=1;
             }
+            
+            $objPHPExcel->getActiveSheet()->fromArray($arrayData,NULL,'A2');
 
-            $objWriter = new PHPExcel_Writer_Excel2007($objPHPExcel);
+            $objWriter = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($objPHPExcel);
             $xlsx_file_name = "data" . date('Y-m-d_H_i') . "_page" . $current_page . ".xlsx";
             $xlsx_output_file = SITEBILL_DOCUMENT_ROOT . "/cache/upl/" . $xlsx_file_name;
             $objWriter->save($xlsx_output_file);
@@ -268,9 +310,7 @@ class excelfree_admin extends Object_Manager {
                 $rs .= '<a href="' . SITEBILL_MAIN_URL . '/cache/upl/' . $xlsx_file_name . '" download="' . $xlsx_file_name . '">' . $xlsx_file_name . '</a><br>';
             }
         }
-
-
-        //$sheetData = $objPHPExcel->getActiveSheet()->toArray(null,true,true,true);
+  
         $rsr = '<h3>Скачать готовые файлы</h3><br/>' . $rs . '';
 
         return $rsr;
@@ -279,7 +319,7 @@ class excelfree_admin extends Object_Manager {
     function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
         $rs .= '<link rel="stylesheet" href="' . SITEBILL_MAIN_URL . '/apps/excelfree/css/style.css">';
         $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/excelfree/js/jquery-ui-1.8.16.custom.min.js"></script> ';
-        $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/excelfree/js/utils.js"></script> ';
+        $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/excelfree/js/utils.js?v=2"></script> ';
         $rs .= '<div class="file">';
         $rs .= '<div class="import">';
         $rs .= '<div class="input_field" style="height: 106px;">';
@@ -296,9 +336,6 @@ class excelfree_admin extends Object_Manager {
         $rs .= '<div class="file">';
         $rs .= '<div id="excel">' . $form_data . '</div>';
         $rs .= '</div>';
-
-
-
         return $rs;
     }
 
@@ -448,6 +485,7 @@ class excelfree_admin extends Object_Manager {
     }
 
     function run_import() {
+        
         $files = $this->load_uploadify_images($this->get_session_key());
         if ($files) {
             $assoc_array = ((isset($_POST['assoc_array']) && count($_POST['assoc_array']) > 0) ? $_POST['assoc_array'] : NULL);
@@ -749,11 +787,16 @@ EOF;
 
     function load_xls($xls_file) {
         $ret_data = array();
-        require_once SITEBILL_APPS_DIR . '/third/phpexcel/PHPExcel/IOFactory.php';
-        //require_once SITEBILL_APPS_DIR.'/excelfree/lib/phpexcel/PHPExcel/IOFactory.php';
         $inputFileName = SITEBILL_DOCUMENT_ROOT . '/cache/upl/' . $xls_file;
+        
+        $objPHPExcel = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+       
+        try {
+            $objPHPExcel = \PhpOffice\PhpSpreadsheet\IOFactory::load($inputFileName);
+        } catch(\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+            die('Error loading file: '.$e->getMessage());
+        }
 
-        $objPHPExcel = PHPExcel_IOFactory::load($inputFileName);
         $sheetData = $objPHPExcel->getActiveSheet()->toArray(null, true, true, true);
 
         foreach ($sheetData as $k => $v) {
@@ -763,6 +806,17 @@ EOF;
             }
         }
         return $ret_data;
+    }
+    
+    function getNameFromNumber($num) {
+        $numeric = $num % 26;
+        $letter = chr(65 + $numeric);
+        $num2 = intval($num / 26);
+        if ($num2 > 0) {
+            return $this->getNameFromNumber($num2 - 1) . $letter;
+        } else {
+            return $letter;
+        }
     }
 
 }

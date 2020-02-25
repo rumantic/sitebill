@@ -122,16 +122,43 @@ class banner_admin extends Object_Manager {
                 }
             }
         } else {
-
-            $query = 'SELECT complex_id FROM ' . DB_PREFIX . '_complex ORDER BY name DESC LIMIT ' . $num;
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
+            $ATH = new Admin_Table_Helper();
+            $form_data = $ATH->load_model('complex', true);
+            if (empty($form_data)) {
+                return '';
+            }
+            $form_data=$form_data['complex'];
+            $search_params=array();
+            $filter = trim($client_info['informer_parameters']['filters']);
+            if($filter!=''){
+                parse_str($filter, $result);
+                //print_r($result);
+                foreach($result as $pname=>$pval){
+                    if(isset($form_data[$pname])){
+                        if($form_data[$pname]['type']=='checkbox' && in_array($pval, array(0,1))){
+                            $search_params[]='`'.$pname.'`='.$pval;
+                        }
+                    }
+                }
+            }
+            
+            $ids=array();
+            
+            $query = 'SELECT complex_id FROM ' . DB_PREFIX . '_complex'.(!empty($search_params) ? ' WHERE '.implode(' AND ', $search_params) : '').' ORDER BY name DESC LIMIT ' . $num;
+            
             $stmt = $DBC->query($query);
             if ($stmt) {
                 while ($ar = $DBC->fetch($stmt)) {
                     $ids[] = $ar['complex_id'];
                 }
             }
-
-            $form_data = array();
+            
+            if(empty($ids)){
+                return '';
+            }
+               
+            /*$form_data = array();
 
             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/columns/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php')) {
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
@@ -142,7 +169,7 @@ class banner_admin extends Object_Manager {
                 }
             } else {
                 return '';
-            }
+            }*/
 
 
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
@@ -154,7 +181,7 @@ class banner_admin extends Object_Manager {
             $form_data = array();
 
             foreach ($ids as $id) {
-                $form_data[] = $data_model->init_model_data_from_db('complex', 'complex_id', $id, $form_data_shared['complex'], true);
+                $form_data[] = $data_model->init_model_data_from_db('complex', 'complex_id', $id, $form_data_shared, true);
             }
             if (count($form_data) > 0) {
                 foreach ($form_data as $item_id => $v) {

@@ -3,14 +3,14 @@
 {foreach from=$model_fields item=model_field}
 	<div class="field well well-sm">
 		<input type="checkbox" name="field[]" value="{$model_field.name}"{if in_array($model_field.name, $used_fields)} checked="checked"{/if}>{$model_field.title} ({$model_field.name})
-		<a href="" class="up btn btn-sm btn-info" title="Выше (up)"><i class="fa fa-arrow-up"></i></a>
-		<a href="" class="down btn btn-sm btn-info" title="Ниже (down)"><i class="fa fa-arrow-down"></i></a>
-		<a href="" class="first btn btn-sm btn-info" title="Первая (First)"><i class="fa fa-fast-backward"></i></a>
-		<a href="" class="last btn btn-sm btn-info" title="Последняя (Last)"><i class="fa fa-fast-forward"></i></a>
+		<a href="" class="up btn btn-sm btn-info" title="{_e t="Выше (up)"}"><i class="fa fa-arrow-up"></i></a>
+		<a href="" class="down btn btn-sm btn-info" title="{_e t="Ниже (down)"}"><i class="fa fa-arrow-down"></i></a>
+		<a href="" class="first btn btn-sm btn-info" title="{_e t="Первая (First)"}"><i class="fa fa-fast-backward"></i></a>
+		<a href="" class="last btn btn-sm btn-info" title="{_e t="Последняя (Last)"}"><i class="fa fa-fast-forward"></i></a>
 	</div>
 {/foreach}
 </div>
-<button id="save_fields" type="submit">Сохранить</button>
+<button id="save_fields" type="submit">{_e t="Сохранить"}</button>
 </form>
 
 

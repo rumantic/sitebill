@@ -571,6 +571,9 @@ background-color: #8dbdd8;
     /*border-bottom: 1px solid Red;*/
     border-left: 2px solid #d53f40;
 }
+.new_admin_grid .actuality_expired {
+    background-color: #f99170 !important;
+}
 .new_admin_grid tr {
     opacity:0.85;
     font-weight: bold;

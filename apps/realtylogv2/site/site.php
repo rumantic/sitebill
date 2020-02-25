@@ -103,8 +103,12 @@ class realtylogv2_site extends realtylogv2_admin {
     				$title_parts[]=$x;
     			}
     			if(isset($form_data['data']['price']) && $form_data['data']['price']['value']!=='' && $form_data['data']['price']['value']!=0){
-    				$title_parts[]='Цена: '.$form_data['data']['price']['value'];
-    			}
+    				if(isset($form_data['data']['currency_id']) && $form_data['data']['currency_id']['value']!=0){
+                        $title_parts[]='Цена: '.$form_data['data']['price']['value'].''.$form_data['data']['currency_id']['value_string'];
+                    }else{
+                        $title_parts[]='Цена: '.$form_data['data']['price']['value'];
+                    }
+                }
     			
     			$data[$k]['title']=implode('; ',$title_parts);
     			unset($data[$k]['log_data']);

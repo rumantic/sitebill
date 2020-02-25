@@ -21,7 +21,8 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
      * @return string
      */
     function main ( $params = array() ) {
-        switch ( $this->getRequestValue('do') ) {
+        return '';
+        /*switch ( $this->getRequestValue('do') ) {
             case 'load_done':
                 $csv_strings = $this->loadData();
                 if ( !$csv_strings ) {
@@ -42,7 +43,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         $this->template->assert('main', $rs);
         $this->template->render();
         $rs = $this->template->toHTML();
-        return $rs;
+        return $rs;*/
     }
     
     /**
@@ -50,11 +51,11 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
      * @param int $topic_id topic id
      * @return boolean
      */
-    function clearItems ( $topic_id ) {
+    /*function clearItems ( $topic_id ) {
         $query = "delete from re_data where topic_id=$topic_id and hot <> 1 and img1 = '' and img2 = '' and img3 = '' and img4 = '' and img5 = ''";
         $DBC=DBC::getInstance();
     	$stmt=$DBC->query($query);
-    }
+    }*/
     
     /**
      * Import data
@@ -542,7 +543,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
      * @param void
      * @return boolean
      */
-    function loadData () {
+    /*function loadData () {
         if ( !is_uploaded_file($_FILES['csv']['tmp_name']) ) {
             $this->riseError(Multilanguage::_('L_ERROR_CANT_UPLOAD_FILE'));
             return false;
@@ -556,14 +557,14 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         }
         
         return $this->csv_strings;
-    }
+    }*/
     
     /**
      * Get load form
      * @param void
      * @return string
      */
-    function getLoadForm () {
+    /*function getLoadForm () {
         
         $rs .= '<form method="post" action="index.php" name="rentform" enctype="multipart/form-data">';
         $rs .= '<table border="0">';
@@ -600,6 +601,6 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         $rs .= '</form>';
         
         return $rs;
-    }
+    }*/
 }
 ?>

@@ -35,13 +35,13 @@ class system_update extends SiteBill {
 
     function rewrite_file($htaccess_file) {
         if (is_writable($htaccess_file) or ! file_exists($htaccess_file)) {
-            $content = "<FilesMatch \"\.(jpg|gif|png|jpeg)$\">\nOrder allow,deny\nAllow from all\n</FilesMatch>\nOrder deny,allow\nDeny from all";
+            $content = "<FilesMatch \"\.(jpg|gif|png|jpeg|xlsx|webp)$\">\nOrder allow,deny\nAllow from all\n</FilesMatch>\nOrder deny,allow\nDeny from all";
             if (file_put_contents($htaccess_file, $content)) {
                 $rs = 'Файл ' . $htaccess_file . ' успешно перезаписан</br>';
                 return $rs;
             }
         }
-        $rs = "<font color=\"red\">Ошибка перезаписи файла '.$htaccess_file.' необходимо вручную прописать в файл следующие строчки: <strong><br><FilesMatch \"\.(jpg|gif|png|jpeg)$\">\nOrder allow,deny\nAllow from all\n</FilesMatch>\nOrder deny,allow\nDeny from all</strong></font></br>";
+        $rs = "<font color=\"red\">Ошибка перезаписи файла '.$htaccess_file.' необходимо вручную прописать в файл следующие строчки: <strong><br><FilesMatch \"\.(jpg|gif|png|jpeg|webp)$\">\nOrder allow,deny\nAllow from all\n</FilesMatch>\nOrder deny,allow\nDeny from all</strong></font></br>";
         return $rs;
     }
 
@@ -236,6 +236,7 @@ class system_update extends SiteBill {
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_data ADD column premium_status_end int(11) not null default 0";
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_data ADD column bold_status_end int(11) not null default 0";
         $query_data[] = "ALTER table " . DB_PREFIX . "_data ADD column vip_status_end int(11) not null default 0";
+        $query_data[] = "ALTER table " . DB_PREFIX . "_data ADD column archived int(11) not null default 0";
 
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_country ADD column url varchar(255)";
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_country ADD column description text";
@@ -270,17 +271,60 @@ class system_update extends SiteBill {
 
         $query_data[] = "DELETE FROM " . DB_PREFIX . "_config WHERE `config_key`='apps.cache.enable'";
 
-        $query_data[] = "CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_table_grids` (`action_code` varchar(255) NOT NULL, `grid_fields` text NOT NULL, UNIQUE KEY `action_code` (`action_code`) ) ENGINE=MyISAM DEFAULT CHARSET=utf8";
+        $query_data[] = "CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_table_grids` (`action_code` varchar(255) NOT NULL, `grid_fields` text NOT NULL, `meta` text NOT NULL, UNIQUE KEY `action_code` (`action_code`) ) ENGINE=MyISAM DEFAULT CHARSET=utf8";
 
         $query_data[] = "CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_userlists` (`user_id` int(10) unsigned NOT NULL, `id` int(10) unsigned NOT NULL, `lcode` varchar(5) NOT NULL, UNIQUE KEY `user_id` (`lcode`,`user_id`,`id`)) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
         $query_data[] = "CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_user_blocked_logins` (`login` varchar(255) NOT NULL, `blocked_to` datetime NOT NULL, `try_count` tinyint(4) NOT NULL DEFAULT '0', UNIQUE KEY `login` (`login`)) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_user ADD column `auth_hash` varchar(32)";
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_user ADD column `auth_salt` varchar(32)";
+        $query_data[] = "ALTER TABLE " . DB_PREFIX . "_table_grids ADD column `meta` text";
+        $query_data[] = "create index sess_idx on " . DB_PREFIX . "_session(start_date)";
+
 
         $query_data[] = "CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_cache` (`parameter` varchar(200) NOT NULL, `value` mediumtext NOT NULL, `created_at` int(15) NOT NULL,  `valid_for` int(15) NOT NULL,  PRIMARY KEY (`parameter`)) ENGINE=MyISAM DEFAULT CHARSET=utf8";
         $query_data[] = "CREATE INDEX date_idx ON " . DB_PREFIX . "_data (date_added)";
+        $query_data[] = "CREATE TABLE `" . DB_PREFIX . "_lang_words` (
+  `word_id` int(10) UNSIGNED NOT NULL,
+  `lang_id` mediumint(4) UNSIGNED NOT NULL,
+  `word_app` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `word_pack` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `word_key` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+  `word_default` text COLLATE utf8_unicode_ci NOT NULL,
+  `word_custom` text COLLATE utf8_unicode_ci,
+  `word_default_version` varchar(10) COLLATE utf8_unicode_ci NOT NULL DEFAULT '1',
+  `word_custom_version` varchar(10) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `word_js` tinyint(1) UNSIGNED NOT NULL DEFAULT '0',
+  `lang_key` varchar(5) COLLATE utf8_unicode_ci DEFAULT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+";
+        $query_data[] = "ALTER TABLE `" . DB_PREFIX . "_lang_words`
+  ADD PRIMARY KEY (`word_id`),
+  ADD UNIQUE KEY `lang_key_word` (`lang_key`,`word_key`,`word_app`),
+  ADD KEY `word_js` (`word_js`);
+";
+        $query_data[] = "ALTER TABLE `" . DB_PREFIX . "_lang_words`
+  MODIFY `word_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+";
+        $query_data[] = "CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_activitylog` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `message` text,
+  `user_id` int(11) NOT NULL DEFAULT '0',
+  `ipaddr` varchar(255) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
 
-
+        $query_data[] = "CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_emails` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `user_id` int(11) NOT NULL DEFAULT '0',
+  `to` text,
+  `from` text,
+  `subject` text,
+  `message` text,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
+            
         $DBC = DBC::getInstance();
 
         $query_upd_col = 'SELECT group_id FROM ' . DB_PREFIX . '_group WHERE system_name=?';
@@ -292,13 +336,20 @@ class system_update extends SiteBill {
             $gid = 1;
         }
 
-        $query_upd_col = 'SELECT columns_id FROM ' . DB_PREFIX . '_columns WHERE name=? AND table_id=(SELECT table_id FROM ' . DB_PREFIX . '_table WHERE name=? LIMIT 1)';
+        $query_upd_col = 'SELECT columns_id, group_id FROM ' . DB_PREFIX . '_columns WHERE name=? AND table_id=(SELECT table_id FROM ' . DB_PREFIX . '_table WHERE name=? LIMIT 1)';
         $stmt = $DBC->query($query_upd_col, array('date_added', 'data'));
         if ($stmt) {
             $ar = $DBC->fetch($stmt);
             $cid = $ar['columns_id'];
-            $query_upd_col = 'UPDATE ' . DB_PREFIX . '_columns SET value=?, type=?, group_id=? WHERE columns_id=?';
-            $stmt = $DBC->query($query_upd_col, array('now', 'dtdatetime', $gid, $cid));
+            if($ar['group_id'] == '' || $ar['group_id'] == '0'){
+                $query_upd_col = 'UPDATE ' . DB_PREFIX . '_columns SET value=?, type=?, group_id=? WHERE columns_id=?';
+                $stmt = $DBC->query($query_upd_col, array('now', 'dtdatetime', $gid, $cid));
+            }else{
+                $query_upd_col = 'UPDATE ' . DB_PREFIX . '_columns SET value=?, type=? WHERE columns_id=?';
+                $stmt = $DBC->query($query_upd_col, array('now', 'dtdatetime', $cid));
+            }
+            
+            
         }
 
         $media_docs_folder = SITEBILL_DOCUMENT_ROOT . '/img/mediadocs/';
@@ -328,6 +379,12 @@ class system_update extends SiteBill {
         $rs .= $this->get_dependency($system_version, $secret_key);
         $rs .= $this->update_language_structure();
         $rs .= $this->update_htaccess();
+        if ( method_exists('Multilanguage', 'reLoadWords') ) {
+            $rs .= 'Обновляем языки<br>';
+
+            Multilanguage::reLoadWords();
+        }
+
 
 
 
@@ -364,9 +421,9 @@ class system_update extends SiteBill {
             $rs .= $sitebill_admin->update_app('toolbox', $secret_key);
         }
 
-        if (!$this->get_app_version('third')) {
-            $rs .= $sitebill_admin->update_app('third', $secret_key);
-        }
+        //if (!$this->get_app_version('third')) {
+        $rs .= $sitebill_admin->update_app('third', $secret_key);
+        //}
 
         //if ( !$this->get_app_version('api') ) {
         $rs .= $sitebill_admin->update_app('api', $secret_key);
@@ -392,6 +449,9 @@ class system_update extends SiteBill {
         }
         if (!$this->get_app_version('akismet')) {
             $rs .= $sitebill_admin->update_app('akismet', $secret_key);
+        }
+        if (!$this->get_app_version('cloud')) {
+            $rs .= $sitebill_admin->update_app('cloud', $secret_key);
         }
 
 

@@ -349,8 +349,12 @@ CREATE TABLE `" . DB_PREFIX . "_component` (
         $rs .= Multilanguage::_('COMPONENT_NAME', 'system') . ' <b>' . $this->getName($component_id) . '</b>';
 
         $rs .= $this->getFunctionList($component_id);
-        //$rs .= Multilanguage::_('INC_FUNCTIONS_TO_COMPONENT','system');
-        //$rs .= $this->includeFunctionForm($component_id);
+
+        // Чтобы юзеры на демке не портили матрицу доступа
+        if ( $this->getConfigValue('system_email') != 'info@estate.sitebill.ru' ) {
+            $rs .= Multilanguage::_('INC_FUNCTIONS_TO_COMPONENT','system');
+            $rs .= $this->includeFunctionForm($component_id);
+        }
 
         $rs_new = $this->get_app_title_bar();
         $rs_new .= $rs;

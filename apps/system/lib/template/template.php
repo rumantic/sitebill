@@ -27,14 +27,14 @@ class Template {
     * @param: string $template_name - template name
     * @return: boolean
     */
-    function set_name ( $template_name ) {
+    /*function set_name ( $template_name ) {
         if ( $this->template_name == "" ) {
             $this->template_name = $template_name;
             return true;
         } else {
             return false;
         }
-    }
+    }*/
 
     /**
     * Assert template set
@@ -49,9 +49,9 @@ class Template {
         return true;
     }
     
-    function get_val ( $set ) {
+    /*function get_val ( $set ) {
     	return $this->item[$set];
-    }
+    }*/
 
     /**
      * Assert template set
@@ -84,7 +84,7 @@ class Template {
     * @param: $init - initialize object, $event_code - EVENT CODE for identify template name
     * @returns: $string - name of template file with path from ROOT DIR
     */
-    function get_name ($init, $event_code) {
+    /*function get_name ($init, $event_code) {
         $this->template_dir = $init->action;
         $this->event_code = $event_code;
         if ( $this->template_name != "" ) {
@@ -92,16 +92,16 @@ class Template {
         } else {
             return '/system/normal.tpl';
         }
-    }
+    }*/
 
     /**
     * Function load template
     * @param: $template - file name with full path
     * @return: $FileStringContent - string with full file content
     */
-    function load_template($template){
+    /*function load_template($template){
         return implode("",file($template));
-    }
+    }*/
 
     /**
     * Set template string from file
@@ -109,18 +109,18 @@ class Template {
     * @param string $template_file
     * @return void
     */
-    function setTemplateFile ( $template_file ) {
+    /*function setTemplateFile ( $template_file ) {
         $this->templateString = $this->load_template($template_file);
-    }
+    }*/
 
     /**
     * Set template string
     * @param string $templateString - string template content
     * @return void
     */
-    function setTemplateString ( $templateString ) {
+    /*function setTemplateString ( $templateString ) {
         $this->templateString = $templateString;
-    }
+    }*/
 
     /**
     * Render string
@@ -129,7 +129,7 @@ class Template {
     * @return string
     * @return false - if render failed
     */
-    function renderString ( $string ) {
+    /*function renderString ( $string ) {
         if ( !is_array($this->item) ) {
             return false;
         }
@@ -138,7 +138,7 @@ class Template {
             $string = str_replace( '{'.$itemKey.'}', $itemValue, $string );
         }
         return $string;
-    }
+    }*/
 
     /**
     * Render content

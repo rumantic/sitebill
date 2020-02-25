@@ -10,6 +10,7 @@ require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php
 class currency_admin extends Object_Manager {
 
     private $courses = array();
+    private $currencies_cache = false;
 
     /**
      * Constructor
@@ -304,7 +305,7 @@ class currency_admin extends Object_Manager {
     }
 
     private function getNBRBCourses() {
-        $url = 'http://www.nbrb.by/Services/XmlExRates.aspx?ondate=' . date('m/d/Y');
+        $url = 'https://www.nbrb.by/Services/XmlExRates.aspx?ondate=' . date('m/d/Y');
         $ret = array();
         $xml = $this->loadExternalCourses($url);
         if ($xml) {
@@ -324,7 +325,7 @@ class currency_admin extends Object_Manager {
 
     private function getNBUCourses() {
 
-        $url = 'http://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?date=' . date('Ymd');
+        $url = 'https://bank.gov.ua/NBUStatService/v1/statdirectory/exchange?date=' . date('Ymd');
         $ret = array();
         $xml = $this->loadExternalCourses($url);
         if ($xml) {
@@ -401,6 +402,9 @@ class currency_admin extends Object_Manager {
     }
 
     public function getActiveCurrencies() {
+        if ($this->currencies_cache) {
+            return $this->currencies_cache;
+        }
         $cachefile = SITEBILL_DOCUMENT_ROOT . '/cache/apps_currency_vlutes.cache.txt';
         if (!file_exists($cachefile) || (time() - filemtime($cachefile)) > 3600) {
             $currencies = array();
@@ -418,6 +422,7 @@ class currency_admin extends Object_Manager {
         } else {
             $currencies = unserialize(file_get_contents($cachefile));
         }
+        $this->currencies_cache = $currencies;
 
         return $currencies;
     }

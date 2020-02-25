@@ -23,7 +23,23 @@ class Ipoteka_Order_Form extends Object_Manager {
     protected function _defaultAction() {
         $rs = '';
         $form_data = $this->data_model;
-        $rs .= $this->get_form($form_data[$this->table_name]);
+        $rs .= $this->get_form($form_data[$this->table_name], 'new', 0, '', SITEBILL_MAIN_URL.'/ipotekaorder'.self::$_trslashes);
+        
+        require_once SITEBILL_DOCUMENT_ROOT.'/apps/page/admin/admin.php';
+        require_once SITEBILL_DOCUMENT_ROOT.'/apps/page/site/site.php';
+        $PS=new page_site();
+        $page=$PS->getPageByURI('_ipotekaorder');
+        if($page!==0){
+            /*echo '<pre>';
+            var_dump($page);
+            echo '</pre>';*/
+            
+            $this->template->assert('meta_title', $page['meta_title']);
+            $this->template->assert('meta_description', $page['meta_description']);
+            $this->template->assert('title', $page['title']);
+            $this->template->assert('descrition', $page['body']);
+        }
+        
         return $rs;
     }
 
@@ -34,7 +50,7 @@ class Ipoteka_Order_Form extends Object_Manager {
         $form_data = $this->data_model;
         $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
         if (!$this->check_data($form_data[$this->table_name])) {
-            $rs .= $this->get_form($form_data[$this->table_name], 'new');
+            $rs .= $this->get_form($form_data[$this->table_name], 'new', 0, '', SITEBILL_MAIN_URL.'/ipotekaorder'.self::$_trslashes);
         } else {
             $order_table = $this->add_data($form_data[$this->table_name]);
             $subject = $_SERVER['SERVER_NAME'] . ': ' . Multilanguage::_('IPOTEKA_NEW_ORDER', 'system');

@@ -17,11 +17,15 @@ class page_site extends page_admin {
         }
 
         $REQUESTURIPATH = Sitebill::getClearRequestURI();
+        
+        if($REQUESTURIPATH == ''){
+            return false;
+        }
 
-        if (preg_match('/^blog(\/?)$/', $REQUESTURIPATH, $matches)) {
+        if (preg_match('/^blog(\/?)$/', $REQUESTURIPATH, $matches) and $this->getConfigValue('apps.page.blog_enable')) {
             $rs = $this->showBlog();
             return true;
-        } elseif (preg_match('/^recommendations(\/?)$/', $REQUESTURIPATH, $matches)) {
+        } elseif (preg_match('/^recommendations(\/?)$/', $REQUESTURIPATH, $matches) and $this->getConfigValue('apps.page.recommendations_enable')) {
             //@todo:Надо переопределить ключевое слово recommendations на определение URL топика (И мета инфу для топика получать из топиков новостей, это чтобы не плодить лишних сущностей)
             $rs = $this->showBlogCategory();
             return true;
@@ -31,7 +35,7 @@ class page_site extends page_admin {
               } else {
               $page_array=$this->getPageByURI($REQUESTURIPATH);
               } */
-
+            
 
             $page_id = $this->getPageIDByURI($REQUESTURIPATH);
 
@@ -143,11 +147,9 @@ class page_site extends page_admin {
         $postfix = '';
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
             $check_lang_fields = true;
-            $curlang = $this->getCurrentLang();
-            if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                
-            } else {
-                $postfix .= '_' . $this->getCurrentLang();
+            $postfix = $this->getLangPostfix($this->getCurrentLang());
+            if($postfix == ''){
+                $check_lang_fields = false;
             }
         }
 
@@ -245,11 +247,9 @@ class page_site extends page_admin {
         $postfix = '';
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
             $check_lang_fields = true;
-            $curlang = $this->getCurrentLang();
-            if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                
-            } else {
-                $postfix .= '_' . $this->getCurrentLang();
+            $postfix = $this->getLangPostfix($this->getCurrentLang());
+            if($postfix == ''){
+                $check_lang_fields = false;
             }
         }
 
@@ -336,6 +336,17 @@ class page_site extends page_admin {
     }
 
     function getPageByURI($uri) {
+        
+        $check_lang_fields = false;
+        $postfix = '';
+        if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
+            $check_lang_fields = true;
+            $postfix = $this->getLangPostfix($this->getCurrentLang());
+            if($postfix == ''){
+                $check_lang_fields = false;
+            }
+        }
+        
         $where = array();
         $where_v = array();
         /* if(isset($this->data_model[$this->table_name]['is_service']) && isset($page_array['is_service']) && $page_array['is_service']!=0){
@@ -349,19 +360,16 @@ class page_site extends page_admin {
         $stmt = $DBC->query($query, array($uri));
         if ($stmt) {
             $ar = $DBC->fetch($stmt);
-            if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-                $curlang = $this->getCurrentLang();
-                if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                    
-                } else {
-                    foreach ($ar as $key => $item_array) {
-                        $lang_key = $key . '_' . $curlang;
-                        if ($ar[$lang_key] != '') {
-                            $ar[$key] = $ar[$lang_key];
-                        }
+            
+            if($check_lang_fields){
+                foreach ($ar as $key => $item_array) {
+                    $lang_key = $key . $postfix;
+                    if ($ar[$lang_key] != '') {
+                        $ar[$key] = $ar[$lang_key];
                     }
                 }
             }
+            
             if ((int) $ar['page_id'] > 0) {
                 return $ar;
             }

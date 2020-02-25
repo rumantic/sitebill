@@ -35,6 +35,7 @@ class messenger_admin extends Object_Manager {
     }
 
     public function _preload() {
+        return false;
     	if ( $this->getConfigValue('apps.messenger.widget_enable') ) {
 	    if ( $this->getSessionUserId() > 0 ) {
 

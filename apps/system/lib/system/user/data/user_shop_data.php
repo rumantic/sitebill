@@ -148,7 +148,7 @@ class User_Shop_Data_Manager extends Shop_Product_Manager {
 						        $body='Клиентом изменено объявление на сайте<br>ID объявления '.$form_data[$this->table_name][$this->primary_key]['value'].'<br>';
 						    	$body .= '<a href="http://'.$_SERVER['SERVER_NAME'].'/admin/">Одобрить в админке</a><br>';
 						    	$subject = $_SERVER['SERVER_NAME'].': Изменено объявление : требует модерации';
-			                    $from = $this->getConfigValue('order_email_acceptor');
+                                $from = $this->getConfigValue('system_email');
 			                    
 			                   /* if ( $this->getConfigValue('use_smtp') ) {
 			                        $mailer->send_smtp($to, $from, $subject, $body, 1);
@@ -272,7 +272,7 @@ class User_Shop_Data_Manager extends Shop_Product_Manager {
 					    	$body .= '</table>';
 						    //$body='Добавлено новое объявление на сайте';
 		                    $subject = $_SERVER['SERVER_NAME'].': Добавлено новое объявление '.$subj_part;
-		                    $from = $this->getConfigValue('order_email_acceptor');
+                            $from = $this->getConfigValue('system_email');
 		                    
 		                    if(count($recipients)>0){
 		                    	foreach($recipients as $r){

@@ -11,44 +11,17 @@ class news_admin extends Object_Manager {
     /**
      * Constructor
      */
-    function __construct($realty_type = false) {
+    function __construct($mod_name = '') {
         $this->SiteBill();
         Multilanguage::appendAppDictionary('news');
         $this->action = 'news';
         $this->use_topics = false;
         $this->app_title = Multilanguage::_('APPLICATION_NAME', 'news');
 
-        //require_once(SITEBILL_DOCUMENT_ROOT.'/apps/news/admin/news_model.php');
-        //require_once(SITEBILL_DOCUMENT_ROOT.'/apps/news/admin/news_topic_model.php');
-
-
-        /* if(isset($_COOKIE['_articles_section']) && $_COOKIE['_articles_section']!=''){
-          $this->section=$_COOKIE['_articles_section'];
-          }else{
-          $this->section='articles';
-          setcookie('_articles_section', 'articles', 0, SITEBILL_MAIN_URL.'/admin', self::$_cookiedomain);
-          } */
-
-
-
-        $section = $this->getRequestValue('section');
-        if ($section === NULL) {
-            if (isset($_COOKIE['_news_section']) && $_COOKIE['_news_section'] != '') {
-                $this->section = $_COOKIE['_news_section'];
-            } else {
-                $this->section = 'news';
-                //setcookie('_news_section', 'news', 0, SITEBILL_MAIN_URL . '/admin', self::$_cookiedomain);
-                //$_SESSION['_news_section']='news';
-            }
-        } else {
-            $this->section = $this->getRequestValue('section');
-            //setcookie('_news_section', $this->section, 0, SITEBILL_MAIN_URL . '/admin', self::$_cookiedomain);
-            //$_SESSION['_news_section']=$this->section;
-        }
-
-        if ($this->section == 'topic') {
+        parent::set_mod($mod_name);
+        if($this->mod_name=='topic'){
             $this->initNewsTopicModel();
-        } else {
+        }else{
             $this->initNewsModel();
         }
 
@@ -144,6 +117,14 @@ class news_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.news.sitemaptopics_priority')) {
             $config_admin->addParamToConfig('apps.news.sitemaptopics_priority', '0.5', 'Приоритетность URL <b>страницы подраздела новостей</b> относительно других URL на Вашем сайте. Диапазон от 0.0 до 1.0');
         }
+        
+        /*if (!$config_admin->check_config_item('apps.news.user_enable_access_type')) {
+            $config_admin->addParamToConfig('apps.news.user_enable_access_type', '0', 'Тип доступа к новостям из ЛК');
+        }*/
+        
+        if (!$config_admin->check_config_item('apps.news.alias_source_field')) {
+            $config_admin->addParamToConfig('apps.news.alias_source_field', 'title', 'Системное имя поля для формирования алиаса');
+        }
         //$this->install();
     }
 
@@ -238,7 +219,7 @@ class news_admin extends Object_Manager {
     }
 
     protected function _deleteAction() {
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && $this->section === 'topic' && ($_SESSION['current_user_group_name'] !== 'admin')) {
+        if ((1 === (int) $this->getConfigValue('check_permissions')) && $this->mod_name === 'topic' && ($_SESSION['current_user_group_name'] !== 'admin')) {
             return '';
         }
         if ((1 === (int) $this->getConfigValue('check_permissions')) && (1 === (int) $this->getConfigValue('apps.news.share_access')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
@@ -271,7 +252,7 @@ class news_admin extends Object_Manager {
 
 
 
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && $this->section === 'topic' && ($_SESSION['current_user_group_name'] !== 'admin')) {
+        if ((1 === (int) $this->getConfigValue('check_permissions')) && $this->mod_name === 'topic' && ($_SESSION['current_user_group_name'] !== 'admin')) {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
 
@@ -289,7 +270,7 @@ class news_admin extends Object_Manager {
     protected function _edit_doneAction() {
         $news_id = (int) $this->getRequestValue($this->primary_key);
         $user_id = (int) $_SESSION['user_id_value'];
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && $this->section === 'topic') {
+        if ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && $this->mod_name === 'topic') {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
 
@@ -328,8 +309,10 @@ class news_admin extends Object_Manager {
                     $form_data[$this->table_name] = $this->removeTemporaryFields($form_data[$this->table_name], $remove_this_names);
                     $rs = $this->get_form($form_data[$this->table_name], 'edit');
                 } else {
-                    $form_data[$this->table_name]['user_id']['value'] = (int) $_SESSION['user_id_value'];
-
+                    
+                    if ($this->mod_name !== 'topic' && isset($form_data[$this->table_name]['user_id'])) {
+                        $form_data[$this->table_name]['user_id']['value'] = intval($_SESSION['user_id_value']);
+                    }
                     $this->edit_data($form_data[$this->table_name]);
                     if ($this->getError()) {
                         $form_data[$this->table_name] = $this->removeTemporaryFields($form_data['data'], $remove_this_names);
@@ -350,7 +333,7 @@ class news_admin extends Object_Manager {
 
     protected function _newAction() {
         $rs = '';
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && $this->section === 'topic') {
+        if ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && $this->mod_name === 'topic') {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
         if ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && (1 !== (int) $this->getConfigValue('apps.news.share_access'))) {
@@ -371,7 +354,7 @@ class news_admin extends Object_Manager {
     }
 
     protected function _new_doneAction() {
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && $this->section === 'topic') {
+        if ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && $this->mod_name === 'topic') {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
 
@@ -410,8 +393,8 @@ class news_admin extends Object_Manager {
                 $form_data[$this->table_name] = $this->removeTemporaryFields($form_data[$this->table_name], $remove_this_names);
                 $rs = $this->get_form($form_data[$this->table_name], 'new');
             } else {
-                if ($this->section !== 'topic') {
-                    $form_data[$this->table_name]['user_id']['value'] = (int) $_SESSION['user_id_value'];
+                if ($this->mod_name !== 'topic' && isset($form_data[$this->table_name]['user_id'])) {
+                    $form_data[$this->table_name]['user_id']['value'] = intval($_SESSION['user_id_value']);
                 }
 
                 $new_record_id = $this->add_data($form_data[$this->table_name], $this->getRequestValue('language_id'));
@@ -436,6 +419,7 @@ class news_admin extends Object_Manager {
      */
 
     protected function initNewsModel() {
+        $this->action = 'news';
         $this->table_name = 'news';
         $this->primary_key = 'news_id';
         $form_data = array();
@@ -466,6 +450,7 @@ class news_admin extends Object_Manager {
     }
 
     protected function initNewsTopicModel() {
+        $this->action = 'news:topic';
         $this->table_name = 'news_topic';
         $this->primary_key = 'id';
 
@@ -516,21 +501,23 @@ class news_admin extends Object_Manager {
             }
         }
 
-        if (isset($form_data['newsalias']) && $form_data['newsalias']['value'] == '') {
-            $form_data['newsalias']['value'] = $this->get_transliteration($form_data['title']['value']);
-        }
-
-        if (isset($form_data['newsalias']['value'])) {
-            //$form_data['newsalias']['value']=$this->get_transliteration($form_data['newsalias']['value']);
-            $form_data['newsalias']['value'] = preg_replace('/[^a-zA-Z0-9-_]/', '', $form_data['newsalias']['value']);
-        }
-
-        if ($this->section == 'topic') {
+        if ($this->mod_name == 'topic') {
             if ($form_data['url']['value'] == '') {
                 $form_data['url']['value'] = $this->transliteMe($form_data['name']['value']);
             }
-
             $form_data['url']['value'] = preg_replace('/[^a-zA-Z0-9-_]/', '', $form_data['url']['value']);
+        }else{
+            if (isset($form_data['newsalias']['value']) && $form_data['newsalias']['value'] != '') {
+                $form_data['newsalias']['value'] = preg_replace('/[^a-zA-Z0-9-_]/', '', $form_data['newsalias']['value']);
+            }elseif (isset($form_data['newsalias']) && $form_data['newsalias']['value'] == '') {
+                $f = trim($this->getConfigValue('apps.news.alias_source_field'));
+                if($f == ''){
+                    $f = 'title';
+                }
+                if(isset($form_data[$f]) && $form_data[$f]['value'] != ''){
+                    $form_data['newsalias']['value'] = $this->get_transliteration($form_data[$f]['value']);
+                }
+            }
         }
 
         //$query = $data_model->get_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data);
@@ -572,15 +559,6 @@ class news_admin extends Object_Manager {
             unset($form_data['imgfile']);
         }
 
-        if (isset($form_data['newsalias']) && $form_data['newsalias']['value'] == '') {
-            $form_data['newsalias']['value'] = $this->get_transliteration($form_data['title']['value']);
-        }
-
-        if (isset($form_data['newsalias']['value'])) {
-            //$form_data['newsalias']['value']=$this->get_transliteration($form_data['newsalias']['value']);
-            $form_data['newsalias']['value'] = preg_replace('/[^a-zA-Z0-9-_]/', '', $form_data['newsalias']['value']);
-        }
-
         if (isset($form_data['date'])) {
             if ($form_data['date']['type'] == 'date') {
                 if ($form_data['date']['value'] != '' && $form_data['date']['value'] != '0') {
@@ -596,12 +574,24 @@ class news_admin extends Object_Manager {
             }
         }
 
-        if ($this->section == 'topic') {
+        if ($this->mod_name == 'topic') {
             if ($form_data['url']['value'] == '') {
                 $form_data['url']['value'] = $this->transliteMe($form_data['name']['value']);
             }
 
             $form_data['url']['value'] = preg_replace('/[^a-zA-Z0-9-_]/', '', $form_data['url']['value']);
+        }else{
+            if (isset($form_data['newsalias']['value']) && $form_data['newsalias']['value'] != '') {
+                $form_data['newsalias']['value'] = preg_replace('/[^a-zA-Z0-9-_]/', '', $form_data['newsalias']['value']);
+            }elseif (isset($form_data['newsalias']) && $form_data['newsalias']['value'] == '') {
+                $f = trim($this->getConfigValue('apps.news.alias_source_field'));
+                if($f == ''){
+                    $f = 'title';
+                }
+                if(isset($form_data[$f]) && $form_data[$f]['value'] != ''){
+                    $form_data['newsalias']['value'] = $this->get_transliteration($form_data[$f]['value']);
+                }
+            }
         }
 
 
@@ -712,13 +702,14 @@ class news_admin extends Object_Manager {
     }
 
     function getTopMenu() {
-        $rs .= '<a href="?action=' . $this->action . '&section=news" class="btn btn-primary">Все новости</a>';
-        $rs .= ' <a href="?action=' . $this->action . '&section=news&do=new" class="btn btn-primary">Добавить новость</a>';
+        $rs = '';
+        $rs .= '<a href="?action=news" class="btn btn-primary">Все новости</a>';
+        $rs .= ' <a href="?action=news&do=new" class="btn btn-primary">Добавить новость</a>';
 
         if ($this->use_topics) {
             if (((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] === 'admin')) || (0 === (int) $this->getConfigValue('check_permissions'))) {
-                $rs .= ' <a href="?action=' . $this->action . '&section=topic" class="btn btn-primary">Структура новостей</a>';
-                $rs .= ' <a href="?action=' . $this->action . '&section=topic&do=new" class="btn btn-primary">Добавить раздел</a>';
+                $rs .= ' <a href="?action=news:topic" class="btn btn-primary">Структура новостей</a>';
+                $rs .= ' <a href="?action=news:topic&do=new" class="btn btn-primary">Добавить раздел</a>';
             }
         }
         return $rs;
@@ -731,6 +722,7 @@ class news_admin extends Object_Manager {
      */
     function grid($params = array(), $default_params = array()) {
 
+        $rs = '';
         $params = array();
         $params['action'] = $this->action;
 
@@ -747,15 +739,15 @@ class news_admin extends Object_Manager {
         $common_grid->set_grid_table($this->table_name);
         //print_r($_SESSION);
 
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && $this->section === 'topic' && ($_SESSION['current_user_group_name'] !== 'admin')) {
+        if ((1 === (int) $this->getConfigValue('check_permissions')) && $this->mod_name === 'topic' && ($_SESSION['current_user_group_name'] !== 'admin')) {
             return '';
         } elseif ((1 === (int) $this->getConfigValue('check_permissions')) && (1 === (int) $this->getConfigValue('apps.news.share_access')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
             $common_grid->set_conditions(array('user_id' => $_SESSION['user_id_value']));
         }
 
 
-        if ($this->section == 'topic') {
-            $params['section'] = $this->section;
+        if ($this->mod_name == 'topic') {
+            //$params['section'] = $this->section;
             //$common_grid->add_control_param('section', $this->section);
             $common_grid->add_grid_item('id');
             $common_grid->add_grid_item('name');
@@ -808,7 +800,7 @@ class news_admin extends Object_Manager {
             $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/geodata/js/geodata.js"></script>';
         }
         $rs .= '<form method="post" class="form-horizontal" action="' . $action . '" enctype="multipart/form-data">';
-        if ($this->section != 'topic') {
+        if ($this->mod_name != 'topic') {
             $rs .= '<a class="btn btn-info alias_create" href="">' . Multilanguage::_('CREATE_ALIAS', 'news') . '</a>';
             $rs .= '<script>
     			$(document).ready(function(){
@@ -847,7 +839,7 @@ class news_admin extends Object_Manager {
         }
         $el['private'][] = array('html' => '<input type="hidden" name="action" value="' . $this->action . '">');
         $el['private'][] = array('html' => '<input type="hidden" name="language_id" value="' . $language_id . '">');
-        $el['private'][] = array('html' => '<input type="hidden" name="section" value="' . $this->section . '">');
+        //$el['private'][] = array('html' => '<input type="hidden" name="section" value="' . $this->mod_name . '">');
 
         $el['form_header'] = $rs;
         $el['form_footer'] = '</form>';
@@ -1061,23 +1053,17 @@ class news_admin extends Object_Manager {
         } else {
             $app_alias = 'news';
         }
-        if (1 == (int) $this->getConfigValue('apps.seo.no_trailing_slashes')) {
-            $trailing_slashe = '';
-        } else {
-            $trailing_slashe = '/';
-        }
         $ret = array();
         $fname = 'name';
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-            $curlang = $this->getCurrentLang();
+            
+            $postfix = $this->getLangPostfix($this->getCurrentLang());
+            
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
             $ATH = new Admin_Table_Helper();
             $form_data = $ATH->load_model('news_topic', false);
-
-            if ($curlang == 'ru' && 1 === intval($this->getConfigValue('apps.language.use_default_as_ru'))) {
-                
-            } elseif (isset($form_data['news_topic'][$fname . '_' . $curlang])) {
-                $fname = $fname . '_' . $curlang;
+            if (isset($form_data['news_topic'][$fname . $postfix])) {
+                $fname = $fname . $postfix;
             }
         }
         $DBC = DBC::getInstance();
@@ -1085,7 +1071,7 @@ class news_admin extends Object_Manager {
         $stmt = $DBC->query($query);
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
-                $ar['url'] = SITEBILL_MAIN_URL . '/' . $app_alias . '/' . $ar['url'] . $trailing_slashe;
+                $ar['url'] = $this->createUrlTpl($app_alias . '/' . $ar['url']);
                 $ret[$ar['id']] = $ar;
             }
         }
@@ -1105,11 +1091,6 @@ class news_admin extends Object_Manager {
         } else {
             $app_news_alias = 'news';
         }
-        if (1 == (int) $this->getConfigValue('apps.seo.no_trailing_slashes')) {
-            $trailing_slashe = '';
-        } else {
-            $trailing_slashe = '/';
-        }
         if ('' != $this->getConfigValue('apps.news.item_alias')) {
             $app_item_alias = $this->getConfigValue('apps.news.item_alias');
         } else {
@@ -1118,15 +1099,15 @@ class news_admin extends Object_Manager {
 
         if ($external) {
             if ($news_alias != '') {
-                return $this->getServerFullUrl() . '/' . $app_news_alias . '/' . $news_alias . $trailing_slashe;
+                return $this->createUrlTpl($app_news_alias . '/' . $news_alias, true);
             } else {
-                return $this->getServerFullUrl() . '/' . $app_item_alias . $news_id . '.html';
+                return $this->createUrlTpl($app_item_alias . $news_id . '.html', true);
             }
         } else {
             if ($news_alias != '') {
-                return SITEBILL_MAIN_URL . '/' . $app_news_alias . '/' . $news_alias . $trailing_slashe;
+                return $this->createUrlTpl($app_news_alias . '/' . $news_alias);
             } else {
-                return SITEBILL_MAIN_URL . '/' . $app_item_alias . $news_id . '.html';
+                return $this->createUrlTpl($app_item_alias . $news_id . '.html');
             }
         }
     }

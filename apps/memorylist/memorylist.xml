@@ -7,10 +7,10 @@
     <authorUrl>http://www.sitebill.ru</authorUrl>
     <copyright>Copyright (C) 2016 Sitebill Team. All rights reserved.</copyright>
     <license>http://www.sitebill.ru/licenses/sitebill.html</license>
-    <backendMenu>false</backendMenu>
-    <version status="beta">1.1.4</version>
+    <backendMenu>true</backendMenu>
+    <version status="beta">1.2.5</version>
     <administration>
         <!-- Administration Menu Section -->
-        <menu>memorylist</menu>
+        <menu>Подборки</menu>
     </administration>	
 </install>

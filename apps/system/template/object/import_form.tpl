@@ -8,6 +8,11 @@
 	background-repeat: no-repeat;
 	display: none;
 }
+#uploads_result {
+    width: 100%;
+    overflow: scroll;
+    height: 350px;
+}
 </style>
 {if isset($uploads_item->scripts) && $uploads_item->scripts|count>0}
 	{foreach from=$uploads_item->scripts item=form_element_script}

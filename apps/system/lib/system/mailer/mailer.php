@@ -63,6 +63,7 @@ class Mailer {
 	
 	if (is_array($to)) {
 	    foreach ($to as $_to) {
+                $sitebill->writeLog(__METHOD__.', to = '.$_to);
 		$headers = sprintf($this->mailheaders, $_to, $robot_email);
 		if (1 == $sitebill->getConfigValue('disable_mail_additionals')) {
 		    $result = $this->secure_mail($_to, $from, $subject, $message, $headers);
@@ -111,7 +112,8 @@ class Mailer {
 	//send the message, check for errors
 	if (!$mail->send()) {
 	    //echo "Mailer Error: " . $mail->ErrorInfo;
-	    echo 'Отправка почты в данный момент невозможна, попробуйте позже';
+            $this->config_admin->writeLog(__METHOD__.', '."Mailer Error: " . $mail->ErrorInfo);
+	    //echo 'Отправка почты в данный момент невозможна, попробуйте позже';
 	    return false;
 	}
 	return true;

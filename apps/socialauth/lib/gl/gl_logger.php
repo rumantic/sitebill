@@ -25,8 +25,28 @@ class Gl_Logger extends Common_Logger {
 			'AUTH_URL'		=>	'https://accounts.google.com/o/oauth2/auth',
 		);
 	}
-	
-	public function prelogin(){
+    
+    public function preconnect(){
+        $url=$this->getConnectURL();
+        //echo $url;
+		header('location: '.$url);
+		exit();
+    }
+    
+    public function getConnectURL(){
+		$url=$this->config['AUTH_URL'];
+		$params=array();
+		$params['client_id']=$this->config['CLIENT_ID'];
+        $Sitebill=new SiteBill();
+		$params['redirect_uri']=$this->config['REDIRECT_URI'];
+		$params['response_type']='code';
+		$params['scope']='https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
+		$href = $url . '?' . urldecode(http_build_query($params));
+		return $href;
+	}
+
+
+    public function prelogin(){
 		$url=$this->getLoginURL();
 		header('location: '.$url);
 		exit();
