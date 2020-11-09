@@ -43,11 +43,49 @@ class language_admin extends Object_Manager {
         $config_admin->addParamToConfig('apps.language.prefixmode', '0', 'Префиксный режим', 1);
         $config_admin->addParamToConfig('apps.language.use_as_default', '', 'Код локали технических значений');
         $config_admin->addParamToConfig('apps.language.language_prefix_list', '', 'Список префиксов языков (=ru|ukr=ua|eng=en)');
+        $config_admin->addParamToConfig('apps.language.fulltransmode', '0', 'Полный перевод', 1);
     }
 
     function _preload() {
         //echo 1;
         $this->template->assert('available_langs', $this->getLanguages());
+    }
+    
+    
+    function getApps(){
+        $apps = array();
+        $apps_dir = SITEBILL_DOCUMENT_ROOT . '/apps';
+        if (is_dir($apps_dir)) {
+            if ($dh = opendir($apps_dir)) {
+                while (($app_dir = readdir($dh)) !== false) {
+                    if (is_dir($apps_dir . '/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
+                        if (is_file($apps_dir . '/' . $app_dir . '/' . $app_dir . '.xml')) {
+
+                            $xml = @simplexml_load_file($apps_dir . '/' . $app_dir . '/' . $app_dir . '.xml');
+                            $apps[] = trim($xml->name);
+                        }
+                    }
+                }
+                closedir($dh);
+            }
+        }
+        return $apps;
+    }
+    
+    function getTpls(){
+        $tpls = array();
+        $tpl_dir = SITEBILL_DOCUMENT_ROOT . '/template/frontend';
+        if (is_dir($tpl_dir)) {
+            if ($dh = opendir($tpl_dir)) {
+                while (($app_dir = readdir($dh)) !== false) {
+                    if (is_dir($tpl_dir . '/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
+                        $tpls[] = trim($app_dir);
+                    }
+                }
+                closedir($dh);
+            }
+        }
+        return $tpls;
     }
 
     function main() {
@@ -75,46 +113,16 @@ class language_admin extends Object_Manager {
                     $langs['ru'] = 'ru';
                 }
                 
-                
-                
-                
-                
                 //Load all apps
-                $apps = array();
-                
-                
-                if (is_dir($apps_dir)) {
-                    if ($dh = opendir($apps_dir)) {
-                        while (($app_dir = readdir($dh)) !== false) {
-                            if (is_dir($apps_dir . '/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
-                                if (is_file($apps_dir . '/' . $app_dir . '/' . $app_dir . '.xml')) {
-
-                                    $xml = @simplexml_load_file($apps_dir . '/' . $app_dir . '/' . $app_dir . '.xml');
-                                    $apps[] = trim($xml->name);
-                                }
-                            }
-                        }
-                        closedir($dh);
-                    }
-                }
+                $apps = $this->getApps();
                 
                 //load all tpls
-                $tpls = array();
-                $tpl_dir = SITEBILL_DOCUMENT_ROOT . '/template/frontend';
-                if (is_dir($tpl_dir)) {
-                    if ($dh = opendir($tpl_dir)) {
-                        while (($app_dir = readdir($dh)) !== false) {
-                            if (is_dir($tpl_dir . '/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
-                                if (is_file($tpl_dir . '/' . $app_dir . '/language' . $app_dir . '.xml')) {
-
-                                    $xml = @simplexml_load_file($apps_dir . '/' . $app_dir . '/' . $app_dir . '.xml');
-                                    $apps[] = trim($xml->name);
-                                }
-                            }
-                        }
-                        closedir($dh);
-                    }
-                }
+                $tpls = $this->getTpls();
+                
+                print_r($langs);
+                print_r($apps);
+                print_r($tpls);
+                exit();
         
         
                     $themes = '1';
@@ -222,6 +230,68 @@ class language_admin extends Object_Manager {
             case 'mass_delete' : {
                     break;
                 }
+                /*case 'synchro' : {
+                    
+                    $app_name = 'system';
+                    if (file_exists($path = $this->apps_path . $app_name . '/language/')) {
+            $path = $this->apps_path . $app_name . '/language/';
+            $dictionary = array();
+            $skip = array('.', '..');
+            $langs = scandir($path);
+            
+            //print_r($langs);
+            
+            foreach ($langs as $lang) {
+                if (!in_array($lang, $skip)) {
+                    $words = array();
+                    
+                    $words = array();
+                    if (file_exists($this->apps_path . $app_name . '/language/' . $dictionary . '/dictionary.ini')) {
+                        $words = parse_ini_file($this->apps_path . $app_name . '/language/' . $dictionary . '/dictionary.ini', true);
+                    }
+        
+        
+                    $words = $this->getAppDictionary($app_name, $lang);
+                    $dictionary[$lang] = $words;
+                }
+            }
+     
+            
+        }
+        
+        $controlwords = array();
+        $langs = array_keys($dictionary);
+        
+        foreach($langs as $lng){
+            foreach($dictionary[$lng] as $wm => $wv){
+                if(!isset($controlwords[$wm])){
+                    foreach($langs as $l){
+                        $controlwords[$wm][$l] = 0;
+                    }
+                    
+                }
+                $controlwords[$wm][$lng] = 1;
+            }
+        }
+        
+        //print_r($controlwords);
+        $rs = '';
+        $rs .= '<table>';
+        foreach($controlwords as $w => $lp){
+            $rs .= '<tr>';
+            $rs .= '<td>'.$w.'</td>';
+            foreach($lp as $l => $v){
+                if($v == 1){
+                    $rs .= '<td><span class="label">'.$l.'</span></td>';
+                }else{
+                    $rs .= '<td><span class="label label-important">'.$l.'</span></td>';
+                }
+            }
+            $rs .= '</tr>';
+        }
+        $rs .= '</table>';
+                    break;
+                }*/
             default : {
 
                     $rs .= $this->grid();

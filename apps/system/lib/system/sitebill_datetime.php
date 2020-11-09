@@ -275,7 +275,17 @@ class Sitebill_Datetime {
 	public static function getDatetimeFormattedFromCanonical($vl, $parameters=array()){
 		$formattypes=self::$formattypes;
 		$matches=array();
-		preg_match('/(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)/', $vl, $matches);
+		if(!preg_match('/(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)/', $vl, $matches)){
+            $matches = array(
+                '00-00-0000 00:00:00',
+                '00',
+                '00',
+                '00',
+                '00',
+                '00',
+                '00'
+            );
+        }
 
 		//print_r($matches);
 

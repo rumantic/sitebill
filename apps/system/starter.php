@@ -6,6 +6,9 @@ if(isset($settings['Settings']['estate_folder']) && ($settings['Settings']['esta
 }else{
 	$folder='';
 }
+if ( !empty($settings['Settings']['HTTP_HOST']) ) {
+    $_SERVER['HTTP_HOST'] = $settings['Settings']['HTTP_HOST'];
+}
 $sitebill_document_root = rtrim($_SERVER['DOCUMENT_ROOT'], '/').$folder;
 define('SITEBILL_DOCUMENT_ROOT', $sitebill_document_root);
 define('SITEBILL_MAIN_URL', $folder);

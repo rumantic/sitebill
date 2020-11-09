@@ -21,9 +21,9 @@ $(document).ready(function(){
 		$('#search_form_block').toggle();
         $('#srch_date_from').datepicker({dateFormat:'yy-mm-dd'});
         $('#srch_date_to').datepicker({dateFormat:'yy-mm-dd'});
-		
+
 	});
-	
+
 	$('#reset').click(function(){
 		$(this).parents('form').eq(0).find('input[type=text]').each(function(){
 			this.value='';
@@ -33,7 +33,7 @@ $(document).ready(function(){
 		});
 		$(this).parents('form').submit();
 	});
-	
+
 	/*$('.standart_admin_grid tr').click(function(e){
 		console.log(e.target);
 		var ch=$(this).find('.grid_check_one');
@@ -43,8 +43,8 @@ $(document).ready(function(){
 			ch.prop('checked', true);
 		}
 	});*/
-	
-	
+
+
 	$('#grid_control_panel select[name=cp_optype]').change(function(){
 		var operation=$(this).val();
 		if(operation!=''){
@@ -59,12 +59,12 @@ $(document).ready(function(){
 			});
 		}
 	});
-	
+
 	$('#grid_control_panel button#run').click(function(){
 		var cp=$('#grid_control_panel');
 		var action=$(this).attr('alt');
 		var operation=cp.find('select[name=cp_optype]').val();
-		
+
 		if(operation!=''){
 			var field=null;
 			if(cp.find('#grid_control_panel_content select').length!=0){
@@ -84,14 +84,14 @@ $(document).ready(function(){
 		}
 		return false;
 	});
-	
+
 	$('.batch_update').click(function(){
 		var ids=[];
 		var action=$(this).attr('alt');
 		$(this).parents('table').eq(0).find('input.grid_check_one:checked').each(function(){ids.push($(this).val());});
 		window.location.replace(estate_folder+'/admin/index.php?action='+action+'&do=batch_update&batch_ids='+ids.join(','));
 	});
-	
+
 	$('.duplicate').click(function(e){
 		e.preventDefault();
 		var ids=[];
@@ -107,7 +107,7 @@ $(document).ready(function(){
 			}
 		}
 	});
-	
+
 	$('.userinfo_tooltipe_block').popover({
 		content: function(){
 			$('.userinfo_tooltipe_block').not($(this)).popover('hide');
@@ -125,19 +125,19 @@ $(document).ready(function(){
 						dataType: 'html',
 						success: function(html){
 							user_info_storage[id]=html;
-							ex.popover({content: html}).popover('show');	
+							ex.popover({content: html}).popover('show');
 						}
 					});
 				}
 			}
 		}
 	});
-	
+
 	$(document).on('click', '.item-on', function(e){
 		e.preventDefault();
 		var _this=$(this);
 		var id=_this.attr('alt');
-		
+
 		$.ajax({
 			url: estate_folder+'/js/ajax.php',
 			data: {action: 'set_realty_status', status: 1, id: id},
@@ -151,12 +151,12 @@ $(document).ready(function(){
 			}
 		});
 	});
-	
+
 	$(document).on('click', '.item-off', function(e){
 		e.preventDefault();
 		var _this=$(this);
 		var id=_this.attr('alt');
-		
+
 		$.ajax({
 			url: estate_folder+'/js/ajax.php',
 			data: {action: 'set_realty_status', status: 0, id: id},
@@ -183,7 +183,7 @@ $(document).ready(function(){
 				placeholder: tag_input.attr('placeholder'),
 				source: function(query, process) {
 					column_name = tag_input.attr('name');
-					$.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&column_name='+column_name+'&model_name=data'}).done(function(result_items){process(result_items);});
+					$.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&term='+query+'&column_name='+column_name+'&model_name=data'}).done(function(result_items){process(result_items);});
 				}
 			});
 			var tag_obj = tag_input.data('tag');
@@ -222,13 +222,13 @@ $(document).ready(function(){
 		var min=null;
 		var max=null;
 		var txt='{/literal}{_e t="не задано"}{literal}';
-		
+
 		_this.find('input').each(function(e){
 			var iname=$(this).attr('name');
 			var val=$(this).val();
 			var tag_array = {};
-			
-			
+
+
 			var reg=/(.*)\[(.*)\]/;
 			var matches=$(this).attr('name').match(reg);
 			//console.log($(this).attr('name'));
@@ -247,11 +247,11 @@ $(document).ready(function(){
 			if(iname==name+'[max]' && val!=''){
 				max=val;
 			}
-			
-			
-			
+
+
+
 		});
-		
+
 		if(min !== null && max !== null){
 			var txt=min+' - '+max;
 		}else if(min !== null){
@@ -260,7 +260,7 @@ $(document).ready(function(){
 			var txt='до '+max;
 		}
 		_this.find('.ranged-tags-title').html(txt);
-				
+
 		_this.find('.apply').click(function(e){
 			e.preventDefault();
 			var tag_array = {};
@@ -279,12 +279,12 @@ $(document).ready(function(){
 				}else{
 					delete tag_array[matches[2]];
 				}
-				
+
 				datastr[name] = tag_array;
 			});
 			$.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)}).done(function(result_items){location.reload();});
 		});
-		
+
 		_this.find('.clear').click(function(e){
 			e.preventDefault();
 			if(typeof datastr[name] != 'undefined'){
@@ -293,7 +293,7 @@ $(document).ready(function(){
 			}
 			$.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)}).done(function(result_items){location.reload();});
 		});
-		
+
 	});
 });
 </script>
@@ -303,7 +303,7 @@ $(document).ready(function(){
     	<div class="container">
     		<a class="brand" href="#">Найдено: {$_total_records}</a>
     		<div class="nav pull-right">
-		
+
 			{if $admin ne ''}
 			<div align="right"><a href="?action=data&do=import" title="Загрузить записи в формате Excel" class="btn btn-info btn-xs "><i class="icon-white icon-upload"></i> </a> <a href="#search" id="search_toggle" class="btn btn-info"><i class="icon-white icon-search"></i> {$L_ADVSEARCH}</a></div>
 			<div id="search_form_block" {if $smarty.request.submit_search_form_block eq ''}style="display:none;"{/if} class="spacer-top">
@@ -326,7 +326,7 @@ $(document).ready(function(){
 							<input type="text" name="srch_id" value="{$smarty.request.srch_id}" />
 						</div>
 					</div>
-					<!-- 
+					<!--
 					<div class="control-group">
 						<label class="control-label">Только экспорт в ЦИАН</label>
 						<div class="controls">
@@ -354,9 +354,9 @@ $(document).ready(function(){
 							<input type="text" name="srch_date_to" id="srch_date_to" value="{$smarty.request.srch_date_to}" />
 						</div>
 					</div>
-                                        
-                                        {$custom_admin_search_fields}                                                
-				
+
+                                        {$custom_admin_search_fields}
+
 					<div class="control-group">
 						<div class="controls">
 							<input type="submit" name="submit_search_form_block" value="{$L_GO_FIND}" class="btn btn-primary" />
@@ -370,7 +370,7 @@ $(document).ready(function(){
 		</div>
 	</div>
 </div>
-		
+
 <table class="table table-hover standart_admin_grid" cellspacing="2" cellpadding="2">
 	<tr  class="row_head">
 		<td width="1%" class="row_title"><input type="checkbox" id="grid_check_all" class="grid_check_all ace" /><label for="grid_check_all" class="lbl"></label></td>
@@ -412,7 +412,7 @@ $(document).ready(function(){
 				UNIQ_ID
 			</td>
 		{/if}
-		
+
 		<td width="1%" class="row_title">
 			<!-- #section:plugins/input.tag-input -->
 			<div class="inline-tags">
@@ -588,18 +588,18 @@ $(document).ready(function(){
 			<b><a href="{$grid_items[i].href}" target="_blank">{$grid_items[i].id}</a></b>
 			{if isset($grid_items[i].img) && $grid_items[i].img != ''}
 				<a href="{$estate_folder}/realty{$grid_items[i].id}.html">
-					<img src="{if $grid_items[i].img[0].remote == 'true'}{$grid_items[i].img[0].preview}{else}{$estate_folder}/img/data/{$grid_items[i].img[0].preview}{/if}" width="50" class="prv">
+					<img src="{mediaincpath data=$grid_items[i].img[0] type='preview'}" width="50" class="prv">
 				</a>
 			{else if isset($grid_items[i].image_cache) && $grid_items[i].image_cache[0] != ''}
 				<a href="{$estate_folder}/realty{$grid_items[i].id}.html">
 					<img src="{$grid_items[i].image_cache[0]}" width="50" class="prv">
 				</a>
 			{/if}
-		
+
 		{if $show_uniq_id}
 		<td>{$grid_items[i].uniq_id}</td>
 		{/if}
-		
+
 		<td><span class="dateh">{$grid_items[i].date_added}</span></td>
 		<td><b>{$grid_items[i].type_sh}</b></td>
 		<td>
@@ -628,7 +628,7 @@ $(document).ready(function(){
 		{if $grid_items[i].company != ''}
 		{$grid_items[i].company}
 		{else}
-		
+
         	<a href="{$estate_folder}/admin/?action=data&user_id={$grid_items[i].user_id}" data-rel="tooltip" title="Показать все объявления для {$grid_items[i].user}"><i class="icon-white icon-filter"></i></a>
         	<span class="user-info2 userinfo_tooltipe_block" data-rel="popover" data-html="true" data-placement="left" data-user-id="{$grid_items[i].user_id}">{$grid_items[i].user}
         	{if isset($grid_items[i]._user_info) && isset($grid_items[i]._user_info.login)}<br />({$grid_items[i]._user_info.login}){/if}</span>
@@ -637,11 +637,11 @@ $(document).ready(function(){
 		{if $admin !=''}
 		<td nowrap>
         {if $data_adv_share_access_can_view_all and $grid_items[i].user_id != $data_adv_share_access_user_id}
-            {*Если у нас включена опция data_adv_share_access и мы включили опцию data_adv_share_access_can_view_all и при этом 
+            {*Если у нас включена опция data_adv_share_access и мы включили опцию data_adv_share_access_can_view_all и при этом
             идентификатор пользователя текущего объявления в генерации грида отличается от пользователя админки, то прячем контролы
             *}
         {else}
-                    
+
 			<div class="btn-group">
 				<a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
 					Еще<span class="caret"></span>
@@ -652,13 +652,13 @@ $(document).ready(function(){
 					<li><a title="На сайте" href="{$grid_items[i].href}" target="_blank" class="btn btn-success"><i class="icon-white icon-forward"></i> На сайте</a></li>
 					{/if}
 					{if isset($show_contacts_enable) && $show_contacts_enable}
-							
+
 							{if $grid_items[i].show_contact eq 0}
 								<li><img src="{$estate_folder}/img/contact_delete_16x16.gif" alt="{$L_CONTACTS_ARE_HIDE}" title="{$L_CONTACTS_ARE_HIDE}" border="0" width="16" height="16" /></li>
 							{else}
 								<li><img src="{$estate_folder}/img/contact-new.png" alt="{$L_CONTACTS_ARE_SHOWED}" title="{$L_CONTACTS_ARE_SHOWED}" border="0" width="16" height="16" /></li>
 							{/if}
-						
+
                     {/if}
                     {if isset($sms_enable) && $sms_enable}
                     <li><a class="btn btn-success" onclick="return confirm({literal}'{$L_MESSAGE_REALLY_WANT_SMS}'{/literal});" href="{$estate_folder_control}?do=structure&subdo=sms&id={$grid_items[i].id}"><img src="{$estate_folder}/img/sms16x16.png" alt="{$L_SENDSMS_LC}" title="{$L_SENDSMS_LC}" border="0" width="16" height="16" /> SMS</a></li>
@@ -668,7 +668,7 @@ $(document).ready(function(){
                     {/if}
 				</ul>
             </div>
-                                
+
             <div class="btn-group">
                 <a title="Редактировать" href="{$estate_folder_control}?do=edit&id={$grid_items[i].id}" class="btn btn-info"><i class="icon-white icon-pencil"></i></a>
                 {if intval($grid_items[i].archived) === 1}
@@ -684,8 +684,8 @@ $(document).ready(function(){
 	{/section}
 	<tr>
 		<td colspan="14">
-			<button alt="data" class="delete_checked btn btn-danger"><i class="icon-white icon-remove"></i> {$L_DELETE_CHECKED}</button> 
-			<button alt="data" class="batch_update btn btn-inverse"><i class="icon-white icon-th"></i> Пакетная обработка</button> 
+			<button alt="data" class="delete_checked btn btn-danger"><i class="icon-white icon-remove"></i> {$L_DELETE_CHECKED}</button>
+			<button alt="data" class="batch_update btn btn-inverse"><i class="icon-white icon-th"></i> Пакетная обработка</button>
 			<button alt="data" class="duplicate btn btn-inverse"><i class="icon-white icon-th"></i> Дублировать</button>
 		</td>
 	</tr>

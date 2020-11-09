@@ -3,9 +3,10 @@
 	    <div class="container">
 		    <div class="nav pull-left" style="padding-left: 5px;">
 		          <a href="{$estate_folder}/admin/?action=data&do=new" class="btn btn-success"><i class="icon-white icon-file"></i> {$L_ADD_RECORD_BUTTON}</a>
-		    </div>                     
+		    </div>
 		    <div class="nav pull-right">
 			    <ul class="nav">
+                    <li><a href="{$estate_folder}/admin/?action=data&do=memorylist">Подборки</a></li>
 			        <li {if $active == '' and $hot == ''} class="active"{/if}><a href="{$estate_folder}/admin/?action=data">{$apps_words.system.DATATOP_ALL} ({$all_items_count})</a></li>
 			        <li {if $active == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&active=1">{$apps_words.system.DATATOP_ACTIVE} ({$active_items_count})</a></li>
 			        <li {if $active == 'notactive'} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&active=notactive">{$apps_words.system.DATATOP_NOTACTIVE} ({$notactive_items_count})</a></li>
@@ -19,7 +20,7 @@
 			        {if isset($archived_count)}
 			    	<li {if $hot == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&archived=1">{$apps_words.system.DATATOP_ARCHIVED} ({$archived_count})</a></li>
 			    	{/if}
-		     	</ul> 
+		     	</ul>
 		 		<form class="navbar-search pull-left" action="{$estate_folder}/admin/">
 			    	{$user_select_box}<input type="hidden" name="action" value="data">
 			    </form>

@@ -124,9 +124,6 @@ class Form_Generator extends SiteBill {
                 if ($editor_code == 'ckeditor') {
                     $scripts[] = SITEBILL_MAIN_URL . '/ckeditor/ckeditor.js';
                     $scripts[] = SITEBILL_MAIN_URL . '/ckeditor/adapters/jquery.js';
-                } elseif ($editor_code == 'bbeditor') {
-                    $styles[] = SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/bbeditor.css';
-                    $scripts[] = SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/jquery.bbcode.js';
                 } else {
                     $styles[] = SITEBILL_MAIN_URL . '/js/cleditor/jquery.cleditor.css';
                     $scripts[] = SITEBILL_MAIN_URL . '/js/cleditor/jquery.cleditor.min.js';
@@ -141,8 +138,6 @@ class Form_Generator extends SiteBill {
                 $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.js';
                 $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=1';
                 $styles[] = SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css?v=1';
-            } elseif ($item_array['type'] == 'destination') {
-                $scripts[] = SITEBILL_MAIN_URL . '/apps/destination/js/destination.js';
             } elseif ($item_array['type'] == 'tlocation') {
                 $styles[] = SITEBILL_MAIN_URL . '/apps/system/js/bootstrap/css/bootstrap-combobox.css';
                 $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/bootstrap/js/bootstrap-combobox.js';
@@ -282,35 +277,6 @@ class Form_Generator extends SiteBill {
                       buttons: "bold,italic,underline,|,img,link,|,code,quote"
                       });
                   });
-              </script>';
-          } elseif ($editor_code == 'bbeditor') {
-              if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
-                  $rs .= '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/bbeditor.css" />';
-                  $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/jquery.bbcode.js" type="text/javascript"></script>';
-              }
-
-              $rs .= '<script type="text/javascript">
-                $(document).ready(function(){
-                  $("textarea#' . $id . '").bbcode({tag_bold:true,tag_italic:true,tag_underline:true,tag_link:true,tag_image:true,button_image:false});
-                  process();
-                });
-
-                var bbcode="";
-                function process()
-                {
-                  if (bbcode != $("textarea#' . $id . '").val())
-                    {
-                      bbcode = $("textarea#' . $id . '").val();
-                      $.get("' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/bbParser.php",
-                      {
-                        bbcode: bbcode
-                      },
-                      function(txt){
-                        $("#test' . $id . '").html(txt);
-                      })
-                    }
-                  setTimeout("process()", 2000);
-                }
               </script>';
           } else {
               if (isset($parameters['width']) && (int) $parameters['width'] != 0) {
@@ -694,10 +660,15 @@ $(document).ready(function () {
 
 
             foreach ($item_array['value'] as $ita) {
+                if (!empty($ita['remote']) and $ita['remote'] === 'true') {
+                    $prefix = '';
+                } else {
+                    $prefix = SITEBILL_MAIN_URL . '/img/mediadocs/';
+                }
                 $html .= '<li class="dz-preview-uploaded-item dz-preview-uploaded-item-docs">
                         <div class="dz-preview-uploaded-item-image-preview">
                             <div class="dz-preview-uploaded-item-doc">
-                                <a href="' . SITEBILL_MAIN_URL . '/img/mediadocs/' . $ita['normal'] . '" download>' . $ita['normal'] . '</a>
+                                <a href="' . $prefix . $ita['normal'] . '" target="_blank" download>' . $ita['normal'] . '</a>
                             </div>
                             <div class="dz-preview-uploaded-item-description" onDblClick="DataImagelist.dz_dblClick(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');">
                                 ' . ($ita['title'] == '' ? _e('Описание') : $ita['title']) . '
@@ -782,35 +753,115 @@ $(document).ready(function () {
                 $image_list = unserialize($ar[$item_array['name']]);
             }
         }
+        
+        
+        $code = $item_array['table_name'].'.'.$item_array['name'];
+        if(isset($params['tagged']) && $params['tagged'] == 1){
+            $tagged = true;
+            $taggedlng = false;
+        }else{
+            $tagged = false;
+            $taggedlng = false;
+        }
+        
+        $imagedescused = true;
+        if(isset($params['disableimagedesc']) && $params['disableimagedesc'] == 1){
+            $imagedescused = false;
+        }
+        
+        
+        $DBC = DBC::getInstance();
+        
+        if($tagged){
+            $query = 'SELECT imagetag_id, name FROM '.DB_PREFIX.'_imagetag WHERE `code` = ?';
+            $stmt = $DBC->query($query, array($code));
+            if($stmt){
+                while($ar = $DBC->fetch($stmt)){
+                    $tags[$ar['imagetag_id']] = $ar['name'];
+                }
+            }
+        }
+        
+        
+        
+        /*require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/uploader_tagger.php';
+        $tagger = new uploader_tagger();
+        $tagger->setItem($code);*/
+            
         //print_r($image_list);
         if (is_array($image_list) && count($image_list) > 0) {
 
-            $class = 'uploaded_' . md5(time() . rand(100, 999));
+            $uploadedid = 'uploaded_' . md5(time() . rand(100, 999));
+            
+            
+            
+        
+            $html .= '<script>';
+            $html .= '$(document).ready(function(){';
+            $html .= 'DataImagelist.dz_addSortable(\''.$uploadedid.'\', ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\')';
+            $html .= '});';
+			$html .= '</script>';
 
-            $html .= '<div class="dz-preview-uploaded ' . $class . '">';
+            $html .= '<div id="'.$uploadedid.'" class="dz-preview-uploaded">';
             $html .= '<a class="btn btn-mini btn-warning dz-preview-clear" onClick="DataImagelist.dz_clearImages(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');">' . Multilanguage::_('L_DROPZONE_DELETEALL') . '</a>';
+            if ( $this->getConfigValue('apps.downloader.enable') and  $table_name == 'data' ) {
+                $html .= '<a class="btn btn-mini btn-success dz-preview-clear" style="margin-left: 120px;" href="'.SITEBILL_MAIN_URL.'/'.$this->getConfigValue('apps.downloader.alias').'/'.$primary_key_value.'">'._e('Скачать все фото').'</a>';
+            }
+
             $html .= '<ul class="dz-preview-uploaded-list">';
             $bootstrap_version = trim($this->getConfigValue('bootstrap_version'));
-            foreach ($image_list as $ita) {
+            foreach ($image_list as $itk => $ita) {
+                
+                if($tagged){
+                    if(isset($ita['tags'])){
+                        $currenttags = $ita['tags'];
+                    }else{
+                        $currenttags = array();
+                    }
+
+                    $taghtml = '';
+                    if(!empty($tags)){
+
+                      $taghtml .= '<div>';
+                      $taghtml .= '<select onchange="DataImagelist.dz_changeTags(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');">';
+                      $taghtml .= '<option value="0">Выбрать</option>';
+                      foreach($tags as $tk => $tv){
+                          $taghtml .= '<option value="'.$tk.'"'.(in_array($tk, $currenttags) ? ' selected="selected"' : '').'>'.$tv.'</option>';
+                      }
+                      $taghtml .= '</select>';
+                      $taghtml .= '</div>';
+                    }
+                }
+                
+                /**
+                 * TODO
+                 * проверить зависимость размещение селекта тегов
+                 */
+            
+            
                 if ( filter_var($ita['preview'], FILTER_VALIDATE_URL) ) {
                     $img_url = $ita['preview'];
                 } else {
                     $img_url = SITEBILL_MAIN_URL . '/img/data/' . $ita['preview'];
                 }
-                $html .= '<li class="dz-preview-uploaded-item">
+                $html .= '<li class="dz-preview-uploaded-item" data-order="'.$itk.'">
     					<div class="dz-preview-uploaded-item-image-preview">
 							<div class="dz-preview-uploaded-item-image">
 								<img src="' . $img_url . '" />
-							</div>
-							<div class="get_field_tpl" onDblClick="DataImagelist.dz_dblClick(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');">
+							</div>';
+                if($imagedescused){
+                    $html .= '<div class="get_field_tpl" onDblClick="DataImagelist.dz_dblClick(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');">
 								' . ($ita['title'] == '' ? _e('Описание') : $ita['title']) . '
-							</div>
-							<div class="dz-preview-uploaded-item-description-editable" style="display: none;">
+							</div>'.$taghtml.'';
+                
+                    $html .= '<div class="dz-preview-uploaded-item-description-editable" style="display: none;">
 								<input type="text" value="' . ($ita['title'] == '' ? _e('Описание') : $ita['title']) . '" />
 								<button class="btn btn-success btn-small save_desc"><i class="icon-white icon-ok"></i></button>
 								<button class="btn btn-danger btn-small canc_desc"><i class="icon-white icon-remove"></i></button>
-							</div>
-							<a href="javascript:void(0);" onClick="DataImagelist.dz_upImage(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small go_up" title="Выше">' . (($bootstrap_version == '3' && !defined('ADMIN_MODE')) ? '<span class="glyphicon glyphicon-chevron-left"></span>' : '<i class="icon icon-chevron-left"></i>') . '</a>
+							</div>';
+                }
+				
+				$html .= '<a href="javascript:void(0);" onClick="DataImagelist.dz_upImage(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small go_up" title="Выше">' . (($bootstrap_version == '3' && !defined('ADMIN_MODE')) ? '<span class="glyphicon glyphicon-chevron-left"></span>' : '<i class="icon icon-chevron-left"></i>') . '</a>
 <a href="javascript:void(0);" onClick="DataImagelist.dz_deleteImage(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small remove" title="Удалить">' . (($bootstrap_version == '3' && !defined('ADMIN_MODE')) ? '<span class="glyphicon glyphicon-remove"></span>' : '<i class="icon icon-remove"></i>') . '</a>
 <a href="javascript:void(0);" onClick="DataImagelist.dz_downImage(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small go_down" title="Ниже">' . (($bootstrap_version == '3' && !defined('ADMIN_MODE')) ? '<span class="glyphicon glyphicon-chevron-right"></span>' : '<i class="icon icon-chevron-right"></i>') . '</a>
 <a href="javascript:void(0);" onClick="DataImagelist.dz_makeMain(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small go_down" title="Сделать главной">' . (($bootstrap_version == '3' && !defined('ADMIN_MODE')) ? '<span class="glyphicon glyphicon-star"></span>' : '<i class="icon icon-star"></i>') . '</a>
@@ -851,23 +902,7 @@ $(document).ready(function () {
         );
     }
 
-    function compile_destination_element($item_array) {
-        $str = '';
-        if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
-            $str .= '<script src="' . SITEBILL_MAIN_URL . '/apps/destination/js/destination.js"></script>';
-        }
-
-        require_once SITEBILL_DOCUMENT_ROOT . '/apps/destination/admin/admin.php';
-        $DA = new destination_admin();
-        $html = $DA->getDestionationFormElementHTML($item_array);
-        return array(
-            'title' => $item_array['title'],
-            'required' => ($item_array['required'] == "on" ? 1 : 0),
-            'html' => $str . $html,
-            'tab' => (isset($item_array['tab']) ? $item_array['tab'] : ''),
-            'type' => $item_array['type']
-        );
-    }
+    
 
     function compile_gadres_element($item_array) {
       global $smarty;
@@ -1655,7 +1690,8 @@ $(document).ready(function () {
         $mtype = '';
         if(1 == $this->getConfigValue('use_google_map')){
             $mtype = 'google';
-            //$mtype = 'leaflet_osm';
+        }elseif(2 == $this->getConfigValue('use_google_map')){
+            $mtype = 'leaflet_osm';
         }else{
             $mtype = 'yandex';
         }
@@ -1829,7 +1865,7 @@ $(document).ready(function () {
         return array(
             'title' => $item_array['title'],
             'required' => ($item_array['required'] == "on" ? 1 : 0),
-            'html' => '<input type="password" class="' . $this->classes['input'] . '" name="' . $item_array['name'] . '" value="' . $item_array['value'] . '" />',
+            'html' => '<input type="password" class="' . (isset($this->classes['input']) ? $this->classes['input'] : '') . '" name="' . $item_array['name'] . '" value="' . $item_array['value'] . '" />',
             'tab' => (isset($item_array['tab']) ? $item_array['tab'] : ''),
             'type' => $item_array['type']
         );
@@ -2023,7 +2059,7 @@ $(document).ready(function () {
         } else {
             $zero_title = '';
         }
-        
+
         if(isset($item_array['parameters']['nonzerotitle'])){
 			$nonzerotitle = $item_array['parameters']['nonzerotitle'];
 		}else{
@@ -2063,11 +2099,11 @@ $(document).ready(function () {
         );
     }
 
-    function compile_select_by_query_multi_element($item_array) {
+    function compile_select_by_query_multi_element($item_array, $model = null) {
         return array(
             'title' => $item_array['title'],
             'required' => ($item_array['required'] == "on" ? 1 : 0),
-            'html' => $this->get_select_by_query_multi($item_array),
+            'html' => $this->get_select_by_query_multi($item_array, $model),
             'tab' => (isset($item_array['tab']) ? $item_array['tab'] : ''),
             'type' => $item_array['type']
         );
@@ -2206,9 +2242,6 @@ $(document).ready(function () {
                 case 'gadres':
                     $rs = $this->compile_gadres_element($item_array);
                     break;
-                case 'destination':
-                    $rs = $this->compile_destination_element($item_array);
-                    break;
                 case 'uploads':
                     $rs = $this->compile_uploads_element($item_array);
                     break;
@@ -2249,7 +2282,7 @@ $(document).ready(function () {
                     $rs = $this->compile_select_box_by_query_element($item_array, $form_data);
                     break;
                 case 'select_by_query_multi' :
-                    $rs = $this->compile_select_by_query_multi_element($item_array);
+                    $rs = $this->compile_select_by_query_multi_element($item_array, $form_data);
                     break;
                 case 'select_by_query_multiple':
                     $rs = $this->compile_select_box_by_query_multiple_element($item_array);
@@ -2411,7 +2444,7 @@ $(document).ready(function () {
 
                     foreach ($rs->collection as $collection_element) {
                         $ce = $collection_element;
-                        //$ce['hint']='';
+                        $ce['hint'] = $item_array['hint'];
                         $ce['type'] = $item_array['type'];
                         //$ce['name']=$item_array['name'];
                         $ce['active_in_topic'] = $item_array['active_in_topic'];
@@ -3036,9 +3069,10 @@ $(document).ready(function () {
                     if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
 
                     } else {
-                        if (isset($form_data_c[$item_array['primary_key_table']][$value_name . '_' . $lang])) {
-                            $value_name_l = $value_name . '_' . $lang;
-                        }
+                        /*if (isset($form_data_c[$item_array['primary_key_table']][$value_name . '_' . $lang])) {
+                            
+                        }*/
+                        $value_name_l = $value_name . '_' . $lang;
                     }
                 }
 
@@ -3055,7 +3089,16 @@ $(document).ready(function () {
             if (isset($parameters['autocomplete_notappend']) && 0 != (int) $parameters['autocomplete_notappend']) {
                 $_no_insert = true;
             }
-            return '<div class="geoautocomplete_block"><input class="' . $this->classes['input'] . ' geoautocomplete" type="text" placeholder="' . $item_array['title_default'] . '" name="geoautocomplete[' . $item_array['name'] . ']" value="' . $value . '" pk="' . $item_array['primary_key_name'] . '" from="' . $item_array['primary_key_table'] . '" data-depel="' . (isset($parameters['autocomplete_dep_el']) ? $parameters['autocomplete_dep_el'] : '') . '" data-depelkey="' . (isset($parameters['autocomplete_dep_el_key']) ? $parameters['autocomplete_dep_el_key'] : '') . '"' . ($_no_insert ? ' data-notappend="true"' : '') . ' data-model="' . $item_array['table_name'] . '" /><input type="hidden" name="' . $item_array['name'] . '" value="' . $item_array['value'] . '" /></div>';
+
+
+            $onchange = array();
+            if (isset($links) && count($links) > 0) {
+                foreach ($links as $lnks) {
+                    $onchange[] = 'LinkedElements.refresh(this, \'' . $lnks['linked_element'] . '\', \'' . $lnks['linked_field'] . '\', \'' . $item_array['table_name'] . '\');';
+                }
+            }
+
+            return '<div class="geoautocomplete_block"><input class="' . (isset($this->classes['input']) ? $this->classes['input'] : '') . ' geoautocomplete" type="text" placeholder="' . $item_array['title_default'] . '" name="geoautocomplete[' . $item_array['name'] . ']" value="' . $value . '" pk="' . $item_array['primary_key_name'] . '" from="' . $item_array['primary_key_table'] . '" data-depel="' . (isset($parameters['autocomplete_dep_el']) ? $parameters['autocomplete_dep_el'] : '') . '" data-depelkey="' . (isset($parameters['autocomplete_dep_el_key']) ? $parameters['autocomplete_dep_el_key'] : '') . '"' . ($_no_insert ? ' data-notappend="true"' : '') . ' data-model="' . $item_array['table_name'] . '" /><input type="hidden" onchange="' . implode(' ', $onchange) . ' ' . '" name="' . $item_array['name'] . '" value="' . $item_array['value'] . '" /></div>';
         } elseif (1 == $this->getConfigValue('apps.realty.off_system_ajax')/* || 1==1 */) {
             $selected = '';
             $onchange = array();
@@ -3106,72 +3149,47 @@ $(document).ready(function () {
             if ($depended_element_name != '') {
                 $depended_value = $model[$depended_element_name]['value'];
                 if(isset($parameters['use_query']) && $parameters['use_query'] != '' ){
-                  $query=$parameters['use_query'];
-                  if($_REQUEST['debug']==1)var_dump($query);
-                  $stmt = $DBC->query($query, array($value));
-                  if ($stmt) {
-                      while ($ar = $DBC->fetch($stmt)) {
+                    $query=$parameters['use_query'];
+                    if($_REQUEST['debug']==1)var_dump($query);
+                    $stmt = $DBC->query($query, array($value));
+                    if ($stmt) {
+                        while ($ar = $DBC->fetch($stmt)) {
                             if($ar[$depended_element_name]==$depended_value){
-                              //var_dump($ar[$depended_element_name],$depended_value);
-
                                 $ret[] = array($item_array['primary_key_name']=>$ar[$item_array['primary_key_name']],$value_name=>$ar[$value_name]);
-                              }
-                          }
-                  }
-                  //var_dump($ret);
-                  //die();
+                            }
+                        }
+                    }
                 }else{
-                if ((int) $depended_value != 0) {
-                    $query = 'SELECT `' . $item_array['primary_key_name'] . '`, `' . $value_name_l . '` AS ' . $value_name . ' FROM ' . DB_PREFIX . '_' . $item_array['primary_key_table'] . ' WHERE `' . $depended_element_name . '`=?'.($parameters['addwhere']>'' ? ' and '.$parameters['addwhere'] : '');
+                    if ((int) $depended_value != 0) {
+                        $query = 'SELECT `' . $item_array['primary_key_name'] . '`, `' . $value_name_l . '` AS ' . $value_name . ' FROM ' . DB_PREFIX . '_' . $item_array['primary_key_table'] . ' WHERE `' . $depended_element_name . '`=?'.($parameters['addwhere']>'' ? ' and '.$parameters['addwhere'] : '');
 
-                    $sorts = array();
-                    if (isset($parameters['sort']) && $parameters['sort'] != '') {
-                        //$sort='`'.$parameters['sort'].'`';
-                        if (isset($parameters['sort_dir']) && $parameters['sort_dir'] == 'desc') {
-                            //$sort.=' DESC';
-                            $sorts[] = '`' . $parameters['sort'] . '` DESC';
-                        } else {
-                            //$sort.=' ASC';
-                            $sorts[] = '`' . $parameters['sort'] . '` ASC';
+                        $sorts = array();
+                        if (isset($parameters['sort']) && $parameters['sort'] != '') {
+                            if (isset($parameters['sort_dir']) && $parameters['sort_dir'] == 'desc') {
+                                $sorts[] = '`' . $parameters['sort'] . '` DESC';
+                            } else {
+                                $sorts[] = '`' . $parameters['sort'] . '` ASC';
+                            }
                         }
-                        //$sort=' ORDER BY '.$sort;
-                        //$query.=$sort;
-                    }
-                    if (isset($parameters['sort2']) && $parameters['sort2'] != '') {
-                        //$sort='`'.$parameters['sort2'].'`';
-                        if (isset($parameters['sort_dir2']) && $parameters['sort_dir2'] == 'desc') {
-                            $sorts[] = '`' . $parameters['sort2'] . '` DESC';
-                        } else {
-                            $sorts[] = '`' . $parameters['sort2'] . '` ASC';
+                        if (isset($parameters['sort2']) && $parameters['sort2'] != '') {
+                            if (isset($parameters['sort_dir2']) && $parameters['sort_dir2'] == 'desc') {
+                                $sorts[] = '`' . $parameters['sort2'] . '` DESC';
+                            } else {
+                                $sorts[] = '`' . $parameters['sort2'] . '` ASC';
+                            }
                         }
-                        //$sort=' ORDER BY '.$sort;
-                        //$query.=$sort;
-                    }
 
-                    if (!empty($sorts)) {
-                        $query = $query . ' ORDER BY ' . implode(',', $sorts);
-                    }
-                    //echo $query;
-                    $stmt = $DBC->query($query, array((int) $depended_value));
-                    if ($stmt) {
-                        while ($ar = $DBC->fetch($stmt)) {
-                            if($ar[$depended_element_name]==$depended_value){
-                                $ret[] = array($item_array['primary_key_name']=>$ar[$item_array['primary_key_name']],$value_name=>$ar[$value_name]);
+                        if (!empty($sorts)) {
+                            $query = $query . ' ORDER BY ' . implode(',', $sorts);
+                        }
+                        $stmt = $DBC->query($query, array((int) $depended_value));
+                        if ($stmt) {
+                            while ($ar = $DBC->fetch($stmt)) {
+                                $ret[] = array($item_array['primary_key_name'] => $ar[$item_array['primary_key_name']], $value_name => $ar[$value_name]);
                             }
-                            }
-                    }
-                } else {
-                    $query = 'SELECT `' . $item_array['primary_key_name'] . '`, `' . $item_array['value_name'] . '` FROM ' . DB_PREFIX . '_' . $item_array['primary_key_table'] . ' WHERE 1=0';
-                    $stmt = $DBC->query($query);
-                    if ($stmt) {
-                        while ($ar = $DBC->fetch($stmt)) {
-                          if($ar[$depended_element_name]==$depended_value) {
-                               $ret[] = array($item_array['primary_key_name']=>$ar[$item_array['primary_key_name']],$value_name=>$ar[$value_name]);
-                          }
-                            }
+                        }
                     }
                 }
-              }
             } else {
                 $query = 'SELECT `' . $item_array['primary_key_name'] . '`, `' . $value_name_l . '` AS ' . $value_name . ' FROM ' . DB_PREFIX . '_' . $item_array['primary_key_table'].((isset($parameters['addwhere']) && $parameters['addwhere'] != '') ? ' WHERE '.$parameters['addwhere'] : '');
                 $sorts = array();
@@ -3198,8 +3216,8 @@ $(document).ready(function () {
                 $stmt = $DBC->query($query);
                 if ($stmt) {
                     while ($ar = $DBC->fetch($stmt)) {
-                      $ret[] = $ar;
-                        }
+                        $ret[] = $ar;
+                    }
                 }
             }
 
@@ -3285,26 +3303,26 @@ $(document).ready(function () {
                 $rs .= '</select>';
                 $rs .= '</div>';
             } else {
-                
-                
+
+
                 $table_name = $item_array['table_name'];
                 $field_name = $item_array['name'];
-                
+
                 $realquery = '';
                 /*
                 if($table_name == 'data'){
-                    
+
                     if($field_name == 'region_id'){
                         $realquery = 'SELECT * FROM ' . DB_PREFIX . '_region WHERE country_id=' . intval($model['country_id']['value']) . ' ORDER BY name';
                     }
-                    
+
                 }
                 */
-                
-                
-                
-                
-                
+
+
+
+
+
                 //print_r($item_array);
 
                 $this->total_in_select[$item_array['name']] = 0;
@@ -3328,7 +3346,7 @@ $(document).ready(function () {
                 $rs .= '<option value="' . $item_array['value_default'] . '">' . $item_array['title_default'] . '</option>';
                 $DBC = DBC::getInstance();
                 $query = $item_array['query'];
-                
+
                 if($realquery != ''){
                     $query = $realquery;
                 }
@@ -3381,18 +3399,24 @@ $(document).ready(function () {
     }
 
 
-    function get_select_by_query_multi($item_array){
+    function get_select_by_query_multi($item_array, $model = null){
+        
+        if (isset($item_array['parameters'])) {
+            $parameters = $item_array['parameters'];
+        } else {
+            $parameters = array();
+        }
 
         $rs='';
-        if($item_array['parameters']['mode']=='checkbox'){
+        if(isset($parameters['mode']) && $parameters['mode'] == 'checkbox'){
             $checkbox_mode = true;
         } else {
             $checkbox_mode = false;
         }
 
         $size = 0;
-        if(isset($item_array['parameters']['multiselect_size']) && intval($item_array['parameters']['multiselect_size']) > 0){
-            $size = intval($item_array['parameters']['multiselect_size']);
+        if(isset($parameters['multiselect_size']) && intval($parameters['multiselect_size']) > 0){
+            $size = intval($parameters['multiselect_size']);
         }
 
         //
@@ -3403,55 +3427,144 @@ $(document).ready(function () {
         }
 
         $DBC = DBC::getInstance();
+        
+        
+        $options = array();
+        
+        
         $query = $item_array['query'];
-        $stmt = $DBC->query($query);
+        $query_params = array();
+        
+        if (1 == intval($this->getConfigValue('apps.realty.off_system_ajax'))) {
+            $depended_element_name = '';
+            if (isset($parameters['depended']) && $parameters['depended'] != '') {
+                $depended_element_name = trim($parameters['depended']);
+                list($a, $b)=explode(',', $depended_element_name);
+                if($b!=''){
+                    $depended_element_name=$a;
+                    $depended_element_name_key=$b;
+                }else{
+                    $depended_element_name_key=$depended_element_name;
+                }
+            }
+            
+            $value_name = $item_array['value_name'];
+            $value_name_l = $item_array['value_name'];
+            if (1 === intval($this->getConfigValue('apps.language.use_langs')) && 0 === intval($parameters['no_ml'])) {
+                $curlang = $this->getCurrentLang();
+                if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
 
-        $this->total_in_select[$item_array['name']] = 0;
+                } else {
+                    $value_name_l = $value_name . '_' . $lang;
+                }
+            }
+            
+            
+            
+            
+            if ($depended_element_name != '') {
+                $depended_value = intval($model[$depended_element_name]['value']);
+            
+                if ($depended_value != 0) {
+                    $query = 'SELECT `' . $item_array['primary_key_name'] . '`, `' . $value_name_l . '` AS ' . $value_name . ' FROM ' . DB_PREFIX . '_' . $item_array['primary_key_table'] . ' WHERE `' . $depended_element_name . '`=?'.($parameters['addwhere']>'' ? ' and '.$parameters['addwhere'] : '');
 
-        if ($checkbox_mode) {
-            $rs .= '<div class="multiselect_set multiselect_set_c multiselect_set_' . $item_array['name'] . '">';
-            //$rs .= '<select name="'.$item_array['name'].'[]" id="'.$item_array['name'].'" multiple="multiple">';
+                    $sorts = array();
+                    if (isset($parameters['sort']) && $parameters['sort'] != '') {
+                        if (isset($parameters['sort_dir']) && $parameters['sort_dir'] == 'desc') {
+                            $sorts[] = '`' . $parameters['sort'] . '` DESC';
+                        } else {
+                            $sorts[] = '`' . $parameters['sort'] . '` ASC';
+                        }
+                    }
+                    if (isset($parameters['sort2']) && $parameters['sort2'] != '') {
+                        if (isset($parameters['sort_dir2']) && $parameters['sort_dir2'] == 'desc') {
+                            $sorts[] = '`' . $parameters['sort2'] . '` DESC';
+                        } else {
+                            $sorts[] = '`' . $parameters['sort2'] . '` ASC';
+                        }
+                    }
+
+                    if (!empty($sorts)) {
+                        $query = $query . ' ORDER BY ' . implode(',', $sorts);
+                    }
+                    
+                    $query_params[] = $depended_value;
+                    /*$stmt = $DBC->query($query, array((int) $depended_value));
+                    if ($stmt) {
+                        while ($ar = $DBC->fetch($stmt)) {
+                            $ret[] = array($item_array['primary_key_name'] => $ar[$item_array['primary_key_name']], $value_name => $ar[$value_name]);
+                        }
+                    }
+                    print_r($ret);*/
+                }else{
+                    $query = '';
+                }
+            }
+        }
+        
+        if($query != ''){
+            if(!empty($query_params)){
+                $stmt = $DBC->query($query, $query_params);
+            }else{
+                $stmt = $DBC->query($query);
+            }
+            
             if ($stmt) {
                 while ($ar = $DBC->fetch($stmt)) {
+
+                    //var_dump($ar);
+
                     $this->total_in_select[$item_array['name']] ++;
                     $value = $ar[$item_array['value_name']];
                     $value = trim($value);
                     $value = htmlspecialchars($value, ENT_QUOTES, SITE_ENCODING);
                     $selected = false;
-                    if (is_array($values)) {
-                        if (in_array($ar[$item_array['primary_key_name']], $values)) {
-                            $selected = true;
-                        }
+
+                    if (is_array($values) && in_array($ar[$item_array['primary_key_name']], $values)) {
+                        $selected = true;
+                    }elseif(!is_array($values) && $ar[$item_array['primary_key_name']] == $values){
+                        $selected = true;
                     }
-                    $rs .= '<div class="multiselect_set_item"'.($item_array['parameters']['data_field']>'' ? ' data-'.$item_array['parameters']['data_field'].'="'.$ar[$item_array['parameters']['data_field']].'"' : '').'><input type="checkbox"' . ($selected ? ' checked="checked"' : '') . ' name="' . $item_array['name'] . '[]" value="' . $ar[$item_array['primary_key_name']] . '"><span>' . $value . '</span></div>';
+
+                    $options[] = array($ar[$item_array['primary_key_name']], $value, $selected);
+                }
+            }
+        }
+        
+        
+        
+        //print_r($options);
+
+        $this->total_in_select[$item_array['name']] = 0;
+
+        if ($checkbox_mode) {
+            $rs .= '<div class="multiselect_set multiselect_set_c multiselect_set_' . $item_array['name'] . '" id="' . $item_array['name'] . '">';
+            if(!empty($options)){
+                foreach($options as $option){
+                    $this->total_in_select[$item_array['name']] ++;
+                    $value = $option[1];
+                    $value = trim($value);
+                    $value = htmlspecialchars($value, ENT_QUOTES, SITE_ENCODING);
+                    $rs .= '<div class="multiselect_set_item"'.($parameters['data_field']>'' ? ' data-'.$parameters['data_field'].'="'.$ar[$parameters['data_field']].'"' : '').'><label><input type="checkbox"' . ($option[2] == 1 ? ' checked="checked"' : '') . ' name="' . $item_array['name'] . '[]" value="' . $option[0] . '"><span>' . $value . '</span></label></div>';
+
                 }
             }
             $rs .= '</div>';
-            //$rs .= '</select>';
         } else {
             $rs .= '<div class="multiselect_set multiselect_set_s multiselect_set_' . $item_array['name'] . '">';
             $rs .= '<select size="'.$size.'" name="' . $item_array['name'] . '[]" id="' . $item_array['name'] . '" multiple="multiple" class="' . $this->classes['select'] . '">';
-            if ($stmt) {
-                while ($ar = $DBC->fetch($stmt)) {
+            if(!empty($options)){
+                foreach($options as $option){
                     $this->total_in_select[$item_array['name']] ++;
-                    $value = $ar[$item_array['value_name']];
+                    $value = $option[1];
                     $value = trim($value);
                     $value = htmlspecialchars($value, ENT_QUOTES, SITE_ENCODING);
-                    $selected = '';
-                    if (is_array($values)) {
-                        if (in_array($ar[$item_array['primary_key_name']], $values)) {
-                            $selected = "selected";
-                        }
-                    }
-                    $rs .= '<option value="' . $ar[$item_array['primary_key_name']] . '" ' . $selected . '>' . $value . '</option>';
+                    $rs .= '<option value="' . $option[0] . '" ' . ($option[2] == 1 ? ' selected="selected"' : '') . '>' . $value . '</option>';
                 }
             }
             $rs .= '</select>';
             $rs .= '</div>';
         }
-
-
-
         return $rs;
     }
 
@@ -3900,43 +4013,6 @@ $(document).ready(function () {
                     });
                 });
             </script>';
-        } elseif ($editor_code == 'bbeditor') {
-            if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
-                $rs .= '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/bbeditor.css" />';
-                $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/jquery.bbcode.js" type="text/javascript"></script>';
-            }
-            $rs .= '<script type="text/javascript">
-              $(document).ready(function(){
-                $("textarea#' . $id . '").bbcode({tag_bold:true,tag_italic:true,tag_underline:true,tag_link:true,tag_image:true,button_image:false});
-                process();
-              });
-
-              var bbcode="";
-              function process()
-              {
-                if (bbcode != $("textarea#' . $id . '").val())
-                  {
-                    bbcode = $("textarea#' . $id . '").val();
-                    $.get("' . SITEBILL_MAIN_URL . '/apps/bbcode/site/js/bbeditor/bbParser.php",
-                    {
-                      bbcode: bbcode
-                    },
-                    function(txt){
-                      $("#test' . $id . '").html(txt);
-                    })
-                  }
-                setTimeout("process()", 2000);
-              }
-            </script>';
-            /*
-              $rs .= '<tr>';
-              $rs .= '<td>';
-              $rs .= '</td>';
-              $rs .= '<td>';
-              $rs .= '<DIV id=test'.$id.' style="BORDER-RIGHT: #c0c0c0 1px solid; PADDING-RIGHT: 3px; BORDER-TOP: #c0c0c0 1px solid; PADDING-LEFT: 3px; PADDING-BOTTOM: 3px; BORDER-LEFT: #c0c0c0 1px solid; WIDTH: 400px; PADDING-TOP: 3px; BORDER-BOTTOM: #c0c0c0 1px solid; HEIGHT: 100px; overflow:scroll"></DIV>';
-              $rs .= '</td>';
-              $rs .= '</tr>';
-             */
         } else {
             if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
                 $rs .= '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/js/cleditor/jquery.cleditor.css" />';
@@ -4027,9 +4103,9 @@ $(document).ready(function () {
         $dp=array();
         $dp['id']=$this->form_id.'_'.$item_array['name'];
         $dp['placeholder']=$item_array['title'];
-        $dp['class']=$this->classes['input'];
+        $dp['class']=(isset($this->classes['input']) ? $this->classes['input'] : '');
 
-        $dp['class']=$this->classes['checkbox'];
+        $dp['class']=(isset($this->classes['checkbox']) ? $this->classes['checkbox'] : '');
         $isChecked=false;
         if($item_array['value']==1){
             $isChecked=true;
@@ -4296,6 +4372,9 @@ $(document).ready(function () {
     }
 
     function compile_dtdatetime_element($item_array) {
+
+        $id = $item_array['name'].'_' . md5(time() . rand(100, 999));
+
         $parameters = $item_array['parameters'];
 
         $date_formattype = $this->getConfigValue('date_format');
@@ -4332,12 +4411,12 @@ $(document).ready(function () {
             $string .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/bootstrap/js/bootstrap-datetimepicker.min.js"></script>';
         }
 
-        $string .= '<script type="text/javascript">$(document).ready(function() {$( "#' . $item_array['name'] . '" ).datetimepicker({pick12HourFormat: false,language: "ru",' . $tpp . '});});</script>';
+        $string .= '<script type="text/javascript">$(document).ready(function() {$( "#' . $id . '" ).datetimepicker({pick12HourFormat: false,language: "ru",' . $tpp . '});});</script>';
         $bootstrap_version = trim($this->getConfigValue('bootstrap_version'));
         if ($bootstrap_version == '3' && !defined('ADMIN_MODE')) {
-            $html = '<div id="' . $item_array['name'] . '" class="input-group input-append date"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><div class="add-on input-group-addon"><span class="glyphicon glyphicon-calendar"></span></div></div>';
+            $html = '<div id="' . $id . '" class="input-group input-append date"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><div class="add-on input-group-addon"><span class="glyphicon glyphicon-calendar"></span></div></div>';
         } else {
-            $html = '<div id="' . $item_array['name'] . '" class="input-append date"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><span class="add-on"><i data-time-icon="icon-time" data-date-icon="icon-calendar"></i></span></div>';
+            $html = '<div id="' . $id . '" class="input-append date"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><span class="add-on"><i data-time-icon="icon-time" data-date-icon="icon-calendar"></i></span></div>';
         }
         return array(
             'title' => $item_array['title'],
@@ -4349,6 +4428,9 @@ $(document).ready(function () {
     }
 
     function compile_dtdate_element($item_array) {
+
+        $id = $item_array['name'].'_' . md5(time() . rand(100, 999));
+
         $parameters = $item_array['parameters'];
 
         $date_formattype = $this->getConfigValue('date_format');
@@ -4380,7 +4462,7 @@ $(document).ready(function () {
         $string .= '
             <script type="text/javascript">
                 $(document).ready(function() {
-                    $( "#' . $item_array['name'] . '" ).datetimepicker({
+                    $( "#' . $id . '" ).datetimepicker({
                         autoclose: true,
                         pick12HourFormat: false,
                         language: "ru",
@@ -4390,14 +4472,14 @@ $(document).ready(function () {
                 });
             </script>
         ';
-        
+
         $bootstrap_version = trim($this->getConfigValue('bootstrap_version'));
         if ($bootstrap_version == '3' && !defined('ADMIN_MODE')) {
-            $html = '<div id="' . $item_array['name'] . '" class="input-group input-append date"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><div class="add-on input-group-addon"><span class="glyphicon glyphicon-calendar"></span></div></div>';
+            $html = '<div id="' . $id . '" class="input-group input-append date"><input class="' . $this->classes['input'] . '" data-format="" type="text" placeholder="' . $item_array['title'] . '" name="' . $item_array['name'] . '" value="' . $value . '"></input><div class="add-on input-group-addon"><span class="glyphicon glyphicon-calendar"></span></div></div>';
         } else {
-            $html = '<div id="' . $item_array['name'] . '" class="input-append date"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><span class="add-on"><i data-time-icon="icon-time" data-date-icon="icon-calendar"></i></span></div>';
+            $html = '<div id="' . $id . '" class="input-append date"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><span class="add-on"><i data-time-icon="icon-time" data-date-icon="icon-calendar"></i></span></div>';
         }
-        
+
         //$html = '<div><input id="' . $item_array['name'] . '" class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input></div>';
 
         return array(
@@ -4411,9 +4493,10 @@ $(document).ready(function () {
     }
 
     function compile_dttime_element($item_array) {
+
+        $id = $item_array['name'].'_' . md5(time() . rand(100, 999));
+
         $parameters = $item_array['parameters'];
-
-
 
         $pickDate = 'pickDate: false';
         $pickTime = 'pickTime: true';
@@ -4439,7 +4522,7 @@ $(document).ready(function () {
         $string .= '
             <script type="text/javascript">
                 $(document).ready(function() {
-                    $( "#' . $item_array['name'] . '" ).datetimepicker({
+                    $( "#' . $id . '" ).datetimepicker({
                         pick12HourFormat: false,
                         language: "ru",
                         ' . $tpp . '
@@ -4452,7 +4535,7 @@ $(document).ready(function () {
         return array(
             'title' => $item_array['title'],
             'required' => ($item_array['required'] == "on" ? 1 : 0),
-            'html' => $string . '<div id="' . $item_array['name'] . '" class="input-append date"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><span class="add-on"><i data-time-icon="icon-time" data-date-icon="icon-calendar"></i></span></div>',
+            'html' => $string . '<div id="' . $id . '" class="input-append date"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><span class="add-on"><i data-time-icon="icon-time" data-date-icon="icon-calendar"></i></span></div>',
             'tab' => (isset($item_array['tab']) ? $item_array['tab'] : ''),
             'type' => $item_array['type']
         );

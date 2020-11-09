@@ -1,4 +1,5 @@
 <td nowrap>
+
     <button data-id="{$grid_item.id.value}" class="fast_preview btn btn-danger btn-mini"><i class="icon-white icon-eye-open"></i></button>
     {if $data_adv_share_access_can_view_all and $grid_item.user_id.value != $data_adv_share_access_user_id}
         {*Если у нас включена опция data_adv_share_access и мы включили опцию data_adv_share_access_can_view_all и при этом
@@ -6,6 +7,8 @@
         *}
     {else}
 
+
+        {$grid_item._memo}
         {if isset($show_up_icon) && $show_up_icon}
             <a class="btn btn-warning go_up btn-mini" alt="{$grid_item.id.value}" href="#grow_up"><i class="icon-white icon-circle-arrow-up"></i></a>
         {/if}
@@ -19,6 +22,15 @@
         {/if}
         <a title="{if $grid_item.active.value == 1}{_e t="выключить"}{else}{_e t="включить"}{/if}" data-id="{$grid_item.id.value}" data-active="{$grid_item.active.value}" class="active_toggle btn {if $grid_item.active.value == 1}btn-success{else}btn-danger{/if} btn-mini"><i class="icon-white icon-off"></i></a>
 
+        {if {getConfig key='apps.mailbox.use_complaint_mode'} eq 1}
+        <a
+                title="{_e t="Пожаловаться"}"
+                data-id="{$grid_item.id.value}"
+                data-complaint-id="1"
+                class="mailbox_complaint_send_complaint btn {if $grid_item.complaint_id.value > 0}btn-pink{else}btn-gray{/if} btn-mini">
+            <i class="icon-white fa-exclamation-circle"></i>
+        </a>
+        {/if}
 
         <div class="clearfix"></div>
         {if isset($grid_item.status_id)}
@@ -57,6 +69,10 @@
     {/if}
     {if $billing_controls_tpl != ''}
         {include file=$billing_controls_tpl item=$grid_item}
+    {/if}
+    {assign var="local_controls" value=$SITEBILL_DOCUMENT_ROOT|cat:'/template/frontend/local/admin/data/controls.tpl'}
+    {if file_exists($local_controls)}
+        {include file="$local_controls"}
     {/if}
 
 </td>

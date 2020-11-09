@@ -52,6 +52,20 @@ class Sitebill_Uploadify extends Sitebill {
 
             $tempFile = $_FILES[$file_container_name]['tmp_name'];
             $targetPath = SITEBILL_DOCUMENT_ROOT.'/cache/upl/';
+            
+            if($_FILES[$file_container_name]['error'] > 0){
+				header('HTTP/1.1 200 OK');
+				header('Content-Type: application/json');
+				echo json_encode(array('status'=>'error', 'msg'=>'Ошибка загрузки '.$_FILES[$file_container_name]['error']));
+				return;
+			}
+			
+			if(!is_uploaded_file ( $tempFile ) ){
+				header('HTTP/1.1 200 OK');
+				header('Content-Type: application/json');
+				echo json_encode(array('status'=>'error', 'msg'=>'Файл не был загружен'));
+				return;
+			}
 
             $arr=explode('.', $_FILES[$file_container_name]['name']);
             $file_name_without_ext = $arr[0];

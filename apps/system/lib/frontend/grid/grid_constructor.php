@@ -46,8 +46,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         $res = $this->get_sitebill_adv_core( $params, false, false, false, false );
         return json_encode($res['data']);
     }
-    
-    
+
+
     function map_search_listing(){
         $theme = $this->getConfigValue('theme');
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/sitebill_krascap.php');
@@ -57,47 +57,47 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }else{
             $frontend = new SiteBill_Krascap();
         }
-        
+
         $params = $frontend->gatherRequestParams();
-        
-        
+
+
         $result_set = array();
-        
+
         global $smarty;
         $tpl = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'. $this->getConfigValue('theme').'/activemap_listing.tpl';
-        
+
         $responce = array(
             'status' => 0,
             'data' => array(),
             'msg' => ''
         );
+
+        //$overall_limit = intval($this->getConfigValue('apps.geodata.iframe_map_limit'));
         
-        $overall_limit = intval($this->getConfigValue('apps.geodata.iframe_map_limit'));
-        //$overall_limit = 10;
-        
+
         $params['has_geo']=1;
-        if ($overall_limit > 0) {
+        /*if ($overall_limit > 0) {
             $params['page_limit'] = $overall_limit;
         } else {
             $params['no_portions'] = 1;
-        }
+        }*/
         //$params['geo_only'] = 1;
         $params['no_premium_filtering'] = 1;
-        
+
         $all = intval($this->getRequestValue('all'));
         $bounds = $this->getRequestValue('bounds');
         $coords = $this->getRequestValue('polylineString');
-        
+
         if($all){
             $res = $this->get_sitebill_adv_core( $params, false, false, true, false );
             $msg = '';
-        
+
             if($res['_showed'] < $res['_total_records']){
                 $msg = 'Показано '.$res['_showed'].' из '.$res['_total_records'];
             }
-            
+
             $smarty->assign('activemap_listing', $res['data']);
-            
+
             $responce = array(
                 'status' => 1,
                 'data' => $res['data'],
@@ -107,7 +107,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 'paging' => $res['paging']
             );
         }elseif(null === $coords && null !== $bounds){
-           
+
             $params['map_bounds'] = $bounds;
             $res = $this->get_sitebill_adv_core( $params, false, false, true, false );
             $smarty->assign('activemap_listing', $res['data']);
@@ -121,7 +121,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             );
         }else{
             $lines=array();
-        
+
             if(null !== $coords){
                 if(!is_array($coords)){
                     $pairs=explode(';', $coords);
@@ -208,7 +208,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 );
                 return json_encode(array($responce));
             }
-            
+
             $ids=array();
 
             $DBC=DBC::getInstance();
@@ -220,7 +220,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                     $ret[]=$ar;
                 }
             }
-            
+
             $finded_count=count($ret);
             $max_count=(int)$this->getConfigValue('apps.mapviewer.max_objects_onmap');
             if($max_count==0){
@@ -235,7 +235,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             //echo count($ret);
 
             $points=array();
-            
+
             if(count($ret)>0){
                 if(!empty($lines)){
                     foreach($ret as $pk=>$point){
@@ -263,11 +263,11 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 //$params['geo_only'] = 1;
                 $res = $this->get_sitebill_adv_core( $params, false, false, true, false );
                 $smarty->assign('activemap_listing', $res['data']);
-                
-                
-                 
-                
-                
+
+
+
+
+
                 $responce = array(
                     'status' => 1,
                     'data' => $res['data'],
@@ -280,26 +280,26 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 //$res['data']=array();
             }
         }
-                
 
-        
-        
-        
-    			
-        
+
+
+
+
+
+
         return json_encode($responce);
     }
-    
+
     function map_search(){
-        
+
         $responce = array(
             'status' => 0,
             'data' => array(),
             'msg' => ''
         );
-        
+
         $overall_limit = intval($this->getConfigValue('apps.geodata.iframe_map_limit'));
-        
+
         $theme = $this->getConfigValue('theme');
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/sitebill_krascap.php');
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $theme . '/main/main.php')) {
@@ -308,10 +308,10 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }else{
             $frontend = new SiteBill_Krascap();
         }
-        
+
         $params = $frontend->gatherRequestParams();
-        
-        
+
+
         //$params=$this->getRequestValue('params');
         $params['has_geo']=1;
         if ($overall_limit > 0) {
@@ -321,15 +321,15 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
         $params['geo_only'] = 1;
         $params['no_premium_filtering'] = 1;
-        
+
         $all = intval($this->getRequestValue('all'));
         $bounds = $this->getRequestValue('bounds');
         $coords = $this->getRequestValue('polylineString');
-        
+
         if($all){
             $res = $this->get_sitebill_adv_core( $params, false, false, true, false );
             $msg = '';
-        
+
             if($res['_showed'] < $res['_total_records']){
                 $msg = 'Показано '.$res['_showed'].' из '.$res['_total_records'];
             }
@@ -339,7 +339,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 'msg' => $msg
             );
         }elseif(null === $coords && null !== $bounds){
-           
+
             $params['map_bounds'] = $bounds;
             $res = $this->get_sitebill_adv_core( $params, false, false, true, false );
             $responce = array(
@@ -349,7 +349,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             );
         }else{
             $lines=array();
-        
+
             if(null !== $coords){
                 if(!is_array($coords)){
                     $pairs=explode(';', $coords);
@@ -433,7 +433,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 );
                 return json_encode(array($responce));
             }
-            
+
             $ids=array();
 
             $DBC=DBC::getInstance();
@@ -449,7 +449,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                     $ret[]=$ar;
                 }
             }
-            
+
             $finded_count=count($ret);
             $max_count=(int)$this->getConfigValue('apps.mapviewer.max_objects_onmap');
             if($max_count==0){
@@ -464,7 +464,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             //echo count($ret);
 
             $points=array();
-            
+
             if(count($ret)>0){
                 if(!empty($lines)){
                     foreach($ret as $pk=>$point){
@@ -500,18 +500,18 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 //$res['data']=array();
             }
         }
-                
 
-    			
-        
+
+
+
         return json_encode($responce);
     }
-    
+
     private function isInRegion($point, $lines){
     	$point_lat=$point['lat'];
     	$point_lng=$point['lng'];
     	//echo 'POINT: '.$point_lat.' '.$point_lng."\n\r";
-    	
+
     	foreach($lines as $line){
     		if($line['type']=='v' && $this->isBetween($point_lat, $line['s']['lat'], $line['e']['lat']) && $point_lng==$line['s']['lng']){
     			return true;
@@ -519,12 +519,12 @@ class Grid_Constructor extends Grid_Constructor_Root {
     			return true;
     		}
     	}
-    	
+
     	$intersectCount=0;
-    	
+
     	foreach($lines as $line){
     		if($line['type']=='v'){
-    			
+
     		}elseif($line['type']=='h' && $this->isBetween($point_lng, $line['s']['lng'], $line['e']['lng']) && $point_lat<$line['s']['lat']){
     			$intersectCount++;
     		}else{
@@ -538,7 +538,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
     		}
     	}
     	//echo $intersectCount;
-    	
+
     	if($intersectCount==0){
     		return false;
     	}
@@ -550,7 +550,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
     	}
     	return true;
     }
-    
+
     private function isBetween($point, $fp1, $fp2){
     	$start=$fp1;
     	if($fp2<$start){
@@ -564,7 +564,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
     	}
     	return false;
     }
-    
+
     function tryGetSimilarTopicsByTranslitName($topic_id) {
         $translit_name = false;
         $result = array();
@@ -959,7 +959,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
 
 
         if (isset($params['_no_interactive_search']) && 1 == (int) $params['_no_interactive_search']) {
-            
+
         } else {
             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/main/template_search.php')) {
                 require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/main/template_search.php');
@@ -1210,16 +1210,16 @@ class Grid_Constructor extends Grid_Constructor_Root {
       } */
 
     function get_sitebill_adv_core($params, $random = false, $premium = false, $paging = true, $geodata = false) {
-        
+
         $ids_only = false;
         $geo_only = false;
-        
+
         if(isset($params['ids_only'])){
             $ids_only = true;
         }
 
         $select_fields = array();
-        
+
         if(isset($params['geo_only'])){
             $select_fields = array(
                 DB_PREFIX.'_data.id',
@@ -1229,15 +1229,19 @@ class Grid_Constructor extends Grid_Constructor_Root {
             $geo_only = true;
             unset($params['geo_only']);
         }
-		
+
 		$routed_params = array();
 		if(isset($params['routed_params'])){
             $routed_params = $params['routed_params'];
             unset($params['routed_params']);
+            
+            foreach ($routed_params as $k => $v){
+                $params[$k] = $v;
+            }
         }
-		
+
         //print_r($select_fields);
-        
+
         $return = array();
 
         $is_route_catch = $this->getRequestValue('router_info');
@@ -1285,7 +1289,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 $_collect_user_info = false;
             }
         }
-        
+
         if($geo_only){
             $_collect_user_info = false;
         }
@@ -1312,6 +1316,9 @@ class Grid_Constructor extends Grid_Constructor_Root {
         //$left_joins[]='LEFT JOIN '.DB_PREFIX.'_topic ON '.DB_PREFIX.'_data.topic_id='.DB_PREFIX.'_topic.id';
 
         if ($this->getConfigValue('currency_enable')) {
+            if ( !defined('CURRENT_CURRENCY') ) {
+                define('CURRENT_CURRENCY', 'RUR');
+            }
             $select_what[] = DB_PREFIX . '_currency.code AS currency_code';
             $select_what[] = DB_PREFIX . '_currency.name AS currency_name';
             $select_what[] = '((' . DB_PREFIX . '_data.price*' . DB_PREFIX . '_currency.course)/' . $CM->getCourse(CURRENT_CURRENCY) . ') AS price_ue';
@@ -1323,14 +1330,14 @@ class Grid_Constructor extends Grid_Constructor_Root {
 
 
         if (isset($params['_no_interactive_search']) && 1 == (int) $params['_no_interactive_search']) {
-            
+
         } else {
 
             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/main/template_search.php')) {
                 require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/main/template_search.php');
                 $Template_Search = new Template_Search();
                 $results = $Template_Search->run();
-                
+
                 if (isset($results['where_prepared'])) {
                 	$where_array_prepared = array_merge($where_array_prepared, $results['where_prepared']);
                 }
@@ -1441,14 +1448,14 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 $static_data::set_param('max_page', $max_page);
             }
         }
-		
+
 		if(!empty($routed_params)){
 			foreach($routed_params as $rk => $rv){
 				unset($params[$rk]);
 			}
 		}
-		
-		
+
+
         $this->template->assign('grid_params', $params);
 
         $pager_params = $params;
@@ -1475,10 +1482,6 @@ class Grid_Constructor extends Grid_Constructor_Root {
             unset($params['spec']);
             unset($pager_params['spec']);
         }
-
-
-        //$catched_router=$this->getCatchedRoute();
-
 
 
         if (isset($params['pager_url'])) {
@@ -1610,6 +1613,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         } else {
             $url = $pageurl . '?key=value';
         }
+        
+        
 
         /* foreach ( $pager_params as $key => $value ) {
           if($key=='page_url' || $key=='page_limit'){
@@ -1703,9 +1708,13 @@ class Grid_Constructor extends Grid_Constructor_Root {
               $url = $pageurl.'?key=value';
               } */
         }
+        
+        
+        if(strpos($url, 'account/data') === 0){
+            $url = preg_replace('/^(account\/data)/', '', $url);
+        }
 
-        //$this->template->assert('url', $url);
-        $return['url'] = $url;
+        $return['url'] = /*SITEBILL_MAIN_URL.'/'.*/$url;
 
         if (count($select_fields) == 0) {
             $select_what[] = DB_PREFIX . '_data.*';
@@ -1714,16 +1723,9 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
         $query = 'SELECT ' . implode(', ', $select_what) . ' ' . $add_select_value . ' FROM ' . DB_PREFIX . '_data' . (count($left_joins) > 0 ? ' ' . implode(' ', $left_joins) . ' ' : '') . ' ' . $where_statement_prepared . ($order!='' ? ' ORDER BY '.$order : '') . ((isset($params['no_portions']) && $params['no_portions'] == 1) ? '' : ' LIMIT ' . $start . ', ' . $limit);
-        //$this->writeLog(__METHOD__.', q = '.$query);
-        //$this->writeLog(__METHOD__.', where_value_prepared = '. var_export($where_value_prepared, true));
-//echo $query;
-        
+
         $stmt = $DBC->query($query, $where_value_prepared, $success);
-        //echo $DBC->getLastError();
-        //print_r($where_value_prepared);
-        //echo $query;
-        //var_dump($stmt);
-        
+
         $ra = array();
         if ($stmt) {
 
@@ -1743,7 +1745,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 }else{
                     $ra[$i] = $ar;
                 }
-                
+
                 $i++;
             }
         }
@@ -1760,8 +1762,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
             }
 
             $gdt = $this->prepareDataForGeo($ra, $geotpl);
-            
-            
+
+
             $return['geoobjects_collection_clustered'] = $gdt['geoobjects_collection_clustered'];
             $return['grid_geodata'] = $gdt['grid_geodata'];
         }
@@ -1776,7 +1778,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         $return['_mysearch_params'] = $mysearch_params;
         $return['_grid_show_start'] = $start+1;
         $return['_grid_show_end'] = (($start+$limit)>$total ? $total : ($start+$limit));
-        
+
 
         $return['data'] = $ra;
         $return['order'] = $order;
@@ -1791,7 +1793,11 @@ class Grid_Constructor extends Grid_Constructor_Root {
         foreach ($ra as $k => $d) {
 
             if (isset($d['geo_lat']) && isset($d['geo_lng']) && $d['geo_lat'] != '' && $d['geo_lat'] != '0.000000' && $d['geo_lng'] != '' && $d['geo_lng'] != '0.000000') {
-                $gdata[$k]['currency_name'] = SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['currency_name']);
+                $gdata[$k]['currency_name'] = '';
+                if(isset($d['currency_name'])){
+                    $gdata[$k]['currency_name'] = SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['currency_name']);
+                }
+                
                 if (isset($d['currency_id'])) {
                     $gdata[$k]['currency_id'] = $d['currency_id'];
                 }
@@ -1850,9 +1856,9 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 unset($html);
             }
         }
-        
-        
-        
+
+
+
         if ( $this->getConfigValue('apps.complex.push_map') ) {
             require_once (SITEBILL_DOCUMENT_ROOT.'/apps/complex/admin/admin.php');
             $complex_admin = new complex_admin();
@@ -1861,7 +1867,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 $gdata = array_merge($gdata, $complex_geodata);
             }
         }
-        
+
         if ( $this->getConfigValue('apps.mapbanner.enable') ) {
             require_once (SITEBILL_DOCUMENT_ROOT.'/apps/mapbanner/admin/admin.php');
             $mapbanner_admin = new mapbanner_admin();
@@ -1870,7 +1876,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 $gdata = array_merge($gdata, $mapbanner_geodata);
             }
         }
-        
+
 
 
         $geoobjects_collection = array();
@@ -2678,7 +2684,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
 
         $default_sorts = $this->getConfigValue('apps.realty.sorts');
         $sorts = array();
-        
+
         if ($default_sorts != '') {
             switch ($default_sorts) {
                 case 'priceup' : {
@@ -2770,7 +2776,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             /*if($premium){
                 $default_sorts = '_prem_sort DESC, '.DB_PREFIX . '_data.`' . $field . '` DESC, ' . DB_PREFIX . '_data.id DESC';
             }*/
-            
+
         }
 
         if ($random) {
@@ -2921,7 +2927,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
     }
 
     function transformGridData($ra, $_collect_user_info = false) {
-        
+
         $uselangs = false;
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))){
             $uselangs = true;
@@ -2978,7 +2984,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                     'id' => $item_array['id']
                 );
             }
-            if ($item_array['country_id'] > 0) {
+            if (isset($_model['data']['country_id']) && $item_array['country_id'] > 0) {
                 $parameters = $_model['data']['country_id']['parameters'];
                 $fname = 'name';
                 if ($uselangs && (!isset($parameters['no_ml']) || 0 === intval($parameters['no_ml']))) {
@@ -2987,7 +2993,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 $ra[$item_id]['country'] = $data_model->get_string_value_by_id('country', 'country_id', $fname, $item_array['country_id'], true);
             }
 
-            if ($item_array['region_id'] > 0) {
+            if (isset($_model['data']['region_id']) && $item_array['region_id'] > 0) {
                 $parameters = $_model['data']['region_id']['parameters'];
                 $fname = 'name';
                 if ($uselangs && (!isset($parameters['no_ml']) || 0 === intval($parameters['no_ml']))) {
@@ -2995,7 +3001,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 }
                 $ra[$item_id]['region'] = $data_model->get_string_value_by_id('region', 'region_id', $fname, $item_array['region_id'], true);
             }
-            if ($item_array['district_id'] > 0) {
+            if (isset($_model['data']['district_id']) && $item_array['district_id'] > 0) {
                 $parameters = $_model['data']['district_id']['parameters'];
                 $fname = 'name';
                 if ($uselangs && (!isset($parameters['no_ml']) || 0 === intval($parameters['no_ml']))) {
@@ -3003,7 +3009,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 }
                 $ra[$item_id]['district'] = $data_model->get_string_value_by_id('district', 'id', $fname, $item_array['district_id'], true);
             }
-            if ($item_array['street_id'] > 0) {
+            if (isset($_model['data']['street_id']) && $item_array['street_id'] > 0) {
                 $parameters = $_model['data']['street_id']['parameters'];
                 $fname = 'name';
                 if ($uselangs && (!isset($parameters['no_ml']) || 0 === intval($parameters['no_ml']))) {
@@ -3011,7 +3017,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 }
                 $ra[$item_id]['street'] = $data_model->get_string_value_by_id('street', 'street_id', $fname, $item_array['street_id'], true);
             }
-            if ($item_array['city_id'] > 0) {
+            if (isset($_model['data']['city_id']) && $item_array['city_id'] > 0) {
 
                 $parameters = $_model['data']['city_id']['parameters'];
 
@@ -3021,7 +3027,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 }
                 $ra[$item_id]['city'] = $data_model->get_string_value_by_id('city', 'city_id', $fname, $item_array['city_id'], true);
             }
-            if ($item_array['metro_id'] > 0) {
+            if (isset($_model['data']['metro_id']) && $item_array['metro_id'] > 0) {
                 $parameters = $_model['data']['metro_id']['parameters'];
                 $fname = 'name';
                 if ($uselangs && (!isset($parameters['no_ml']) || 0 === intval($parameters['no_ml']))) {
@@ -3029,6 +3035,14 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 }
                 $ra[$item_id]['metro'] = $data_model->get_string_value_by_id('metro', 'metro_id', $fname, $item_array['metro_id'], true);
             }
+            /*if (isset($_model['data']['optype']) && $_model['data']['optype']['type'] == 'select_by_query' && $item_array['optype'] > 0) {
+                $parameters = $_model['data']['optype']['parameters'];
+                $fname = 'name';
+                if ($uselangs && (!isset($parameters['no_ml']) || 0 === intval($parameters['no_ml']))) {
+                    $fname .= $postfix;
+                }
+                $ra[$item_id]['optype_sh'] = $data_model->get_string_value_by_id('optype', 'optype_id', $fname, $item_array['optype'], true);
+            }*/
             if ($item_array['user_id'] > 0) {
                 if ($_collect_user_info) {
                     $fields_str = trim($this->getConfigValue('core.listing.add_user_info_fields'));
@@ -3087,7 +3101,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 foreach ($sbf as $kn => $vn) {
                     if (isset($_model['data'][$kn]) && $_model['data'][$kn]['type'] == 'select_by_query') {
                         if ($item_array[$kn] > 0) {
-                        	
+
                             if ($kn == $vn) {
                                 $vn = '_' . $kn . '_';
                             }
@@ -3101,7 +3115,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                             	}
                             	$txt = $data_model->get_string_value_by_id($_model['data'][$kn]['primary_key_table'], $_model['data'][$kn]['primary_key_name'], $fname, $item_array[$kn], true);
                             }
-                            
+
                             $ra[$item_id][$vn]=$txt;
                         } else {
                             $ra[$item_id][$vn] = '';
@@ -3279,11 +3293,11 @@ class Grid_Constructor extends Grid_Constructor_Root {
                     if (isset($old_uploadify_images[$ra[$k]['id']])) {
                         $ra[$k]['img'] = $old_uploadify_images[$ra[$k]['id']];
                     }
-                    
+
                     if ( isset($item['image_cache']) ) {
                         $ra[$k]['image_cache'] = unserialize($item['image_cache']);
                     }
-                    
+
                     /* else{
                       $ra[$k]['img']='';
                       } */
@@ -3311,37 +3325,10 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 }
             }
         }
-        
-
-        $destination_elements = array();
-        foreach ($_model['data'] as $k => $v) {
-            if (isset($v['type']) && $v['type'] == 'destination') {
-                $destination_elements[] = $v['name'];
-            }
-        }
-
-
-
-        if (!empty($destination_elements)) {
-            require_once SITEBILL_DOCUMENT_ROOT . '/apps/destination/admin/admin.php';
-            $DA = new destination_admin();
-            $this->template->assert('destination_info', $DA);
-            foreach ($ra as $k => $item) {
-                foreach ($destination_elements as $destination_element) {
-                    if (0 != (int) $item[$destination_element]) {
-                        //print_r($DA->getDestinationObject($item[$destination_element]));
-                        $ra[$k]['_destination_info'][$destination_element]['value'] = $DA->getDestinationById($item[$destination_element]);
-                        $ra[$k]['_destination_info'][$destination_element]['parts'] = $DA->getDestinationObject($item[$destination_element]);
-                    }
-                }
-            }
-        }
-        
-        //print_r($ra);
 
         return $ra;
     }
-    
+
     /*function fillFields($item){
         $item['_title'] = $this->fillTitleLine($item);
         $item['_location'] = $this->fillLocationLine($item);
@@ -3350,24 +3337,24 @@ class Grid_Constructor extends Grid_Constructor_Root {
         $item['_pricecurrency'] = $this->fillPriceCurrency($item);
         return $item;
     }
-    
+
     function fillTitleLine($item){
         return $item['type_sh'];
     }
-    
+
     function fillLocationLine($item){
         $ar = array();
         return $item['type_sh'];
     }
-    
+
     function fillPriceFull($item){
         return $item['type_sh'];
     }
-    
+
     function fillPrice($item){
         return $item['type_sh'];
     }
-    
+
     function fillPriceCurrency($item){
         return $item['type_sh'];
     }*/
@@ -3614,7 +3601,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         /*if($premium){
             $select_what[] = 'IF('.DB_PREFIX.'_data.`premium_status_end`>'.time().', 1, 0) AS _prem_sort';
         }*/
-        
+
 
         if (isset($params['order']) && $params['order'] == 'city') {
             if ($this->getConfigValue('apps.language.use_langs')) {
@@ -3626,7 +3613,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 if(0 === intval($parameters['no_ml'])){
                     $field .= $this->getLangPostfix($this->getCurrentLang());
                 }
-                
+
                 $select_what[] = DB_PREFIX . '_city.' . $field . ' as city';
             } else {
                 $select_what[] = DB_PREFIX . '_city.name as city';
@@ -3666,6 +3653,26 @@ class Grid_Constructor extends Grid_Constructor_Root {
         } else {
             unset($params['srch_export_cian']);
         }
+        
+        if (isset($params['memorylist_id'])) {
+            $mids = array();
+            $DBC = DBC::getInstance();
+            $mquery = 'SELECT id FROM '.DB_PREFIX.'_memorylist_item WHERE memorylist_id = ?';
+            $stmt = $DBC->query($mquery, array($params['memorylist_id']));
+            if($stmt){
+                while($ar = $DBC->fetch($stmt)){
+                    $mids[] = $ar['id'];
+                }
+            }
+            if(!empty($mids)){
+                $where_array_prepared[] = DB_PREFIX . '_data.id IN ('.implode(',', array_fill(0, count($mids), '?')).')';
+                $where_value_prepared = array_merge($where_value_prepared, $mids);
+            }else{
+                $where_array_prepared[] = DB_PREFIX . '_data.id = -1';
+            }
+        }
+        
+        
 
 
         if (isset($params['favorites']) && !empty($params['favorites'])) {
@@ -3810,8 +3817,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
           }else{
           unset($params['topic_id']);
           } */
-        
-        
+
+
         if(isset($params['wlocation']) && is_array($params['wlocation']) && !empty($params['wlocation'])){
             $wsubquery=array();
             $wsubqueryparams=array();
@@ -3852,21 +3859,21 @@ class Grid_Constructor extends Grid_Constructor_Root {
                         }
                     }
                 }
-                
+
                 if(!empty($subquery)){
                     $wsubquery[]=implode(' AND ', $subquery);
                     $wsubqueryparams = array_merge($wsubqueryparams, $subqueryparams);
                 }
-                
+
             }
-            
+
             if(!empty($wsubquery)){
                 $where_array_prepared[] = '(('.implode(') OR (', $wsubquery).'))';
                 $where_value_prepared = array_merge($where_value_prepared, $wsubqueryparams);
             }
-            
+
         }
-        
+
         if(isset($params['loc'])){
 			$pairs=array();
 			foreach($params['loc'] as $k=>$loc){
@@ -3879,7 +3886,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
 					}
 				}
 			}
-            
+
 			if(!empty($pairs)){
 				$q=array();
 				$v=array();
@@ -3890,15 +3897,15 @@ class Grid_Constructor extends Grid_Constructor_Root {
 				}
 				$where_array_prepared[]='('.implode(' OR ', $q).')';
 				$where_value_prepared=array_merge($where_value_prepared, $v);
-				
+
 				unset($pairs);
 				unset($q);
 				unset($v);
 			}
-			
+
 		}
-        
-        
+
+
         if (isset($params['country_id']) && (int) $params['country_id'] != 0) {
             $where_array[] = 're_data.country_id = ' . (int) $params['country_id'];
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.country_id=?)';
@@ -3906,7 +3913,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         } else {
             unset($params['country_id']);
         }
-        
+
         if (isset($params['community_id'])) {
             require_once SITEBILL_DOCUMENT_ROOT.'/apps/community/admin/admin.php';
             require_once SITEBILL_DOCUMENT_ROOT.'/apps/community/site/site.php';
@@ -3919,7 +3926,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 $where_array_prepared[] = '1=0';
             }
         }
-        
+
         if (isset($params['complex_id'])) {
             if (is_array($params['complex_id'])) {
                 $complex_array = $params['complex_id'];
@@ -4028,14 +4035,14 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 unset($params['id']);
             }
         }
-        
+
         //echo $_SESSION['user_domain_owner'];
         if (isset($_SESSION['user_domain_owner']) && (int) $_SESSION['user_domain_owner']['user_id'] != 0) {
             //$where_array[] = 're_data.user_id = '.(int)$params['user_id'];
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id=?)';
             $where_value_prepared[] = (int) $_SESSION['user_domain_owner']['user_id'];
         } else {
-            
+
             /*if (isset($params['user_id']) && (int) $params['user_id'] > 0) {
                 if(isset($params['coworked_ids']) && !empty($params['coworked_ids'])){
                     $where_array[] = 're_data.user_id = ' . (int) $params['user_id'];
@@ -4047,11 +4054,11 @@ class Grid_Constructor extends Grid_Constructor_Root {
                     $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id=?)';
                     $where_value_prepared[] = (int) $params['user_id'];
                 }
-                
+
             } else {
                 unset($params['user_id']);
             }*/
-            
+
             if(isset($params['user_id'])){
                 if(isset($params['coworked_ids']) && !empty($params['coworked_ids'])){
                     $where_array[] = 're_data.user_id = ' . (int) $params['user_id'];
@@ -4075,16 +4082,16 @@ class Grid_Constructor extends Grid_Constructor_Root {
                             $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id=?)';
                             $where_value_prepared[] = (int) $params['user_id'];
                         }
-                        
+
                     }
-                    
+
                 }
             }
-            
-            
+
+
         }
-        
-        
+
+
 
         if (isset($params['agg_user_id'])) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id IN (' . implode(',', array_fill(0, count($params['agg_user_id']), '?')) . '))';
@@ -4115,7 +4122,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 $where_array_prepared[] = '(' . DB_PREFIX . '_data.price<=?)';
                 $where_value_prepared[] = $price_str;
             }
-            
+
         } else {
             unset($params['price']);
         }
@@ -4177,7 +4184,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         } else {
             unset($params['house_number']);
         }
-        
+
         if (isset($params['region_id']) && (int) $params['region_id'] != 0) {
             if (is_array($params['region_id']) && !empty($params['region_id'])) {
                 $regions_array = $params['region_id'];
@@ -4219,7 +4226,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         } else {
             unset($params['hot']);
         }
-        
+
         if (isset($params['district_id']) && $params['district_id'] != 0) {
             if (is_array($params['district_id']) && !empty($params['district_id'])) {
                 $districts_array = $params['district_id'];
@@ -4431,7 +4438,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             } elseif (preg_match('/^(\d\d\d\d-\d\d-\d\d)$/', $params['srch_date_to'])) {
                 $srch_date_to = $params['srch_date_to'];
             } else {
-                
+
             }
             if ($srch_date_to != '') {
                 $where_array[] = "(re_data.date_added<='" . $srch_date_to . "')";
@@ -4449,7 +4456,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             } elseif (preg_match('/^(\d\d\d\d-\d\d-\d\d)$/', $params['srch_date_from'])) {
                 $srch_date_from = $params['srch_date_from'];
             } else {
-                
+
             }
             if ($srch_date_from != '') {
                 $where_array[] = "(re_data.date_added>='" . $srch_date_from . "')";
@@ -4734,7 +4741,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         } else {
             unset($params['object_type']);
         }
-        
+
         if (isset($params['aim']) && is_array($params['aim']) && count($params['aim']) > 0) {
             $state_array = $params['aim'];
             foreach ($state_array as $k => $v) {
@@ -4769,7 +4776,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         } else {
             unset($params['export_cian']);
         }
-        
+
         if (isset($params['map_bounds'])) {
             $where_array_prepared[] = '((' . DB_PREFIX . '_data.geo_lat BETWEEN ? AND ?) AND (' . DB_PREFIX . '_data.geo_lng BETWEEN ? AND ?))';
             $where_value_prepared[] = $params['map_bounds'][0][0];
@@ -4893,7 +4900,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 }else{
                     $where_array_prepared[] = '(' . DB_PREFIX . '_data.`archived`<>1)';
                 }
-                
+
             }
 
             if (isset($params['active']) && $params['active'] == 1) {
@@ -4953,7 +4960,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 $where_array_prepared[] = '(' . DB_PREFIX . '_data.premium_status_end < ?)';
             }
         }
-        
+
         if (isset($params['only_img']) && $params['only_img']) {
             $where_array[] = 're_data.id=i.id';
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.id=i.id)';
@@ -4970,6 +4977,6 @@ class Grid_Constructor extends Grid_Constructor_Root {
             'left_joins' => $left_joins,
             'select_what' => $select_what
         );
-    }    
+    }
 
 }

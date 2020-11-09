@@ -20,11 +20,11 @@ class API_Common extends SiteBill {
         $Login = new Login();
         $Login->checkLogin('', '', true, $this->getRequestValue('session_key'));
         $_POST = $this->request->dump();
-        
+
         //$this->writeLog(__METHOD__.', request = <pre>'. var_export($this->request->dump(), true).'</pre>');
-        
+
     }
-    
+
     function getRequestValue($key, $type = '', $from = '') {
         if ( $this->request->get($key) != null ) {
             return $this->request->get($key);
@@ -87,17 +87,17 @@ class API_Common extends SiteBill {
         $response = array('state'=>'error','error' => $message);
         return $this->json_string($response);
     }
-    
+
     function request_success($message) {
         $response = array('state'=>'success','message' => $message);
         return $this->json_string($response);
     }
-    
+
 
     function json_string($in_array) {
         return json_encode($in_array);
     }
-    
+
     function init_custom_model_object($model_name) {
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php');
         switch ( $model_name ) {
@@ -106,43 +106,43 @@ class API_Common extends SiteBill {
                 $city_manager = new City_Manager();
                 return $city_manager;
             break;
-        
+
             case 'component':
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/component/component_manager.php');
                 $component_manager = new Component_Manager;
                 return $component_manager;
             break;
-        
+
             case 'country':
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/country/country_manager.php');
                 $country_manager = new Country_Manager;
                 return $country_manager;
             break;
-        
+
             case 'data':
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/data/data_manager.php');
                 $data_manager = new Data_Manager;
                 return $data_manager;
             break;
-        
+
             case 'district':
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/district/district_manager.php');
                 $district_manager = new District_Manager;
                 return $district_manager;
             break;
-        
+
             case 'function':
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/function/function_manager.php');
                 $function_manager = new Function_Manager;
                 return $function_manager;
             break;
-        
+
             case 'group':
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/group/group_manager.php');
                 $group_manager = new Group_Manager;
                 return $group_manager;
             break;
-        
+
             case 'menu':
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/menu/menu_manager.php');
                 $menu_manager = new Menu_Manager;
@@ -154,35 +154,40 @@ class API_Common extends SiteBill {
                 $page_admin = new page_admin();
                 return $page_admin;
             break;
-        
-        
+
+
             case 'metro':
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/metro/metro_manager.php');
                 $metro_manager = new Metro_Manager();
                 return $metro_manager;
             break;
-        
+
             case 'region':
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/region/region_manager.php');
                 $region_manager = new Region_Manager();
                 return $region_manager;
             break;
-        
+
             case 'street':
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/street/street_manager.php');
                 $street_manager = new Street_Manager();
                 return $street_manager;
             break;
-        
+
             case 'user':
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/users/user_object_manager.php');
                 $user_object_manager = new User_Object_Manager();
                 return $user_object_manager;
             break;
-        
-        
+
+            case 'client':
+                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/client/admin/admin.php');
+                $client_admin = new client_admin();
+                return $client_admin;
+                break;
+
         }
-        
+
         $DBC = DBC::getInstance();
         $query = "SELECT name FROM " . DB_PREFIX . "_table WHERE name=?";
         $stmt = $DBC->query($query, array($model_name));

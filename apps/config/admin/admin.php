@@ -53,6 +53,10 @@ class config_admin extends Object_Manager {
     }*/
 
     function main() {
+        if ( $this->is_demo() ) {
+            return 'Конфигурация в демо-версии отключена';
+        }
+
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         $form_data = $this->data_model;
@@ -480,11 +484,11 @@ class config_admin extends Object_Manager {
 
 
 
-        $rs = '<form class="config_form form-horizontal applied" method="post" action="' . SITEBILL_MAIN_URL . '/admin/index.php?action=' . $this->action . '">';
+        $rs = '<form class="config_form form-horizontal applied" method="post" action="' . SITEBILL_MAIN_URL . '/admin/?action=' . $this->action . '">';
 
         foreach ($data as $d) {
             if ($this->is_demo() and $d['config_key'] == 'license_key') {
-                
+
             } else {
                 $ret = array();
                 if (!isset($config_mask[$d['config_key']])) {
@@ -615,8 +619,7 @@ class config_admin extends Object_Manager {
     }
 
     function is_demo() {
-        global $__user;
-        if (preg_match('/etown/', $__user)) {
+        if ( preg_match('/estate\.sitebill\.ru/', $_SERVER['HTTP_HOST']) ) {
             return true;
         }
         return false;
@@ -712,7 +715,7 @@ class config_admin extends Object_Manager {
         if (!$this->check_config_item('common_per_page')) {
             $this->addParamToConfig('common_per_page', '10', 'Количество позиций на страницу (для списков справочников в админке)');
         }
-        
+
         if (!$this->check_config_item('per_page_account')) {
             $this->addParamToConfig('per_page_account', '10', 'Количество позиций на страницу (для списков в ЛК)');
         }
@@ -751,7 +754,7 @@ class config_admin extends Object_Manager {
         if (!$this->check_config_item('bootstrap_version')) {
             $this->addParamToConfig('bootstrap_version', '', 'Версия Bootstrap');
         }
-        
+
         if (!$this->check_config_item('use_google_map')) {
             $this->addParamToConfig('use_google_map', '0', 'Использовать карту Google', 1);
         }
@@ -759,7 +762,7 @@ class config_admin extends Object_Manager {
         if (!$this->check_config_item('google_api_key')) {
             $this->addParamToConfig('google_api_key', '', 'Ключ API Google');
         }
-        
+
         if (!$this->check_config_item('google_api_key_server')) {
             $this->addParamToConfig('google_api_key_server', '', 'Ключ API Google для серверных запросов');
         }
@@ -782,7 +785,7 @@ class config_admin extends Object_Manager {
             $this->addParamToConfig('hide_contact_input_user_data', '0', 'Убрать поля ввода контактов из формы добавления объявления в личном кабинете', 1);
         }
         if (!$this->check_config_item('use_realty_view_counter')) {
-            $this->addParamToConfig('use_realty_view_counter', '0', 'Использовать встроенный счетчик просмотров', 1);
+            $this->addParamToConfig('use_realty_view_counter', '1', 'Использовать встроенный счетчик просмотров', 1);
         }
         if (!$this->check_config_item('date_format')) {
             $this->addParamToConfig('date_format', 'standart', 'Формат даты');
@@ -800,11 +803,11 @@ class config_admin extends Object_Manager {
         if (!$this->check_config_item('enable_curator_mode')) {
             $this->addParamToConfig('enable_curator_mode', '0', 'Активировать режим куратора', 1);
         }
-        
+
         if (!$this->check_config_item('curator_mode_fullaccess')) {
             $this->addParamToConfig('curator_mode_fullaccess', '0', 'Полный доступ куратора к объектам стажера', 1);
         }
-        
+
         if (!$this->check_config_item('curator_mode_chainsallow')) {
             $this->addParamToConfig('curator_mode_chainsallow', '0', 'Разрешить цепочки кураторства', 1);
         }
@@ -826,7 +829,7 @@ class config_admin extends Object_Manager {
             $this->addParamToConfig('filter_double_data', '0', 'Не допускать добавления дубликатов данных', 1);
         }
         if (!$this->check_config_item('check_permissions')) {
-            $this->addParamToConfig('check_permissions', '0', 'Разделение прав доступа для групп. Группа администраторов (admin) имеет доступ ко всем функциям без учета прав доступа.', 1);
+            $this->addParamToConfig('check_permissions', '1', 'Разделение прав доступа для групп. Группа администраторов (admin) имеет доступ ко всем функциям без учета прав доступа.', 1);
         }
         if (!$this->check_config_item('allow_user_email_change')) {
             $this->addParamToConfig('allow_user_email_change', '0', 'Разрешить пользователям изменять email', 1);
@@ -869,7 +872,7 @@ class config_admin extends Object_Manager {
         if (!$this->check_config_item('default_tab_name')) {
             $this->addParamToConfig('default_tab_name', 'Основное', 'Название закладки формы по-умолчанию');
         }
-        
+
         if (!$this->check_config_item('csrf_salt')) {
             $this->addParamToConfig('csrf_salt', '', 'Соль для создания CSRF-токена');
         }
@@ -880,7 +883,7 @@ class config_admin extends Object_Manager {
 
 
 
-        //notify	    
+        //notify
         if (!$this->check_config_item('add_notification_email')) {
             $this->addParamToConfig('add_notification_email', '', 'E-mail для получения уведомлений о новых объявлениях (при отсутствии изпользуется order_email_acceptor)');
         }
@@ -929,11 +932,11 @@ class config_admin extends Object_Manager {
         if (!$this->check_config_item('editor')) {
             $this->addParamToConfig('editor', 'cleditor', 'Тип WYSIWYG-редактора');
         }
-        
+
         if (!$this->check_config_item('autocomplete_distinct')) {
             $this->addParamToConfig('autocomplete_distinct', '0', 'Фильтровать данные autocomplete-выдачи на уникальность названий',1);
         }
-        
+
 
 
 
@@ -1024,7 +1027,7 @@ class config_admin extends Object_Manager {
         if (!$this->check_config_item('apps.realty.similar_preg')) {
             $this->addParamToConfig('apps.realty.similar_preg', '', 'Параметры похожих');
         }
-        
+
         if (!$this->check_config_item('apps.realty.similar_grid')) {
             $this->addParamToConfig('apps.realty.similar_grid', 0, 'Формировать массив "Похожие" как стандартный список', 1);
         }
@@ -1064,7 +1067,7 @@ class config_admin extends Object_Manager {
 
 
         if (!$this->check_config_item('data_adv_share_access')) {
-            $this->addParamToConfig('data_adv_share_access', '0', 'Разделять доступ к объявлениям в админке', 1);
+            $this->addParamToConfig('data_adv_share_access', '1', 'Разделять доступ к объявлениям в админке', 1);
         }
 
         if (!$this->check_config_item('data_adv_share_access_user_list_strict')) {
@@ -1072,7 +1075,7 @@ class config_admin extends Object_Manager {
         }
 
         if (!$this->check_config_item('data_adv_share_access_can_view_all')) {
-            $this->addParamToConfig('data_adv_share_access_can_view_all', '0', 'Разрешить просмотр всех записей (без редактирования и удаления) при включенной опции data_adv_share_access', 1);
+            $this->addParamToConfig('data_adv_share_access_can_view_all', '1', 'Разрешить просмотр всех записей (без редактирования и удаления) при включенной опции data_adv_share_access', 1);
         }
 
         if (!$this->check_config_item('data_adv_share_access_extended')) {
@@ -1125,7 +1128,7 @@ class config_admin extends Object_Manager {
         }
 
         if (!$this->check_config_item('newuser_registration_groupid')) {
-            $this->addParamToConfig('newuser_registration_groupid', '', 'ID группы присваиваемой новым зарегистрировавшимся пользователям');
+            $this->addParamToConfig('newuser_registration_groupid', '5', 'ID группы присваиваемой новым зарегистрировавшимся пользователям');
         }
 
         if (!$this->check_config_item('apps.realty.sorts')) {
@@ -1359,7 +1362,7 @@ class config_admin extends Object_Manager {
         if (!$this->check_config_item('apps.watermark.image_preview')) {
             $this->addParamToConfig('apps.watermark.image_preview', '', 'Название файла для водяного знака для превью-изображений');
         }
-        
+
         if (!$this->check_config_item('apps.watermark.printanywhere')) {
             $this->addParamToConfig('apps.watermark.printanywhere', '', 'Наносить водяной знак на всю графику', 1);
         }
@@ -1824,11 +1827,14 @@ class config_admin extends Object_Manager {
         }
         $this->addParamToConfig('apps.realty.default_frontend_route', '/grid/data', 'Маршрут по-умолчанию для angular-фронтенда', 0, array('public' => true));
         $this->addParamToConfig('apps.realty.enable_guest_mode', '0', 'Включить guest-mode для angular-фронтенда', 1, array('public' => true));
+        $this->addParamToConfig('apps.realty.enable_toolbar', '0', 'Включить toolbar для angular-фронтенда', 1, array('public' => true));
+        $this->addParamToConfig('apps.realty.enable_navbar', '0', 'Включить navbar для angular-фронтенда', 1, array('public' => true));
+        $this->addParamToConfig('apps.realty.show_home_icon', '0', 'Выводить иконку Home для angular-фронтенда', 1, array('public' => true));
 
         //if (!$this->check_config_item('use_metaphone')) {
             //$this->addParamToConfig('use_metaphone', '0', 'Использовать metaphone', 1);
         //}
-        
+
     }
 
     private function reloadCheckConfigStructure() {

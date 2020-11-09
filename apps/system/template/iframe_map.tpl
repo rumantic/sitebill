@@ -18,12 +18,12 @@ var options={scrollZoom: {/literal}{if $scroll_zoom}true{else}false{/if}{literal
 {if $map_type=='yandex'}
 <script type="text/javascript" src="https://api-maps.yandex.ru/2.1/?lang=ru_RU"></script>
 {elseif $map_type=='leaflet_osm'}
-<link rel="stylesheet" type="text/css" href="{$estate_folder}/apps/third/leaflet/leaflet.css" />
-<link rel="stylesheet" type="text/css" href="{$estate_folder}/apps/third/leaflet/MarkerCluster.css" />
-<link rel="stylesheet" type="text/css" href="{$estate_folder}/apps/third/leaflet/MarkerCluster.Default.css" />
+<link rel="stylesheet" type="text/css" href="{$estate_folder}/apps/system/js/leaflet/leaflet.css" />
+<link rel="stylesheet" type="text/css" href="{$estate_folder}/apps/system/js/leaflet/MarkerCluster.css" />
+<link rel="stylesheet" type="text/css" href="{$estate_folder}/apps/system/js/leaflet/MarkerCluster.Default.css" />
 
-<script type="text/javascript" src="{$estate_folder}/apps/third/leaflet/leaflet.js"></script>
-<script type="text/javascript" src="{$estate_folder}/apps/third/leaflet/leaflet.markercluster.js"></script>   
+<script type="text/javascript" src="{$estate_folder}/apps/system/js/leaflet/leaflet.js"></script>
+<script type="text/javascript" src="{$estate_folder}/apps/system/js/leaflet/leaflet.markercluster.js"></script>   
 {else}
 <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3{if $g_api_key ne ''}&key={$g_api_key}{/if}"></script>
 <script type="text/javascript" src="{$estate_folder}/apps/third/google/markerclusterer/markerclusterer.js"></script>
@@ -97,7 +97,11 @@ var options={scrollZoom: {/literal}{if $scroll_zoom}true{else}false{/if}{literal
 #ActiveMap {
     width: 100%;
     height: 100%;
+    z-index: 1;
     /*min-height: 500px;*/
+}
+#ActiveMapCanvas {
+    z-index: 3;
 }
 .ActiveMapControls {
     position: absolute;
@@ -233,7 +237,6 @@ var options={scrollZoom: {/literal}{if $scroll_zoom}true{else}false{/if}{literal
 </style>
 {/literal}
 
-
 {if $map_type=='google'}
     <script>
     $(document).ready(function(){
@@ -248,6 +251,12 @@ var options={scrollZoom: {/literal}{if $scroll_zoom}true{else}false{/if}{literal
         ymaps.ready(['Map', 'Polygon']).then(function() {
             ActiveMap.init('ActiveMapContainer', 'yandex');
         });
+    });
+    </script>
+{elseif $map_type=='leaflet_osm'}
+    <script>
+    $(document).ready(function(){
+        ActiveMap.init('ActiveMapContainer', 'leaflet_osm'); 
     });
     </script>
 {/if}

@@ -20,7 +20,7 @@
             background-image: url('{/literal}{$estate_folder}{literal}/img/publish_x.png');
         }
 
-        #contact_with_author_window label, #send_friend_window label {
+        #contact_with_author_window label {
             display: block;
         }
 
@@ -28,11 +28,11 @@
             margin: 10px;
         }
 
-        #contact_with_author_window div.inner input, #contact_with_author_window div.inner textarea, #send_friend_window div.inner input, #send_friend_window div.inner textarea {
+        #contact_with_author_window div.inner input, #contact_with_author_window div.inner textarea {
             margin: 2px 0;
         }
 
-        #contact_with_author_window div.inner textarea, #send_friend_window div.inner textarea {
+        #contact_with_author_window div.inner textarea {
             /*width: 290px;*/
         }
         .mailbox-options .row {
@@ -50,13 +50,10 @@
             color: red;
         }
     </style>
-    <script type="text/javascript">
+    <script>
         function hideErrors() {
             $('#contact_with_author_window form #error_block').hide();
             $('#contact_with_author_window form #error_block_nouser').hide();
-
-            $('#send_friend_window form #error_block').hide();
-            $('#send_friend_window form #error_block_nouser').hide();
         }
         $(document).ready(function () {
             $('a#contact_with_author').click(function (e) {
@@ -67,8 +64,8 @@
                 var offset = $(this).offset();
                 hideErrors();
                 $.ajax({
-                    url: estate_folder + '/apps/mailbox/js/ajax.php',
-                    data: 'action=get_logged_user_data',
+                    url: estate_folder+'/js/ajax.php',
+                    data: '_app=mailbox&action=get_logged_user_data',
                     dataType: 'json',
                     success: function (json) {
                         if (json.res !== 'no_user') {
@@ -79,33 +76,16 @@
 
                     }
                 });
-                //alert(e.pageX +', '+ e.pageY);
                 var pos = SitebillCore.getDialogPositionCoords(dialog.width(), dialog.height());
-
-
                 dialog.css({'top': pos[1] + 'px', 'left': pos[0] + 'px'});
                 dialog.fadeIn();
                 return false;
             });
 
             $('a#send_friend').click(function () {
-                var form = $('#send_friend_window form');
                 var dialog = $('#send_friend_window');
                 dialog.appendTo($('body'));
                 var dialog = $('#send_friend_window');
-                form.find('[name=link]').val(window.location.href);
-                hideErrors();
-                $.ajax({
-                    url: estate_folder + '/apps/mailbox/js/ajax.php',
-                    data: 'action=get_logged_user_data',
-                    dataType: 'json',
-                    success: function (json) {
-                        if (json.res !== 'no_user') {
-                            form.find('[name=email]').val(json.email);
-                        }
-
-                    }
-                });
                 var pos = SitebillCore.getDialogPositionCoords(dialog.width(), dialog.height());
                 dialog.css({'top': pos[1] + 'px', 'left': pos[0] + 'px'});
                 dialog.fadeIn();
@@ -165,45 +145,6 @@
                 return false;
             });
 
-            $('#send_friend_window form').submit(function () {
-
-                var form = $(this);
-                hideErrors();
-                var email = form.find('[name=email]').val();
-                var link = form.find('[name=link]').val();
-                var message = form.find('[name=message]').val();
-                var to = form.find('[name=to]').val();
-                //var realty_id=form.find('[name=realty_id]').val();
-                //console.log(name+' '+phone+' '+email+' '+message+' '+theme);
-                if (message == '' || email == '' || to == '') {
-                    form.find('#error_block').show();
-
-                } else {
-                    $.ajax({
-                        type: 'post',
-                        url: estate_folder+'/js/ajax.php',
-                        data: {_app: 'mailbox', action: 'send_friend_message', link: link, name: name, message: message, email: email, to: to},
-                        dataType: 'json',
-                        success: function (json) {
-                            if (json.answer == 'fields_not_specified') {
-                                form.find('#error_block').show();
-                            } else if (json.answer == 'no_reciever') {
-                                form.find('#error_block_nouser').show();
-                            } else {
-                                form.find('[name=email]').val('');
-                                form.find('[name=message]').val('');
-                                form.find('[name=to]').val('');
-                                form.find('[name=link]').val('');
-                                $('#send_friend_window').hide();
-                            }
-                        }
-                    });
-                }
-                return false;
-            });
-
-            //console.log(uid);
-            //console.log($('#contact_with_author_window').height());
             $('#contact_with_author_window').find('.closer').click(function () {
                 $('#contact_with_author_window').fadeOut();
             });

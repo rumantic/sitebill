@@ -7,6 +7,54 @@
         if(typeof yandex_map_version != 'undefined'){
             options.yandex_map_version=yandex_map_version;
         }
+        
+        var PositionEditorLeaflet={
+            init: function(map){
+                this.map=map;
+                this.settedMarker=null;
+                return this;
+            },
+            initMarker: function(x,y,id){
+                if(x!='' && y!=''){
+                    var latlng = [Number(x), Number(y)];
+                    this.createPositionMarker(latlng, id);
+                    this.map.setView(latlng);
+                }else{
+                    if(this.settedMarker!=null){
+                        this.map.removeLayer(this.settedMarker);
+                        this.settedMarker=null;
+                    }
+                }
+
+            },
+
+            createPositionMarker: function(latlng, id){
+                var lat=new String(latlng.lat);
+                var lng=new String(latlng.lng);
+                var lat_parts=lat.split('.');
+                if(lat_parts[1]!==undefined && lat_parts[1].length>6){
+                    lat=lat_parts[0]+'.'+lat_parts[1].substring(0,6);
+                }
+                var lng_parts=lng.split('.');
+                if(lng_parts[1]!==undefined && lng_parts[1].length>6){
+                    lng=lng_parts[0]+'.'+lng_parts[1].substring(0,6);
+                }
+
+                if(this.settedMarker!=null){
+                    this.map.removeLayer(this.settedMarker);
+                    this.settedMarker=null;
+                }
+                
+                var marker = L.marker(latlng).addTo(this.map);
+
+               
+                this.settedMarker=marker;
+                var ret=[];
+                ret.push(lat);
+                ret.push(lng);
+                return ret;
+            }
+        }
 
         var PositionEditor={
             init: function(map){
@@ -141,7 +189,7 @@
         var lnge=GDC.find('[geodata=lng]');
 
 
-        if(options.map_type!='google'){
+        if(options.map_type!='google' && options.map_type!='leaflet_osm'){
             options.map_type='yandex';
         }
 
@@ -183,6 +231,49 @@
                 }
             }
 
+        }else if(options.map_type=='leaflet_osm'){
+            
+            
+            if(late && lnge){
+                var map=initializeLeafletOSMLocationsMap(map_id);
+                var PE=PositionEditorLeaflet.init(map);
+                map.on('click', function (e) {
+                    
+                    var l=e.latlng;
+
+                    var geo_c=PE.createPositionMarker(l, 0);
+                    late.val(geo_c[0]);
+                    lnge.val(geo_c[1]);
+                });
+                var lat=late.val();
+                var lng=lnge.val();
+                
+                if(lat!='' && lng!=''){
+                    PE.initMarker(lat, lng, 0);
+                }
+                
+                late.change(function(){
+
+                    var lng=lnge.val();
+                    var lat=late.val();
+                    //if(lat!='' && lng!=''){
+                        runMapChange(map, lat, lng);
+                        PE.initMarker(lat, lng, 0);
+                    //}
+                });
+
+                lnge.change(function(){
+
+                    var lng=lnge.val();
+                    var lat=late.val();
+                    if(lat!='' && lng!=''){
+                        runMapChange(map, lat, lng);
+                        PE.initMarker(lat, lng, 0);
+                    }
+                });
+            }
+            
+           
         }else{
             if(late && lnge){
                 //var map_id='map_'+CryptoJS.MD5((new Date()).toString()+'_'+(Math.floor(Math.random() * (999 - 100 + 1)) + 100));
@@ -234,6 +325,8 @@
                 map.panTo(new google.maps.LatLng(lat,lng));
                 //map.setCenter(new google.maps.LatLng(lat, lng));
                 //map.panTo(new google.maps.LatLng(lat, lng));
+            }else if(options.map_type=='leaflet_osm'){
+                map.setView(new Array(lat, lng));
             }else{
                 //map.setCenter(new Array(lat, lng));
                 map.panTo(new Array(lat, lng));
@@ -288,7 +381,10 @@
                 map.controls.remove('fullscreenControl');
             }
             //m.css({'position':'relative','left':'0'}).appendTo(GDC.find('.geodata_map_holder'));
-            m.css({'position':'relative','left':'0', 'width':options.width, 'height':options.height}).appendTo(GDC.find('.geodata_map_holder'));
+            var w=GDC.find('.geodata_map_holder').width();
+            var h=GDC.find('.geodata_map_holder').height();
+            m.css({'position':'relative','left':'0', 'width':w, 'height':options.height}).appendTo(GDC.find('.geodata_map_holder'));
+            map.container.fitToViewport();
             /*if(options.yandex_map_version=='2.1'){
                 map.events.add('tilesLoaded', function () {
                     map.container.fitToViewport();
@@ -297,6 +393,25 @@
                 map.container.fitToViewport();
             }*/
             return map;	
+        }
+        
+        function initializeLeafletOSMLocationsMap(map_id){
+            var latlng = [Number(c[0]), Number(c[1])];
+            /*if(options.no_scroll_zoom==1 || (options.no_scroll_zoom==0 && $(window).width()>800)){
+                myOptions.scrollwheel=false;
+            }*/
+
+            var m=$('<div id="'+map_id+'" style="width:'+options.width+'; height:'+options.height+'"></div>')
+            m.css({'position':'relative','left':'0', 'width':options.width, 'height':options.height}).appendTo(GDC.find('.geodata_map_holder'));
+            var map = L.map(map_id).setView(latlng, 9);
+            
+            var osmUrl='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+            var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
+            var osm = new L.TileLayer(osmUrl, {attribution: osmAttrib});
+            
+            map.addLayer(osm);
+
+            return map;
         }
 
         function initializeGoogleLocationsMap(map_id){
@@ -315,6 +430,7 @@
             var myOptions = {
                 zoom: map_zoom,
                 center: latlng,
+                streetViewControl: false,
                 mapTypeId: map_view_type1
             };
 

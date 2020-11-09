@@ -82,7 +82,9 @@ class Form_Decorator {
 	public function decorateMultiselectItemCheckbox($item_name, $item_key, $item_value, $item_values_array, $otherParams=array()){
 		$rs='';
 		$rs.='<div class="select_box_multiselect_item1">';
-		$rs.='<input type="checkbox" name="'.$item_name.'[]" value="'.$item_key.'"'.((isset($item_values_array) && in_array($item_key, $item_values_array)) ? ' checked="checked"' : '').'>'.$item_value;
+        $rs.='<label class="checkbox">';
+        $rs.='<input type="checkbox" name="'.$item_name.'[]" value="'.$item_key.'"'.((isset($item_values_array) && in_array($item_key, $item_values_array)) ? ' checked="checked"' : '').'> '.$item_value.'';
+        $rs.='</label>';
 		$rs.='</div>';
 		return $rs;
 	}

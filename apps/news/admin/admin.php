@@ -117,11 +117,11 @@ class news_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.news.sitemaptopics_priority')) {
             $config_admin->addParamToConfig('apps.news.sitemaptopics_priority', '0.5', 'Приоритетность URL <b>страницы подраздела новостей</b> относительно других URL на Вашем сайте. Диапазон от 0.0 до 1.0');
         }
-        
+
         /*if (!$config_admin->check_config_item('apps.news.user_enable_access_type')) {
             $config_admin->addParamToConfig('apps.news.user_enable_access_type', '0', 'Тип доступа к новостям из ЛК');
         }*/
-        
+
         if (!$config_admin->check_config_item('apps.news.alias_source_field')) {
             $config_admin->addParamToConfig('apps.news.alias_source_field', 'title', 'Системное имя поля для формирования алиаса');
         }
@@ -309,7 +309,7 @@ class news_admin extends Object_Manager {
                     $form_data[$this->table_name] = $this->removeTemporaryFields($form_data[$this->table_name], $remove_this_names);
                     $rs = $this->get_form($form_data[$this->table_name], 'edit');
                 } else {
-                    
+
                     if ($this->mod_name !== 'topic' && isset($form_data[$this->table_name]['user_id'])) {
                         $form_data[$this->table_name]['user_id']['value'] = intval($_SESSION['user_id_value']);
                     }
@@ -497,7 +497,7 @@ class news_admin extends Object_Manager {
                     $form_data['date']['value'] = time();
                 }
             } elseif ($form_data['date']['type'] == 'dtdatetime') {
-                
+
             }
         }
 
@@ -570,7 +570,7 @@ class news_admin extends Object_Manager {
                     $form_data['date']['value'] = time();
                 }
             } elseif ($form_data['date']['type'] == 'dtdatetime') {
-                
+
             }
         }
 
@@ -624,28 +624,6 @@ class news_admin extends Object_Manager {
         //$imgs=$this->editImageMulti($this->action, $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key));
     }
 
-    /**
-     * Delete data
-     * @param string $table_name
-     * @param string $primary_key
-     * @param int $primary_key_value
-     */
-    function delete_data($table_name, $primary_key, $primary_key_value) {
-
-        $vendor_info = $this->getVendorInfoById($primary_key_value);
-        if ($vendor_info['imgfile'] != '') {
-            unlink(SITEBILL_DOCUMENT_ROOT . '/img/data/vendor/' . $vendor_info['imgfile']);
-        }
-
-        $query = "delete from " . DB_PREFIX . "_" . $table_name . " where $primary_key = $primary_key_value";
-        $DBC = DBC::getInstance();
-        $stmt = $DBC->query($query, array(), $row, $success_mark);
-
-        if (!$success_mark) {
-            $this->riseError($DBC->getLastError());
-            return false;
-        }
-    }
 
     function install() {
         $success_result = true;
@@ -1011,7 +989,7 @@ class news_admin extends Object_Manager {
                         $ims = array();
                     }
                     if (isset($ims[0])) {
-                        $news[$k]['img_preview'] = SITEBILL_MAIN_URL . '/img/data/' . $ims[0]['preview'];
+                        $news[$k]['img_preview'] = $this->createMediaIncPath($ims[0], 'preview');
                     }
                 }
             }
@@ -1056,9 +1034,9 @@ class news_admin extends Object_Manager {
         $ret = array();
         $fname = 'name';
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-            
+
             $postfix = $this->getLangPostfix($this->getCurrentLang());
-            
+
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
             $ATH = new Admin_Table_Helper();
             $form_data = $ATH->load_model('news_topic', false);
@@ -1079,7 +1057,7 @@ class news_admin extends Object_Manager {
     }
 
     /*
-     * $mode = 0|1|2 
+     * $mode = 0|1|2
      * 0 - standart internal link
      * 1 - external link with protocol
      * 2 - trimmd internal link without SITEBILL_MAIN_URL

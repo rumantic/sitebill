@@ -8,9 +8,9 @@
     <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
     <license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>true</backendMenu>
-    <version status="beta">1.4.7</version>
+    <version status="beta">1.5.2</version>
     <administration>
         <!-- Administration Menu Section -->
         <menu>Mailbox</menu>
-    </administration>   
+    </administration>
 </install>

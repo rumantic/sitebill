@@ -32,6 +32,7 @@ class realtylogv2_site extends realtylogv2_admin {
 		if(preg_match('/^'.$namespace.'\/trash$/', $request_uri)){
 			$smarty->assign('logdata',$this->getTrashLogList($uid));
 			$this->set_apps_template('realtylogv2', $this->getConfigValue('theme'), 'realtylogv2_inc_file', 'trash_list.tpl.html');
+            return true;
 		}elseif(preg_match('/'.$namespace.'\/alllogs/', $request_uri)){
 			$data=array();
 			$query='SELECT realtylog_id, action, id, log_date FROM '.DB_PREFIX.'_'.$this->table_name.' WHERE editor_id='.$uid.' ORDER BY id, log_date DESC';
@@ -47,6 +48,7 @@ class realtylogv2_site extends realtylogv2_admin {
 			}
 			$smarty->assign('logdata', $data);
 			$this->set_apps_template('realtylogv2', $this->getConfigValue('theme'), 'realtylogv2_inc_file', 'log_list.tpl.html');
+            return true;
 		}elseif(preg_match('/^'.$namespace.'\/trash\/clear((\/(\d+)?)?)$/', $request_uri, $matches)){
 			if(isset($matches[3])){
 				$this->clearTrash($uid,(int)$matches[3]);
@@ -55,13 +57,15 @@ class realtylogv2_site extends realtylogv2_admin {
 			}
 			$smarty->assign('logdata',$this->getTrashLogList($uid));
 			$this->set_apps_template('realtylogv2', $this->getConfigValue('theme'), 'realtylogv2_inc_file', 'trash_list.tpl.html');
+            return true;
 		}elseif(preg_match('/^'.$namespace.'\/restore\/(\d+)$/', $request_uri, $matches)){
 			
 			$this->restoreLog((int)$matches[1]);
 			$smarty->assign('logdata',$this->getTrashLogList($uid));
 			$this->set_apps_template('realtylogv2', $this->getConfigValue('theme'), 'realtylogv2_inc_file', 'trash_list.tpl.html');
+            return true;
 		}
-		return true;
+		return false;
 	}
     
     function getTrashLogList($uid){

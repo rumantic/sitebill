@@ -13,7 +13,7 @@ class Logger {
 			$mode = "ERROR";
 			if($message!='' && $e!==NULL){
 				$message = $message ? $message .= "\n" . $e->getMessage () : $e->getMessage ();
-				
+
 				$message .= "'\nFrom file " . $e->getFile () . ": " . $e->getLine () . "\nStack trace:\n" . $e->getTraceAsString ();
 			}elseif($message!=''){
 				$message = $message ? $message .= "\n" . $e->getMessage () : $e->getMessage ();
@@ -21,15 +21,16 @@ class Logger {
 				$message = $e->getMessage ();
 				$message .= "'\nFrom file " . $e->getFile () . ": " . $e->getLine () . "\nStack trace:\n" . $e->getTraceAsString ();
 			}
-			
-				
+
+
 			file_put_contents ( LOGGER_FILE, date ( "d.m.Y H:i:s" ) . " \t$mode \t$message\n", FILE_APPEND );
 		}
 	}
 
 	public static function activity ($message) {
         $DBC = DBC::getInstance();
-        $ip = getenv(HTTP_X_FORWARDED_FOR);
+
+        $ip = getenv('HTTP_X_FORWARDED_FOR');
         if ($ip == '') {
             $ip = $_SERVER['REMOTE_ADDR'];
         }

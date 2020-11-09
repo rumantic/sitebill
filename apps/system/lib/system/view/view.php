@@ -369,12 +369,11 @@ class Table_View extends Data_Model {
 
         if (is_array($item_array['value']) && count($item_array['value']) > 0) {
             foreach ($item_array['value'] as $it) {
-                $rs .= '<div>';
                 if ($this->absolute_urls) {
                     $rs .= '<a href="' . $this->getServerFullUrl() . '/img/data/' . $it['normal'] . '" target="_blank"><img style="max-width:300px;" src="' . $this->getServerFullUrl() . '/img/data/' . $it['preview'] . '"></a>';
                 } else {
-                    if ( $it['remote'] == 'true' ) {
-                        $rs .= '<a href="' . $it['normal'] . '" target="_blank"><img style="max-width:300px;" src="' . $it['preview'] . '"></a>';
+                    if ( $it['remote'] === 'true' ) {
+                        $rs .= '1<a href="' . $it['normal'] . '" target="_blank"><img style="max-width:300px;" src="' . $it['preview'] . '"></a>';
                     } else {
                         $rs .= '<a href="' . SITEBILL_MAIN_URL . '/img/data/' . $it['normal'] . '" target="_blank"><img style="max-width:300px;" src="' . SITEBILL_MAIN_URL . '/img/data/' . $it['preview'] . '"></a>';
                     }

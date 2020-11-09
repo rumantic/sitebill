@@ -175,7 +175,7 @@ class geodata_admin extends Object_Manager
             if (!empty($cache)) {
                 $result = array('address' => $str, 'lat' => $cache['lat'], 'lng' => $cache['lng'], 'cached' => 1);
             } else {
-                if (1 === intval($this->getConfigValue('use_google_map'))) {
+                if (1 === intval($this->getConfigValue('use_google_map')) || 2 === intval($this->getConfigValue('use_google_map'))) {
                     $res = $this->geocode_address_by_google($str);
                     if ($res) {
                         $result = $res;

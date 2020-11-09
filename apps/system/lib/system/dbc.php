@@ -33,8 +33,8 @@ class DBC {
         /* $f=fopen($_SERVER["DOCUMENT_ROOT"].'/ddd.txt', 'a');
           fwrite($f, "1\n");
           fclose($f); */
-        $white_list = array("5.9.72.112", "5.9.72.121", "194.58.111.5", "5.9.92.11");
-        if (!preg_match("/admin/", $_SERVER["REQUEST_URI"]) and ! in_array($_SERVER["SERVER_ADDR"], $white_list)) {
+        $white_list = array("5.9.72.112", "5.9.72.121", "194.58.111.5", "5.9.92.11", "193.124.207.3", "127.0.0.1", "159.69.119.38");
+        if (!preg_match("/admin/", $_SERVER["REQUEST_URI"]) and ! in_array($_SERVER["SERVER_ADDR"], $white_list) and !defined('STDIN')) {
             try {
                 $stmt = $this->pdo->query("select * from " . DB_PREFIX . "_config where config_key = 'license_key'");
                 $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -45,7 +45,7 @@ class DBC {
                     exit;
                 }
             } catch (PDOException $e) {
-                
+
             }
         }
 
@@ -81,7 +81,7 @@ class DBC {
     }
 
     /**
-     * Execute an SQL statement and return the number of affected rows 
+     * Execute an SQL statement and return the number of affected rows
      *
      * @param string $query
      * @return string
@@ -164,7 +164,7 @@ class DBC {
 
     /**
      * Returns the ID of the last inserted row or sequence value
-     * 
+     *
      * @return integer
      * */
     public function lastInsertId() {

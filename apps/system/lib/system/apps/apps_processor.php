@@ -20,6 +20,38 @@ class Apps_Processor extends SiteBill {
         $this->apps_dir = SITEBILL_APPS_DIR;
         $this->SiteBill();
     }
+    
+    /**
+     * Installing app from install.xml
+     * @param string $app App code
+     * @return array Installing info
+     */
+    function installApp($app){
+        
+        $result = array();
+        
+        $appdir = $this->apps_dir.'/'.$app;
+        $installfile = $this->apps_dir.'/'.$app.'/install.xml';
+        if (file_exists($installfile)) {
+            $xml = @simplexml_load_file($installfile);
+            
+            $configs = array();
+            
+            if(isset($xml->config) && count($xml->config->configitem) > 0){
+                foreach($xml->config->configitem as $configitem){
+                    $configs[trim($configitem['key'])] = array(
+                        'title' => trim($configitem->title),
+                        'type' => trim($configitem->type),
+                        'default' => trim($configitem->default)
+                    );
+                }
+            }
+            
+            print_r($configs);
+            
+        }
+        return $result;
+    }
 
     function load_apps_list_from_location() {
         $apps = array();
@@ -99,6 +131,10 @@ class Apps_Processor extends SiteBill {
      */
 
     function getAppsList() {
+        
+        $currentTplFolder = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'. $this->getConfigValue('theme');
+        $customisationFolder = SITEBILL_DOCUMENT_ROOT . '/customisation';
+        
         $apps = array();
 
 
@@ -127,6 +163,29 @@ class Apps_Processor extends SiteBill {
                             if (isset($xml->description)) {
                                 $apps[$action]['description'] = trim($xml->description);
                             }
+                            
+                            $apps[$action]['tpl_loc_admin'] = 0;
+                            if (file_exists($currentTplFolder . '/apps/' . $app_dir . '/admin/local_admin.php')) {
+                                $apps[$action]['tpl_loc_admin'] = 1;
+                            }
+                            
+                            $apps[$action]['tpl_loc_site'] = 0;
+                            if (file_exists($currentTplFolder . '/apps/' . $app_dir . '/site/local_site.php')) {
+                                $apps[$action]['tpl_loc_site'] = 1;
+                            }
+                            
+                            $apps[$action]['customisation_loc_admin'] = 0;
+                            if (file_exists($customisationFolder . '/apps/' . $app_dir . '/admin/local_admin.php')) {
+                                $apps[$action]['customisation_loc_admin'] = 1;
+                            }
+                            
+                            $apps[$action]['customisation_loc_site'] = 0;
+                            //var_dump($customisationFolder . '/apps/' . $app_dir . '/site/local_site.php');
+                            if (file_exists($customisationFolder . '/apps/' . $app_dir . '/site/local_site.php')) {
+                                $apps[$action]['customisation_loc_site'] = 1;
+                            }
+                           
+                            
                         }
                     }
                 }
@@ -135,7 +194,17 @@ class Apps_Processor extends SiteBill {
         }
         $s = '<table class="table">';
         foreach ($apps as $k => $v) {
-            $s .= '<tr><td><b>' . $v['title'] . '</b> (' . $k . ')<br>' . $v['description'] . '</td><td>' . $v['version'] . '</td><td>Статус</td></tr>';
+            $s .= '<tr>';
+            $s .= '<td>';
+            $s .= '<b>' . $v['title'] . '</b> (' . $k . ')<br>' . $v['description'];
+            $s .= '</td>';
+            $s .= '<td>' . $v['version'] . '</td>';
+            $s .= '<td>Статус</td>';
+            $s .= '<td>' . $v['tpl_loc_admin'] . '</td>';
+            $s .= '<td>' . $v['tpl_loc_site'] . '</td>';
+            $s .= '<td>' . $v['customisation_loc_admin'] . '</td>';
+            $s .= '<td>' . $v['customisation_loc_site'] . '</td>';
+            $s .= '</tr>';
         }
         $s .= '</table>';
         return $s;
@@ -150,13 +219,22 @@ class Apps_Processor extends SiteBill {
     function run($app_name, $interface) {
         $has_admin_local = false;
         $includes = array();
-        if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps' . '/' . $app_name . '/' . $interface . '/local_' . $interface . '.php')) {
-            $has_admin_local = true;
-            $includes[] = $this->apps_dir . '/' . $app_name . '/' . $interface . '/' . $interface . '.php';
-            $includes[] = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps' . '/' . $app_name . '/' . $interface . '/local_' . $interface . '.php';
-            /* $app_filename = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps'.'/'.$app_name.'/'.$interface.'/'.$interface.'.php'; */
-        } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps' . '/' . $app_name . '/' . $interface . '/' . $interface . '.php')) {
-            $includes[] = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps' . '/' . $app_name . '/' . $interface . '/' . $interface . '.php';
+        
+        $app_mod_name = '';
+        
+        if(false!==strpos($app_name, ':')){
+            $parts = explode(':', $app_name);
+            //print_r($parts);
+            $app_name = $parts[0];
+            $app_mod_name = $parts[1];
+        }
+        if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps'.'/'.$app_name.'/'.$interface.'/local_'.$interface.'.php') ) {
+            $has_admin_local=true;
+            $includes[]=$this->apps_dir.'/'.$app_name.'/'.$interface.'/'.$interface.'.php';
+            $includes[]=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps'.'/'.$app_name.'/'.$interface.'/local_'.$interface.'.php';
+            /*$app_filename = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps'.'/'.$app_name.'/'.$interface.'/'.$interface.'.php';*/
+        }elseif ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps'.'/'.$app_name.'/'.$interface.'/'.$interface.'.php') ) {
+            $includes[]=SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps'.'/'.$app_name.'/'.$interface.'/'.$interface.'.php';
             //$app_filename = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps'.'/'.$app_name.'/'.$interface.'/'.$interface.'.php';
         } elseif (file_exists($this->apps_dir . '/' . $app_name . '/' . $interface . '/' . $interface . '.php')) {
             $includes[] = $this->apps_dir . '/' . $app_name . '/' . $interface . '/' . $interface . '.php';
@@ -172,7 +250,7 @@ class Apps_Processor extends SiteBill {
             } else {
                 $app_class_name = $app_name . '_' . $interface;
             }
-            $app_class_inst = new $app_class_name;
+            $app_class_inst = new $app_class_name($app_mod_name);
             $rs = $app_class_inst->main();
             return $rs;
         } else {
@@ -313,7 +391,94 @@ class Apps_Processor extends SiteBill {
         }
         return false;
     }
+    /*
+    function run_account(){
+        $time_start = microtime(true);
 
+        $apps_list = $this->load_apps_from_db(array('frontend' => 1));
+        $apps_list=false;
+        if ($apps_list) {
+            //print_r($apps_list);
+            foreach ($apps_list as $name => $apps_array) {
+                $app_class_name = false;
+                if ($apps_array['local_admin_path'] != '') {
+                    require_once ($apps_array['local_admin_path']);
+                } elseif ($apps_array['admin_path'] != '') {
+                    require_once ($apps_array['admin_path']);
+                }
+
+                if ($apps_array['local_site_path'] != '') {
+                    require_once ($apps_array['site_path']);
+                    require_once ($apps_array['local_site_path']);
+                    $app_class_name = 'local_' . $name . '_site';
+                    if (!class_exists($app_class_name)) {
+                        $app_class_name = $name . '_site';
+                        if (!class_exists($app_class_name)) {
+                            $app_class_name = false;
+                        }
+                    }
+                } elseif ($apps_array['site_path'] != '') {
+                    require_once ($apps_array['site_path']);
+                    $app_class_name = $name . '_site';
+                }
+                if ($app_class_name) {
+                    //echo $app_class_name.'<br>';
+                    $app_class_inst = new $app_class_name;
+                    if ($app_class_inst->frontend()) {
+                        $this->set_executed_apps($app_class_name);
+                    }
+                }
+            }
+            $time_end = microtime(true);
+            $time = $time_end - $time_start;
+            //$this->writeLog(array('apps_name' => 'apps_processor', 'method' => __METHOD__, 'message' => 'Время выполнения = '.$time, 'type' => ''));
+
+            return;
+            //return $apps_array;
+        }
+
+
+
+        if (is_dir($this->apps_dir)) {
+            if ($dh = opendir($this->apps_dir)) {
+                while (($app_dir = readdir($dh)) !== false) {
+                    //echo '$app_dir = '.$app_dir.'<br>';
+                    if (is_dir($this->apps_dir . '/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
+                        if (is_file($this->apps_dir . '/' . $app_dir . '/site/site.php')) {
+
+                            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/admin/admin.php')) {
+                                require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/admin/admin.php');
+                            } else {
+                                require_once ($this->apps_dir . '/' . $app_dir . '/admin/admin.php');
+                            }
+
+                            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/local_site.php')) {
+                                require_once ($this->apps_dir . '/' . $app_dir . '/site/site.php');
+                                require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/local_site.php');
+                                $app_class_name = 'local_' . $app_dir . '_site';
+                            } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/site.php')) {
+                                require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/site.php');
+                                $app_class_name = $app_dir . '_site';
+                            } else {
+                                require_once ($this->apps_dir . '/' . $app_dir . '/site/site.php');
+                                $app_class_name = $app_dir . '_site';
+                            }
+
+                            //echo $app_class_name.'<br>';
+                            $app_class_inst = new $app_class_name;
+                            if(method_exists($app_class_inst, 'fontend_account') && $app_class_inst->fontend_account()){
+                                $this->set_executed_apps($app_class_name);
+                            }
+                        }
+                    }
+                }
+                closedir($dh);
+            }
+        }
+        $time_end = microtime(true);
+        $time = $time_end - $time_start;
+    }
+    */
     /**
      * Run frontend apps
      * @param void 
@@ -518,11 +683,9 @@ class Apps_Processor extends SiteBill {
                 while (($app_dir = readdir($dh)) !== false) {
                     if (is_dir($this->apps_dir . '/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
                         if (is_file($this->apps_dir . '/' . $app_dir . '/' . $app_dir . '.xml')) {
-                            //echo $app_dir.'<br>';
 
                             //Parsing by simple_xml_dom
                             $xml = @file_get_html($this->apps_dir . '/' . $app_dir . '/' . $app_dir . '.xml');
-                            //print_r($xml);
                             if ($xml && is_object($xml)) {
                                 $title = SiteBill::iconv('utf-8', SITE_ENCODING, $xml->find('administration', 0)->find('menu', 0)->innertext());
                                 $action = (string) $xml->find('name', 0)->innertext();
@@ -540,13 +703,13 @@ class Apps_Processor extends SiteBill {
                                 }
                                 if ($add_to_menu) {
                                     $menu[$action]['title'] = $title;
-                                    $menu[$action]['href'] = 'index.php?action=' . $action;
+                                    $menu[$action]['href'] = SITEBILL_MAIN_URL.'/admin/?action=' . $action;
                                     if (isset($_REQUEST[$action]) AND ( $_REQUEST[$action] == $action)) {
                                         $menu[$action]['active'] = 1;
                                     }
                                 }
                                 $menu_all[$action]['title'] = $title;
-                                $menu_all[$action]['href'] = 'index.php?action=' . $action;
+                                $menu_all[$action]['href'] = SITEBILL_MAIN_URL.'/admin/?action=' . $action;
                                 $menu_all[$action]['backend_menu'] = $add_to_menu;
                             }
                         }
@@ -575,12 +738,23 @@ class Apps_Processor extends SiteBill {
             return 0;
         }
     }
+    
+    /**
+     * Возвращает путь к папке глобальных модификаций
+     * @return string
+     */
+    function getCustomisationFolder(){
+        return SITEBILL_DOCUMENT_ROOT.'/customisation';
+    }
 
     /**
      * Обновляем записи в таблице apps
      * @param type $apps_array
      */
     function update_apps_cache($apps_array) {
+        
+        $common_local_folder = $this->getCustomisationFolder();
+        
         $DBC = DBC::getInstance();
 
         //Сначала создадим таблицу apps для хранения информации о приложениях
@@ -615,6 +789,14 @@ class Apps_Processor extends SiteBill {
                 $local_admin_path = '';
                 $preload = 0;
                 $frontend = 0;
+                
+                $has_custom_site = false;
+                
+                /**
+                 * TODO
+                 * has_customization - есть локализация в папке customization
+                 * has_tpl_localization - есть локализация в шаблоне
+                 */
 
                 if (file_exists($this->apps_dir . '/' . $apps_name . '/admin/admin.php')) {
                     $admin_path = $this->apps_dir . '/' . $apps_name . '/admin/admin.php';
@@ -624,7 +806,9 @@ class Apps_Processor extends SiteBill {
                     $local_admin_path = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $apps_name . '/admin/admin.php';
                     //require_once ($local_admin_path);
                     //$app_class_name_admin = $apps_name.'_admin';
-                }
+                }/*elseif(file_exists($common_local_folder . '/apps/' . $apps_name . '/admin/admin.php')){
+                    
+                }*/
 
 
                 if (file_exists($this->apps_dir . '/' . $apps_name . '/site/site.php')) {
@@ -645,6 +829,13 @@ class Apps_Processor extends SiteBill {
                     $app_class_name = 'local_' . $apps_name . '_site';
                     require_once ($local_site_path);
                 }
+                /*if (file_exists($common_local_folder . '/apps/' . $apps_name . '/site/local_site.php')) {
+                    $has_custom_site = true;
+                    require_once ($admin_path);
+                    $local_site_path = $common_local_folder . '/apps/' . $apps_name . '/site/local_site.php';
+                    $app_class_name = 'local_' . $apps_name . '_site';
+                    require_once ($local_site_path);
+                }*/
 
                 if ($app_class_name != '') {
                     //echo $app_class_name.'<br>';
@@ -677,6 +868,8 @@ class Apps_Processor extends SiteBill {
                 if (in_array($apps_name, $priviledged_apps)) {
                     $active = 1;
                 }
+                /*$query = 'INSERT INTO ' . DB_PREFIX . '_apps (`name`, `title`, `active`, `href_admin`, `admin_path`, `local_admin_path`, `site_path`, `local_site_path`, `preload`, `frontend`, `backend_menu`, `has_custom_site`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+                $stmt = $DBC->query($query, array($apps_name, $apps_items['title'], $active, $apps_items['href'], $admin_path, $local_admin_path, $site_path, $local_site_path, $preload, $frontend, $apps_items['backend_menu'], intval($has_custom_site)));*/
                 $query = 'INSERT INTO ' . DB_PREFIX . '_apps (`name`, `title`, `active`, `href_admin`, `admin_path`, `local_admin_path`, `site_path`, `local_site_path`, `preload`, `frontend`, `backend_menu`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
                 $stmt = $DBC->query($query, array($apps_name, $apps_items['title'], $active, $apps_items['href'], $admin_path, $local_admin_path, $site_path, $local_site_path, $preload, $frontend, $apps_items['backend_menu']));
                 //echo $DBC->getLastError();
@@ -747,5 +940,3 @@ class Apps_Processor extends SiteBill {
     }
 
 }
-
-?>

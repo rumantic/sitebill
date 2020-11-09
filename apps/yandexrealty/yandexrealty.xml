@@ -8,9 +8,9 @@
     <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
     <license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>true</backendMenu>
-    <version status="beta">1.8.25</version>
+    <version status="beta">1.9.12</version>
     <administration>
         <!-- Administration Menu Section -->
         <menu>Выгрузка Яндекс.Недвижимость</menu>
-    </administration>	
+    </administration>
 </install>

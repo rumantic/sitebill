@@ -28,6 +28,22 @@ class Menu_Structure_Manager extends Object_Manager {
     function get_menu_structure_model() {
         $form_menu_structure = array();
         $languages = Multilanguage::availableLanguages();
+        
+        $default_lng = '';
+		if(1 == $this->getConfigValue('apps.language.use_default_as_ru')){
+			$default_lng = 'ru';
+		}elseif('' != trim($this->getConfigValue('apps.language.use_as_default'))){
+			$default_lng = trim($this->getConfigValue('apps.language.use_as_default'));
+		}
+
+		if($default_lng != ''){
+			foreach ($languages as $k => $lng) {
+				if ($lng == $default_lng) {
+					unset($languages[$k]);
+					break;
+				}
+			}
+		}
 
 
         $form_menu_structure['menu_structure']['menu_structure_id']['name'] = 'menu_structure_id';

@@ -25,17 +25,21 @@ class Slide_Menu extends Structure_Manager {
         ';
         if(isset($category_structure['childs'][0]) && count($category_structure['childs'][0])>0){
         	foreach ( $category_structure['childs'][0] as $item_id => $categoryID ) {
-        		if($category_structure['catalog'][$categoryID]['url']!=''){
-        			if ( preg_match('/^http/', $category_structure['catalog'][$categoryID]['url']) ) {
-        				$rs .= '<li><a href="'.$category_structure['catalog'][$categoryID]['url'].'">'.$category_structure['catalog'][$categoryID]['name'].'</a>';
-        			} else {
-        				$rs .= '<li><a href="'.SITEBILL_MAIN_URL.'/'.$category_structure['catalog'][$categoryID]['url'].(false===strpos($category_structure['catalog'][$categoryID]['url'], '.') ? self::$_trslashes : '').'">'.$category_structure['catalog'][$categoryID]['name'].'</a>';
-        			}
-        			 
-        		}else{
-        			$rs .= '<li><a href="'.SITEBILL_MAIN_URL.'/topic'.$categoryID.'.html">'.$category_structure['catalog'][$categoryID]['name'].'</a>';
-        		}
-        		 
+                
+                $href = '';
+            
+                if ($category_structure['catalog'][$categoryID]['url'] != '') {
+                    if (preg_match('/^http/', $category_structure['catalog'][$categoryID]['url'])) {
+                        $href = $category_structure['catalog'][$categoryID]['url'];
+                    } else {
+                        $href = $this->createUrlTpl($category_structure['catalog'][$categoryID]['url']);
+                    }
+                } else {
+                    $href = $this->createUrlTpl('topic' . $categoryID . '.html');
+                }
+                
+                $rs .= '<li><a href="'.$href.'">'.$category_structure['catalog'][$categoryID]['name'].'</a>';
+            
         		$rs .= $this->getChildNodes($categoryID, $category_structure, $level + 1, $current_category_id);
         		$rs .= '</li>';
         	}
@@ -62,17 +66,21 @@ class Slide_Menu extends Structure_Manager {
     	}
     	$rs .= '<ul>';
         foreach ( $category_structure['childs'][$categoryID] as $child_id ) {
-           // $rs .= '<li><a href="'.SITEBILL_MAIN_URL.'/?topic_id='.$child_id.'">'.$category_structure['catalog'][$child_id]['name'].'</a>';
-       		if($category_structure['catalog'][$child_id]['url']!=''){
-                if ( preg_match('/^http/', $category_structure['catalog'][$child_id]['url']) ) {
-                    $rs .= '<li><a href="'.$category_structure['catalog'][$child_id]['url'].'">'.$category_structure['catalog'][$child_id]['name'].'</a>';
+            
+            $href = '';
+            
+            if ($category_structure['catalog'][$child_id]['url'] != '') {
+                if (preg_match('/^http/', $category_structure['catalog'][$child_id]['url'])) {
+                    $href = $category_structure['catalog'][$child_id]['url'];
                 } else {
-                    $rs .= '<li><a href="'.SITEBILL_MAIN_URL.'/'.$category_structure['catalog'][$child_id]['url'].(false===strpos($category_structure['catalog'][$child_id]['url'], '.') ? self::$_trslashes : '').'">'.$category_structure['catalog'][$child_id]['name'].'</a>';
+                    $href = $this->createUrlTpl($category_structure['catalog'][$child_id]['url']);
                 }
-            	//$rs .= '<li><a href="'.SITEBILL_MAIN_URL.'/'.$category_structure['catalog'][$child_id]['url'].(false===strpos($category_structure['catalog'][$child_id]['url'], '.') ? self::$_trslashes : '').'">'.$category_structure['catalog'][$child_id]['name'].'</a>';
-            }else{
-            	$rs .= '<li><a href="'.SITEBILL_MAIN_URL.'/topic'.$child_id.'.html">'.$category_structure['catalog'][$child_id]['name'].'</a>';
+            } else {
+                $href = $this->createUrlTpl('topic' . $child_id . '.html');
             }
+                
+       		$rs .= '<li><a href="'.$href.'">'.$category_structure['catalog'][$child_id]['name'].'</a>';
+            
             if ( count($category_structure['childs'][$child_id]) > 0 ) {
                 $rs .= $this->getChildNodes($child_id, $category_structure, $level + 1, $current_category_id);
             }

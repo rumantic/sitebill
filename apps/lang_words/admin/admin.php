@@ -48,6 +48,17 @@ class lang_words_admin extends Object_Manager {
     protected function _reloadAction() {
         $rs .= $this->create_lang_words_table().'<br>';
         Multilanguage::reLoadWords();
+        $available_languages = Multilanguage::availableLanguages();
+        if ( is_array($available_languages) and @count($available_languages) > 0 ) {
+            $init_languages_array = $available_languages;
+        } else {
+            $init_languages_array = array('ru');
+        }
+        foreach ( $init_languages_array as $lang_key ) {
+            Multilanguage::set_current_lang($lang_key);
+            Multilanguage::appendTemplateDictionary($this->getConfigValue('theme'), true);
+        }
+
         $rs .= _e('Перегрузка слов выполнена успешно').'<br>';
         return $rs;
     }
@@ -115,7 +126,7 @@ class lang_words_admin extends Object_Manager {
         $form_data['lang_words']['word_app']['type'] = 'safe_string';
         $form_data['lang_words']['word_app']['required'] = 'on';
         $form_data['lang_words']['word_app']['unique'] = 'off';
-        
+
         $form_data['lang_words']['word_pack']['name'] = 'word_pack';
         $form_data['lang_words']['word_pack']['title'] = _e('Метка для поиска');
         $form_data['lang_words']['word_pack']['value'] = '';

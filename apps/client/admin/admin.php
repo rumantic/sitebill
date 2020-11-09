@@ -34,7 +34,9 @@ class client_admin extends Object_Manager {
         $config_admin->addParamToConfig('apps.client.frontend_enable', '0', 'Открыть доступ к выбору клиентов в ЛК', 1);
         $config_admin->addParamToConfig('apps.client.create_client_on_user_register', '0', 'Создавать запись в таблице client с данными пользователя при регистрации', 1);
         $config_admin->addParamToConfig('apps.client.antispam_disable', '0', 'Отключить проверку на спам-сообщения в заявках (не рекомендуется)', 1);
-        
+        $config_admin->addParamToConfig('apps.client.hide_user_id_on_frontend', '0', 'apps.client.hide_user_id_on_frontend (dev param)', 1);
+
+
         //$this->install();
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/client/admin/client_model.php');
         $Object = new Client_Model();
@@ -64,6 +66,13 @@ class client_admin extends Object_Manager {
 
 
         $this->data_model = $form_data;
+        if ( isset($this->data_model[$this->table_name]['user_id']) and $this->getConfigValue('apps.client.hide_user_id_on_frontend') ) {
+            $this->data_model[$this->table_name]['user_id']['type'] = 'hidden';
+            $this->data_model[$this->table_name]['user_id']['name'] = 'user_id';
+            $this->data_model[$this->table_name]['user_id']['value'] = $this->getSessionUserId();
+        }
+
+
     }
 
     function redefine_primary_key ( $form_data ) {
@@ -158,15 +167,15 @@ class client_admin extends Object_Manager {
         }
         return $rs;
     }
-    
-    
+
+
     protected function _newAction() {
         $rs = '';
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         $form_data = $this->data_model;
-        
+
         if ($form_data[$this->table_name]['date']['type'] == 'date') {
             $form_data[$this->table_name]['date']['value'] = time();
         }
@@ -174,7 +183,7 @@ class client_admin extends Object_Manager {
         $rs = $this->get_form($form_data[$this->table_name]);
         return $rs;
     }
-    
+
 
     protected function _new_doneAction() {
         $rs = '';
@@ -220,7 +229,7 @@ class client_admin extends Object_Manager {
         }
         return $rs;
     }
-    
+
     function create_client_on_user_register ( $user_data ) {
         //$this->writeLog(__METHOD__.', user_data '. var_export($user_data, true));
         $this->data_model[$this->table_name]['status_id']['value'] = 'Новая';
@@ -229,7 +238,7 @@ class client_admin extends Object_Manager {
         $this->data_model[$this->table_name]['phone']['value'] = $user_data['phone']['value'];
         $new_record_id = $this->add_data($this->data_model[$this->table_name]);
         //$this->writeLog(__METHOD__.', $new_record_id '.$new_record_id);
-        
+
         if ($this->getError()) {
             $this->writeLog(__METHOD__.', error '.$this->GetErrorMessage());
         }
@@ -312,7 +321,7 @@ class client_admin extends Object_Manager {
         $comments = comment_admin::getCommentsWithUser('client', $data[$this->primary_key]['value']);
 
         $now = time();
-        //echo 
+        //echo
         foreach ($comments as &$c) {
             //$d=$now-strtotime($c['comment_date']);
             $cd = strtotime($c['comment_date']);
@@ -576,7 +585,7 @@ class client_admin extends Object_Manager {
                         $preview_name_tmp = "_tmp" . uniqid() . '_' . time() . "_" . $i . "." . $ext;
 
                         if (!move_uploaded_file($_FILES['imgfile']['tmp_name'], $document_root . '/' . $imgfile_directory . $preview_name_tmp)) {
-                            
+
                         } else {
                             list($width, $height) = $this->makePreview($document_root . '/' . $imgfile_directory . $preview_name_tmp, $document_root . '/' . $imgfile_directory . $preview_name, 160, 160, $ext, 1);
                             unlink($document_root . '/' . $imgfile_directory . $preview_name_tmp);
@@ -674,7 +683,7 @@ class client_admin extends Object_Manager {
                 $Client_Order = new Client_Order();
             }
 
-            
+
             $model = $this->getRequestValue('model');
             $this->writeLog(array('apps_name' => 'apps.client', 'method' => __METHOD__, 'message' => 'save_order_form', 'type' => NOTICE));
 
@@ -686,7 +695,7 @@ class client_admin extends Object_Manager {
 
 
             if ($user_id == 0) {
-                
+
             } elseif ($_SESSION['current_user_group_name'] == 'admin') {
                 $access_allow = true;
             } elseif (preg_match('/^' . preg_quote($this->getServerFullUrl() . '/account', '/') . '/', $_SERVER['HTTP_REFERER']) && $this->getConfigValue('apps.client.frontend_enable')) {
@@ -737,7 +746,7 @@ class client_admin extends Object_Manager {
             $access_allow = false;
 
             if ($user_id == 0) {
-                
+
             } elseif ($_SESSION['current_user_group_name'] == 'admin') {
                 $access_allow = true;
             } elseif ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
@@ -774,7 +783,7 @@ class client_admin extends Object_Manager {
 
             return json_encode($ret);
         } else {
-            
+
         }
         return false;
     }

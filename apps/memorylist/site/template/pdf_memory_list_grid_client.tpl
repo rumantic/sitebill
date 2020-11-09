@@ -11,45 +11,98 @@ body {
 	font-family: "verdana"; font-size: 12px;
 }
 .data_grid_item {
-  border: 1px solid #eee; width: 100%; margin-bottom: 20px;
+  width: 100%;
+  margin-bottom: 20px;
 }
-.data_grid_item td {
-  border: 1px solid #eee;
-  padding: 5px;
+.data_grid_item td, .data_grid_item th {
+  padding: 5px 10px;
+  border: 1px solid Gray;
 }
-.rgallery img {
-  width: 100px;
+.data_grid_item .rgallery  td {
+  padding: 10px;
+  border: 0;
+}
 
+.rgallery .rgallery-item {
+  width: 110px;
+  height: 80px;
+  overflow: hidden;
+}
+.rgallery .rgallery-item img {
+  width: 110px;
+  max-width: 110px;
 }
 </style>
 {/literal}
 </head>
 <body>
+    
 {foreach $grid_items item=item key=key}
 <table class="data_grid_item">
+    <tr>
+        <th style="background-color: #eee;">{$item.id.value}</th>
+        <th>{$item.topic_id.value_string}</th>
+        <th>{if floatval($item.price.value) != 0}{floatval($item.price.value)|number_format:0:".":" "}{if isset($item.currency_id) && $item.currency_id.value != 0}{$item.currency_id.value_string}{/if}{/if}</th>
+      </tr>
+  
   <tr>
-    <td><strong>{$item.id.value}</strong></td>
-    <td>{$item.topic_id.value_string}</td>
-  </tr>
-  {if is_array($item.image.value)}
-  <tr>
+    <td>Адрес</td>
     <td colspan="2">
-      <div class="rgallery">
-          {foreach from=$item.image.value item=image}
+      {assign var=c value=array()}
+      {if $item.region_id.value > 0}
+        {append var=c value=$item.region_id.value_string}
+      {/if}
+      {if $item.city_id.value > 0}
+        {append var=c value=$item.city_id.value_string}
+      {/if}
+      {if $item.district_id.value > 0}
+        {append var=c value=$item.district_id.value_string}
+      {/if}
+      {if $item.street_id.value > 0}
+        {append var=c value=$item.street_id.value_string}
+      {/if}
+      {if $item.number.value != ''}
+        {append var=c value=$item.number.value}
+      {/if}
+      {if $item.flat_nr.value != ''}
+        {append var=c value='кв. '|cat:$item.flat_nr.value}
+      {/if}
+      {if !empty($c)}{$c|implode:", "}{/if}
 
-            {if $image.remote === 'true'}
-              <a href="{$image.preview}"><img src="{$image.preview}" /></a>
-      			{else}
-      				<img src="{$_core_folder}/img/data/{$image.preview}" />
-      			{/if}
-          {/foreach}
-      </div>
+
     </td>
   </tr>
+  {if $item.text.value != ''}
+    <tr>
+      <td>Описание</td>
+      <td colspan="2">{$item.text.value}</td>
+    </tr>
   {/if}
+    {if is_array($item.image.value)}
+    <tr>
+      <td colspan="3">
+        <table class="rgallery">
+          <tr>
+            {foreach from=$item.image.value item=image name=j}
+              <td>
+              {if $image.remote === 'true'}
+                <a href="{$item._href}" target="_blank"><div class="rgallery-item"><img src="{mediaincpath data=$image type='preview' src=2}" /></div></a>
+              {else}
+                <div class="rgallery-item"><img src="{mediaincpath data=$image type='preview' src=2}" /></div>
+              {/if}
+            </td>
+            {if $smarty.foreach.j.iteration%5 == 0}
+              </tr><tr>
+            {/if}
+            {/foreach}
+          </tr>
+        </table>
+      </td>
+  </tr>
+  {/if}
+  
 </table>
 {/foreach}
-
 
 </body>
 </html>

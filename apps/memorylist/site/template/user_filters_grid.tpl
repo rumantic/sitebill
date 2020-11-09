@@ -52,17 +52,20 @@ $(document).ready(function(){
 			{if 1==0}<a class="btn btn-mini btn-info" href="{$etstate_folder}/memorylist/?do=showfilter&filter_id={$user_filter.memorylist_id}">
 				<i class="icon-edit bigger-120"></i>
 			</a>{/if}
+            <a class="btn btn-mini btn-info show" target="_blank" href="{$user_filter._show_link}">
+				<i class="icon-align-justify icon-white"></i> Смотреть
+			</a>
 			{if $memorylist_pdf==1}
-			<a class="btn btn-mini btn-success goPDF" target="_blank" href="{$etstate_folder}/memorylist/?do=getpdf&filter_id={$user_filter.memorylist_id}">
+			<a class="btn btn-mini btn-success goPDF" target="_blank" href="{$user_filter._pdf_link}">
 				<i class="icon-print icon-white"></i> PDF
 			</a>
 			{/if}
 			{if $memorylist_excel==1 && 1==0}
-			<a class="btn btn-mini btn-success goExcell" target="_blank" href="{$etstate_folder}/memorylist/?do=getexcel&filter_id={$user_filter.memorylist_id}">
+			<a class="btn btn-mini btn-success goExcell" target="_blank" href="{$user_filter._excel_link}">
 				<i class="icon-file bigger-120"></i> Excell
 			</a>
 			{/if}
-			<a class="btn btn-mini btn-danger" href="{$etstate_folder}/memorylist/?do=delete&filter_id={$user_filter.memorylist_id}">
+			<a class="btn btn-mini btn-danger" href="{$user_filter._delete_link}">
 				<i class="icon-trash icon-white"></i> Удалить
 			</a>
 		</td>

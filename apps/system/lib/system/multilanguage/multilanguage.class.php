@@ -18,7 +18,7 @@ function _translate($t) {
     } else {
         $key = $sitebill->transliteMe($t['t']);
     }
-     * 
+     *
      */
     $key = md5($t['t']);
 
@@ -27,7 +27,7 @@ function _translate($t) {
     if (strlen($key) > 100) {
         $key = substr($key, 0, 100) . '_' . substr(md5($key), 0, 7);
     }
-     * 
+     *
      */
     Multilanguage::appendTemplateDictionary($sitebill->getConfigValue('theme'));
     if (!Multilanguage::is_set_any($key, $template_key)) {
@@ -78,6 +78,10 @@ class Multilanguage {
     private static $is_tpl_loaded = false;
     private static $all_db_records = array();
 
+    public static function set_current_lang ($lang) {
+        self::$current_lang = $lang;
+    }
+
     public static function start($mode = '', $lang_code = '') {
         self::setOptions($mode, $lang_code);
     }
@@ -124,7 +128,7 @@ class Multilanguage {
             }
         }
     }
-    
+
     public static function _any($key, $app = '') {
         //echo 'key = '.$key.', app = '.$app.'<br>';
             if (isset(self::$words[$key])) {
@@ -132,17 +136,17 @@ class Multilanguage {
             } elseif (isset(self::$apps_words['empty'][$key])) {
                 return self::$apps_words['empty'][$key];
             }
-        
+
         if ($app != '' && isset(self::$apps_words[$app])) {
             if (isset(self::$apps_words[$app][$key])) {
                 return self::$apps_words[$app][$key];
             } else {
                 return $app . '.' . $key;
             }
-        }       
+        }
         return $key;
     }
-    
+
 
     public static function _($key, $app = '') {
         //echo 'key = '.$key.', app = '.$app.'<br>';
@@ -169,11 +173,17 @@ class Multilanguage {
         }
     }
 
-    public static function appendAppDictionary($app_name, $template = '', $force = false) {
+    public static function appendAppDictionary($app_name, $template = '', $force = false, $reload_language = false) {
         //return;
-        if (isset(self::$apps_words[$app_name])) {
+        if ( $reload_language ) {
+            $current_language = $reload_language;
+        } else {
+            $current_language = self::$current_lang;
+        }
+
+        if (isset(self::$apps_words[$app_name]) and !$force) {
             return;
-        } elseif (self::$current_lang == '') {
+        } elseif ($current_language == '') {
             return;
         }
         //if ( !$force ) {
@@ -183,7 +193,7 @@ class Multilanguage {
         //echo 'app '.$app_name.'<br>';
 
         global $smarty;
-        $file_name = SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_name . '/language/' . self::$current_lang . '/dictionary.ini';
+        $file_name = SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_name . '/language/' . $current_language . '/dictionary.ini';
 
         if (file_exists($file_name)) {
             self::$apps_words[$app_name] = parse_ini_file($file_name, true);
@@ -201,10 +211,10 @@ class Multilanguage {
         $SConfig = SConfig::getInstance();
         $template = $SConfig->getConfigValue('theme');
 
-        if ($template != '' && file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $template . '/apps/' . $app_name . '/language/' . self::$current_lang . '/dictionary.ini')) {
+        if ($template != '' && file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $template . '/apps/' . $app_name . '/language/' . $current_language . '/dictionary.ini')) {
             $words = self::$apps_words[$app_name];
 
-            $new_words = parse_ini_file(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $template . '/apps/' . $app_name . '/language/' . self::$current_lang . '/dictionary.ini', true);
+            $new_words = parse_ini_file(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $template . '/apps/' . $app_name . '/language/' . $current_language . '/dictionary.ini', true);
             if (isset(self::$apps_words[$app_name])) {
                 self::$apps_words[$app_name] = array_merge(self::$apps_words[$app_name], $new_words);
             } else {
@@ -279,7 +289,7 @@ class Multilanguage {
                 self::$all_db_records[$ar['word_app']][$ar['word_key']] = true;
                 //echo $ar['word_key'].' = '.$ar['word_default'].'<br>';
                 self::$apps_words[$ar['word_app']][$ar['word_key']] = $ar['word_default'];
-                if ($ar['word_app'] == 'empty') {
+                if ($ar['word_app'] == 'empty' || $ar['word_app'] == $template_key) {
                     self::$words[$ar['word_key']] = $ar['word_default'];
                 }
                 if ($ar['word_app'] == $template_key) {
@@ -302,11 +312,11 @@ class Multilanguage {
     }
 
     private function __construct() {
-        
+
     }
 
     private function __clone() {
-        
+
     }
 
     private static function setOptions($mode, $lang_code) {
@@ -345,10 +355,25 @@ class Multilanguage {
     }
 
     public static function reLoadWords() {
-        self::loadBackendWords();
-        self::loadFrontendWords();
-        self::$words = array_merge(self::$words, self::$backend_words);
-        self::$words = array_merge(self::$words, self::$frontend_words);
+        $init_languages_array = array('ru');
+        $available_languages = self::availableLanguages();
+        if ( is_array($available_languages) and @count($available_languages) > 0 ) {
+            $init_languages_array = $available_languages;
+        }
+
+        if ( is_array(self::$apps_words) ) {
+            foreach ( $init_languages_array as $lang_key ) {
+                self::$all_db_records = array();
+                self::$current_lang = $lang_key;
+                foreach ( self::$apps_words as $app_name => $app_array ) {
+                    self::appendAppDictionary($app_name, '', true, $lang_key);
+                }
+                self::loadBackendWords();
+                self::loadFrontendWords();
+                self::$words = array_merge(self::$words, self::$backend_words);
+                self::$words = array_merge(self::$words, self::$frontend_words);
+            }
+        }
     }
 
     private static function loadWords() {
@@ -378,8 +403,8 @@ class Multilanguage {
           } */
     }
 
-    public static function appendTemplateDictionary($template_name) {
-        if (self::$is_tpl_loaded) {
+    public static function appendTemplateDictionary($template_name, $force = false) {
+        if (self::$is_tpl_loaded and !$force) {
             return;
         }
         global $smarty;
@@ -407,7 +432,7 @@ class Multilanguage {
     private static function loadBackendWords() {
         $file_name = SITEBILL_DOCUMENT_ROOT . '/apps/language/language/' . self::$current_lang . '/backend.ini';
         if (file_exists($file_name)) {
-            
+
         } else {
             $file_name = SITEBILL_DOCUMENT_ROOT . '/apps/language/language/' . self::$default_lang . '/backend.ini';
         }
@@ -421,7 +446,7 @@ class Multilanguage {
     private static function loadFrontendWords() {
         $file_name = SITEBILL_DOCUMENT_ROOT . '/apps/language/language/' . self::$current_lang . '/frontend.ini';
         if (file_exists($file_name)) {
-            
+
         } else {
             $file_name = SITEBILL_DOCUMENT_ROOT . '/apps/language/language/' . self::$default_lang . '/frontend.ini';
         }

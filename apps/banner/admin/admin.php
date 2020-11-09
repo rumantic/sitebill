@@ -53,6 +53,13 @@ class banner_admin extends Object_Manager {
 
     function getInformer() {
         $client = $_GET['client'];
+        
+        $informer_cache = SITEBILL_DOCUMENT_ROOT . '/cache/informer_cache_'.$client.'.txt';
+        if(file_exists($informer_cache) && (time()-filemtime($informer_cache)) < 3600){
+            return file_get_contents($informer_cache);
+            exit();
+        }
+        
         $client_info = $this->getClientInfo($client);
         if (false === $client_info) {
             return '';
@@ -271,6 +278,11 @@ class banner_admin extends Object_Manager {
         //$stpl=SITEBILL_DOCUMENT_ROOT.'/apps/banner/site/template/slider_vert.js';
         $smarty->assign('data', json_encode($result));
         $text = $smarty->fetch($stpl);
+        
+        $f = fopen($informer_cache, 'w');
+        fwrite($f, $text);
+        fclose($f);
+        
         return $text;
         /* if($client==1){
           $text='(function(g) {document.getElementById("sInformer").innerHTML=g.data})('.json_encode($result).')';

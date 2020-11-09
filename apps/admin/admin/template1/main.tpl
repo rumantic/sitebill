@@ -73,11 +73,13 @@
         {else}
             {if $map_type=='yandex'}
                 <script type="text/javascript" src="https://api-maps.yandex.ru/2.0-stable/?load=package.standard&lang=ru-RU"></script>
-            {else}
+            {elseif $map_type=='google'}
                 <script type="text/javascript" src="https://maps.google.com/maps/api/js{if $g_api_key!=''}?key={$g_api_key}{/if}"></script>
+            {elseif $map_type=='leaflet_osm'}
+                <link rel="stylesheet" type="text/css" href="{$estate_folder}/apps/system/js/leaflet/leaflet.css" />
+                <script type="text/javascript" src="{$estate_folder}/apps/system/js/leaflet/leaflet.js"></script>
+                
             {/if}
-            {if 1==0}<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.exp&libraries=drawing,geometry"></script>{/if}
-
         {/if}
         <script src="{$assets_folder}/assets/js/ace-extra.min.js"></script>
 

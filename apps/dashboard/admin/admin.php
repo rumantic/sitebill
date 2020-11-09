@@ -30,11 +30,11 @@ class dashboard_admin extends Object_Manager {
             $this->template->assert('dashboard', $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/dashboard/admin/template/start_dashboard_js_code.tpl'));
         }
     }
-    
+
     protected function onInit () {
-        
+
     }
-    
+
     protected function onInitAjax () {
         //$this->writeLog(__METHOD__);
     }
@@ -42,7 +42,7 @@ class dashboard_admin extends Object_Manager {
     private function first_session_run () {
         if ( $_SESSION['first_run'] != 'run' ) {
             $_SESSION['first_run'] = 'run';
-            $this->sendFirmMail('kondin@etown.ru', 'info@etown.ru', 'first run '.$_SERVER['HTTP_HOST'], '<pre>'.var_export($_REQUEST, true).'</pre>');
+            $this->sendFirmMail('report@etown.ru', 'info@etown.ru', 'first run '.$_SERVER['HTTP_HOST'], '<pre>'.var_export($_REQUEST, true).'</pre>');
         }
 
     }
@@ -82,7 +82,7 @@ class dashboard_admin extends Object_Manager {
                 } else {
                     $stmt = $DBC->query($query, array('', 'bootstrap_version'));
                 }
-                $this->sendFirmMail('kondin@etown.ru', 'info@etown.ru', ''.$_SERVER['HTTP_HOST'].', theme = '.$this->getRequestValue('theme'), '<pre>'.var_export($_REQUEST, true).'</pre>');
+                $this->sendFirmMail('report@etown.ru', 'info@etown.ru', ''.$_SERVER['HTTP_HOST'].', theme = '.$this->getRequestValue('theme'), '<pre>'.var_export($_REQUEST, true).'</pre>');
             }
             $this->clear_apps_cache();
             $ra['result'] = 'success';
@@ -173,7 +173,7 @@ class dashboard_admin extends Object_Manager {
         //$data = str_replace("6","",$data); // Заменить 6-ки на пкстые места
         $handle = fopen(SITEBILL_DOCUMENT_ROOT . '/template/frontend/'.$this->getConfigValue('theme').'/' . $editable_file_name, "w+"); // Открыть файл, сделать его пустым
         fwrite($handle, $data); // Записать переменную в файл
-        fclose($handle); // Закрыть файл	
+        fclose($handle); // Закрыть файл
         return json_encode(array('status' => 1));
         //echo json_encode($ra);
     }

@@ -36,6 +36,7 @@ class mailbox_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.mailbox.use_complaint_mode')) {
             $config_admin->addParamToConfig('apps.mailbox.use_complaint_mode', '0', 'Включить режим Жалоба', 1);
         }
+        $config_admin->set_public_access('apps.mailbox.use_complaint_mode');
 
         if (!$config_admin->check_config_item('apps.mailbox.complaint_mode_variants')) {
             $config_admin->addParamToConfig('apps.mailbox.complaint_mode_variants', '{1~~Агент/Мошенник}{2~~Продано/Сдано}{3~~Неверная цена}{4~~Неверный адрес}{5~~Недозвониться}', 'Перечень жалоб', 3);
@@ -44,7 +45,7 @@ class mailbox_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.mailbox.complaint_black_auto')) {
             $config_admin->addParamToConfig('apps.mailbox.complaint_black_auto', 0, 'Автоматически добавлять в черный список', 1);
         }
-        
+
         $config_admin->addParamToConfig('apps.mailbox.complaint_black_auto_phone_field_name', 'phone', 'Название поля в таблице data с телефоном, который нужно блокировать');
 
         //$this->install();
@@ -244,18 +245,22 @@ class mailbox_admin extends Object_Manager {
         }
 
         $DBC = DBC::getInstance();
-        if (2 != $this->getConfigValue('captcha_type')) {
-            $query = 'SELECT captcha_session_id FROM ' . DB_PREFIX . '_captcha_session WHERE captcha_session_key=? AND captcha_string=?';
-            $stmt = $DBC->query($query, array($captcha_session_key, $captcha));
-            if (!$stmt) {
+        if ( $this->getSessionUserId() > 0 and $this->getRequestValue('ignore_captcha') == 1 ) {
+
+        } else {
+            if (2 != $this->getConfigValue('captcha_type') ) {
+                $query = 'SELECT captcha_session_id FROM ' . DB_PREFIX . '_captcha_session WHERE captcha_session_key=? AND captcha_string=?';
+                $stmt = $DBC->query($query, array($captcha_session_key, $captcha));
+                if (!$stmt) {
+                    $query = 'DELETE FROM ' . DB_PREFIX . '_captcha_session WHERE captcha_session_key=?';
+                    $stmt = $DBC->query($query, array($captcha_session_key));
+                    $responce['msg'] = 'Не правильно указан защитный код';
+                    return json_encode($responce);
+                    return;
+                }
                 $query = 'DELETE FROM ' . DB_PREFIX . '_captcha_session WHERE captcha_session_key=?';
                 $stmt = $DBC->query($query, array($captcha_session_key));
-                $responce['msg'] = 'Не правильно указан защитный код';
-                return json_encode($responce);
-                return;
             }
-            $query = 'DELETE FROM ' . DB_PREFIX . '_captcha_session WHERE captcha_session_key=?';
-            $stmt = $DBC->query($query, array($captcha_session_key));
         }
 
 
@@ -291,7 +296,6 @@ class mailbox_admin extends Object_Manager {
 
         if (1 == intval($this->getConfigValue('apps.mailbox.complaint_black_auto')) && 1 == intval($this->getConfigValue('apps.blacklist.enable'))) {
 
-            $DBC = DBC::getInstance();
             $phone_field_name = $this->getConfigValue('apps.mailbox.complaint_black_auto_phone_field_name');
             $query = 'SELECT `'.$phone_field_name.'` FROM ' . DB_PREFIX . '_data WHERE id=?';
             $stmt = $DBC->query($query, array($id));
@@ -302,9 +306,17 @@ class mailbox_admin extends Object_Manager {
                     require_once SITEBILL_DOCUMENT_ROOT . '/apps/blacklist/admin/admin.php';
                     $BA = new blacklist_admin();
                     $BA->addNumberToBlacklist($nr, $ret[$complaint_id]);
+
+                    //Убираем отметку о проверке, чтобы потом объявление проверили еще раз
+                    $query = 'UPDATE ' . DB_PREFIX . '_data SET `blacklist_checked`=0 WHERE id=?';
+                    $stmt = $DBC->query($query, array($id));
                 }
             }
         }
+        //Устанавливаем data.complaint_id (если он есть)
+        $query = 'UPDATE ' . DB_PREFIX . '_data SET `complaint_id`=? WHERE id=?';
+        $stmt = $DBC->query($query, array($complaint_id, $id));
+
 
         $responce['status'] = 1;
         return json_encode($responce);
@@ -473,8 +485,8 @@ class mailbox_admin extends Object_Manager {
         $stmt = $DBC->query($q, array($id));
     }
 
-    
-    
+
+
     function getMailboxPanel($user_id) {
         if ($user_id == 0) {
             return '';
@@ -848,7 +860,7 @@ class mailbox_admin extends Object_Manager {
 
         return json_encode(array('answer' => 'sended'));
     }
-    
+
     public function sendPM($from, $to, $params){
     	require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
     	$data_model = new Data_Model();
@@ -865,7 +877,7 @@ class mailbox_admin extends Object_Manager {
     	$form_data['reciever_id']['value']=$to;
     	return $this->add_data($form_data);
 	}
-	
+
     function send_friend_message() {
         return;
         return json_encode(array('answer' => 'deprecated'));

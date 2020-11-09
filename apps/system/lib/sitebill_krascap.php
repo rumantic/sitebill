@@ -23,8 +23,9 @@ class SiteBill_Krascap extends SiteBill {
             exit;
         }
         $this->SiteBill();
+        $this->template->assign('google_api_key', $this->getConfigValue('google_api_key'));
     }
-    
+
 
 
     /**
@@ -59,7 +60,7 @@ class SiteBill_Krascap extends SiteBill {
 
     /**
      * Process get form
-     * @param 
+     * @param
      * @return string
      */
     function processGetRentForm() {
@@ -81,7 +82,7 @@ class SiteBill_Krascap extends SiteBill {
     }
 
     protected function FrontAction_isunderconstruct() {
-        
+
     }
 
     protected function FrontAction_yandexrealty_export() {
@@ -185,7 +186,7 @@ class SiteBill_Krascap extends SiteBill {
             $stantdart_yandex_alias = 'yandexrealty';
         }
         if ($yandex_alias !== '') {
-            
+
         } elseif (0 === intval($this->getConfigValue('apps.yandexrealty.disable_standart_entrypoint')) && $REQUESTURIPATH == $stantdart_yandex_alias) {
             $this->FrontAction_yandexrealty_export();
         }
@@ -207,9 +208,9 @@ class SiteBill_Krascap extends SiteBill {
             require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/apps/apps_processor_local.php');
             require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $theme . '/main/main.php');
             $frontend_main = new frontend_main();
-            
+
             return $frontend_main->main();
-            
+
         } else {
             global $__site_title, $folder, $smarty;
             //echo '<br><br><br>******************************************************************<br><br><br>';
@@ -684,7 +685,7 @@ class SiteBill_Krascap extends SiteBill {
     }
 
     /**
-     * Process advanced form 
+     * Process advanced form
      * @param string $key key
      * @return string
      */
@@ -838,7 +839,7 @@ class SiteBill_Krascap extends SiteBill {
         $urls = $Structure->loadCategoriesUrls();
 
         if ($this->getConfigValue('apps.seo.level_enable') == 1) {
-            
+
         } else {
             foreach ($urls as $k => $u) {
                 $up = explode('/', $u);
@@ -1871,7 +1872,7 @@ class SiteBill_Krascap extends SiteBill {
     public function FrontAction_grid_custom($REQUESTURIPATH) {
         return false;
     }
-    
+
     function map_search(){
         global $smarty;
         return $smarty->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/system/template/map_search.tpl');
@@ -1944,7 +1945,7 @@ class SiteBill_Krascap extends SiteBill {
 
             if (!$any_url_catched) {
                 if (preg_match('/^user(\d+)\.html/', $REQUESTURIPATH, $matches)) {
-                    
+
                     $user_id = $matches[1];
                     $query = 'SELECT * FROM ' . DB_PREFIX . '_user WHERE user_id=? LIMIT 1';
                     $stmt = $DBC->query($query, array($user_id));
@@ -2517,15 +2518,15 @@ class SiteBill_Krascap extends SiteBill {
             $fio = $user_info['fio'];
             $title = Multilanguage::_('AGENT_ADS', 'system') . ' ' . $fio;
             $meta_title = $title;
-            
+
             $this->setRequestValue('user_id', $user_info['user_id']);
             $this->setRequestValue('user_view', $REQUESTURIPATH);
-            
+
             $this->template->assign('title', $title);
             $this->template->assign('meta_title', $meta_title);
 
         }  else {
-            
+
             $result = $this->_detectUrlParams(parse_url($REQUESTURIPATH, PHP_URL_PATH));
 
 
@@ -2543,13 +2544,24 @@ class SiteBill_Krascap extends SiteBill {
 
 
             $url_info = parse_url($REQUESTURIPATH);
-            
+
             if (SITEBILL_MAIN_URL != '') {
                 $cmp_url = SITEBILL_MAIN_URL . '';
             } else {
                 $cmp_url = '';
             }
-            if ($this->getRequestValue('country_id') == '' && $this->getRequestValue('city_id') == '' && $this->getRequestValue('topic_id') == '' and ( $url_info['path'] != $cmp_url and $url_info['path'] != $cmp_url . 'index.php' and $url_info['path'] != $cmp_url . 'search/') and $this->getRequestValue('user_id') === NULL) {
+            if (
+                $this->getRequestValue('country_id') == '' &&
+                $this->getRequestValue('city_id') == '' &&
+                $this->getRequestValue('topic_id') == '' and
+                (
+                    $url_info['path'] != $cmp_url and
+                    $url_info['path'] != $cmp_url . 'index.php' and
+                    $url_info['path'] != $cmp_url . 'search/' and
+                    $url_info['path'] != $cmp_url . 'apps/api/rest.php'
+                ) and
+                $this->getRequestValue('user_id') === NULL
+            ) {
                 $sapi_name = php_sapi_name();
 
                 if ($sapi_name == 'cgi' || $sapi_name == 'cgi-fcgi') {
@@ -2707,23 +2719,23 @@ class SiteBill_Krascap extends SiteBill {
 
 
         if ($route_catched) {
-            
+
         } elseif ($predefined_url_catched) {
-            
+
         } elseif ($country_url_catched) {
-            
+
         } elseif ($district_url_catched) {
-            
+
         } elseif ($city_url_catched) {
             if (method_exists($this, 'cityFrontPage')) {
                 return $this->cityFrontPage($city_info);
             }
         } elseif ($region_url_catched) {
-            
+
         } elseif ($complex_url_catched) {
-            
+
         } else {
-            
+
         }
 
         $params_r = $this->gatherRequestParams();
@@ -3512,7 +3524,7 @@ class SiteBill_Krascap extends SiteBill {
     /**
      * Valid page
      * @param int $array_count array count
-     * @param int $counter counter 
+     * @param int $counter counter
      * @param int $page page
      * @return boolean
      */

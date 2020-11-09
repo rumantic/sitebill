@@ -3,10 +3,10 @@
 {foreach from=$model_fields item=model_field}
 	<div class="field well well-sm">
 		<input type="checkbox" name="field[]" value="{$model_field.name}"{if in_array($model_field.name, $used_fields)} checked="checked"{/if}>{$model_field.title} ({$model_field.name})
-		<a href="" class="up btn btn-sm btn-info" title="{_e t="Выше (up)"}"><i class="fa fa-arrow-up"></i></a>
-		<a href="" class="down btn btn-sm btn-info" title="{_e t="Ниже (down)"}"><i class="fa fa-arrow-down"></i></a>
-		<a href="" class="first btn btn-sm btn-info" title="{_e t="Первая (First)"}"><i class="fa fa-fast-backward"></i></a>
-		<a href="" class="last btn btn-sm btn-info" title="{_e t="Последняя (Last)"}"><i class="fa fa-fast-forward"></i></a>
+		<a href="" class="up btn btn-sm btn-info" title="{_e t="Выше (up)"}">{if isset($bootstrap_version) && $bootstrap_version < 3}<i class="icon-white icon-arrow-up"></i>{else}<i class="fa fa-arrow-up"></i>{/if}</a>
+		<a href="" class="down btn btn-sm btn-info" title="{_e t="Ниже (down)"}">{if isset($bootstrap_version) && $bootstrap_version < 3}<i class="icon-white icon-arrow-down"></i>{else}<i class="fa fa-arrow-down"></i>{/if}</a>
+		<a href="" class="first btn btn-sm btn-info" title="{_e t="Первая (First)"}">{if isset($bootstrap_version) && $bootstrap_version < 3}<i class="icon-white icon-backward"></i>{else}<i class="fa fa-fast-backward"></i>{/if}</a>
+		<a href="" class="last btn btn-sm btn-info" title="{_e t="Последняя (Last)"}">{if isset($bootstrap_version) && $bootstrap_version < 3}<i class="icon-white icon-forward"></i>{else}<i class="fa fa-fast-forward"></i>{/if}</a>
 	</div>
 {/foreach}
 </div>

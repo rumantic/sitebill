@@ -491,7 +491,7 @@ class User_Add extends Object_Manager {
         if ($stmt) {
             $ar = $DBC->fetch($stmt);
             if ($ar['cnt'] > 0) {
-                $this->riseError('Такое объявление уже существует');
+                $this->riseError(Multilanguage::_('ADVUNIQUETY_ERROR', 'system'));
                 return FALSE;
             }
         }

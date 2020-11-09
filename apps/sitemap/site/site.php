@@ -18,6 +18,9 @@ class sitemap_site extends sitemap_admin {
 
         if ($REQUESTURIPATH == 'sitemap.xml') {
             $sitemap_prefix = md5($_SERVER['HTTP_HOST']) . '.';
+            if (1 === intval($this->getConfigValue('apps.language.use_langs'))){
+                $sitemap_prefix .= $this->getCurrentLang() . '.';
+            }
             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/cache/' . $sitemap_prefix . 'sitemap.xml')) {
                 $sitemap_created_at = filemtime(SITEBILL_DOCUMENT_ROOT . '/cache/' . $sitemap_prefix . 'sitemap.xml');
                 $time_offset = (int) $this->getConfigValue('apps.sitemap.sitemaplivetime');

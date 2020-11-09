@@ -237,8 +237,8 @@ class News_Grid_Constructor extends Grid_Constructor {
                     $ims = array();
                 }
                 if (isset($ims[0])) {
-                    $ra[$k]['prev_img'] = SITEBILL_MAIN_URL . '/img/data/' . $ims[0]['preview'];
-                    $ra[$k]['norm_img'] = SITEBILL_MAIN_URL . '/img/data/' . $ims[0]['normal'];
+                    $ra[$k]['prev_img'] = $this->createMediaIncPath($ims[0], 'preview');
+                    $ra[$k]['norm_img'] = $this->createMediaIncPath($ims[0]);
                 }
             }
         }

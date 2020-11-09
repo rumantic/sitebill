@@ -223,9 +223,9 @@ class User_Object_Manager extends Object_Manager {
                 $this->set_new_user_id($new_user_id);
 
                 if (1 == $this->getConfigValue('use_registration_email_confirm')) {
-                    
+
                     $password = $form_data[$this->table_name]['newpass']['value'];
-                    
+
                     $activation_code = md5(time() . '_' . rand(100, 999));
                     $query = "UPDATE " . DB_PREFIX . "_user SET pass='" . $activation_code . "' WHERE user_id=" . $new_user_id;
                     $stmt = $DBC->query($query);
@@ -254,7 +254,7 @@ class User_Object_Manager extends Object_Manager {
                 if ( $this->isRedirectDisabled() ) {
                     return true;
                 }
-                
+
                 header('location: ' . SITEBILL_MAIN_URL . '/admin/?action=user');
                 exit();
                 $rs .= $this->grid();
@@ -320,7 +320,7 @@ class User_Object_Manager extends Object_Manager {
         }
 
         if (strlen($form_data['imgfile']['value']) > 0) {
-            //$this->user_image_dir = $form_data['imgfile']['path']; 
+            //$this->user_image_dir = $form_data['imgfile']['path'];
             $this->update_photo($primary_key_value);
         }
 
@@ -363,7 +363,7 @@ class User_Object_Manager extends Object_Manager {
         $max_img_count = 1;
 
         $attached_yet = array();
-        
+
         $i = 0;
         $max_filesize = (int) str_replace('M', '', ini_get('upload_max_filesize'));
         if (isset($parameters['max_file_size']) && (int) $parameters['max_file_size'] != 0) {
@@ -493,7 +493,7 @@ class User_Object_Manager extends Object_Manager {
         $this->delete_uploadify_images($session_key, $field_name);
         return $ra;
     }
-    
+
 
     protected function deleteUserpic($user_id) {
         $DBC = DBC::getInstance();
@@ -552,7 +552,7 @@ class User_Object_Manager extends Object_Manager {
         $new_record_id = $DBC->lastInsertId();
 
         if (strlen($form_data['imgfile']['value']) > 0) {
-            //$this->user_image_dir = $form_data['imgfile']['path']; 
+            //$this->user_image_dir = $form_data['imgfile']['path'];
             //$this->user_image_dir='/img/data/user/';
             $this->update_photo($new_record_id);
         }
@@ -616,7 +616,7 @@ class User_Object_Manager extends Object_Manager {
         }
 
         if (!preg_match('/^([a-zA-Z0-9-_\.@]*)$/', $form_data['login']['value'])) {
-            $this->riseError('Логин может содержать только латинские буквы, цифры, подчеркивание, тире, амперсанд и точку');
+            $this->riseError(_e('Логин может содержать только латинские буквы, цифры, подчеркивание, тире, амперсанд и точку'));
             return false;
         }
 
@@ -735,7 +735,7 @@ class User_Object_Manager extends Object_Manager {
         $this->user_image_dir = '/img/data/user/';
         $imgfile_directory = $this->user_image_dir;
 
-        //$document_root = $_SERVER['DOCUMENT_ROOT'].$add_folder; 
+        //$document_root = $_SERVER['DOCUMENT_ROOT'].$add_folder;
 
 
         $avial_ext = array('jpg', 'jpeg', 'gif', 'png');
@@ -766,7 +766,7 @@ class User_Object_Manager extends Object_Manager {
                         $preview_name_tmp = "_tmp" . uniqid() . '_' . time() . "_" . $i . "." . $ext;
 
                         if (!move_uploaded_file($_FILES['imgfile']['tmp_name'], SITEBILL_DOCUMENT_ROOT . $imgfile_directory . $preview_name_tmp)) {
-                            
+
                         } else {
                             $this->deleteUserpic($user_id);
 
@@ -880,7 +880,7 @@ class User_Object_Manager extends Object_Manager {
         $form_user['user']['notify']['required'] = 'off';
         $form_user['user']['notify']['unique'] = 'off';
         $form_user['user']['notify']['group_id'] = '1';
-        
+
         $form_user['user']['active']['name'] = 'active';
         $form_user['user']['active']['title'] = 'Активен';
         $form_user['user']['active']['value'] = 0;
@@ -1242,7 +1242,7 @@ class User_Object_Manager extends Object_Manager {
 
     /**
      * Get top menu
-     * @param void 
+     * @param void
      * @return string
      */
     function getTopMenu() {

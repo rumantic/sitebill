@@ -38,10 +38,11 @@ class API_comment extends API_Common {
             );
         } else {
             $comment_new_data = $this->comment_admin->load_by_id($new_comment_id);
+            $comment_new_data['comment_date']['value'] = gmdate('Y-m-d H:i:s', strtotime($comment_new_data['comment_date']['value'])).' GMT+0';
             $user_data = $this->user_profile->load_by_id($comment_new_data['user_id']['value']);
             $comment_new_data['user_id']['avatar'] = $this->get_user_avatar($user_data['imgfile']['value']);
             $comment_new_data['user_id']['fio'] = $user_data['fio']['value'];
-            
+
             $ret = array(
                 'status' => 'ok',
                 'message' => 'new comment_id '.$new_comment_id,
@@ -71,6 +72,7 @@ class API_comment extends API_Common {
             $user_data = $this->user_profile->load_by_id($item['user_id']['value']);
             $rows[$index]['user_id']['avatar'] = $this->get_user_avatar($user_data['imgfile']['value']);
             $rows[$index]['user_id']['fio'] = $user_data['fio']['value'];
+            $rows[$index]['comment_date']['value'] = gmdate('Y-m-d H:i:s', strtotime($rows[$index]['comment_date']['value'])).' GMT+0';
         }
 
         $ret = array(
@@ -82,7 +84,7 @@ class API_comment extends API_Common {
         //$this->writeLog(__METHOD__ . ', rows = <pre>' . var_export($rows, true) . '</pre>');
         return $this->json_string($ret);
     }
-    
+
     private function get_user_avatar( $img_name ) {
         if ( $img_name != '' ) {
             return 'http://' . $_SERVER['HTTP_HOST'] . SITEBILL_MAIN_URL . '/img/data/user/' . $img_name;

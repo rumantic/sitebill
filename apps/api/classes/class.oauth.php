@@ -41,6 +41,7 @@ class API_oauth extends API_Common {
                     $ar['admin_panel_login'] = 0;
                 }
                 $ar['success'] = 1;
+                $ar['api_url'] = $this->get_domain_https();
                 $structure = $permission->get_structure();
                 $ar['structure'] = $structure[$ar['group_id']];
                 if ( !$this->getConfigValue('check_permissions') and $structure[$ar['group_id']]['group_name'] != 'admin' ) {
@@ -55,6 +56,9 @@ class API_oauth extends API_Common {
     }
 
     public function _register () {
+        if ( !$this->getConfigValue('allow_register_account') ) {
+            return $this->request_failed('register disabled');
+        }
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php');
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/users/user_object_manager.php');
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/register_using_model.php');
@@ -117,7 +121,7 @@ class API_oauth extends API_Common {
 
     public function _check_session_key() {
         $session_key = $this->request->get('session_key');
-        //В последнюю очередь попробуем получить ключ сессии из SESSION 
+        //В последнюю очередь попробуем получить ключ сессии из SESSION
         //В случае если к API обращается локальный сайт (сам к себе)
         if ($session_key == '') {
             $session_key_local = $this->get_session_key();
@@ -157,11 +161,13 @@ class API_oauth extends API_Common {
                     $Login = new Login();
                     $Login->loadUserInfo($ar['user_id']);
                 }
-                
+
                 $structure = $permission->get_structure();
                 $ar['structure'] = $structure[$_SESSION['current_user_group_id']];
 
                 $ar['success'] = 1;
+                $ar['api_url'] = $this->get_domain_https();
+
                 if ($need_init_oauth) {
                     $ar['session_key'] = $this->init_session_key($ar['user_id']);
                 } else {
@@ -226,11 +232,16 @@ class API_oauth extends API_Common {
         $ar['config']['per_page'] = $this->getConfigValue('per_page');
         $ar['admin_panel_login'] = 0;
         $ar['success'] = 1;
+        $ar['api_url'] = $this->get_domain_https();
 
         $ar['structure']['group_name'] = 'nobody';
         $ar['structure']['data']['access'] = 1;
         $ar['structure']['sale']['access'] = 1;
         return $ar;
+    }
+
+    private function get_domain_https () {
+        return 'https://'.$_SERVER['HTTP_HOST'];
     }
 
 }

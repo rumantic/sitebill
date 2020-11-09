@@ -209,7 +209,7 @@ class logger_admin extends Object_Manager {
     public function write_log($message_array = array()) {
         self::clean_log();
         $DBC = DBC::getInstance();
-        if ( defined(HTTP_X_FORWARDED_FOR) ) {
+        if ( defined('HTTP_X_FORWARDED_FOR') ) {
             $ip = getenv(HTTP_X_FORWARDED_FOR);
         }
         if ($ip == '') {

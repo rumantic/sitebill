@@ -25,20 +25,82 @@ class API_model extends API_Common {
 
     public function _load_config() {
         $SConfig = SConfig::getInstance();
+        $data = $SConfig->getPublicConfig();
+        $data = $this->extract_config_items($data);
+        $local_data = $this->_load_local_config_from_file();
+        if ( $local_data ) {
+            $data = array_merge($data, $local_data);
+        }
 
         $ret = array(
             'state' => 'success',
-            'data' => $SConfig->getPublicConfig(),
+            'data' => $data,
         );
         return $this->json_string($ret);
     }
 
+    private function extract_config_items ( $config ) {
+        $matches = array();
+        preg_match_all('/\{[^\}]+\}/', trim($config['apps.mailbox.complaint_mode_variants']), $matches);
+        if (count($matches) > 0) {
+            foreach ($matches[0] as $v) {
+                $v = str_replace(array('{', '}'), '', $v);
+                $d = explode('~~', $v);
+                $ret[$d[0]] = $d[1];
+            }
+        }
+        $config['apps.mailbox.complaint_mode_variants'] =  $ret;
+        return $config;
+    }
 
-    public function _load_data() {
+    public function _load_local_config_from_file () {
+        if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/local/frontend.php') ) {
+            return include (SITEBILL_DOCUMENT_ROOT.'/template/frontend/local/frontend.php');
+        }
+        return false;
+    }
+
+    public function _load_only_model( $model_name = null, $custom_model_object = null ) {
+        if ( $model_name == null ) {
+            $model_name = $this->request->get('model_name');
+        }
+        if ( $custom_model_object != null ) {
+            $model_object = $custom_model_object;
+        } else {
+            $model_object = $this->init_custom_model_object($model_name);
+        }
+        if ($model_object) {
+            $data_array = $model_object->data_model;
+            foreach ($model_object->data_model[$model_name] as $model_item_array) {
+                $columns[] = $model_item_array;
+            }
+            $columns_index = $this->indexing_columns($columns);
+
+            $tabs = $this->extract_tabs($data_array);
+
+            $ret = array(
+                'state' => 'success',
+                'columns' => $columns,
+                'columns_index' => $columns_index['index'],
+                'data' => $data_array,
+                'tabs' => $tabs
+            );
+            return $this->json_string($ret);
+        }
+        return $this->request_failed('model not defined');
+
+    }
+
+
+    public function _load_data( $custom_model_object = null ) {
         $model_name = $this->request->get('model_name');
         $primary_key = $this->request->get('primary_key');
         $key_value = $this->request->get('key_value');
-        $model_object = $this->init_custom_model_object($model_name);
+        if ( $custom_model_object != null ) {
+            $model_object = $custom_model_object;
+        } else {
+            $model_object = $this->init_custom_model_object($model_name);
+        }
         $user_id = $this->get_my_user_id();
 
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
@@ -134,6 +196,21 @@ class API_model extends API_Common {
         return $this->json_string($response->get());
     }
 
+    public function _load_page() {
+        $slug = $this->request->get('slug');
+        require_once (SITEBILL_DOCUMENT_ROOT.'/apps/page/admin/admin.php');
+        require_once (SITEBILL_DOCUMENT_ROOT.'/apps/page/site/site.php');
+        $page_site = new page_site();
+        $page = $page_site->load_by_id($page_site->getPageIDByURI($slug));
+        if ($page) {
+            $response = new API_Response('success', 'load complete', $page);
+        } else {
+            $response = new API_Response('error', 'page not found');
+        }
+        return $this->json_string($response->get());
+    }
+
+
     public function get_columns($model_name, $user_id) {
         $DBC = DBC::getInstance();
         $used_fields = array();
@@ -182,7 +259,7 @@ class API_model extends API_Common {
 
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
         $permission = new Permission();
-        //внутри get_access еще надо реализовать проверку доступа к записям из data 
+        //внутри get_access еще надо реализовать проверку доступа к записям из data
         //сейчас проверка опционально проверяет только группу и разрешает админам удалять
 
         if ($permission->get_access($user_id, $model_name, 'access')) {
@@ -200,6 +277,40 @@ class API_model extends API_Common {
         return $this->json_string($response->get());
     }
 
+    public function _report() {
+        $model_name = $this->request->get('model_name');
+        $primary_key = $this->request->get('primary_key');
+        $key_value = $this->request->get('key_value');
+        $complaint_id = $this->request->get('complaint_id');
+        $user_id = $this->get_my_user_id();
+
+        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
+        $permission = new Permission();
+        //внутри get_access еще надо реализовать проверку доступа к записям из data
+        //сейчас проверка опционально проверяет только группу и разрешает админам удалять
+
+        if ($permission->get_access($user_id, $model_name, 'access')) {
+
+
+            require_once (SITEBILL_DOCUMENT_ROOT.'/apps/mailbox/admin/admin.php');
+            $mailbox_admin = new mailbox_admin();
+            $this->setRequestValue('action', 'send_complaint');
+            $this->setRequestValue('id', $key_value);
+            $this->setRequestValue('complaint_id', $complaint_id);
+            $complaint_response = json_decode($mailbox_admin->ajax(), true);
+
+            if ($complaint_response['status'] == 1) {
+                $response = new API_Response('success', 'report complete');
+            } else {
+                $response = new API_Response('error', $complaint_response['msg']);
+            }
+        } else {
+            $response = new API_Response('error', _e('Доступ запрещен'));
+        }
+        return $this->json_string($response->get());
+    }
+
+
     public function _delete_data() {
         $user_id = $this->get_my_user_id();
 
@@ -207,7 +318,7 @@ class API_model extends API_Common {
 
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
         $permission = new Permission();
-        //внутри get_access еще надо реализовать проверку доступа к записям из data 
+        //внутри get_access еще надо реализовать проверку доступа к записям из data
         //сейчас проверка опционально проверяет только группу и разрешает админам удалять
         if ($permission->get_access($user_id, 'data', 'access')) {
             require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/data/data_manager.php');
@@ -230,7 +341,7 @@ class API_model extends API_Common {
 
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
         $permission = new Permission();
-        //внутри get_access еще надо реализовать проверку доступа к записям из data 
+        //внутри get_access еще надо реализовать проверку доступа к записям из data
         //сейчас проверка опционально проверяет только группу и разрешает админам удалять
         if ($permission->get_access($user_id, 'data', 'access')) {
             require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/data/data_manager.php');
@@ -306,6 +417,7 @@ class API_model extends API_Common {
     public function _load_dictionary() {
         $columnName = $this->request->get('columnName');
         $model_name = $this->request->get('model_name');
+        $term = $this->request->get('term');
         $switch_off_ai_mode = $this->request->get('switch_off_ai_mode');
 
         if ($model_name == '') {
@@ -326,6 +438,9 @@ class API_model extends API_Common {
         }
 
         $model_tags->enable_primary_key_mode();
+        if ( !empty($term) ) {
+            $model_tags->set_term($term);
+        }
 
         $model_object = $this->init_custom_model_object($model_name);
 
@@ -371,7 +486,7 @@ class API_model extends API_Common {
         $model_object = $this->init_custom_model_object($model_name);
 
         $dictionary_array = $model_tags->get_array($model_name, $columnName, 'array', $model_object->data_model[$model_name]);
-        if ( isset($params['region_id']) or isset($params['topic_id']) ) {
+        if ( $this->getConfigValue('system_email') == 'info@sklyuchami.com' and (isset($params['region_id']) or isset($params['topic_id'])) ) {
             $dictionary_array = $this->cleanup_array($model_object, $columnName, $dictionary_array, $params, $model_tags);
         }
         //$this->writeArrayLog($dictionary_array);
@@ -608,7 +723,8 @@ class API_model extends API_Common {
             $response = new API_Response('error', $model_object->GetErrorMessage());
         } else {
             $new_record_id = $model_object->get_new_record_id();
-            $response = new API_Response('success', 'new native complete', array('new_record_id' => $new_record_id));
+            $data = $model_object->load_by_id($new_record_id);
+            $response = new API_Response('success', 'new native complete', array('new_record_id' => $new_record_id, 'items' => $data));
         }
         return $this->json_string($response->get());
     }
@@ -970,7 +1086,7 @@ class API_model extends API_Common {
         if ( isset($input_params['load_collections']) ) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/memory_list.php';
             $ML = new Memory_List();
-            
+
             $load_collections = true;
             $collections_domain = $input_params['collections_domain'];
             $collections_deal_id = $input_params['collections_deal_id'];
@@ -1034,7 +1150,21 @@ class API_model extends API_Common {
                     array_push($params['grid_item'], 'hot');
                 }
             } else {
-                $params['grid_item'] = array_slice($columns_index['default_columns_list'], 0, 7);
+                if ( $model_name == 'data' ) {
+                    $params['grid_item'] = array(
+                        'id',
+                        'date_added',
+                        'topic_id',
+                        'city_id',
+                        'district_id',
+                        'street_id',
+                        'number',
+                        'price',
+                        'image'
+                    );
+                } else {
+                    $params['grid_item'] = array_slice($columns_index['default_columns_list'], 0, 7);
+                }
                 if (!$grid_columns) {
                     $grid_columns['grid_fields'] = $params['grid_item'];
                 }
@@ -1069,76 +1199,22 @@ class API_model extends API_Common {
 
             //Переопределяем параметры если они пришли к нам из запроса
             if (count($input_params) > 0) {
-                foreach ($input_params as $key => $value) {
-                    if ($key == 'price_min' or $key == 'price_max') {
-                        if ($key == 'price_min') {
-                            $params['grid_conditions_sql'][$key] = '`'.DB_PREFIX.'_'.$model_name.'`.`price` >= ' . (int) $value;
-                        }
-                        if ($key == 'price_max') {
-                            $params['grid_conditions_sql'][$key] = '`'.DB_PREFIX.'_'.$model_name.'`.`price` <= ' . (int) $value;
-                        }
-                    } elseif ($key == 'concatenate_search') {
-                        $concatenate_condition = $this->compile_concatenate_condition($model_name, $customentity_admin->data_model[$model_name], $value);
-                        $params['grid_conditions_left_join'] = $this->compile_concatenate_condition_left_join($model_name, $customentity_admin->data_model[$model_name], $value);
-                        if ($concatenate_condition) {
-                            $params['grid_conditions_sql']['concatenate_search'] = $concatenate_condition;
-                            if (is_array($params['grid_conditions_left_join']['where'])) {
-                                $params['grid_conditions_sql']['concatenate_search'] = ' ('.$params['grid_conditions_sql']['concatenate_search'].' OR '.' ( '.implode(' OR ', $params['grid_conditions_left_join']['where']).' ) '.') ';
-                            }
-                        }
-
-                    } elseif ($customentity_admin->data_model[$model_name][$key]['type'] == 'uploads') {
-                        $ignore_uploads_condition = false;
-                        if ( is_array($value) ) {
-                            if ( count($value) > 1 ) {
-                                $ignore_uploads_condition = true;
-                            } elseif (in_array(1, $value)) {
-                                $only_image_condition = true;
-                            } else {
-                                $without_image_condition = true;
-                            }
-                        } else {
-                            if ($value == 1) {
-                                $only_image_condition = true;
-                            } else {
-                                $without_image_condition = true;
-                            }
-                        }
-                        if ($only_image_condition == 1) {
-                            $condition_uploads = " not in ('', 'a:0:{}') ";
-                            $uploads_null_condidtion .= " AND `".DB_PREFIX."_{$model_name}`.`{$customentity_admin->data_model[$model_name][$key]['name']}` IS NOT NULL ";
-                        } else {
-                            $condition_uploads = " in ('', 'a:0:{}' ) ";
-                            $uploads_null_condidtion .= " OR  `".DB_PREFIX."_{$model_name}`.`{$customentity_admin->data_model[$model_name][$key]['name']}` IS NULL ";
-                        }
-
-                        if ( !$ignore_uploads_condition ) {
-                            $params['grid_conditions_sql'][$key] = "( `".DB_PREFIX."_{$model_name}`.`{$customentity_admin->data_model[$model_name][$key]['name']}` " . $condition_uploads . $uploads_null_condidtion . " ) ";
-                        }
-                    } elseif ($customentity_admin->data_model[$model_name][$key]['type'] == 'compose') {
-                        $composed_query = $this->compile_composed_query($model_name, $customentity_admin->data_model[$model_name], $key, $input_params[$key]);
-                        if ( $composed_query ) {
-                            $params['grid_conditions_sql'][$key] = $composed_query;
-                        }
-                    } elseif ($customentity_admin->data_model[$model_name][$key]['type'] == 'dtdatetime') {
-                        if ($value['startDate'] != NULL and $value['endDate'] != NULL) {
-                            $params['grid_conditions_sql'][$key] = "( `".DB_PREFIX."_{$model_name}`.`$key` >= '" . date('Y-m-d', strtotime($value['startDate'])) . "' and `".DB_PREFIX."_{$model_name}`.`$key` <= '" . date('Y-m-d', strtotime($value['endDate'])) . " 23:59:59') ";
-                        }
-                    } elseif ($customentity_admin->data_model[$model_name][$key]['type'] == 'date') {
-                        if ($value['startDate'] != NULL and $value['endDate'] != NULL) {
-                            $params['grid_conditions_sql'][$key] = "( `".DB_PREFIX."_{$model_name}`.`$key` >= " . strtotime($value['startDate']) . " and `".DB_PREFIX."_{$model_name}`.`$key` <= " . strtotime($value['endDate']) . ") ";
-                        }
-                    } elseif ($key == 'only_collections') {
-                        $collections_ids = $ML->getUserMemoryLists_indexed_by_data_id($user_id, $collections_domain, $collections_deal_id);
-                        $this->writeArrayLog($collections_ids);
-                        if (is_array($collections_ids) and count($collections_ids) > 0 ) {
-                            $params['grid_conditions_sql']['collections_ids'] = "`".DB_PREFIX."_{$model_name}`.`".$customentity_admin->primary_key."` in (". implode(',', array_keys($collections_ids)).") ";
-                        } else {
-                            $params['grid_conditions_sql']['collections_ids'] = "`".DB_PREFIX."_{$model_name}`.`".$customentity_admin->primary_key."` in (null) ";
-                        }
-                        unset($input_params['only_collections']);
-                    } else {
-                        $params['grid_conditions'][$key] = $value;
+                $params = $this->convert_to_grid_conditions(
+                    $params,
+                    $input_params,
+                    $customentity_admin,
+                    $model_name,
+                    $ML,
+                    $user_id,
+                    $collections_domain,
+                    $collections_deal_id
+                );
+            }
+            if ( function_exists('api_model_get_data_grid_conditions_sql') ) {
+                $hook_conditions = api_model_get_data_grid_conditions_sql($model_name);
+                if ( $hook_conditions and count($hook_conditions) > 0 ) {
+                    foreach ( $hook_conditions as $hook_key => $hook_value ) {
+                        $params['grid_conditions_sql'][$hook_key] = $hook_value;
                     }
                 }
             }
@@ -1155,7 +1231,7 @@ class API_model extends API_Common {
             if ( $load_collections ) {
                 $rows = $ML->parse_memory_list($collections_domain, $collections_deal_id, $user_id, $customentity_admin->primary_key, $rows);
             }
-            
+
 
             //$this->writeArrayLog($customentity_admin->data_model[$model_name]);
             //$columns = array_values($customentity_admin->data_model[$model_name]);
@@ -1179,6 +1255,110 @@ class API_model extends API_Common {
             return $result;
         }
         return $this->request_failed('model not defined');
+    }
+
+    public function convert_to_grid_conditions (
+        $params,
+        $input_params,
+        $customentity_admin,
+        $model_name,
+        $ML = null,
+        $user_id = null,
+        $collections_domain = null,
+        $collections_deal_id = null
+    ) {
+
+        if ( isset($input_params['load_collections']) ) {
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/memory_list.php';
+            $ML = new Memory_List();
+
+            $load_collections = true;
+            $collections_domain = $input_params['collections_domain'];
+            $collections_deal_id = $input_params['collections_deal_id'];
+            if ( isset($input_params['only_collections']) ) {
+                $only_collections = true;
+                //unset($input_params['only_collections']);
+            }
+            //$this->writeLog($collections_deal_id);
+            //$this->writeLog($only_collections);
+            unset($input_params['load_collections']);
+            unset($input_params['collections_domain']);
+            unset($input_params['collections_deal_id']);
+        }
+
+        foreach ($input_params as $key => $value) {
+            if ($key == 'price_min' or $key == 'price_max') {
+                if ($key == 'price_min') {
+                    $params['grid_conditions_sql'][$key] = '`'.DB_PREFIX.'_'.$model_name.'`.`price` >= ' . (int) $value;
+                }
+                if ($key == 'price_max') {
+                    $params['grid_conditions_sql'][$key] = '`'.DB_PREFIX.'_'.$model_name.'`.`price` <= ' . (int) $value;
+                }
+            } elseif ($key == 'concatenate_search') {
+                $concatenate_condition = $this->compile_concatenate_condition($model_name, $customentity_admin->data_model[$model_name], $value);
+                $params['grid_conditions_left_join'] = $this->compile_concatenate_condition_left_join($model_name, $customentity_admin->data_model[$model_name], $value);
+                if ($concatenate_condition) {
+                    $params['grid_conditions_sql']['concatenate_search'] = $concatenate_condition;
+                    if (is_array($params['grid_conditions_left_join']['where'])) {
+                        $params['grid_conditions_sql']['concatenate_search'] = ' ('.$params['grid_conditions_sql']['concatenate_search'].' OR '.' ( '.implode(' OR ', $params['grid_conditions_left_join']['where']).' ) '.') ';
+                    }
+                }
+
+            } elseif ($customentity_admin->data_model[$model_name][$key]['type'] == 'uploads') {
+                $ignore_uploads_condition = false;
+                if ( is_array($value) ) {
+                    if ( count($value) > 1 ) {
+                        $ignore_uploads_condition = true;
+                    } elseif (in_array(1, $value)) {
+                        $only_image_condition = true;
+                    } else {
+                        $without_image_condition = true;
+                    }
+                } else {
+                    if ($value == 1) {
+                        $only_image_condition = true;
+                    } else {
+                        $without_image_condition = true;
+                    }
+                }
+                if ($only_image_condition == 1) {
+                    $condition_uploads = " not in ('', 'a:0:{}') ";
+                    $uploads_null_condidtion .= " AND `".DB_PREFIX."_{$model_name}`.`{$customentity_admin->data_model[$model_name][$key]['name']}` IS NOT NULL ";
+                } else {
+                    $condition_uploads = " in ('', 'a:0:{}' ) ";
+                    $uploads_null_condidtion .= " OR  `".DB_PREFIX."_{$model_name}`.`{$customentity_admin->data_model[$model_name][$key]['name']}` IS NULL ";
+                }
+
+                if ( !$ignore_uploads_condition ) {
+                    $params['grid_conditions_sql'][$key] = "( `".DB_PREFIX."_{$model_name}`.`{$customentity_admin->data_model[$model_name][$key]['name']}` " . $condition_uploads . $uploads_null_condidtion . " ) ";
+                }
+            } elseif ($customentity_admin->data_model[$model_name][$key]['type'] == 'compose') {
+                $composed_query = $this->compile_composed_query($model_name, $customentity_admin->data_model[$model_name], $key, $input_params[$key]);
+                if ( $composed_query ) {
+                    $params['grid_conditions_sql'][$key] = $composed_query;
+                }
+            } elseif ($customentity_admin->data_model[$model_name][$key]['type'] == 'dtdatetime') {
+                if ($value['startDate'] != NULL and $value['endDate'] != NULL) {
+                    $params['grid_conditions_sql'][$key] = "( `".DB_PREFIX."_{$model_name}`.`$key` >= '" . date('Y-m-d', strtotime($value['startDate'])) . "' and `".DB_PREFIX."_{$model_name}`.`$key` <= '" . date('Y-m-d', strtotime($value['endDate'])) . " 23:59:59') ";
+                }
+            } elseif ($customentity_admin->data_model[$model_name][$key]['type'] == 'date') {
+                if ($value['startDate'] != NULL and $value['endDate'] != NULL) {
+                    $params['grid_conditions_sql'][$key] = "( `".DB_PREFIX."_{$model_name}`.`$key` >= " . strtotime($value['startDate']) . " and `".DB_PREFIX."_{$model_name}`.`$key` <= " . strtotime($value['endDate']) . ") ";
+                }
+            } elseif ($key == 'only_collections') {
+                $collections_ids = $ML->getUserMemoryLists_indexed_by_data_id($user_id, $collections_domain, $collections_deal_id);
+                $this->writeArrayLog($collections_ids);
+                if (is_array($collections_ids) and count($collections_ids) > 0 ) {
+                    $params['grid_conditions_sql']['collections_ids'] = "`".DB_PREFIX."_{$model_name}`.`".$customentity_admin->primary_key."` in (". implode(',', array_keys($collections_ids)).") ";
+                } else {
+                    $params['grid_conditions_sql']['collections_ids'] = "`".DB_PREFIX."_{$model_name}`.`".$customentity_admin->primary_key."` in (null) ";
+                }
+                unset($input_params['only_collections']);
+            } else {
+                $params['grid_conditions'][$key] = $value;
+            }
+        }
+        return $params;
     }
 
     private function compile_concatenate_condition($model_name, $data_model, $value) {
@@ -1285,18 +1465,53 @@ class API_model extends API_Common {
         $query = false;
         //$this->writeArrayLog($compose_columns);
         //$this->writeArrayLog($input_params);
+        $condition_glue = ' OR ';
         if ( is_array($compose_columns) and count($compose_columns) > 0 ) {
             foreach ( $compose_columns as $item ) {
                 //$this->writeLog($item);
-                if ( isset($input_params[$item]) and is_array($input_params[$item]) and count($input_params[$item]) > 0 ) {
+                if (isset($model[$item]['parameters']['slider'])) {
+                    $query_part[] = '`'.DB_PREFIX.'_'.$table_name.'`.`'.$item.'` >= ' . (int) $input_params[$item]['min'];
+                    $query_part[] = '`'.DB_PREFIX.'_'.$table_name.'`.`'.$item.'` <= ' . (int) $input_params[$item]['max'];
+                    $condition_glue = ' AND ';
+
+                } elseif ( isset($input_params[$item]) and is_array($input_params[$item]) and count($input_params[$item]) > 0 ) {
                     $query_part[] = "`".DB_PREFIX."_{$table_name}`.`$item` in (".implode(',', $input_params[$item]).")";
                 }
             }
 
         }
+        //$this->writeArrayLog($query_part);
+
         if ( count($query_part) > 0 ) {
-            $query = "(".implode(' OR ', $query_part).")";
+            $query = "(".implode($condition_glue, $query_part).")";
         }
+        //$this->writeLog($query);
+
         return $query;
     }
+
+    public function _get_contact() {
+        $model_name = 'contact';
+        $model_object = $this->init_custom_model_object($model_name);
+        $model_object->data_model[$model_object->table_name]['client_id']['type'] = 'select_by_query';
+
+        return $this->_load_data($model_object);
+    }
+
+    public function _get_today_count () {
+        $model_name = $this->request->get('model_name');
+        $total = 0;
+        $query = "select count(id) as _cnt from re_data where date_added > '".date('Y-m-d')."'";
+        $DBC = DBC::getInstance();
+        $stmt = $DBC->query($query);
+        if ($stmt) {
+            $ar = $DBC->fetch($stmt);
+            $total = $ar['_cnt'];
+        } else {
+            $total = 0;
+        }
+        $response = new API_Response('success', $total);
+        return $this->json_string($response->get());
+    }
+
 }

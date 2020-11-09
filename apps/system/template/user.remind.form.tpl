@@ -2,12 +2,12 @@
 	<div class="form-group">
 		<label for="login">
 		{if $email_as_login==1}
-			{$TYPE_LOGIN_PASS_EMAILMODE}
+			{if $TYPE_LOGIN_PASS_EMAILMODE == ''}{$TYPE_LOGIN_PASS_EMAILMODE}{else}{_e t="Укажите Ваш E-mail"}{/if}
 		{else}
-			{$TYPE_LOGIN_PASS}
+			{if $TYPE_LOGIN_PASS == ''}{$TYPE_LOGIN_PASS}{else}{_e t="Укажите Ваш логин или E-mail"}{/if}
 		{/if}
 		</label>
 		<input type="text" name="login" id="login" placeholder="">
 	</div>
-	<input type="submit" name="submit" value="{$SEND_PASSWORD}">
+	<input type="submit" name="submit" value="{if $SEND_PASSWORD == ''}{$SEND_PASSWORD}{else}{_e t="Отправить пароль"}{/if}">
 </form>

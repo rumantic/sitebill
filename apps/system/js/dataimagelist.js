@@ -214,6 +214,36 @@ DataImagelist={
 		
 		return false;
 	},
+    dz_changeTags: function(el, pk_value, table, pk_name, field_name){
+        var tagblock=$(el);
+        
+        var parent=tagblock.parents('.dz-preview-uploaded-list').eq(0);
+		var all_els=parent.find('select');
+		var current_element_index=all_els.index(tagblock);
+        
+        var val = tagblock.val();
+        var data = {};
+        data.what = 'set_tags';
+        data.model_name = table;
+        data.current_position = current_element_index;
+        data.key = pk_name;
+        data.key_value = pk_value;
+        data.field_name = field_name;
+        data.tags = [val];
+        $.ajax({
+            url: estate_folder+'/js/ajax.php?action=dz_imagework',
+            type: 'POST',
+            dataType: 'text',
+            data: data,
+            success: function(title) {
+                
+            },
+            error: function(){
+                
+            }
+        });
+        console.log(description_block);
+    },
 	dz_dblClick: function(el, pk_value, table, pk_name, field_name){
 		var description_block=$(el);
 		var description_editable_block=description_block.next('.dz-preview-uploaded-item-description-editable').eq(0);

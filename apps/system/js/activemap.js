@@ -56,6 +56,8 @@ var ActiveMap = {
         },
         zoom: null
     },
+    //отключение реакции на изменение карты
+    nomapbehaviors: false,
     mapEngine: null,
     //Interface
     init: function(containerId, provider, options){
@@ -98,6 +100,10 @@ var ActiveMap = {
             
             if(typeof options.pagerDecorator == 'function'){
                 this.pagerDecorator = options.pagerDecorator;
+            }
+            
+            if(typeof options.nomapbehaviors != 'undefined'){
+                this.nomapbehaviors = options.nomapbehaviors;
             }
             /*if(typeof options.reload != 'undefined'){
                 this.reload = 1;
@@ -162,7 +168,12 @@ var ActiveMap = {
                 this.forms[i].submit(function(e){
                     e.preventDefault();
                     search_params.page = 1;
-                    _this.reloadMapData();
+                    if(!_this.nomapbehaviors){
+                        _this.reloadMapData();
+                    }else{
+                        _this.reloadMapData(true);
+                    }
+                    
                     _this.reloadListingData();
                 });
             }
@@ -214,35 +225,22 @@ var ActiveMap = {
             }
         }
         
-        if(activeform !== null){
-            
-            //if($('#ActiveMapForm form').length > 0){
-                //var el=$('#ActiveMapForm form:visible');
-                
-                var a = activeform.serializeArray();
-                $.each(a, function() {
-                    var name=this.name.replace('[]','');
-                    if (sparams[name]) {
-                        if (!sparams[name].push) {
-                            sparams[name] = [sparams[name]];
-                        }
-                        sparams[name].push(this.value || '');
-                    } else {
-                        sparams[name] = this.value || '';
+        if(activeform !== null){                
+            var a = activeform.serializeArray();
+            $.each(a, function() {
+                var name=this.name.replace('[]','');
+                if (sparams[name]) {
+                    if (!sparams[name].push) {
+                        sparams[name] = [sparams[name]];
                     }
-                });
-            //}
-            //return sparams;
+                    sparams[name].push(this.value || '');
+                } else {
+                    sparams[name] = this.value || '';
+                }
+            });
         }
-        //console.log(sparams);
         sparams = $.extend({}, search_params, sparams);
-		//console.log(sparams);
-        
-        /*if(null !== this.searchParamsCollector){
-            return this.searchParamsCollector();
-        }*/
-        
-        return sparams;
+		return sparams;
     },
     clearItemsViewBlock: function(){
         this.itemsViewBlock.find('.ActiveMapListBlock-items-item').remove();
@@ -262,11 +260,11 @@ var ActiveMap = {
             if (data.image[0].remote === 'true') {
                 img_url = data.image[0].preview;
             } else {
-                img_url =estate_folder+'/img/data/'+data.image[0].preview;
+                img_url = estate_folder+'/img/data/'+data.image[0].preview;
             }
 
             block.find('.ActiveMapListBlock-item-image img').attr('src', img_url);
-        } else if (typeof data.image_cache != 'undefined' && typeof data.image_cache !== false && data.image_cache.length > 0) {
+        } else if (data.image_cache !== null && typeof data.image_cache != 'undefined' && typeof data.image_cache !== false && data.image_cache.length > 0) {
             block.find('.ActiveMapListBlock-item-image img').attr('src', data.image_cache[0]);
         }
         
@@ -746,6 +744,151 @@ var ActiveMap = {
         if(this.provider == 'yandex'){
             this.mapEngine = this.initMapEngineYandex();
         }
+        if(this.provider == 'leaflet_osm'){
+            this.mapEngine = this.initMapEngineLeafletOSM();
+        }
+    },
+    initMapEngineLeafletOSM: function(){
+        var _this = this;
+        return function() {
+            return {
+                parent: _this,
+                drawPolygon: function(coordinates){
+                    var gCoords = [];
+                    for(var ic in coordinates){
+                        gCoords.push([coordinates[ic][0], coordinates[ic][1]]);
+                    }
+                    
+                    var pOptions = {
+                        strokeColor: this.parent.options.polygonOptions.strokeColor,
+                        strokeOpacity: this.parent.options.polygonOptions.strokeOpacity,
+                        strokeWeight: this.parent.options.polygonOptions.strokeWidth,
+                        fillColor: this.parent.options.polygonOptions.fillColor,
+                        fillOpacity: this.parent.options.polygonOptions.fillOpacity
+                    }
+                    
+                    var polygon = L.polygon(gCoords, pOptions);
+    
+                    polygon.addTo(this.parent.map);
+
+                    var paths = polygon.getLatLngs();
+                    var bounds = L.latLngBounds();
+                    paths.forEach(function(path) {
+                        bounds.extend(path);
+                    });            
+                
+                    this.parent.map.fitBounds(bounds);
+                    return polygon;
+                },
+                getMapRectDimension: function(){
+                    var dim = this.parent.map.getSize();
+                    return {width: dim.x, height: dim.y};
+                },
+                drawMarkers: function(markers, centered){
+                    if(centered !== true){
+                        centered = false;
+                    }
+                    
+                    if(centered){
+                        var bounds = L.latLngBounds();
+                    }
+                    
+                    var m = this.parent.map;
+                    var p = this.parent;
+                    
+                    if(p.clusterer !== null && p.markers.length > 0){
+                        p.clusterer.removeLayers(p.markers);
+                    }
+                    
+                    for(var i in markers){
+                        
+                        var latlng = [markers[i].lat, markers[i].lng];
+                        
+                        var marker = L.marker(latlng, {ids: markers[i].propertyIds})/*.addTo(this.parent.map)*/;
+                        marker.options.ids = markers[i].propertyIds;
+                        
+                        if(centered){
+                            bounds.extend(latlng);
+                        }
+                        
+                        marker.on('click', function() {
+                            p.showItems(this.options.ids);
+                        });
+                        this.parent.markers.push(marker);
+                        
+                    }
+                    
+                    this.parent.clusterer.addLayers(this.parent.markers);
+                    
+                    if(centered){
+                        this.parent.map.fitBounds(bounds);
+                    }
+                    
+                },
+                clearMap: function(){
+                    if(this.parent.markers.length > 0){
+                        this.parent.clusterer.removeLayers(this.parent.markers);
+                        this.parent.markers = [];
+                    }
+                },
+                getMapBounds: function(){
+                    var _bounds = this.parent.map.getBounds();
+                    return [[_bounds.getSouthWest().lat, _bounds.getSouthWest().lng], [_bounds.getNorthEast().lat, _bounds.getNorthEast().lng]];
+                },
+                buildMap: function(){
+                    var m = this.parent.mapContainer;
+                    var centerlat = this.parent.mapdefaults.center.lat;
+                    var centerlng = this.parent.mapdefaults.center.lng;
+                    var zoom = this.parent.mapdefaults.zoom;
+                    var latlng = [centerlat, centerlng];
+                    
+                    this.parent.map = L.map(document.getElementById("ActiveMap")).setView(latlng, zoom);
+                    this.parent.map.addLayer(new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'}));
+                    this.parent.clusterer = L.markerClusterGroup();
+                    
+                    var parent = this.parent;
+                    var _map = this.parent.map;
+                    
+                    this.parent.map.on('load', function(ev) {
+                        console.log('load');
+                        parent.reloadMapData(true);
+                        parent.reloadListingData(true);
+                        this.parent.map.off('load', function(){});
+                    });
+                    if(!parent.nomapbehaviors){
+                        this.parent.map.on('moveend', function(ev) {
+                            if(parent.currentPolygoneCoordinates.length == 0 && !parent.isMapInDrawMode && parent.catchEvents){
+                                parent.reloadMapData();
+                                parent.reloadListingData();
+                            }
+                            if(!parent.catchEvents){
+                                parent.catchEvents = true;
+                            }
+                        });
+                        /*this.parent.map.on('zoomend', function(ev) {
+                            console.log('zoomend');
+
+                            if(parent.currentPolygoneCoordinates.length == 0 && !parent.isMapInDrawMode && parent.catchEvents){
+                                parent.reloadMapData();
+                                parent.reloadListingData();
+                            }
+                            if(!parent.catchEvents){
+                                parent.catchEvents = true;
+                            }
+                        });*/
+                    }
+                    this.parent.map.addLayer(this.parent.clusterer);
+                },
+                clearDrawedPolygon(){
+                    if (this.parent.drawedPolygone !== null) {
+                        this.parent.drawedPolygone.remove();
+                        this.parent.drawedPolygone = null;
+                    }
+                    this.parent.currentPolygoneCoordinates = [];
+                }
+            };
+            
+        }
     },
     initMapEngineGoogle: function(){
         var _this = this;
@@ -862,25 +1005,24 @@ var ActiveMap = {
                         
                         google.maps.event.clearListeners(_map, 'tilesloaded');
                     });
-                    google.maps.event.addListener(_map, 'dragend', function(evt) {
-                        console.log('dragend');
-
-                        if(parent.currentPolygoneCoordinates.length == 0 && !parent.isMapInDrawMode && parent.catchEvents){
-                            parent.reloadMapData();
-                            parent.reloadListingData();
-                        }
-                    });
-                    google.maps.event.addListener(_map, 'zoom_changed', function(evt) {
-                        console.log(parent.catchEvents);
-                        console.log('zoom_changed');
-                        if(parent.currentPolygoneCoordinates.length == 0 && !parent.isMapInDrawMode && parent.catchEvents){
-                            parent.reloadMapData();
-                            parent.reloadListingData();
-                        }
-                        if(!parent.catchEvents){
-                            parent.catchEvents = true;
-                        }
-                    });
+                    if(!parent.nomapbehaviors){
+                        google.maps.event.addListener(_map, 'dragend', function(evt) {
+                            if(parent.currentPolygoneCoordinates.length == 0 && !parent.isMapInDrawMode && parent.catchEvents){
+                                parent.reloadMapData();
+                                parent.reloadListingData();
+                            }
+                        });
+                        google.maps.event.addListener(_map, 'zoom_changed', function(evt) {
+                            if(parent.currentPolygoneCoordinates.length == 0 && !parent.isMapInDrawMode && parent.catchEvents){
+                                parent.reloadMapData();
+                                parent.reloadListingData();
+                            }
+                            if(!parent.catchEvents){
+                                parent.catchEvents = true;
+                            }
+                        });
+                    }
+                    
                     this.parent.clusterer = new MarkerClusterer(this.parent.map, [], {gridSize: 50, maxZoom: 15, imagePath: estate_folder+'/apps/third/google/markerclusterer/images/m'});
                     /*google.maps.event.addListener(this.parent.clusterer, 'clusterclick', function(evt) {
                         return;
@@ -991,19 +1133,21 @@ var ActiveMap = {
                         parent.reloadMapData();
                         google.maps.event.clearListeners(_map, 'tilesloaded');
                     });*/
+                    if(!parent.nomapbehaviors){
+                        this.parent.map.events.add('boundschange', function (e) {
+                            if(parent.currentPolygoneCoordinates.length == 0 && !parent.isMapInDrawMode && parent.catchEvents){
+                                parent.reloadMapData();
+                                parent.reloadListingData();
+                            }
+                        });
+                        this.parent.map.events.add('zoom_changed', function (e) {
+                            if(parent.currentPolygoneCoordinates.length == 0 && !parent.isMapInDrawMode && parent.catchEvents){
+                                parent.reloadMapData();
+                                parent.reloadListingData();
+                            }
+                        });
+                    }
                     
-                    this.parent.map.events.add('boundschange', function (e) {
-                        if(parent.currentPolygoneCoordinates.length == 0 && !parent.isMapInDrawMode && parent.catchEvents){
-                            parent.reloadMapData();
-                            parent.reloadListingData();
-                        }
-                    });
-                    this.parent.map.events.add('zoom_changed', function (e) {
-                        if(parent.currentPolygoneCoordinates.length == 0 && !parent.isMapInDrawMode && parent.catchEvents){
-                            parent.reloadMapData();
-                            parent.reloadListingData();
-                        }
-                    });
                 },
                 clearDrawedPolygon(){
                     //console.log(this.parent);

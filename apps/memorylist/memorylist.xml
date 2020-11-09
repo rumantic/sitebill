@@ -8,9 +8,9 @@
     <copyright>Copyright (C) 2016 Sitebill Team. All rights reserved.</copyright>
     <license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>true</backendMenu>
-    <version status="beta">1.2.5</version>
+    <version status="beta">1.2.8</version>
     <administration>
         <!-- Administration Menu Section -->
         <menu>Подборки</menu>
-    </administration>	
+    </administration>
 </install>

@@ -30,8 +30,8 @@
                         {$theme_select}
                     </div>
                     <p></p>
-                    <input type="submit" name="save" id="save" value="Сохранить" style="margin-top: -8px;" class="btn btn-success">    
-                </div>                
+                    <input type="submit" name="save" id="save" value="Сохранить" style="margin-top: -8px;" class="btn btn-success">
+                </div>
             </div>
         </div>
 
@@ -40,7 +40,7 @@
                 <p><a href="https://www.sitebill.ru/s/" target="_blank">Форум тех.поддержки</a></p>
                 <p><a href="https://www.youtube.com/user/DMn1c" target="_blank">Видео-уроки</a></p>
                 <p><a href="http://wiki.sitebill.ru/" target="_blank">Техническая документация</a></p>
-                <p>Телефон тех.поддержки: <a href="tel:88002509931">8 800 250-99-31</a> или пишите в любой мессенджер <a href="tel:+79138317494">+79138317494</a></p>
+                <p>Телефон тех.поддержки: или пишите в любой мессенджер <a href="tel:+79138317494">+79138317494</a></p>
             </div>
         </div>
 
@@ -50,10 +50,10 @@
             </div>
             <p></p>
             <div class="col-md-6">
-                <div class="alert alert-danger">Выключить режим редактирования можно в <a href="/admin/?action=config" target="_parent">панели управления</a> в пункте Настройки - Помощник</div>    
+                <div class="alert alert-danger">Выключить режим редактирования можно в <a href="/admin/?action=config" target="_parent">панели управления</a> в пункте Настройки - Помощник</div>
             </div>
         </div>
-                    
+
         <div class="row">
             <div class="col-md-12">
                 <p>&nbsp;</p>
@@ -63,7 +63,7 @@
                 <p>&nbsp;</p>
             </div>
         </div>
-                    
+
     </div>
 </div>
 

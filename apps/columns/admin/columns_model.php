@@ -89,9 +89,6 @@ class columns_Model extends Data_Model {
                 'parameter'=>'parameter (свободный ввод параметров key=value)',
 				'compose'=>'compose (Объединение колонок и функций)'
 				);
-		if(defined('DEVMODE')){
-			$seld['destination']='destination';
-		}
 		asort($seld);
 		$form_data['columns']['type']['select_data'] = $seld;
 		$form_data['columns']['type']['required'] = 'off';
@@ -146,6 +143,22 @@ class columns_Model extends Data_Model {
 		$form_data['columns']['name']['unique'] = 'off';
 		
 		$langs=Multilanguage::availableLanguages();
+        
+        $default_lng = '';
+		if(1 == $this->getConfigValue('apps.language.use_default_as_ru')){
+			$default_lng = 'ru';
+		}elseif('' != trim($this->getConfigValue('apps.language.use_as_default'))){
+			$default_lng = trim($this->getConfigValue('apps.language.use_as_default'));
+		}
+
+		if($default_lng != ''){
+			foreach ($langs as $k => $lng) {
+				if ($lng == $default_lng) {
+					unset($langs[$k]);
+					break;
+				}
+			}
+		}
 		//print_r($langs);
 		
 		$form_data['columns']['title']['name'] = 'title';

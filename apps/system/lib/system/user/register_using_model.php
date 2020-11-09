@@ -8,6 +8,15 @@ class Register_Using_Model extends User_Object_Manager {
 
     public $register_social = false;
 
+    function __construct()
+    {
+        parent::__construct();
+        if ( $this->getConfigValue('email_as_login') ) {
+            $this->data_model['user']['login']['type'] = 'hidden';
+            $this->data_model['user']['login']['required'] = 'off';
+        }
+    }
+
     function main() {
         if($_SESSION['user_id']>0){
             header('location: /');
@@ -61,6 +70,14 @@ class Register_Using_Model extends User_Object_Manager {
         }
         return 'wrong_sms_code';
     }
+    
+    public function formatActivateSuccessMessage($msg){
+        return $msg;
+    }
+    
+    public function formatActivateErrorMessage($msg){
+        return $msg;
+    }
 
     protected function _activateAction() {
         $rs = '';
@@ -72,7 +89,7 @@ class Register_Using_Model extends User_Object_Manager {
         $stmt = $DBC->query($q, array($email, $activation_code));
 
         if (!$stmt) {
-            $rs = Multilanguage::_('ACTIVATION_ERROR', 'system');
+            $rs = $this->formatActivateErrorMessage(Multilanguage::_('ACTIVATION_ERROR', 'system'));
         } else {
             $ar = $DBC->fetch($stmt);
             $new_user_id = $ar['user_id'];
@@ -81,11 +98,11 @@ class Register_Using_Model extends User_Object_Manager {
                 $stmt = $DBC->query($q, array($email, $activation_code));
 
                 if (Multilanguage::is_set('LT_ACCOUNT_ACTIVATED', '_template')) {
-                    $rs = Multilanguage::_('LT_ACCOUNT_ACTIVATED', '_template');
+                    $rs = $this->formatActivateSuccessMessage(Multilanguage::_('LT_ACCOUNT_ACTIVATED', '_template'));
                 } else {
-                    $rs = Multilanguage::_('ACCOUNT_ACTIVATED', 'system');
+                    $rs = $this->formatActivateSuccessMessage(Multilanguage::_('ACCOUNT_ACTIVATED', 'system'));
                 }
-
+                
                 if (1 == $this->getConfigValue('notify_admin_about_register')) {
                     $this->notify_admin_about_register($new_user_id);
                 }
@@ -169,15 +186,15 @@ class Register_Using_Model extends User_Object_Manager {
 
     protected function _new_doneAction() {
         $rs = '';
-        
-        
+
+
         /*$token = $_POST['_csrf_token'];
-        if(false === $this->checkCSRFToken($token)){            
+        if(false === $this->checkCSRFToken($token)){
             echo 'Possible CSRF attack';
             exit();
         }*/
-        
-        
+
+
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
@@ -316,12 +333,12 @@ class Register_Using_Model extends User_Object_Manager {
             $new_user_id = $this->add_data($form_data[$this->table_name], $this->getRequestValue('language_id'));
 
             $need_activation = false;
-            
+
             if ($this->register_social) {
                 $register_social_data = $_SESSION['ssAuthData'];
                 unset($_SESSION['ssAuthData']);
             }
-            
+
             $email = $form_data[$this->table_name]['email']['value'];
 
             if (1 == $this->getConfigValue('use_registration_email_confirm') && (($this->register_social && $email != $register_social_data['email']) || (!$this->register_social))) {
@@ -329,7 +346,7 @@ class Register_Using_Model extends User_Object_Manager {
             }
 
 
-            
+
 
             if ($this->getError()) {
                 $form_data[$this->table_name]['imgfile']['value'] = '';
@@ -338,13 +355,13 @@ class Register_Using_Model extends User_Object_Manager {
                 $email = $form_data[$this->table_name]['email']['value'];
                 $login = $form_data[$this->table_name]['login']['value'];
                 $password = $form_data[$this->table_name]['newpass']['value'];
-                
+
                 if (1 == $this->getConfigValue('apps.client.create_client_on_user_register') ) {
                     require_once(SITEBILL_DOCUMENT_ROOT . '/apps/client/admin/admin.php');
                     $client_admin = new client_admin();
                     $client_admin->create_client_on_user_register($form_data[$this->table_name]);
                 }
-                
+
 
                 if ($this->register_social) {
                     $DBC = DBC::getInstance();
@@ -648,7 +665,7 @@ class Register_Using_Model extends User_Object_Manager {
 
         return $rs;
     }
-    
+
     function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
 
 
@@ -685,9 +702,9 @@ class Register_Using_Model extends User_Object_Manager {
         }
         $el['private'][] = array('html' => '<input type="hidden" name="action" value="' . $this->action . '">');
         $el['private'][] = array('html' => '<input type="hidden" name="language_id" value="' . $language_id . '">');
-        
-        
-        
+
+
+
         //$el['private'][] = array('html' => '<input type="hidden" name="_csrf_token" value="' . self::$_csrf_token . '">');
 
         $el['form_header'] = $rs;
@@ -708,13 +725,13 @@ class Register_Using_Model extends User_Object_Manager {
     }
 
     public function ajaxRegister() {
-        
+
         /*$token = $_POST['_csrf_token'];
-        if(false === $this->checkCSRFToken($token)){            
+        if(false === $this->checkCSRFToken($token)){
             echo 'Possible CSRF attack';
             exit();
         }*/
-        
+
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
 
@@ -837,7 +854,7 @@ class Register_Using_Model extends User_Object_Manager {
                 $this->template->assign('HTTP_HOST', $_SERVER['HTTP_HOST']);
                 $this->template->assign('login', $login);
                 $this->template->assign('password', $password);
-                
+
                 if (1 == $this->getConfigValue('apps.client.create_client_on_user_register') ) {
                     require_once(SITEBILL_DOCUMENT_ROOT . '/apps/client/admin/admin.php');
                     $client_admin = new client_admin();
@@ -971,8 +988,8 @@ class Register_Using_Model extends User_Object_Manager {
 
                     $this->sendFirmMail($to, $from, $subject, $message);
                 }
-                
-                
+
+
 
                 $DBC = DBC::getInstance();
                 $query = 'UPDATE ' . DB_PREFIX . '_user SET `active`=? WHERE user_id=?';
@@ -1022,7 +1039,7 @@ class Register_Using_Model extends User_Object_Manager {
     }
 
     public function getRegisterFormElements($params = array()) {
-        
+
         $dynamictab = 'regels';
 
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/columns/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php')) {
@@ -1065,20 +1082,20 @@ class Register_Using_Model extends User_Object_Manager {
                 unset($reg_form_elements['group_id']);
             }
         }
-        
+
         //$el['private'][] = array('html' => '<input type="hidden" name="_csrf_token" value="' . $this->_csrf_token . '">');
-        
+
         foreach($reg_form_elements as $k=>$v){
 			$reg_form_elements[$k]['tab'] = $dynamictab;
 		}
-                
+
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/form/form_generator.php');
         $form_generator = new Form_Generator();
         $el = $form_generator->compile_form_elements($reg_form_elements, false);
-        
+
         //$el['public'][$this->getConfigValue('default_tab_name')]['_csrf_token']['type'] = 'hidden';
         //$el['public'][$this->getConfigValue('default_tab_name')]['_csrf_token']['html'] = '<input type="hidden" value="'.self::$_csrf_token.'" name="_csrf_token">';
-                
+
         return $el['public'][$dynamictab];
     }
 
@@ -1204,7 +1221,7 @@ class Register_Using_Model extends User_Object_Manager {
     }
 
     function checkLoginQuality($login, &$msg) {
-        
+
     }
 
     function checkPasswordQuality($password, &$msg) {
@@ -1281,7 +1298,7 @@ class Register_Using_Model extends User_Object_Manager {
         }
 
         if ($pass_control_type == 0) {
-            
+
         } elseif ($pass_control_type == 1) {
             if ($pass_dig_count == $pass_count || $pass_dig_count == 0) {
                 $msg = Multilanguage::_('REG_BAD_PASS', 'system') . '. ' . Multilanguage::_('REG_BAD_PASS_REQ1', 'system') . '.';

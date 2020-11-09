@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <install>
-	<name>akismet</name>
-	<creationDate>January 2017</creationDate>
-	<author>The Sitebill Development Team</author>
-	<authorEmail>kondin@etown.ru</authorEmail>
-	<authorUrl>http://www.sitebill.ru</authorUrl>
-	<copyright>Copyright (C) 2012-2017 Sitebill Team. All rights reserved.</copyright>
-	<license>http://www.sitebill.ru/licenses/sitebill.html</license>
-        <backendMenu>true</backendMenu>
-	<version status="beta">0.0.3</version>
-	<administration>
-		<!-- Administration Menu Section -->
-		<menu>Akismet-антиспам</menu>
-	</administration>	
+    <name>akismet</name>
+    <creationDate>January 2017</creationDate>
+    <author>The Sitebill Development Team</author>
+    <authorEmail>kondin@etown.ru</authorEmail>
+    <authorUrl>http://www.sitebill.ru</authorUrl>
+    <copyright>Copyright (C) 2012-2017 Sitebill Team. All rights reserved.</copyright>
+    <license>http://www.sitebill.ru/licenses/sitebill.html</license>
+    <backendMenu>true</backendMenu>
+    <version status="beta">0.0.4</version>
+    <administration>
+        <!-- Administration Menu Section -->
+        <menu>Akismet-антиспам</menu>
+    </administration>
 </install>

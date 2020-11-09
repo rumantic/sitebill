@@ -13,7 +13,7 @@ class Mailer {
     var $parameters = "-f%1\$s";
 
     /**
-     * Constructor 
+     * Constructor
      * @param $to
      * @param $from
      */
@@ -60,7 +60,7 @@ class Mailer {
 	$robot_email = $from;
 
 	$message = $msg;
-	
+
 	if (is_array($to)) {
 	    foreach ($to as $_to) {
                 $sitebill->writeLog(__METHOD__.', to = '.$_to);
@@ -93,7 +93,7 @@ class Mailer {
 	    //echo 'Отправка почты в данный момент невозможна, попробуйте позже';
 	}
     }
-    
+
     function secure_mail ($to, $from, $subject, $message, $headers = '', $parameters = '') {
 	require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/mailer/class.phpmailer.php');
 	$mail = new PHPMailer;
@@ -134,10 +134,10 @@ class Mailer {
 
 	$headers = sprintf($this->mailheaders, $to, $robot_email);
 	//$headers= "MIME-Version: 1.0\r\n";
-	//$headers .= "Content-type: text/html; charset=windows-1251\r\n";		
+	//$headers .= "Content-type: text/html; charset=windows-1251\r\n";
 	//mail('kondin@etown.ru', $subject, $msg, $headers);
 	$this->secure_mail($to, $from, $subject, $msg, $headers);
-	
+
 	/*
 	if (mail($to, $subject, $msg, $headers)) {
 	    //if ( mail($to, $subject, $msg) ) {
@@ -200,7 +200,7 @@ class Mailer {
 	$mail->Username = $username; // SMTP account username
 	$mail->Password = $password;	// SMTP account password
 	$mail->CharSet = SITE_ENCODING;
-	$mail->SetFrom($from);
+    $mail->SetFrom($from, empty($sitebill->getConfigValue('system_email_robot')) ? "Sitebill" : $sitebill->getConfigValue('system_email_robot'));
 
 	//$mail->AddReplyTo("kondin@etown.ru","First Last");
 

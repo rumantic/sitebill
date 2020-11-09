@@ -60,7 +60,7 @@ class currency_admin extends Object_Manager {
             $ret['status'] = 0;
 
             if ($user_id == 0) {
-                
+
             } elseif ($_SESSION['current_user_group_name'] == 'admin') {
                 $access_allow = true;
             } elseif ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
@@ -221,8 +221,10 @@ class currency_admin extends Object_Manager {
         $pass = trim($this->getConfigValue('apps.currency.cron_pass'));
         $cron_pass = trim($_GET['pass']);
         if ($pass == '' || $cron_pass != $pass) {
+            echo 'bad key<br>';
             return;
         }
+        echo 'start recalc courses<br>';
         $from = trim($_GET['from']);
         if ($from == 'nbu') {
             $courses = $this->getNBUCourses();
@@ -231,9 +233,14 @@ class currency_admin extends Object_Manager {
         } elseif ($from == 'cbrf') {
             $courses = $this->getCBRFCourses();
         } else {
+            echo 'course not defined<br>';
             return;
         }
-        $this->recalcCourses($courses);
+        if ( $this->recalcCourses($courses) ) {
+            echo 'complete success<br>';
+        } else {
+            echo 'job failed<br>';
+        }
     }
 
     protected function recalcCourses($courses = false) {
@@ -260,13 +267,13 @@ class currency_admin extends Object_Manager {
                     $valutes[$ar['code']] = $ar;
                 }
             }
-            //print_r($courses);	
+            //print_r($courses);
             //$default_curr='ue';
             if (!isset($courses[$default_curr])) {
-                return;
+                return false;
             }
             $k = $courses[$default_curr]['cv'];
-            //var_dump($k);	
+            //var_dump($k);
             foreach ($valutes as $ik => $val) {
                 if (isset($courses[$ik])) {
                     $this_val_c = round(($courses[$ik]['cv']) / $k, 6);
@@ -281,6 +288,7 @@ class currency_admin extends Object_Manager {
                 }
             }
         }
+        return true;
     }
 
     private function getCBRAZCourses() {

@@ -1,5 +1,15 @@
 <script src="{$assets_folder}/assets/js/jquery.colorbox-min.js"></script>
+
+<link rel="stylesheet" href="{$estate_folder}/apps/system/js/bootstrap/css/bootstrap-datetimepicker.min.css" media="screen">
+<script type="text/javascript" src="{$estate_folder}/apps/system/js/bootstrap/js/bootstrap-datetimepicker.min.js"></script>
+
 {include file="controls_js.tpl"}
+
+{assign var="local_controls_js" value=$SITEBILL_DOCUMENT_ROOT|cat:'/template/frontend/local/admin/data/controls_js.tpl'}
+{if file_exists($local_controls_js)}
+    {include file="$local_controls_js"}
+{/if}
+
 {literal}
     <script type="text/javascript">
         var fast_previews = [];
@@ -20,6 +30,7 @@
                 current: '{current} of {total}',
                 maxWidth: '100%',
                 maxHeight: '100%',
+                preloading: false,
                 onOpen: function () {
                     $overflow = document.body.style.overflow;
                     document.body.style.overflow = 'hidden';
@@ -36,7 +47,7 @@
         }
 
         $(document).ready(function () {
-            
+
             $('.colorboxed').each(function (item) {
                 setColorboxWrapper($(this).data('cbxid'));
             });
@@ -86,11 +97,11 @@
 
             /*
              $('#grid_control_panel button#run').click(function(){
-         
+
              var cp=$('#grid_control_panel');
              var action=$(this).attr('alt');
              var operation=cp.find('select[name=cp_optype]').val();
-         
+
              if(operation!=''){
              var field=null;
              if(cp.find('#grid_control_panel_content select').length!=0){
@@ -100,7 +111,7 @@
              if(field.attr('type')=='checkbox' && field.is(':checked')){
              field.val('1');
              }
-         
+
              }
              if(field!==null){
              var cat_id=field.val();
@@ -112,7 +123,7 @@
              if(checked.length>0){
              window.location.replace(estate_folder+'/admin/index.php?action='+action+'&do=change_param&new_param_value='+cat_id+'&param_name='+operation+'&ids='+checked.join(','));
              }
-         
+
              }
              return false;
              });
@@ -125,7 +136,7 @@
                 });
                 window.location.replace(estate_folder + '/admin/?action=' + action + '&do=batch_update&batch_ids=' + ids.join(','));
             });
-            
+
             $('.batch_field_edit').click(function (e) {
                 e.preventDefault();
                 var ids = [];
@@ -206,7 +217,7 @@
                         source: function (query, process) {
                             //console.log(query);
                             column_name = tag_input.attr('name');
-                            $.ajax({url: estate_folder + '/js/ajax.php?action=get_tags&column_name=' + column_name + '&model_name=data&query=' + query}).done(function (result_items) {
+                            $.ajax({url: estate_folder + '/js/ajax.php?action=get_tags&column_name=' + column_name + '&model_name=data&query=' + query + '&term=' + query}).done(function (result_items) {
                                 process(result_items);
                             });
                         }
@@ -230,12 +241,162 @@
                     });
                 })
                 tag_input.on('removed', function (e, value) {
-                    var item_index = datastr[$(this).attr('name')].indexOf(value);
+                    var val = (Array.isArray(value) ? value[0] : value);
+                    var item_index = datastr[$(this).attr('name')].indexOf(val);
                     datastr[$(this).attr('name')].splice(item_index, 1);
                     $.ajax({url: estate_folder + '/js/ajax.php?action=get_tags&do=set&tags_array=' + JSON.stringify(datastr)}).done(function (result_items) {
                         window.location.href = window.location.href;
                     });
                 })
+            });
+
+            $('.date-tags').each(function (e) {
+                var datetag = $(this);
+                var fieldname = datetag.data('field');
+                var txt = 'не задано';
+
+                var min = null;
+                var max = null;
+
+                if($('#dateselect_'+fieldname+'_min input').val() != ''){
+                    min = $('#dateselect_'+fieldname+'_min input').val();
+                }
+                if($('#dateselect_'+fieldname+'_max input').val() != ''){
+                    max = $('#dateselect_'+fieldname+'_max input').val();
+                }
+
+                if (min !== null && max !== null) {
+                    var txt = min + ' - ' + max;
+                } else if (min !== null) {
+                    var txt = 'от ' + min;
+                } else if (max !== null) {
+                    var txt = 'до ' + max;
+                }
+
+                datetag.find('.date-tags-title').html(txt);
+
+                var name = datetag.data('field');
+                datetag.find('.date-tags-title').click(function (e) {
+                    e.preventDefault();
+                    datetag.find('.date-tags-params').fadeToggle();
+                });
+                datetag.find('.cancel').click(function (e) {
+                    e.preventDefault();
+                    datetag.find('.date-tags-params').fadeToggle();
+                });
+
+                datetag.find('.dateselect').each(function(){
+                    var id = $(this).attr('id');
+                    $('#'+id).datetimepicker({
+                        autoclose: true,
+                        pick12HourFormat: false,
+                        format: 'yyyy-MM-dd',
+                        language: "ru",
+                        pickDate: true,
+                        pickTime: false
+                    });
+                });
+
+                datetag.find('.set').each(function(){
+                    var _this = $(this);
+                    _this.click(function (e) {
+                        e.preventDefault();
+                        var _this = $(this);
+                        if(_this.hasClass('today')){
+                            var datestart = new Date();
+                            var dateend = new Date();
+
+                        }else if(_this.hasClass('yesterday')){
+
+                            var datestart = new Date(new Date().setDate(new Date().getDate()-1));
+                            var dateend = new Date(new Date().setDate(new Date().getDate()-1));
+
+                        }else if(_this.hasClass('days7')){
+
+                            var datestart = new Date(new Date().setDate(new Date().getDate()-7));
+                            var dateend = new Date();
+
+                        }else if(_this.hasClass('days30')){
+
+                            var datestart = new Date(new Date().setDate(new Date().getDate()-30));
+                            var dateend = new Date();
+
+                        }
+
+                        var partsstart = [];
+                        var partsend = [];
+
+                        partsstart.push(datestart.getFullYear());
+                        partsend.push(dateend.getFullYear());
+
+                        var m = datestart.getMonth() + 1;
+                        if(m < 10){
+                            m = '0'+m;
+                        }
+                        partsstart.push(m);
+
+                        var m = dateend.getMonth() + 1;
+                        if(m < 10){
+                            m = '0'+m;
+                        }
+                        partsend.push(m);
+
+                        var d = datestart.getDate();
+                        if(d < 10){
+                            d = '0'+d;
+                        }
+                        partsstart.push(d);
+
+                        var d = dateend.getDate();
+                        if(d < 10){
+                            d = '0'+d;
+                        }
+                        partsend.push(d);
+
+
+
+                        datetag.find('#dateselect_'+fieldname+'_min input').val(partsstart.join('-'));
+                        datetag.find('#dateselect_'+fieldname+'_max input').val(partsend.join('-'));
+                    })
+
+                });
+
+                datetag.find('.apply').click(function (e) {
+                    e.preventDefault();
+                    var tag_array = {};
+                    var reg = /(.*)\[(.*)\]/;
+                    if (typeof datastr[name] != 'undefined') {
+                        tag_array = datastr[name];
+                    }
+                    datetag.find('input').each(function () {
+                        var val = $(this).val();
+                        var matches = $(this).attr('name').match(reg);
+                        if (typeof datastr[name] != 'undefined') {
+                            tag_array = datastr[name];
+                        }
+                        if (val != '') {
+                            tag_array[matches[2]] = val;
+                        } else {
+                            delete tag_array[matches[2]];
+                        }
+
+                        datastr[name] = tag_array;
+                    });
+                    $.ajax({url: estate_folder + '/js/ajax.php?action=get_tags&do=set&tags_array=' + JSON.stringify(datastr)}).done(function (result_items) {
+                        location.reload();
+                    });
+                });
+                datetag.find('.clear').click(function (e) {
+                    e.preventDefault();
+                    if (typeof datastr[name] != 'undefined') {
+                        tag_array = datastr[name];
+                        delete datastr[name];
+                    }
+                    $.ajax({url: estate_folder + '/js/ajax.php?action=get_tags&do=set&tags_array=' + JSON.stringify(datastr)}).done(function (result_items) {
+                        location.reload();
+                    });
+                });
+
             });
 
             $('.ranged-tags').each(function (e) {
@@ -357,7 +518,7 @@
     <div class="navbar-inner">
         <div class="container">
             <div class="nav total_find" style="color: #fff; font-size: 24px; padding: 10px 20px 10px 5px; font-size: 20px; font-weight: 200;">Найдено: {$_total_records}</div>
-            
+
             <div class="nav pull-right">
                 <div align="right"><a href="?action=data&do=import" title="Загрузить записи в формате Excel" class="btn btn-info btn-xs "><i class="icon-white icon-upload"></i> </a> <a href="#search" id="search_toggle" class="btn btn-info"><i class="icon-white icon-search"></i> {$L_ADVSEARCH}</a></div>
                 <div id="search_form_block" {if $smarty.request.submit_search_form_block eq ''}style="display:none;"{/if} class="spacer-top">
@@ -392,7 +553,7 @@
             {if $admin_grid_leftbuttons==1}
                 <th class="row_title"></th>
                 {/if}
-                {foreach from=$grid_data_columns item=grid_data_column}	
+                {foreach from=$grid_data_columns item=grid_data_column}
                 <th {if $smarty.request.order eq $grid_data_column}class="sorting_{if $smarty.request.asc eq 'desc'}desc{else}asc{/if}"{else}class="sorting"{/if}  >
                     {if !in_array($core_model[$grid_data_column].type, array('uploads', 'docuploads', 'uploadify_image'))}
                         <!-- #section:plugins/input.tag-input -->
@@ -408,14 +569,33 @@
                                         <div class="ranged-tags-params" style="display: none;">
                                             <input name="{$grid_data_column}[min]" type="text" class="tagged_input" value="{$smarty.session.tags_array[$grid_data_column].min}">
                                             <input name="{$grid_data_column}[max]" type="text" class="tagged_input" value="{$smarty.session.tags_array[$grid_data_column].max}">
-                                            <a href="#" class="btn btn-danger clear" title="очистить фильтр"><i class="icon-remove"></i></a>
-                                            <a href="#" class="btn btn-success apply" title="применить фильтр"><i class="icon-ok"></i></a>
-                                            <a href="#" class="btn cancel" title="скрыть окно фильтра"><i class="icon-off"></i></a>
+                                            <a href="#" class="btn btn-danger btn-small clear" title="очистить фильтр"><i class="icon-remove"></i></a>
+                                            <a href="#" class="btn btn-success btn-small apply" title="применить фильтр"><i class="icon-ok"></i></a>
+                                            <a href="#" class="btn cancel btn-small" title="скрыть окно фильтра"><i class="icon-off"></i></a>
                                         </div>
                                     </div>
                                     {*$smarty.session.tags_array|print_r*}
                                 </div>
+                            {elseif $core_model[$grid_data_column].type == 'dtdatetime'}
+                                <div class="inline-tags">
 
+                                    <div class="date-tags" data-field="{$grid_data_column}">
+                                        <div class="date-tags-title"></div>
+                                        <div class="date-tags-params" style="display: none;">
+                                            <a href="#" class="btn btn-mini btn-info set today" title="Сегодня">Сегодня</a>
+                                            <a href="#" class="btn btn-mini btn-info set yesterday" title="Вчера">Вчера</a>
+                                            <a href="#" class="btn btn-mini btn-info set days7" title="за 7 дней">за 7 дней</a>
+                                            <a href="#" class="btn btn-mini btn-info set days30" title="за 30 дней">за 30 дней</a>
+                                            <div id="dateselect_{$grid_data_column}_min" class="input-group input-append dateselect"><input class="" data-format="" type="text" placeholder="от" name="{$grid_data_column}[min]" value="{$smarty.session.tags_array[$grid_data_column].min}"></input><div class="add-on input-group-addon"><span class="glyphicon glyphicon-calendar"></span></div></div>
+                                            <div id="dateselect_{$grid_data_column}_max" class="input-group input-append dateselect"><input class="" data-format="" type="text" placeholder="до" name="{$grid_data_column}[max]" value="{$smarty.session.tags_array[$grid_data_column].max}"></input><div class="add-on input-group-addon"><span class="glyphicon glyphicon-calendar"></span></div></div>
+
+                                            <a href="#" class="btn btn-danger btn-small clear" title="очистить фильтр"><i class="icon-remove"></i></a>
+                                            <a href="#" class="btn btn-success btn-small apply" title="применить фильтр"><i class="icon-ok"></i></a>
+                                            <a href="#" class="btn cancel btn-small" title="скрыть окно фильтра"><i class="icon-off"></i></a>
+                                        </div>
+                                    </div>
+                                    {*$smarty.session.tags_array|print_r*}
+                                </div>
                             {else}
 
                                 <div class="inline-tags">
@@ -459,7 +639,7 @@
 
                         <td><input id="grid_check_all_{$grid_items[i].id.value}" type="checkbox" class="grid_check_one ace" value="{$grid_items[i].id.value}" /><label for="grid_check_all_{$grid_items[i].id.value}" class="lbl"></label></td>
                         <!-- td>
-                                <button data-id="{$grid_items[i].id.value}" class="fast_preview btn btn-danger"><i class="icon-white icon-eye-open"></i></button> 
+                                <button data-id="{$grid_items[i].id.value}" class="fast_preview btn btn-danger"><i class="icon-white icon-eye-open"></i></button>
                                 <button data-id="{$grid_items[i].id.value}" class="fast_comment btn btn-info"><i class="icon-white icon-eye-open"></i></button>
                         </td-->
                         {if $admin_grid_leftbuttons==1}
@@ -467,9 +647,8 @@
                         {/if}
 
 
-                        {foreach from=$grid_data_columns item=grid_data_column}	
+                        {foreach from=$grid_data_columns item=grid_data_column}
                             {if $grid_items[i][$grid_data_column].type=='uploadify_image' && is_array($grid_items[i][$grid_data_column].image_array) && $grid_items[i][$grid_data_column].image_array|count>0}
-
                                 <td>
                                     <ul class="ace-thumbnails clearfix">
                                         <li>
@@ -490,7 +669,7 @@
                                         {foreach from=$grid_items[i][$grid_data_column].image_array item=image key=k}
                                             {if $k != 0}
                                                 <li style="display: none;">
-                                                    <a href="{$estate_folder}/img/data/{$image.normal}"  data-rel="colorbox{$grid_items[i].id.value}"><img src="{$estate_folder}/img/data/{$image.preview}" width="50" /></a>
+                                                    <a href="{$estate_folder}/img/data/{$image.normal}"  data-rel="colorbox{$grid_items[i].id.value}"><img src="" data-src="{$estate_folder}/img/data/{$image.preview}" width="50" /></a>
                                                 </li>
                                             {/if}
                                         {/foreach}
@@ -501,8 +680,8 @@
                                     {if is_array($grid_items[i][$grid_data_column].value) && !empty($grid_items[i][$grid_data_column].value)}
                                     <ul class="ace-thumbnails clearfix">
                                         <li>
-                                            <a href="{if $grid_items[i][$grid_data_column].value[0].remote === 'true'}{$grid_items[i][$grid_data_column].value[0].normal}{else}{$estate_folder}/img/data/{$grid_items[i][$grid_data_column].value[0].normal}{/if}">
-                                                <img src="{if $grid_items[i][$grid_data_column].value[0].remote === 'true'}{$grid_items[i][$grid_data_column].value[0].normal}{else}{$estate_folder}/img/data/{$grid_items[i][$grid_data_column].value[0].preview}{/if}" style="min-width: 40px; max-width: 100px;" />
+                                            <a href="{mediaincpath data=$grid_items[i][$grid_data_column].value[0]}">
+                                                <img src="{mediaincpath data=$grid_items[i][$grid_data_column].value[0] type='preview'}" style="min-width: 40px; max-width: 100px;" />
                                             </a>
                                             <div class="tags">
                                                 <span class="label-holder">
@@ -518,7 +697,7 @@
                                         {foreach from=$grid_items[i][$grid_data_column].value item=image key=k}
                                             {if $k != 0}
                                                 <li style="display: none;">
-                                                    <a href="{if $image.remote === 'true'}{$image.normal}{else}{$estate_folder}/img/data/{$image.normal}{/if}"  data-rel="colorbox{$grid_items[i].id.value}"><img src="{if $image.remote === 'true'}{$image.normal}{else}{$estate_folder}/img/data/{$image.preview}{/if}" width="50" /></a>
+                                                    <a href="{mediaincpath data=$image}"  data-rel="colorbox{$grid_items[i].id.value}"></a>
                                                 </li>
                                             {/if}
                                         {/foreach}
@@ -534,7 +713,12 @@
                             {elseif $grid_items[i][$grid_data_column].type=='select_by_query_multi'}
                                 <td>{$grid_items[i][$grid_data_column].value_string|implode:', '}</td>
                             {else}
-                                <td>{$grid_items[i][$grid_data_column].value_string}</td>
+                                <td>
+                                    {$grid_items[i][$grid_data_column].value_string}
+                                    {if isset($grid_items[i][$grid_data_column]._hint)}
+                                    <span class="hint">{$grid_items[i][$grid_data_column]._hint}</span>
+                                    {/if}
+                                </td>
                             {/if}
                         {/foreach}
 
@@ -549,7 +733,7 @@
                 <tr>
                     <td colspan="{3+$grid_data_columns|count}">
                         <button alt="data" class="delete_checked btn btn-danger"><i class="icon-white icon-remove"></i> {$L_DELETE_CHECKED}</button>
-                        <button alt="data" class="batch_update btn btn-inverse"><i class="icon-white icon-th"></i> Пакетная обработка <sup>(beta)</sup></button> 
+                        <button alt="data" class="batch_update btn btn-inverse"><i class="icon-white icon-th"></i> Пакетная обработка <sup>(beta)</sup></button>
                         <button alt="data" class="duplicate btn btn-inverse"><i class="icon-white icon-th"></i> Дублировать <sup>(beta)</sup></button>
                         <div class="btn-group">
                             <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">Групповая обработка значений <span class="caret"></span></a>

@@ -345,6 +345,10 @@ class Kvartira_View extends SiteBill {
 
         if ($this->getConfigValue('use_google_map')) {
             $this->template->assign('map_type', 'google');
+        }elseif(2 == $this->getConfigValue('use_google_map')){
+			$this->template->assign('map_type', 'leaflet_osm');
+        }else{
+			$this->template->assign('map_type', 'yandex');
         }
 
         $form_user['_href'] = $this->getUserHREF($form_user['user_id']['value']);
@@ -606,6 +610,11 @@ class Kvartira_View extends SiteBill {
             $this->template->assign('_core_folder', SITEBILL_DOCUMENT_ROOT);
             $pdf_file_name = 'realty' . $realty_id . $_tpl_code . '.pdf';
             $pdf_file_storage = SITEBILL_DOCUMENT_ROOT . '/cache/';
+            
+            $pdfpageorient = 'portrait';
+			if(1 == intval($this->getConfigValue('apps.pdfreport.data_page_orient'))){
+				$pdfpageorient = 'landscape';
+			}
 
             if (0 == (int) $this->getConfigValue('apps.pdfreport.use_cache') || $hasAccessor) {
                 global $smarty;
@@ -623,6 +632,8 @@ class Kvartira_View extends SiteBill {
 
                 $dompdfoptions = new \Dompdf\Options();
                 $dompdfoptions->set('isRemoteEnabled', TRUE);
+                $dompdfoptions->set('defaultPaperOrientation', $pdfpageorient);
+                $dompdfoptions->set('defaultPaperSize', 'A4');
 
                 $dompdf = new \Dompdf\Dompdf($dompdfoptions);
                 $dompdf->loadHtml($html);
@@ -650,6 +661,8 @@ class Kvartira_View extends SiteBill {
                     }
                     $dompdfoptions = new \Dompdf\Options();
                     $dompdfoptions->set('isRemoteEnabled', TRUE);
+                    $dompdfoptions->set('defaultPaperOrientation', $pdfpageorient);
+                    $dompdfoptions->set('defaultPaperSize', 'A4');
                     $dompdf = new \Dompdf\Dompdf($dompdfoptions);
                     $dompdf->loadHtml($html);
                     $dompdf->render();

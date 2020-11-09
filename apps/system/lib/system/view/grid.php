@@ -11,7 +11,7 @@ class Common_Grid extends Sitebill {
      * @var array
      */
     protected $grid_items = array();
-    
+
     /**
      * Массив объектов для рендеринга вывода элемента
      */
@@ -22,7 +22,7 @@ class Common_Grid extends Sitebill {
      * @var array
      */
     protected $grid_controls = array();
-    
+
     /*
      * Enable howing button of batch list update
      */
@@ -30,9 +30,9 @@ class Common_Grid extends Sitebill {
     protected $batchActivate = false;
     protected $batchUpdateUrl = '';
     protected $massDeleteUrl = '';
-    
+
     /**
-     * 
+     *
      * @var string
      */
     protected $grid_query;
@@ -54,20 +54,20 @@ class Common_Grid extends Sitebill {
      * По-умолчанию false - т.е. для любого, проверки прав доступа не выполняется
      */
     protected $render_user_id = false;
-    
+
     protected $total_count = 0;
-            
+
     function __construct($grid_object) {
         $this->SiteBill();
         $this->grid_object = $grid_object;
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $this->data_model_controller = new Data_Model();
     }
-    
+
     function setBatchUpdateUrl($batch_update_url){
         $this->batchUpdateUrl = $batch_update_url;
     }
-    
+
     function setMAssDeleteUrl($mass_delete_url){
         $this->massDeleteUrl = $mass_delete_url;
     }
@@ -111,15 +111,15 @@ class Common_Grid extends Sitebill {
     function get_table_name() {
         return $this->table_name;
     }
-    
+
     public function enableBatchUpdate(){
         $this->batchUpdate = true;
     }
-    
+
     public function enableMassDelete(){
         $this->massDelete = true;
     }
-    
+
     public function enableBatchActivate(){
         $this->batchActivate = true;
     }
@@ -142,7 +142,7 @@ class Common_Grid extends Sitebill {
     }
 
     /**
-     * Set SQL-query for load records 
+     * Set SQL-query for load records
      * @param string $query
      * @return void
      */
@@ -158,7 +158,7 @@ class Common_Grid extends Sitebill {
     function set_conditions($conditions) {
         $this->conditions = $conditions;
     }
-    
+
     function set_conditions_sql($conditions) {
         $this->conditions_sql = $conditions;
     }
@@ -268,8 +268,21 @@ class Common_Grid extends Sitebill {
 
         if (isset($_SESSION['model_tags']) && is_array($_SESSION['model_tags'][$this->grid_object->table_name]['tags_array'])) {
             foreach ($_SESSION['model_tags'][$this->grid_object->table_name]['tags_array'] as $column_name => $column_values) {
+                $model = $this->grid_object->data_model[$this->grid_object->table_name];
+                
                 $column_values = $this->parse_id_values_from_model($column_name, $column_values, $this->grid_object->data_model);
-                if (isset($params[$column_name]) and ! is_array($params[$column_name])) {
+                if($model[$column_name]['type'] == 'select_by_query_multi'){
+                    $pkname = '';
+                    foreach ($model as $k => $v){
+                        if($v['type'] == 'primary_key'){
+                            $pkname = $k;
+                            break;
+                        }
+                    }
+                    unset($params[$column_name]);
+                    $params[$pkname] = $column_values;
+                    //$params['id'] = $column_values;
+                }elseif (isset($params[$column_name]) and ! is_array($params[$column_name])) {
                     if ($params[$column_name] != 0) {
                         array_push($column_values, $params[$column_name]);
                     }
@@ -283,11 +296,11 @@ class Common_Grid extends Sitebill {
         }
         return $params;
     }
-    
+
     function set_total_count($total_count) {
         $this->total_count = $total_count;
     }
-    
+
     function get_total_count() {
         return $this->total_count;
     }
@@ -333,7 +346,7 @@ class Common_Grid extends Sitebill {
     }
 
     function construct_grid($control_params = false, $disable_mass_delete = false) {
-       
+
         //Регистрируем hook для обработки элементов грида при выводе
         if (function_exists('BeforePrintGridItem')) {
             $BeforePrintGridItem = true;
@@ -345,14 +358,14 @@ class Common_Grid extends Sitebill {
 
             return $this->_construct_grid($control_params, $disable_mass_delete);
         } else {
-            
+
             /*$_props=array();
             if(isset($_GET['_props']) && is_array($_GET['_props']) && !empty($_GET['_props'])){
                 $_props=$_GET['_props'];
             }
-            
+
             print_r($_props);
-            
+
             foreach ($_props as $column_name => $column_values) {
                 $column_values = $this->parse_id_values_from_model($column_name, $column_values, $this->get_model());
                 if (isset($params[$column_name]) and ! is_array($params[$column_name])) {
@@ -366,8 +379,8 @@ class Common_Grid extends Sitebill {
                     $params[$column_name] = $column_values;
                 }
             }*/
-        
-            
+
+
             $DBC = DBC::getInstance();
             $pager_params = array();
             $sort_params = array();
@@ -400,12 +413,6 @@ class Common_Grid extends Sitebill {
             $sortby = $table_and_prefix.'.'.$sortby;
 
             $where = array();
-            //unset($_SESSION['tags_array']);
-            //unset($_SESSION['model_tags']);
-            //echo '<pre>';
-            //print_r($_SESSION);
-            //print_r($this->conditions);
-            //echo '</pre>';
 
             if (!empty($this->conditions)) {
                 foreach ($this->conditions as $key => $value) {
@@ -428,7 +435,7 @@ class Common_Grid extends Sitebill {
                             $sort_params[] = $table_and_prefix.'.'.$key . '=' . $value;
                         }
                     }
-                    
+
                 }
                 $pager_params = array_merge($pager_params, $this->conditions);
             }
@@ -445,29 +452,31 @@ class Common_Grid extends Sitebill {
             $tagged_params = $this->add_tags_params();
             $where = $this->add_tagged_parms_to_where($where, $tagged_params, $this->grid_object->table_name);
 
-            //echo '<pre>';
-            //print_r($where);
-            //print_r($_SESSION);
-            //print_r($this->conditions);
-            //echo '</pre>';
-            //$sort_params=array_merge($sort_params, $this->conditions);
-            
-            //$this->per_page=3;
-            
             $query_no_limit = 'SELECT `'. DB_PREFIX . '_' . $this->grid_object->table_name. '`.* FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name . $left_join_tables . (!empty($where) ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY ' . $sortby . ' ' . $sortdir . ' ';
             $query_no_limit_total_count = 'SELECT count(`'. DB_PREFIX . '_' . $this->grid_object->table_name. '`' .'.`'.$this->grid_object->primary_key.'`) as total FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name . $left_join_tables . (!empty($where) ? ' WHERE ' . implode(' AND ', $where) : '');
             $query =          'SELECT `'. DB_PREFIX . '_' . $this->grid_object->table_name. '`.* FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name . $left_join_tables . (!empty($where) ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY ' . $sortby . ' ' . $sortdir . ' ' . (isset($this->per_page) ? 'LIMIT ' . (($this->current_page - 1) * $this->per_page) . ', ' . $this->per_page : '');
             //$this->writeLog($query);
             //$this->writeLog($query_no_limit);
             //$this->writeLog($query_no_limit_total_count);
-            $stmt = $DBC->query($query_no_limit_total_count);
+
+
+            $result = $this->get_query_cache_value($query_no_limit_total_count, array());
             $total_count = 0;
-            if ($stmt) {
-                $ar = $DBC->fetch($stmt);
-                $total_count = $ar['total'];
+            if ( $result['result'] === true ) {
+                $total_count = $result['value'];
+            } else {
+                $stmt = $DBC->query($query_no_limit_total_count);
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+                    $total_count = $ar['total'];
+                    $this->insert_query_cache_value($query_no_limit_total_count, array(), $total_count);
+                }
             }
+
+
+
             $this->set_total_count($total_count);
-           
+
             $this->set_grid_query($query_no_limit);
             //echo $total_count;
             $stmt = $DBC->query($query);
@@ -489,16 +498,16 @@ class Common_Grid extends Sitebill {
             } else {
                 $ra = array();
             }
-            
+
             /*echo '<pre>';
             print_r($ra);*/
-            
+
             if(!empty($ra) && $this->grid_object->table_name=='data'){
                 if(1==intval($this->getConfigValue('use_topic_actual_days'))){
                     //$fe=reset($ra);
                     /*$actual_dates=array();
                     $actual_topics=array();*/
-                    
+
                     //$topic_actuals=array();
                     $DBC=DBC::getInstance();
                     /*if(!isset($fe['date_added'])){
@@ -509,13 +518,13 @@ class Common_Grid extends Sitebill {
                                 $actual_dates[$ar['id']]=$ar['date_added'];
                             }
                         }
-                        
+
                     }else{
                         foreach($ra as $k=>$v){
                             $actual_dates[$k]=$v['date_added'];
                         }
                     }
-                    
+
                     if(!isset($fe['topic_id'])){
                         $query='SELECT id, topic_id FROM '.DB_PREFIX.'_data WHERE id IN ('.implode(',', array_keys($ra)).')';
                         $stmt=$DBC->query($query);
@@ -524,7 +533,7 @@ class Common_Grid extends Sitebill {
                                 $actual_topics[$ar['id']]=$ar['topic_id'];
                             }
                         }
-                        
+
                     }else{
                         foreach($ra as $k=>$v){
                             $actual_topics[$k]=$v['topic_id'];
@@ -532,7 +541,7 @@ class Common_Grid extends Sitebill {
                     }*/
 
                     $topic_actuals=array();
-                    
+
                     $query='SELECT id, actual_days FROM '.DB_PREFIX.'_topic';
                     $stmt=$DBC->query($query);
                     if($stmt){
@@ -549,7 +558,7 @@ class Common_Grid extends Sitebill {
                     }
                 }
             }
-            
+
 
             //Отсюда начинаем формировать таблицу со всеми подключаемыми плагинами
             $rs = '';
@@ -793,12 +802,12 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
 
 
             foreach ($this->grid_items as $item_id => $item_name) {
-                
+
                 $rs .= '<th ';
                 if ($this->grid_object->data_model[$this->grid_object->table_name][$item_name]['type'] == 'primary_key') {
                     $rs .= 'width="1%"';
                 }
-                if ($sortby == $item_name) {
+                if ($sortby == $table_and_prefix.'.'.$item_name) {
                     if (strtolower($sortdir) == 'asc') {
                         $sortdirn = 'desc';
                         $sorted = 'common-grid-sorted-asc';
@@ -844,7 +853,7 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
 				      source: function(query, process) {
 				    	  column_name = tag_input.attr('name');
 							$.ajax({
-								url: estate_folder+'/js/ajax.php?action=get_tags&column_name='+column_name+'&model_name=" . $this->grid_object->table_name . "'
+								url: estate_folder+'/js/ajax.php?action=get_tags&column_name='+column_name+'&model_name=" . $this->grid_object->table_name . "&term='+query+''
 				        	}).done(function(result_items){
 								process(result_items);
 							});
@@ -877,7 +886,8 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
 			        });
 				})
 				tag_input.on('removed', function (e, value) {
-			   		var item_index = datastr[$(this).attr('name')].indexOf(value);
+                    var val = (Array.isArray(value) ? value[0] : value);
+			   		var item_index = datastr[$(this).attr('name')].indexOf(val);
 			   		datastr[$(this).attr('name')].splice(item_index, 1);
 			        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&model_name=" . $this->grid_object->table_name . "&do=set&tags_array='+JSON.stringify(datastr)})
 			        .done(function(result_items){
@@ -893,7 +903,7 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
     	
     	
                                         ";
-                    
+
                     /*$tags_input = '
                         <div class="inline-tags1">
                             <input type="text" name="' . $item_name . '" id="' . $item_name . '" class="input-tag tagged" value="" />
@@ -910,20 +920,20 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
             $rs .= '</tr>';
             $rs .= '</thead>';
             $rs .= '<tbody>';
-           
+
             if (count($ra) > 0) {
-                
-                
-                
+
+
+
                 foreach ($ra as $primary_key_value => $item_array) {
                     $ids[]=$primary_key_value;
                 }
-                
+
                 $row_datas=$this->grid_object->load_by_id($ids);
-                 
+
                 //echo count($row_datas);
-                
-                
+
+
                 $checked_accesses=array();
               //var_dump($row_data);
             //exit();
@@ -934,7 +944,7 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
                         $row_data = BeforePrintGridItem($row_data, $control_params);
                     }
                     $has_access = $this->check_access($this->grid_object->action, $this->get_render_user_id(), $check_control_name, $this->grid_object->primary_key, $primary_key_value);
-                    
+
                     $rs .= '<tr class="'.((isset($item_array['active']) && $item_array['active']==0) ? 'notactive danger alert-danger' : '').((isset($item_array['_classes']) && $item_array['_classes']!='') ? ' '.$item_array['_classes'] : '').'">';
                     $grid_counter = 0;
                     if (!$disable_mass_delete) {
@@ -944,7 +954,7 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
 
                     foreach ($this->grid_items as $item_id => $item_name) {
                         $grid_counter++;
-                        
+
                         if ( isset($row_data[$item_name]['parameters']['only_owner_access']) && $row_data[$item_name]['parameters']['only_owner_access'] == 1 ) {
                             if ( !$has_access and $_SESSION['current_user_group_name'] != 'admin') {
                                 $row_data[$item_name]['value'] = _e('скрыто');
@@ -955,7 +965,7 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
                             //print_r($this->grid_object->data_model[$this->grid_object->table_name]);
                             //echo '</pre>';
                         }
-                        
+
 
                         /* if($row_data[$item_name]['name']=='name'){
                           $a=' class="editable_name_field" data-key="'.$this->grid_object->primary_key.'" data-fid="'.$primary_key_value.'" data-tbl="'.$this->grid_object->action.'"';
@@ -966,6 +976,8 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
 
                         if ($row_data[$item_name]['type'] == 'select_by_query') {
                             $rs .= '<td>' . $row_data[$item_name]['value_string'] . '</td>';
+                        } elseif ($row_data[$item_name]['type'] == 'select_by_query_multi') {
+                            $rs .= '<td>' . implode(', ', $row_data[$item_name]['value_string']) . '</td>';
                         } elseif ($row_data[$item_name]['type'] == 'structure') {
                             $rs .= '<td>' . $row_data[$item_name]['value_string'] . '</td>';
                         } elseif ($row_data[$item_name]['type'] == 'select_box_structure') {
@@ -986,7 +998,7 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
                             $rs .= '<td>' . ($row_data[$item_name]['value'] == 1 ? '<img src="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template/img/radio_yes.png">' : '<img src="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template/img/radio_no.png">') . '</td>';
                         } elseif ($row_data[$item_name]['type'] == 'uploads') {
                             $rs .= '<td>';
-                            if (count($row_data[$item_name]['value']) > 0 and is_array($row_data[$item_name]['value'])) {
+                            if (is_array($row_data[$item_name]['value']) and count($row_data[$item_name]['value']) > 0) {
                                 $rs .= '<ul class="ace-thumbnails clearfix">';
                                 $counter = 0;
                                 //echo '<pre>';
@@ -994,14 +1006,9 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
                                 //echo '</pre>';
 
                                 foreach ($row_data[$item_name]['value'] as $vv) {
-                                    if ( $vv['remote'] == 'true' ) {
-                                        $preview_url = $vv['preview'];
-                                        $normal_url = $vv['normal'];
-                                    } else {
-                                        $preview_url = SITEBILL_MAIN_URL . '/img/data/' . $vv['preview'];
+                                    $preview_url = $this->createMediaIncPath($vv, 'preview');
                                         //echo $preview_url.'<br>';
-                                        $normal_url = SITEBILL_MAIN_URL . '/img/data/' .$vv['normal'];
-                                    }
+                                    $normal_url = $this->createMediaIncPath($vv);
                                     if ($counter == 0) {
                                         $rs .= '<li><img src="' . $preview_url . '" style="width: 40px; height: 40px;">
 					<div class="tags">
@@ -1020,7 +1027,7 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
                                     } else {
                                         $rs .= '
 				<li style="display: none;">
-					<a href="' . $normal_url . '"  data-rel="colorbox' . $primary_key_value . $item_name . '"><img src="' . $preview_url . '" width="50" /></a>
+					<a href="' . $normal_url . '"  data-rel="colorbox' . $primary_key_value . $item_name . '"></a>
 				</li>
 											
 											';
@@ -1087,6 +1094,8 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
                                   $control_params_delete_string.='&'.http_build_query($this->controls_params);
                                   } */
                                 $rs .= ' <a href="?action=' . $this->grid_object->action . '&do=delete&' . $this->grid_object->primary_key . '=' . $primary_key_value . $control_params_delete_string . '" onclick="if ( confirm(\''._e('Действительно хотите удалить запись?').'\') ) {return true;} else {return false;}" class="btn btn-danger"><i class="icon-white icon-remove"></i></a> ';
+                            }  elseif ($control_name == 'reservation') {
+                                $rs .= ' <a href="' . SITEBILL_MAIN_URL . '/account/reservation/my/'.$primary_key_value.self::$_trslashes.'" class="btn btn-info"><i class="fa fa-usd" aria-hidden="true"></i></a> ';
                             } else {
                                 $control_params_oth_string = '';
 
@@ -1109,15 +1118,20 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
                         $rs .= '</td>';
                     }
                     $rs .= '</tr>';
-                    if ((ADMIN_MODE!=1 && $this->grid_object->table_name == 'complex' && intval($this->getConfigValue('apps.complex.use_billing'))==1) || ($this->getConfigValue('apps.billing.enable') and $this->grid_object->table_name == 'data' and $this->check_access($this->grid_object->action, $this->get_render_user_id(), 'edit', $this->grid_object->primary_key, $primary_key_value)) ) {
-                        
+                    $admin_mode = false;
+                    if ( defined('ADMIN_MODE') and ADMIN_MODE == 1 ) {
+                        $admin_mode = true;
+                    }
+
+                    if ((!$admin_mode && $this->grid_object->table_name == 'complex' && intval($this->getConfigValue('apps.complex.use_billing'))==1) || ($this->getConfigValue('apps.billing.enable') and $this->grid_object->table_name == 'data' and $this->check_access($this->grid_object->action, $this->get_render_user_id(), 'edit', $this->grid_object->primary_key, $primary_key_value)) ) {
+
                         $rs .= '<tr>';
                         $rs .= '<td colspan="' . (count($this->grid_controls) + $grid_counter) . '">'.$this->billing_controls($row_data).'</td>';
                         $rs .= '</tr>';
                     }
-                    
+
                 }
-                
+
                 if(!$disable_mass_delete || $this->batchUpdate || $this->batchActivate){
                     $rs .= '<tr><td colspan="' . (count($this->grid_controls) + $grid_counter) . '">';
                     if (!$disable_mass_delete) {
@@ -1140,20 +1154,28 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
                     $rs .= '<tr><td colspan="' . (count($this->grid_controls) + $grid_counter) . '"><button alt="' . $this->grid_object->action . '" class="delete_checked btn btn-danger"><i class="icon-white icon-remove"></i> ' . Multilanguage::_('L_DELETE_CHECKED') . '</button></td></tr>';
                 }*/
                 $query = 'SELECT COUNT(' . $this->grid_object->primary_key . ') AS _cnt FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name . (!empty($where) ? ' WHERE ' . implode('AND', $where) : '');
-                $stmt = $DBC->query($query);
-                if ($stmt) {
-                    $ar = $DBC->fetch($stmt);
-                    $total = $ar['_cnt'];
+
+                $result = $this->get_query_cache_value($query, array());
+                if ( $result['result'] === true ) {
+                    $total = $result['value'];
                 } else {
-                    $total = 0;
+                    $stmt = $DBC->query($query);
+                    if ($stmt) {
+                        $ar = $DBC->fetch($stmt);
+                        $total = $ar['_cnt'];
+                        $this->insert_query_cache_value($query, array(), $total);
+                    } else {
+                        $total = 0;
+                    }
                 }
+
                 $page_links_list=$this->get_page_links_list($this->current_page, $total, $this->per_page, $pager_params);
                 if($page_links_list!=''){
                     $rs .= '<tr><td colspan="' . (count($this->grid_controls) + $grid_counter) . '" class="pager"><div align="center">';
                     $rs .= $page_links_list;
                     $rs .= '</div></td></tr>';
                 }
-                
+
             } else {
                 $rs .= '<tr>';
                 $rs .= '<td colspan="' . (count($this->grid_controls) + count($this->grid_items)) . '"><p align="center" class="alert">'._e('Ничего не найдено').'</p></td>';
@@ -1164,25 +1186,26 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
 
             $rs .= '</table>';
             $rs .= '';
-            
+
             if($this->grid_object->table_name == 'complex' && intval($this->getConfigValue('apps.complex.use_billing'))==1){
-                $rs .= $this->getB();      
+                $rs .= $this->getB();
             }
-            
-            
+
+
 
             return $rs;
         }
     }
-    
+
     private function getB(){
         $status_cost=array();
+        $custom_statuses = array();
         if($this->grid_object->table_name == 'complex'){
             $status_cost['vip']= floatval($this->getConfigValue('apps.complex.complex_vip_cost'));
             $status_cost['premium']= floatval($this->getConfigValue('apps.complex.complex_premium_cost'));
             $status_cost['bold']= floatval($this->getConfigValue('apps.complex.complex_bold_cost'));
         }
-        
+
 
         $ret='';
         $ret.='<div class="modal fade" class="makeSpec" id="makeSpec" tabindex="-1" role="dialog" aria-labelledby="makeSpecOk" aria-hidden="true">
@@ -1205,8 +1228,6 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
   		<input type="hidden" value="'.$status_cost['premium'].'" id="pdp_premium" />
   		<input type="hidden" value="'.$status_cost['vip'].'" id="pdp_vip" />
   		<input type="hidden" value="'.$status_cost['bold'].'" id="pdp_bold" />
-        
-  		
 		  <div class="control-group">
 		    <label class="control-label">'.Multilanguage::_('B_MAKE_DAYS', 'system').'</label>
 		    <div class="controls">
@@ -1228,43 +1249,83 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
     <button class="btn" data-dismiss="modal" aria-hidden="true">'.Multilanguage::_('CANCEL_NM', 'system').'</button>
   </div>
 </div>';
-        
+
         $ret.='<script src="'.SITEBILL_MAIN_URL.'/apps/billing/js/grid_billing.js"></script>';
         return $ret;
     }
-    
+
     private function billing_controls ($row_data) {
-        
+
+        $custom_statuses = array();
+
+        if($this->grid_object->table_name == 'data'){
+            require_once SITEBILL_DOCUMENT_ROOT.'/apps/billing/admin/admin.php';
+            $billing = new billing_admin();
+
+            $custom_statuses = $billing->loadCustomStatuses();
+
+        }
+
         $DBC = DBC::getInstance();
-        $row = array();
-        $query = 'SELECT `vip_status_end`, `premium_status_end`, `bold_status_end` FROM ' . DB_PREFIX . '_'.$this->grid_object->table_name.' WHERE `'.$this->grid_object->primary_key.'` = ? LIMIT 1';
+        $current_statuses = array();
+
+        $status_fileds = array();
+
+        $status_fileds[] = 'vip_status_end';
+        $status_fileds[] = 'premium_status_end';
+        $status_fileds[] = 'bold_status_end';
+
+        if(!empty($custom_statuses)){
+            foreach($custom_statuses as $key => $custom_status){
+                $status_fileds[] = $custom_status['field_name'];
+            }
+        }
+
+
+
+        $query = 'SELECT '.implode(', ', $status_fileds).' FROM ' . DB_PREFIX . '_'.$this->grid_object->table_name.' WHERE `'.$this->grid_object->primary_key.'` = ? LIMIT 1';
+
         $stmt = $DBC->query($query, array($row_data[$this->grid_object->primary_key]['value']));
         if ($stmt) {
-            $row = $DBC->fetch($stmt);
+            $current_statuses = $DBC->fetch($stmt);
         }
-        
-        
-        if ( $row['vip_status_end'] > time() ) {
-            $rs .= ' <span class="vb alert alert-info"><i class="icon-star icon-black"></i> '.Multilanguage::_('GB_BVIP_TO', 'system').' '.date('d.m.Y H:i', $row['vip_status_end']).'</span>';
+
+        if ( $current_statuses['vip_status_end'] > time() ) {
+            $rs .= ' <span class="vb btn btn-small btn-info btn-disabled"><i class="icon-star icon-black"></i> '.Multilanguage::_('GB_BVIP_TO', 'system').' '.date('d.m.Y H:i', $current_statuses['vip_status_end']).'</span>';
         } else {
             $rs .= ' <a class="btn btn-small make_spec" data-type="vip" data-object="'.$this->grid_object->table_name.'" alt="'.$row_data[$this->grid_object->primary_key]['value'].'"><i class="icon-star icon-black"></i> '.Multilanguage::_('GB_BVIP_MAKE', 'system').'</a>';
         }
 
-        if ( $row['premium_status_end'] > time() ) {
-            $rs .= ' <span class="vb alert alert-info"><i class="icon-fire icon-black"></i> PREMIUM до '.date('d.m.Y H:i', $row['premium_status_end']).'</span>';
+        if ( $current_statuses['premium_status_end'] > time() ) {
+            $rs .= ' <span class="vb btn btn-small btn-info btn-disabled"><i class="icon-fire icon-black"></i> '.Multilanguage::_('GB_BPREMIUM_TO', 'system').' '.date('d.m.Y H:i', $current_statuses['premium_status_end']).'</span>';
         } else {
-            $rs .= ' <a class="btn btn-small make_spec" data-type="premium" data-object="'.$this->grid_object->table_name.'" alt="'.$row_data[$this->grid_object->primary_key]['value'].'"><i class="icon-fire icon-black"></i> Сделать PREMIUM</a>';
+            $rs .= ' <a class="btn btn-small make_spec" data-type="premium" data-object="'.$this->grid_object->table_name.'" alt="'.$row_data[$this->grid_object->primary_key]['value'].'"><i class="icon-fire icon-black"></i> '.Multilanguage::_('GB_BPREMIUM_MAKE', 'system').'</a>';
         }
 
-        if ( $row['bold_status_end'] > time() ) {
-            $rs .= ' <span class="vb alert alert-info"><i class="icon-heart icon-black"></i> '.Multilanguage::_('GB_BBOLD_TO', 'system').' '.date('d.m.Y H:i', $row['bold_status_end']).'</span>';
+        if ( $current_statuses['bold_status_end'] > time() ) {
+            $rs .= ' <span class="vb btn btn-small btn-info btn-disabled"><i class="icon-heart icon-black"></i> '.Multilanguage::_('GB_BBOLD_TO', 'system').' '.date('d.m.Y H:i', $current_statuses['bold_status_end']).'</span>';
         } else {
             $rs .= ' <a class="btn btn-small make_spec" data-type="bold" data-object="'.$this->grid_object->table_name.'" alt="'.$row_data[$this->grid_object->primary_key]['value'].'"><i class="icon-heart icon-black"></i> '.Multilanguage::_('GB_BBOLD_MAKE', 'system').'</a>';
         }
         if ( $this->grid_object->table_name == 'data' && $_SESSION['billing']['upps_left'] > 0 or $_SESSION['billing']['packs_left'] > 0 ) {
             $rs .= '<a class="btn btn-small go_up" href="'.SITEBILL_MAIN_URL.'/upper/realty'.$row_data['id']['value'].'/"><i class="icon-arrow-up icon-black"></i> Поднять</a>';
         }
-        
+
+
+        if(!empty($custom_statuses)){
+            foreach($custom_statuses as $key => $custom_status){
+                if ( strtotime($current_statuses[$custom_status['field_name']]) > time() ) {
+                    $text = sprintf($custom_status['grid_btn_selected'], date('d.m.Y H:i', strtotime($current_statuses[$custom_status['field_name']])));
+                    $rs .= ' <span class="btn btn-small btn-info btn-disabled">'.($custom_status['faicon_class'] != '' ? '<i class="'.$custom_status['faicon_class'].'"></i> ' : '').$text.'</span>';
+                } else {
+                    $rs .= ' <a class="btn btn-small make_spec" data-type="'.$key.'" data-object="'.$this->grid_object->table_name.'" alt="'.$row_data[$this->grid_object->primary_key]['value'].'">'.($custom_status['faicon_class'] != '' ? '<i class="'.$custom_status['faicon_class'].'"></i> ' : '').' '.$custom_status['grid_btn_title'].'</a>';
+                }
+            }
+        }
+
+
+
+
         return $rs;
     }
 
@@ -1403,12 +1464,12 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
         }
         return $rs;
     }
-    
+
     /*
      * Временная функция
      */
     function degradate_grid($grid){
-        
+
         foreach($grid as $k=>$row_data){
             //$row_data = $this->grid_object->load_by_id($primary_key_value);
             $data = array();
@@ -1445,7 +1506,7 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
         $DBC = DBC::getInstance();
 
         $query = $this->grid_query . ' LIMIT ' . (($this->current_page - 1) * $this->per_page) . ', ' . $this->per_page;
-        
+
         $stmt = $DBC->query($query);
 
         if ($stmt) {
@@ -1464,7 +1525,7 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
         if(!empty($ids)){
             $row_datas=$this->grid_object->load_by_id($ids);
         }
-        
+
         if(!empty($row_datas)){
             foreach ($row_datas as $primary_key_value => $item_array) {
                 $data = array();

@@ -690,7 +690,7 @@ class Config_Mask {
 		$data_model['editor']['title'] = 'WYSIWYG-редактор';
 		$data_model['editor']['value'] = 'cleditor';
 		$data_model['editor']['type'] = 'select_box';
-		$data_model['editor']['select_data'] = array('cleditor'=>'cleditor','ckeditor'=>'ckeditor','bbeditor'=>'bbeditor');
+		$data_model['editor']['select_data'] = array('cleditor'=>'cleditor','ckeditor'=>'ckeditor'/*,'bbeditor'=>'bbeditor'*/);
 		
 		$data_model['editor1']['name'] = 'editor1';
 		$data_model['editor1']['title'] = 'WYSIWYG-редактор1';
@@ -931,7 +931,9 @@ class Config_Mask {
 		$data_model['use_google_map']['name'] = 'use_google_map';
 		$data_model['use_google_map']['title'] = 'Использовать карту Google';
 		$data_model['use_google_map']['value'] = '0';
-		$data_model['use_google_map']['type'] = 'checkbox';
+		$data_model['use_google_map']['type'] = 'select_box';
+		$data_model['use_google_map']['select_data'] = array('0'=>'Yаndex','1'=>'Google','2'=>'Leaflet OSM');
+		
 		
 		$data_model['use_smtp']['name'] = 'use_smtp';
 		$data_model['use_smtp']['title'] = 'Отправка почты через smtp';

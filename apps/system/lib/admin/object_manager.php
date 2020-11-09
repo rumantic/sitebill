@@ -40,6 +40,10 @@ class Object_Manager extends SiteBill {
     public $notwatermarked_folder = SITEBILL_DOCUMENT_ROOT . '/img/nwtm/';
     private $nowatermark_folder_with_id = false;
     private $grid_params = null;
+    /**
+     * @var bool
+     */
+    private $shard_queue = false;
 
     /**
      * Constructor
@@ -144,7 +148,7 @@ class Object_Manager extends SiteBill {
 
 
         $new_values = $this->getRequestValue('_new_value');
-        if (1 == $this->getConfigValue('use_combobox') && count($new_values) > 0) {
+        if (1 == $this->getConfigValue('use_combobox') && is_array($new_values) && @count($new_values) > 0) {
             $remove_this_names = array();
             foreach ($form_data[$this->table_name] as $fd) {
                 if (isset($new_values[$fd['name']]) && $new_values[$fd['name']] != '' && $fd['combo'] == 1) {
@@ -241,14 +245,14 @@ class Object_Manager extends SiteBill {
                   } */
 
                 if (!in_array($_FILES[$k]['type'], array('image/jpeg', 'image/pjpeg', 'image/gif', 'image/png'))) {
-                    
+
                 } else {
                     $fprts = explode('.', $_FILES[$k]['name']);
                     $ext = strtolower(end($fprts));
                     $name = md5(time() . rand(10, 99)) . '.' . $ext;
 
                     if (!move_uploaded_file($_FILES[$k]['tmp_name'], SITEBILL_DOCUMENT_ROOT . '/img/data/' . $name)) {
-                        
+
                     } else {
                         $res = $this->makePreview(SITEBILL_DOCUMENT_ROOT . '/img/data/' . $name, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $name, $width, $height, $ext, 'f');
                         if ($res !== false) {
@@ -364,7 +368,7 @@ class Object_Manager extends SiteBill {
         $form_data = $this->data_model;
         $form_data[$this->table_name] = $data_model->init_model_data_from_var($var_data, 0, $form_data[$this->table_name]);
         $new_values = $var_data['_new_value'];
-        if (1 == $this->getConfigValue('use_combobox') && count($new_values) > 0) {
+        if (1 == $this->getConfigValue('use_combobox') && @count($new_values) > 0) {
             $remove_this_names = array();
             foreach ($form_data[$this->table_name] as $fd) {
                 if (isset($new_values[$fd['name']]) && $new_values[$fd['name']] != '' && $fd['combo'] == 1) {
@@ -429,7 +433,7 @@ class Object_Manager extends SiteBill {
         $form_data = $this->data_model;
         $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
         $new_values = $this->getRequestValue('_new_value');
-        if (1 == $this->getConfigValue('use_combobox') && count($new_values) > 0) {
+        if (1 == $this->getConfigValue('use_combobox') && @count($new_values) > 0) {
             $remove_this_names = array();
             foreach ($form_data[$this->table_name] as $fd) {
                 if (isset($new_values[$fd['name']]) && $new_values[$fd['name']] != '' && $fd['combo'] == 1) {
@@ -563,7 +567,7 @@ class Object_Manager extends SiteBill {
         $action = $this->action;
         if (post === strtolower($_SERVER['REQUEST_METHOD'])) {
             $fields = $_POST['field'];
-            if (count($fields) > 0) {
+            if (@count($fields) > 0) {
                 $query = 'INSERT INTO ' . DB_PREFIX . '_table_grids (`action_code`, `grid_fields`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `grid_fields`=?';
                 $stmt = $DBC->query($query, array($action, json_encode($fields), json_encode($fields)));
             } else {
@@ -571,7 +575,7 @@ class Object_Manager extends SiteBill {
                 $stmt = $DBC->query($query, array($action));
             }
         } else {
-            
+
         }
 
         $used_fields = array();
@@ -637,7 +641,7 @@ class Object_Manager extends SiteBill {
         $_model = $this->data_model[$this->table_name];
         $params['grid_item'] = array_keys($_model);
 
-        if (isset($params['grid_item']) && count($params['grid_item']) > 0) {
+        if (isset($params['grid_item']) && @count($params['grid_item']) > 0) {
             foreach ($params['grid_item'] as $grid_item) {
                 $common_grid->add_grid_item($grid_item);
             }
@@ -646,7 +650,7 @@ class Object_Manager extends SiteBill {
             $common_grid->add_grid_item('name');
         }
 
-        if (isset($params['grid_controls']) && count($params['grid_controls']) > 0) {
+        if (isset($params['grid_controls']) && @count($params['grid_controls']) > 0) {
             foreach ($params['grid_controls'] as $grid_item) {
                 $common_grid->add_grid_control($grid_item);
             }
@@ -655,10 +659,10 @@ class Object_Manager extends SiteBill {
             $common_grid->add_grid_control('delete');
         }
 
-        if (isset($input_params['grid_conditions']) && count($input_params['grid_conditions']) > 0) {
+        if (isset($input_params['grid_conditions']) && @count($input_params['grid_conditions']) > 0) {
             $common_grid->set_conditions($input_params['grid_conditions']);
         }
-        if (isset($params['grid_conditions_sql']) && count($params['grid_conditions_sql']) > 0) {
+        if (isset($params['grid_conditions_sql']) && @count($params['grid_conditions_sql']) > 0) {
             $common_grid->set_conditions_sql($params['grid_conditions_sql']);
         }
 
@@ -674,7 +678,7 @@ class Object_Manager extends SiteBill {
 
         $exported_template_fields = $this->getRequestValue('template_fields');
         //$exported_fields = array(0=>'country_id', 1=>'name');
-        if (is_array($exported_template_fields) && count($exported_template_fields) > 0) {
+        if (is_array($exported_template_fields) && @count($exported_template_fields) > 0) {
             $exported_fields = array_keys($exported_template_fields);
         } else {
             $exported_fields = array_keys($_model);
@@ -746,7 +750,7 @@ class Object_Manager extends SiteBill {
                 ),
             );
 
-            $last_letter = $this->num2alpha(count($exported_fields) - 1);
+            $last_letter = $this->num2alpha(@count($exported_fields) - 1);
 
             $objPHPExcel->getActiveSheet()->getStyle('A1:' . $last_letter . '1')->applyFromArray($styleArray);
 
@@ -867,7 +871,7 @@ class Object_Manager extends SiteBill {
 
     function mass_delete_data($table_name, $primary_key, $ids) {
         $errors = '';
-        if (count($ids) > 0) {
+        if (@count($ids) > 0) {
             foreach ($ids as $id) {
                 $this->delete_data($this->table_name, $this->primary_key, $id);
                 if ($this->getError()) {
@@ -887,7 +891,7 @@ class Object_Manager extends SiteBill {
 
     function mass_change_param($table_name, $primary_key, $ids, $param_name, $param_value) {
         $errors = '';
-        if (count($ids) > 0) {
+        if (@count($ids) > 0) {
             $data_model = new Data_Model();
             $form_data = $this->data_model;
             $partial_form_data = array();
@@ -969,7 +973,7 @@ class Object_Manager extends SiteBill {
                 foreach ($model_field['value'] as $upload) {
                     $uploads[] = $upload['preview'];
                     $uploads[] = $upload['normal'];
-                    if ( $upload['remote'] == 'true') {
+                    if ( $upload['remote'] === 'true') {
                         $remote_shards[] = $upload['preview'];
                         $remote_shards[] = $upload['normal'];
                     }
@@ -1006,7 +1010,7 @@ class Object_Manager extends SiteBill {
                 if ( !is_object($this->sharder) ) {
                     $this->sharder = new \sharder\lib\sharder();
                 }
-                $this->sharder->remove_remote_files($remote_shards, $this->getServerFullUrl(true));
+                $this->sharder->remove_remote_files($remote_shards, $this->getServerFullUrl(true), $this->is_shard_queue_enable());
             }
         }
         if (!empty($docuploads)) {
@@ -1025,11 +1029,47 @@ class Object_Manager extends SiteBill {
             $params[] = $table_name;
             $params = array_merge($params, $multiitems);
             $params[] = $primary_key_value;
-            $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name` IN (' . implode(', ', array_fill(0, count($multiitems), '?')) . ') AND `primary_id`=?';
+            $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name` IN (' . implode(', ', array_fill(0, @count($multiitems), '?')) . ') AND `primary_id`=?';
             $stmt = $DBC->query($query, $params);
         }
         return true;
     }
+
+    function _pdfreportAction () {
+        $tplfile = 'pdf_item.tpl';
+
+        $local_template = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/'.$this->action.'/admin/template/' . $tplfile;
+        $apps_template = SITEBILL_DOCUMENT_ROOT . '/apps/'.$this->action.'/admin/template/' . $tplfile;
+        $global_template = SITEBILL_DOCUMENT_ROOT . '/apps/system/template/grid/' . $tplfile;
+
+        if (file_exists($local_template)) {
+            $tpl = $local_template;
+        } elseif ( file_exists($apps_template)) {
+            $tpl = $apps_template;
+        } else {
+            $tpl = $global_template;
+        }
+
+        $items = $this->load_by_id($this->getRequestValue($this->primary_key));
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/view.php');
+        $table_view = new Table_View();
+        $this->template->assign('tr_rendered', $table_view->compile_view($items));
+
+        $this->template->assign('_core_folder', SITEBILL_DOCUMENT_ROOT);
+
+        $html = $this->template->fetch($tpl);
+
+        $dompdfoptions = new \Dompdf\Options();
+        $dompdfoptions->set('isRemoteEnabled', TRUE);
+        $dompdf = new \Dompdf\Dompdf($dompdfoptions);
+        $dompdf->loadHtml($html);
+        $dompdf->render();
+        $output = $dompdf->output();
+        header("Content-type: application/pdf");
+        echo $output;
+        exit();
+    }
+
 
     /**
      * Grid
@@ -1041,7 +1081,7 @@ class Object_Manager extends SiteBill {
         if (!isset($this->table_name)) {
             return '';
         }
-        if ( count($params) == 0 and $this->get_grid_params() != null) {
+        if ( @count($params) == 0 and $this->get_grid_params() != null) {
             $params = $this->get_grid_params();
         }
 
@@ -1057,7 +1097,7 @@ class Object_Manager extends SiteBill {
             $common_grid->set_render_user_id($default_params['render_user_id']);
         }
 
-        if (isset($params['grid_item']) && count($params['grid_item']) > 0) {
+        if (isset($params['grid_item']) && @count($params['grid_item']) > 0) {
             foreach ($params['grid_item'] as $grid_item) {
                 $common_grid->add_grid_item($grid_item);
             }
@@ -1076,7 +1116,7 @@ class Object_Manager extends SiteBill {
                     $common_grid->add_grid_item($uf);
                 }
             } else {
-                if (isset($default_params['grid_item']) && count($default_params['grid_item']) > 0) {
+                if (isset($default_params['grid_item']) && @count($default_params['grid_item']) > 0) {
                     foreach ($default_params['grid_item'] as $grid_item) {
                         $common_grid->add_grid_item($grid_item);
                     }
@@ -1087,7 +1127,7 @@ class Object_Manager extends SiteBill {
             }
         }
 
-        if (isset($params['grid_controls']) && count($params['grid_controls']) > 0) {
+        if (isset($params['grid_controls']) && @count($params['grid_controls']) > 0) {
             foreach ($params['grid_controls'] as $grid_item) {
                 $common_grid->add_grid_control($grid_item);
             }
@@ -1096,10 +1136,10 @@ class Object_Manager extends SiteBill {
             $common_grid->add_grid_control('delete');
         }
 
-        if (isset($params['grid_conditions']) && count($params['grid_conditions']) > 0) {
+        if (isset($params['grid_conditions']) && @count($params['grid_conditions']) > 0) {
             $common_grid->set_conditions($params['grid_conditions']);
         }
-        if (isset($params['grid_conditions_sql']) && count($params['grid_conditions_sql']) > 0) {
+        if (isset($params['grid_conditions_sql']) && @count($params['grid_conditions_sql']) > 0) {
             $common_grid->set_conditions_sql($params['grid_conditions_sql']);
         }
 
@@ -1107,13 +1147,13 @@ class Object_Manager extends SiteBill {
             $common_grid->enableBatchUpdate();
             $common_grid->setBatchUpdateUrl($default_params['batch_update_url']);
         }
-        
-        
+
+
         if ($default_params['mass_delete'] && $default_params['mass_delete_url']) {
             //$common_grid->enableBatchUpdate();
             $common_grid->setMAssDeleteUrl($default_params['mass_delete_url']);
         }
-        
+
         if ($default_params['batch_activate']) {
             $common_grid->enableBatchActivate();
         }
@@ -1158,7 +1198,7 @@ class Object_Manager extends SiteBill {
             $common_grid->set_render_user_id($default_params['render_user_id']);
         }
 
-        if (isset($params['grid_item']) && count($params['grid_item']) > 0) {
+        if (isset($params['grid_item']) && @count($params['grid_item']) > 0) {
             foreach ($params['grid_item'] as $grid_item) {
                 $common_grid->add_grid_item($grid_item);
             }
@@ -1178,7 +1218,7 @@ class Object_Manager extends SiteBill {
                     $common_grid->add_grid_item($uf);
                 }
             } else {
-                if (isset($default_params['grid_item']) && count($default_params['grid_item']) > 0) {
+                if (isset($default_params['grid_item']) && @count($default_params['grid_item']) > 0) {
                     foreach ($default_params['grid_item'] as $grid_item) {
                         $common_grid->add_grid_item($grid_item);
                     }
@@ -1192,7 +1232,7 @@ class Object_Manager extends SiteBill {
         $common_grid->add_grid_item('street_id');
         $common_grid->add_grid_item('image');
 
-        if (isset($params['grid_controls']) && count($params['grid_controls']) > 0) {
+        if (isset($params['grid_controls']) && @count($params['grid_controls']) > 0) {
             foreach ($params['grid_controls'] as $grid_item) {
                 $common_grid->add_grid_control($grid_item);
             }
@@ -1201,14 +1241,14 @@ class Object_Manager extends SiteBill {
             $common_grid->add_grid_control('delete');
         }
 
-        if (isset($params['grid_conditions']) && count($params['grid_conditions']) > 0) {
+        if (isset($params['grid_conditions']) && @count($params['grid_conditions']) > 0) {
             $common_grid->set_conditions($params['grid_conditions']);
         }
 
-        if (isset($params['grid_conditions_sql']) && count($params['grid_conditions_sql']) > 0) {
+        if (isset($params['grid_conditions_sql']) && @count($params['grid_conditions_sql']) > 0) {
             $common_grid->set_conditions_sql($params['grid_conditions_sql']);
         }
-        if (isset($params['grid_conditions_left_join']) && count($params['grid_conditions_left_join']) > 0) {
+        if (isset($params['grid_conditions_left_join']) && @count($params['grid_conditions_left_join']) > 0) {
             $common_grid->set_conditions_left_join($params['grid_conditions_left_join']);
         }
 
@@ -1287,7 +1327,7 @@ class Object_Manager extends SiteBill {
                 $params[] = $this->table_name;
                 $params = array_merge($params, $keys);
                 $params[] = $new_record_id;
-                $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name` IN (' . implode(', ', array_fill(0, count($keys), '?')) . ') AND `primary_id`=?';
+                $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name` IN (' . implode(', ', array_fill(0, @count($keys), '?')) . ') AND `primary_id`=?';
                 $stmt = $DBC->query($query, $params);
 
                 $query = 'INSERT INTO ' . DB_PREFIX . '_multiple_field (`table_name`, `field_name`, `primary_id`, `field_value`) VALUES (?,?,?,?)';
@@ -1306,7 +1346,7 @@ class Object_Manager extends SiteBill {
     }
 
     function set_imgs($imgs = false) {
-        if (!empty($imgs) and count($imgs) > 0) {
+        if (!empty($imgs) and @count($imgs) > 0) {
             $this->imgs = $imgs;
         }
     }
@@ -1398,7 +1438,7 @@ class Object_Manager extends SiteBill {
             $params[] = $this->table_name;
             $params = array_merge($params, $keys);
             $params[] = $id;
-            $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name` IN (' . implode(', ', array_fill(0, count($keys), '?')) . ') AND `primary_id`=?';
+            $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name` IN (' . implode(', ', array_fill(0, @count($keys), '?')) . ') AND `primary_id`=?';
             $stmt = $DBC->query($query, $params);
 
             $query = 'INSERT INTO ' . DB_PREFIX . '_multiple_field (`table_name`, `field_name`, `primary_id`, `field_value`) VALUES (?,?,?,?)';
@@ -1436,7 +1476,7 @@ class Object_Manager extends SiteBill {
 
     /**
      * Get top menu
-     * @param void 
+     * @param void
      * @return string
      */
     function getTopMenu() {
@@ -1682,7 +1722,7 @@ class Object_Manager extends SiteBill {
     }
 
     protected function removeTemporaryFields(&$model, $remove_this_names = array()) {
-        if (count($remove_this_names) > 0) {
+        if (@count($remove_this_names) > 0) {
             foreach ($remove_this_names as $r) {
                 unset($model[$r]);
             }
@@ -1765,4 +1805,28 @@ class Object_Manager extends SiteBill {
         }
         return null;
     }
+
+    function enable_shard_queue () {
+        $this->shard_queue = true;
+    }
+
+    function disable_shard_queue () {
+        $this->shard_queue = false;
+    }
+
+    function is_shard_queue_enable () {
+        return $this->shard_queue;
+    }
+
+    function run_shard_task () {
+        if ( $this->getConfigValue('apps.sharder.enable') and $this->is_shard_queue_enable() ) {
+            if ( !is_object($this->sharder) ) {
+                $this->sharder = new \sharder\lib\sharder();
+            }
+            $this->sharder->remove_remote_files_from_queue($this->getServerFullUrl(true));
+            $this->disable_shard_queue();
+        }
+        return false;
+    }
+
 }

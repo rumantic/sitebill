@@ -53,8 +53,88 @@ class page_site extends page_admin {
                 if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
                     $model = $data_model->init_language_values($model, $model);
                 }
+                
+                
+                
+                if($form_data[$this->table_name]['body']['parameters']['richtext'] == 1){
+                    $text = $model['body']['value'];
+                    if(0 < preg_match_all('/(<\!--\$image\s([a-z0-9_]+)\.(\d+)((\|(.+))?)-->)/', $text, $matches)){
+
+                        if(!empty($matches[1])){
+                            $replaces = array();
+                            foreach($matches[1] as $k=>$pos){
+                                $im_fname = $matches[2][$k];
+                                $im_index = $matches[3][$k];
+                                $params_list = array();
+                                $params = trim($matches[4][$k]);
+                                if('' != $params){
+                                    if(preg_match_all('/\|([a-z_]+)\:([^|]+)/', $params, $m)){
+                                        foreach($m[1] as $mk=>$mv){
+                                            $params_list[$mv] = $m[2][$mk];
+                                        }
+                                    }
+                                }
+
+                                if(!isset($params_list['caption'])){
+                                    $params_list['caption'] = '';
+                                }
+                                if(!isset($params_list['alt'])){
+                                    if($params_list['caption'] != ''){
+                                        $params_list['alt'] = $params_list['caption'];
+                                    }else{
+                                        $params_list['alt'] = $art['title']['value'].' фото '.($im_index+1);
+                                    }
+
+                                }
+                                if(!isset($params_list['class'])){
+                                    $params_list['class'] = $wrapclass;
+                                }else{
+                                    $params_list['class'] = $wrapclass.' '.$params_list['class'];
+                                }
+                                if(!isset($params_list['link'])){
+                                    $params_list['link'] = '';
+                                }else{
+                                    if(!preg_match('/^http(s?)/', $params_list['link'])){
+                                        $params_list['link'] = $this->createUrlTpl($params_list['link']);
+                                    }
+                                }
+                                if(isset($model[$im_fname]['value'][$im_index])){
+
+                                    $rep = '';
+                                    $rep .= '<div class="imbuildimg imbuildimg-page'.(''!=$params_list['class'] ? ' '.$params_list['class'] : '').'">';
+
+                                    if($params_list['link'] != ''){
+                                        $rep .= '<a href="'.$params_list['link'].'">';
+                                    }
+
+                                    if(1==intval($this->getConfigValue('apps.articles.photo_div'))){
+                                        $rep .= '<div class="imbuildimg-image" style="background-image:url(\''.$this->getServerFullUrl().'/img/data/'.$model[$im_fname]['value'][$im_index]['normal'].'\');"></div>';
+                                    }else{
+                                        $rep .= '<div class="imbuildimg-image"><img src="'.$this->getServerFullUrl().'/img/data/'.$model[$im_fname]['value'][$im_index]['normal'].'"'.($params_list['alt'] != '' ? ' alt="'.$params_list['alt'].'"' : '').'></div>';
+                                    }
+
+                                    if($params_list['link'] != ''){
+                                        $rep .= '</a>';
+                                    }
+
+                                    if($params_list['caption'] != ''){
+                                        $rep .= '<div class="imbuildimg-caption">'.$params_list['caption'].'</div>';
+                                    }
+
+                                    $rep .= '</div>';
+
+                                    $replaces[$pos] = $rep;
 
 
+                                }else{
+                                    $replaces[$pos]='';
+                                }
+                            }
+                            $model['body']['value'] = str_replace(array_keys($replaces), array_values($replaces), $text);
+                        }
+                    }
+                }
+                
                 if (preg_match('/roadmap/', $_SERVER['REQUEST_URI'])) {
                     $map_array = $this->getPageByURI('map');
                     $this->template->assert('main', '<div class="apppage_wrapper">' . $model['body']['value'] . $map_array['body'] . '</div>');
@@ -364,7 +444,7 @@ class page_site extends page_admin {
             if($check_lang_fields){
                 foreach ($ar as $key => $item_array) {
                     $lang_key = $key . $postfix;
-                    if ($ar[$lang_key] != '') {
+                    if (isset($ar[$lang_key]) && $ar[$lang_key] != '') {
                         $ar[$key] = $ar[$lang_key];
                     }
                 }

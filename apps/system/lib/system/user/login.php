@@ -170,11 +170,11 @@ class Login extends SiteBill {
                                     $_SESSION['current_user_tariff_info']['services'][$ar['name']]=$ar;
                                 }
                             }
-                    
+
                         }
                     }
-                    
-                    
+
+
                 }
             }
 
@@ -695,14 +695,14 @@ class Login extends SiteBill {
           }
           } */
     }
-    
-    
+
+
     function makeUserLogged($user_id, $rememberme = 0, $oauth_key = false, $save_last_auth = true){
-        
+
         if($save_last_auth){
             $this->saveLastAuthDate($user_id);
-        }        
-        
+        }
+
         if ( $oauth_key ) {
             $session_key = $this->GenerateSessionKey($user_id, $oauth_key);
         } else {
@@ -712,7 +712,7 @@ class Login extends SiteBill {
         $this->setUserId($user_id);
 
         $this->loadUserInfo($user_id);
-        
+
         if ($rememberme == 1) {
             $auth_salt = '';
             //$auth_salt=$ar['auth_salt'];
@@ -812,7 +812,8 @@ class Login extends SiteBill {
                     $where[] = 'u.`active`=1';
                 }
                 if (1 == intval($this->getConfigValue('email_as_login'))) {
-                    $where[] = 'u.`email`=?';
+                    $where[] = '(u.`email`=? OR u.`login`=?)';
+                    $where_val[] = $login;
                     $where_val[] = $login;
                 } else {
                     $where[] = '(u.`login`=? OR u.`email`=?)';
@@ -835,8 +836,8 @@ class Login extends SiteBill {
                     if ($ar['user_id'] != '') {
 
                         $udata = $ar;
-                        
-                        
+
+
                         $this->makeUserLogged($ar['user_id'], $rememberme, $oauth_key, true);
 
                         /*$this->saveLastAuthDate($ar['user_id']);
@@ -983,11 +984,11 @@ class Login extends SiteBill {
      */
     function getSessionUserId() {
         $key = (isset($_SESSION['key']) ? $_SESSION['key'] : '');
-        if (self::$Heaps['session']['user_id_none'] == 1) {
+        if (isset(self::$Heaps['session']) && self::$Heaps['session']['user_id_none'] == 1) {
             return false;
         }
 
-        if (self::$Heaps['session']['user_id'] != '') {
+        if (isset(self::$Heaps['session']) && self::$Heaps['session']['user_id'] != '') {
             return self::$Heaps['session']['user_id'];
         }
         if ($key != '') {

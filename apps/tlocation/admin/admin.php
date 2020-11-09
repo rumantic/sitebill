@@ -318,11 +318,19 @@ class tlocation_admin extends Object_Manager {
     }
 
     private function _getMetros($term, $dep_key = '', $dep_val = 0) {
+        
+        $searchable_term = '%'.$term.'%';
+        
         $ret = array();
         $DBC = DBC::getInstance();
-        $query = 'SELECT metro_id, name FROM ' . DB_PREFIX . '_metro WHERE name LIKE \'%' . $term . '%\' ORDER BY name ASC LIMIT 50';
-        //echo $query;
-        $stmt = $DBC->query($query);
+        if($dep_key!='' && $dep_val!=0){
+            $query='SELECT `metro_id`, `name` FROM '.DB_PREFIX.'_metro WHERE `name` LIKE ? AND `'.$dep_key.'`=? ORDER BY `name` ASC LIMIT 50';
+            $stmt=$DBC->query($query, array($searchable_term, $dep_val));
+        }else{
+            $query = 'SELECT `metro_id`, `name` FROM ' . DB_PREFIX . '_metro WHERE `name` LIKE ? ORDER BY `name` ASC LIMIT 50';
+            $stmt=$DBC->query($query, array($searchable_term));
+        }
+        
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
                 $ret[] = array('metro_id' => $ar['metro_id'], 'name' => SiteBill::iconv(SITE_ENCODING, 'utf-8', $ar['name']));

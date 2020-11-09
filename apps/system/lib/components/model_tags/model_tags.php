@@ -4,7 +4,7 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/components/ajax_common.php');
 
 /**
- * Process ajax request and return json arrays with tags values 
+ * Process ajax request and return json arrays with tags values
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
 class model_tags extends ajax_common {
@@ -13,6 +13,7 @@ class model_tags extends ajax_common {
     private $primary_key_mode = false;
     private $store_all_mode = false;
     private $store = array();
+    private $term;
 
     function set_ai_mode($mode) {
         $this->ai_mode = $mode;
@@ -50,6 +51,14 @@ class model_tags extends ajax_common {
     function get_ai_mode() {
         return $this->ai_mode;
         //return true;
+    }
+
+    function set_term ( $term ) {
+        $this->term = $term;
+    }
+
+    function get_term () {
+        return $this->term;
     }
 
     function get_array($model_name = '', $column_name = '', $result = 'json', $input_form_data = false) {
@@ -107,6 +116,10 @@ class model_tags extends ajax_common {
             $this->clear_session_tags();
             echo json_encode(array('status' => 'ok'));
         } else {
+            $term = $this->getRequestValue('term');
+          if($term != ''){
+            $this->set_term($term);
+          }
             echo $this->get_array();
         }
         exit;
@@ -138,9 +151,22 @@ class model_tags extends ajax_common {
 
     function get_distinct_values($item_array) {
         $DBC = DBC::getInstance();
-        $query = 'SELECT distinct(`' . $item_array['name'] . '`) FROM ' . DB_PREFIX . '_' . $this->get_table_name() . ' WHERE `' . $item_array['name'] . '` IS NOT NULL AND `' . $item_array['name'] . '` != \'\' ORDER BY `' . $item_array['name'] . '`';
+        $LIKE_TERM = '';
+        if ( !empty($this->get_term()) ) {
+            $LIKE_TERM = ' AND `' . $item_array['name'] . '` LIKE ? ';
+        }
+        $query = 'SELECT 
+                distinct(`' . $item_array['name'] . '`) 
+            FROM 
+                ' . DB_PREFIX . '_' . $this->get_table_name() . ' 
+            WHERE 
+                `' . $item_array['name'] . '` IS NOT NULL AND 
+                `' . $item_array['name'] . '` != \'\'
+                '.$LIKE_TERM.' 
+             ORDER BY `' . $item_array['name'] . '`';
+        $query .= ' LIMIT 0,100';
         //$this->writeLog(__METHOD__.', query = '.$query);
-        $stmt = $DBC->query($query);
+        $stmt = $DBC->query($query, array("%{$this->get_term()}%"));
 
         $ra = array();
 
@@ -201,7 +227,7 @@ class model_tags extends ajax_common {
         $DBC = DBC::getInstance();
 
         $query = $item_array['query'];
-        
+
         if ($this->get_ai_mode()) {
             $query = $this->modify_query($query, $item_array);
         }

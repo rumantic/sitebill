@@ -175,7 +175,7 @@ class system_update extends SiteBill {
             $ar = $DBC->fetch($stmt);
             $agroup = $ar['group_id'];
         }
-        
+
         if ( $tid ) {
             $query = 'SELECT name FROM ' . DB_PREFIX . '_columns WHERE name IN (?,?,?,?,?) AND table_id=?';
             $stmt = $DBC->query($query, array('vk_id', 'gl_id', 'tw_id', 'ok_id', 'fb_id', $tid));
@@ -324,7 +324,7 @@ class system_update extends SiteBill {
   `message` text,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
-            
+
         $DBC = DBC::getInstance();
 
         $query_upd_col = 'SELECT group_id FROM ' . DB_PREFIX . '_group WHERE system_name=?';
@@ -348,8 +348,8 @@ class system_update extends SiteBill {
                 $query_upd_col = 'UPDATE ' . DB_PREFIX . '_columns SET value=?, type=? WHERE columns_id=?';
                 $stmt = $DBC->query($query_upd_col, array('now', 'dtdatetime', $cid));
             }
-            
-            
+
+
         }
 
         $media_docs_folder = SITEBILL_DOCUMENT_ROOT . '/img/mediadocs/';
@@ -379,11 +379,7 @@ class system_update extends SiteBill {
         $rs .= $this->get_dependency($system_version, $secret_key);
         $rs .= $this->update_language_structure();
         $rs .= $this->update_htaccess();
-        if ( method_exists('Multilanguage', 'reLoadWords') ) {
-            $rs .= 'Обновляем языки<br>';
-
-            Multilanguage::reLoadWords();
-        }
+        $_SESSION['need_reload_words'] = true;
 
 
 
@@ -442,7 +438,7 @@ class system_update extends SiteBill {
         if (!$this->get_app_version('messenger')) {
             $rs .= $sitebill_admin->update_app('messenger', $secret_key);
         }
-         * 
+         *
          */
         if (!$this->get_app_version('memorylist')) {
             $rs .= $sitebill_admin->update_app('memorylist', $secret_key);

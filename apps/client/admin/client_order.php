@@ -247,6 +247,7 @@ class Client_Order extends client_site {
 
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/view.php');
             $table_view = new Table_View();
+            $table_view->setAbsoluteUrls();
             $order_table = '';
             $order_table .= '<table border="1" cellpadding="2" cellspacing="2" style="border: 1px solid gray;">';
             $order_table .= $table_view->compile_view($form_data);
@@ -296,19 +297,19 @@ class Client_Order extends client_site {
                     }
                     $this->writeLog(array('apps_name' => 'apps.client', 'method' => __METHOD__, 'message' => 'send_email to' . $to, 'type' => NOTICE));
                     $this->sendFirmMail($to, $from, $subject, $order_mail_body);
-                    
+
                     $this->afterClientOrderSave($order_model, $client_order_id, $form_data, $client_admin->data_model['client']);
-                    
+
                     return json_encode(array('status' => 'ok', 'message' => '<div class="alert alert-success">' . Multilanguage::_('L_MESSAGE_ORDER_ACCEPTED_EXT') . '</div>'));
                 }
             } else {
-                
+
             }
         }
     }
-    
+
     function afterClientOrderSave($order_model_name, $client_order_id, $form_data, $client_form_data){
-    
+
     }
 
     /* function get_client_form($form, $options=array()){
@@ -411,15 +412,15 @@ class Client_Order extends client_site {
         if (!$form_data) {
             return '';
         }
-        
+
         $options_form_class='form-horizontal';
-        
+
         if (!empty($options)) {
-            
+
             if(isset($options['form_class'])){
                 $options_form_class=htmlspecialchars($options['form_class']);
             }
-            
+
             foreach ($options as $k => $opt) {
                 if (isset($form_data[$k])) {
                     $form_data[$k]['value'] = htmlspecialchars($opt);
@@ -428,7 +429,9 @@ class Client_Order extends client_site {
         }
         $_SESSION['allow_disable_root_structure_select'] = true;
         global $smarty;
-        if ($button_title == '') {
+        if(isset($options['button_title'])){
+            $button_title = htmlspecialchars($options['button_title']);
+        }else{
             $button_title = (Multilanguage::is_set('L_TEXT_SEND', 'system') ? Multilanguage::_('L_TEXT_SEND', 'system') : Multilanguage::_('L_TEXT_SEND'));
         }
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');

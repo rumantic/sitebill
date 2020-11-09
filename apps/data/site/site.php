@@ -33,6 +33,128 @@ class data_site extends data_admin {
         return parent::main();
     }
 
+    protected function _exportPhotoAction() {
+
+        $id = intval($this->getRequestValue('id'));
+        $user_id = intval($this->getSessionUserId());
+
+        $aggregroup = -1;
+        $cgroup_id = intval($_SESSION['current_user_group_id']);
+
+        $rs = '';
+        if ($cgroup_id == $aggregroup) {
+            if (!$this->check_access_to_aggregated_data($user_id, $id)) {
+                return Multilanguage::_('L_ACCESS_DENIED');
+            }
+        } elseif (!$this->check_access_to_data($user_id, $id)) {
+            return Multilanguage::_('L_ACCESS_DENIED');
+        }
+
+        $this->get_photos($id);
+    }
+
+    protected function _exportPhotoClearAction() {
+        $id = intval($this->getRequestValue('id'));
+        $user_id = intval($this->getSessionUserId());
+
+        $aggregroup = -1;
+        $cgroup_id = intval($_SESSION['current_user_group_id']);
+
+        $rs = '';
+        if ($cgroup_id == $aggregroup) {
+            if (!$this->check_access_to_aggregated_data($user_id, $id)) {
+                return Multilanguage::_('L_ACCESS_DENIED');
+            }
+        } elseif (!$this->check_access_to_data($user_id, $id)) {
+            return Multilanguage::_('L_ACCESS_DENIED');
+        }
+
+        $this->get_photos($id, true);
+    }
+
+    function get_photos($id, $clearprotect = false){
+
+		$DBC = DBC::getInstance();
+		//$isprotected = false;
+
+		$query = 'SELECT image FROM '.DB_PREFIX.'_data WHERE id = ? AND image <> ?';
+		$stmt = $DBC->query($query, array($id, ''));
+		if(!$stmt){
+			exit();
+		}
+		$ar = $DBC->fetch($stmt);
+		$images = unserialize($ar['image']);
+
+		if(empty($images)){
+            return false;
+        }
+
+
+        $zip = new ZipArchive();
+        $zip_name = "photos_".$id.'_'.time().".zip";
+        $zip->open($zip_name, ZIPARCHIVE::CREATE);
+
+		$exported = array();
+
+		if($clearprotect && 1 == intval($this->getConfigValue('watermark_user_control'))){
+            $fold = $this->notwatermarked_folder;
+			if($this->nowatermark_folder_with_id){
+				$fold = $fold.$id.'/';
+			}
+			foreach($images as $photo){
+				if(file_exists($fold.$photo['normal'])){
+					$exported[] = array($fold.$photo['normal'], $photo['normal']);
+				}else{
+					$exported[] = array(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$photo['normal'], $photo['normal']);
+				}
+			}
+		}elseif($clearprotect && 0 == intval($this->getConfigValue('watermark_user_control'))){
+            $fold = SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/';
+
+			foreach($images as $photo){
+                if(file_exists($fold.$photo['normal'])){
+					$exported[] = array($fold.$photo['normal'], $photo['normal']);
+				}else{
+					$exported[] = array(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$photo['normal'], $photo['normal']);
+				}
+			}
+		}else{
+            $j = 0;
+            foreach($images as $photo){
+                $j++;
+                if ( $photo['remote'] === 'true' ) {
+                    $pathinfo = pathinfo($photo['normal']);
+                    $file_name = $j.'.'.$pathinfo['extension'];
+                    $exported[] = array($fold.$photo['normal'], $photo['normal'], 1);
+                } else {
+                    $exported[] = array(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$photo['normal'], $photo['normal']);
+                }
+            }
+		}
+
+		foreach($exported as $exp){
+            if(isset($exp[2]) && $exp[2] == 1){
+                $zip->addFromString($exp[0], file_get_contents($exp[1]));
+            }else{
+                $zip->addFile($exp[0], $exp[1]);
+            }
+
+		}
+
+        $zip->close();
+        if(file_exists($zip_name)){
+            header("Pragma: public");
+            header("Expires: 0");
+            header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+            header("Cache-Control: private", false);
+            header('Content-type: application/zip');
+            header('Content-Disposition: attachment; filename="'.$zip_name.'"');
+            readfile($zip_name);
+            unlink($zip_name);
+        }
+        exit();
+	}
+
     protected function checkOwning($id, $user_id) {
         if (!is_array($id)) {
             $id = (array) $id;
@@ -50,7 +172,7 @@ class data_site extends data_admin {
         }
         return $owned;
     }
-    
+
     function get_app_title_bar() {
         $breadcrumbs = array();
         $breadcrumbs[] = array('href' => SITEBILL_MAIN_URL . '/', 'title' => Multilanguage::_('L_HOME'));
@@ -59,7 +181,7 @@ class data_site extends data_admin {
         $this->template->assign('breadcrumbs_array_structured', $breadcrumbs);
         return '';
     }
-    
+
 
     function _mass_actionAction() {
         $action = trim($this->getRequestValue('action_name'));
@@ -429,7 +551,7 @@ class data_site extends data_admin {
                 $stmt = $DBC->query($query, array($action));
             }
         } else {
-            
+
         }
 
         $used_fields = array();
@@ -462,6 +584,7 @@ class data_site extends data_admin {
         } else {
             $smarty->assign('save_url', SITEBILL_MAIN_URL . '/admin/index.php?action=' . $this->action . '&do=formatgrid');
         }
+        $smarty->assign('bootstrap_version', intval($this->getConfigValue('bootstrap_version')));
         $smarty->assign('model_fields', $model_fields);
         $ret = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/system/template/grid/grid_fields_managing.tpl');
         return $ret;
@@ -562,26 +685,46 @@ class data_site extends data_admin {
 
     /**
      * Get top menu
-     * @param void 
+     * @param void
      * @return string
      */
     function getTopMenu() {
+
+
+        $state = '';
+        if(isset($_GET['active']) && $_GET['active'] == 1){
+            $state = 'active';
+        }elseif(isset($_GET['active']) && $_GET['active'] == 0){
+            $state = 'notactive';
+        }
+
+        $REQUESTURIPATH = $this->getClearRequestURI();
+        if($REQUESTURIPATH == 'account/data/all'){
+            $state = 'all';
+        }
+
+
         $rs = '';
         if (!$this->getConfigValue('apps.data.disable_add_button')) {
-            $rs .= '<a href="?action=' . $this->action . '&do=new" class="btn btn-primary">' . Multilanguage::_('L_ADD_RECORD_BUTTON') . '</a> ';
+            $rs .= '<a href="?action=' . $this->action . '&do=new" class="btn">' . Multilanguage::_('L_ADD_RECORD_BUTTON') . '</a> ';
         }
-        if (!$this->getConfigValue('apps.data.disable_all_button')) {
-            $rs .= '<a href="' . SITEBILL_MAIN_URL . '/account/data/all" class="btn btn-primary">' . Multilanguage::_('L_ALL') . '</a> ';
-        }
+
         if (!$this->getConfigValue('apps.data.disable_memory_button')) {
-            $rs .= '<a href="' . SITEBILL_MAIN_URL . '/memorylist/" class="btn btn-primary">'._e('Подборки').'</a> ';
+            $rs .= '<a href="' . SITEBILL_MAIN_URL . '/memorylist/" class="btn">'._e('Подборки').'</a> ';
         }
 
-        $rs .= '<a href="' . SITEBILL_MAIN_URL . '/account/data/" class="btn btn-primary" align="right">'._e('Все мои').'</a> ';
 
-        $rs .= '<a href="' . SITEBILL_MAIN_URL . '/account/data/?active=1" class="btn btn-success" align="right">'._e('Активные').'</a> ';
 
-        $rs .= '<a href="' . SITEBILL_MAIN_URL . '/account/data/?active=0" class="btn btn-danger" align="right">'._e('В архиве').'</a> ';
+        $rs .= '<div class="btn-group" role="group" aria-label="...">';
+            if (!$this->getConfigValue('apps.data.disable_all_button')) {
+                $rs .= '<a href="' . SITEBILL_MAIN_URL . '/account/data/all" class="btn'.($state == 'all' ? ' btn-primary btn-current' : '').'">' . Multilanguage::_('L_ALL') . '</a> ';
+            }
+            $rs .= '<a href="' . SITEBILL_MAIN_URL . '/account/data/" class="btn'.($state == '' ? ' btn-primary btn-current' : '').'">'._e('Все мои').'</a>
+            <a href="' . SITEBILL_MAIN_URL . '/account/data/?active=1" class="btn'.($state == 'active' ? ' btn-primary btn-current' : '').'">'._e('Активные').'</a>
+            <a href="' . SITEBILL_MAIN_URL . '/account/data/?active=0" class="btn'.($state == 'notactive' ? ' btn-primary btn-current' : '').'">'._e('В архиве').'</a>';
+          $rs .= '</div>';
+
+
 
 
         //$rs .= '</div>';
@@ -611,7 +754,7 @@ class data_site extends data_admin {
         }
 
 
-        //Устанавливаем параметр USER_ID для функции импорта XLS файла. 
+        //Устанавливаем параметр USER_ID для функции импорта XLS файла.
         //Чтобы при загрузке из XLS пользоатель не смог получить доступ к чужим записям
         $_SESSION['politics']['data']['check_access'] = true;
         $_SESSION['politics']['data']['user_id'] = $this->getSessionUserId();
@@ -624,20 +767,20 @@ class data_site extends data_admin {
 
         $coworked = array();
         $coworked_users = array();
-        
+
         $enable_curator_mode = intval($this->getConfigValue('enable_curator_mode'));
-        
+
         if ($enable_curator_mode) {
-            
+
             $cowork_mode = trim($this->getRequestValue('cowork_mode'));
             if(!is_numeric($cowork_mode)){
                 $cowork_mode = '';
             }
-            
+
             $cowork_panel = '';
-            
+
             $DBC = DBC::getInstance();
-            
+
             if(1 === intval($this->getConfigValue('curator_mode_fullaccess'))){
                 $query = 'SELECT user_id FROM ' . DB_PREFIX . '_user WHERE parent_user_id=?';
                 $stmt = $DBC->query($query, array($this->getSessionUserId()));
@@ -646,7 +789,7 @@ class data_site extends data_admin {
                         $coworked_users[$ar['user_id']] = array();
                     }
                 }
-                
+
                 if (!empty($coworked_users)) {
                     $query = 'SELECT id FROM ' . DB_PREFIX . '_data WHERE user_id IN ('.implode(',', array_keys($coworked_users)).')';
                     $stmt = $DBC->query($query);
@@ -677,10 +820,10 @@ class data_site extends data_admin {
                         }
                     }
                 }
-            }         
-            
+            }
+
             if(!empty($coworked_users)){
-                
+
                 $users = array();
 				/*
                 $cowork_panel .= '<div class="btn-group" role="group">';
@@ -699,7 +842,7 @@ class data_site extends data_admin {
 					$cowork_panel .= '<a class="btn btn-primary" '.($cowork_mode == $ar['user_id'] ? 'disabled="disabled"' : '').' href="'.SITEBILL_MAIN_URL.'/account/data'.self::$_trslashes.'?cowork_mode='.$ar['user_id'].'">'.$ar['fio'].'</a>';
                 }
 				*/
-                
+
                 $rowclass = 'row-fluid';
                 $colclass = 'span4';
                 if('3' == $this->getConfigValue('bootstrap_version')){
@@ -731,31 +874,32 @@ class data_site extends data_admin {
 				$cowork_panel .= '</div>';
 				$cowork_panel .= '</div>';
 				$cowork_panel .= '</form>';
-        
+
                 $cowork_panel .= '</div>';
             }
         }
 
         $default_params['pager_params']['per_page'] = $this->getConfigValue('per_page_account');
-        
+        $default_params['pager_params']['page_url'] = 'account/data';
+
         if($enable_curator_mode && 1 === intval($this->getConfigValue('curator_mode_fullaccess'))){
             if($cowork_mode === '0'){
                 $params['grid_conditions']['user_id'] = $this->getSessionUserId();
                 $default_params['pager_params']['cowork_mode'] = 0;
             }elseif($cowork_mode !== ''){
                 $default_params['pager_params']['cowork_mode'] = $cowork_mode;
-                $params['grid_conditions']['user_id'] = $cowork_mode;                
+                $params['grid_conditions']['user_id'] = $cowork_mode;
             }else{
                 $users = array($this->getSessionUserId());
                 $users = array_merge($users, array_keys($coworked_users));
                 $params['grid_conditions'][] = array(
                     'user_id' => $users
-                );                
+                );
             }
         }elseif($enable_curator_mode && !empty($coworked)) {
-            
+
             if($cowork_mode === '0'){
-                
+
                 $params['grid_conditions']['user_id'] = $this->getSessionUserId();
                 $default_params['pager_params']['cowork_mode'] = 0;
             }elseif($cowork_mode !== ''){
@@ -780,13 +924,16 @@ class data_site extends data_admin {
                 $params['grid_conditions'][] = array(
                     'user_id' => $this->getSessionUserId(),
                     'id' => $coworked
-                );                
+                );
             }
-            
-            
+
+
         } else {
             if (!preg_match('/all[\/]?$/', $REQUESTURIPATH)) {
                 $params['grid_conditions']['user_id'] = $this->getSessionUserId();
+            }
+            if (preg_match('/\/all$/', $REQUESTURIPATH)) {
+                $default_params['pager_params']['page_url'] = 'account/data/all';
             }
         }
         if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
@@ -798,8 +945,8 @@ class data_site extends data_admin {
         if ($this->getRequestValue('adsapi_loaded') == 1) {
             $params['grid_conditions']['adsapi_loaded'] = 1;
         }
-        
-        
+
+
         if(null === $this->getRequestValue('_sortby')){
             $default_sort = trim($this->getConfigValue('apps.data.default_sort'));
             if($default_sort != ''){
@@ -811,9 +958,9 @@ class data_site extends data_admin {
                     }
                 }
             }
-            
+
         }
-        
+
 
         $params = $this->onGridConditionsPrepare($this, $params);
 
@@ -879,19 +1026,19 @@ class data_site extends data_admin {
         }
         $default_params['batch_update'] = true;
         $default_params['batch_update_url'] = SITEBILL_MAIN_URL . '/account/data' . self::$_trslashes;
-        
+
         $default_params['mass_delete'] = true;
         $default_params['mass_delete_url'] = SITEBILL_MAIN_URL . '/account/data' . self::$_trslashes;
 
         if (isset($this->data_model[$this->table_name]['active'])) {
             $default_params['batch_activate'] = true;
         }
-        
+
         if($cowork_panel != ''){
             $rs .= '<div>'.$cowork_panel.'</div>';
         }
-        
-        
+
+
         $rs .= Object_Manager::grid($params, $default_params);
         if ($this->getConfigValue('apps.billing.enable')) {
             $rs .= $this->billing_plugin();
@@ -1055,7 +1202,7 @@ class data_site extends data_admin {
         $dataSource = new ApiDataSource();
         $dataSource->setCount($limit);
         //$compare_text = 'Что-то свое светлую и уютную 3х комнатную квартиру 90 серии в хорошем состоянии с ремонтом в пос. общественного транспорта. Развитая инфраструктура с ';
-        
+
         $dataSource->setText($search_text);
         $options = array(
             'stop_words' => $stop_words,
@@ -1072,7 +1219,7 @@ class data_site extends data_admin {
                 if ($ar['text'] != '') {
                     $ar['text'] = str_replace("\n", " ", $ar['text']);
                     //echo $ar['text'].'<br>'."\n\n";
-                    
+
                     $engine->setSearchText($ar['text']);
                     //$engine->setSearchText($compare_text);
                     $result = $engine->run();

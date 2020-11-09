@@ -132,7 +132,7 @@
                         </li>
 
                         <li>
-                            <a href="http://www.etown.ru/s/" target="_blank"><i class="icon-white icon-comment"></i> Форум</a>
+                            <a href="https://www.sitebill.ru/s/" target="_blank"><i class="icon-white icon-comment"></i> Форум</a>
                         </li>
 
                         <li>

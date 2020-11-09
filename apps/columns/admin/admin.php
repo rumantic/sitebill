@@ -527,7 +527,7 @@ class columns_admin extends table_admin {
             $button_title = Multilanguage::_('L_TEXT_SAVE');
         }
         if ($action == '') {
-            $form_action = SITEBILL_MAIN_URL.'/admin'.self::$_trslashes;
+            $form_action = SITEBILL_MAIN_URL.'/admin/';
         } else {
             $form_action = $action;
         }
@@ -672,7 +672,7 @@ class columns_admin extends table_admin {
             foreach ($ids as $id) {
                 $str_a[] = 'batch_ids[]=' . $id;
             }
-            $rs .= $this->get_form($form_data[$this->table_name], 'edit', 0, '', SITEBILL_MAIN_URL . '/admin/index.php?action=columns&do=mass_activity_set&' . implode('&', $str_a));
+            $rs .= $this->get_form($form_data[$this->table_name], 'edit', 0, '', SITEBILL_MAIN_URL . '/admin/?action=columns&do=mass_activity_set&' . implode('&', $str_a));
         }
         return $rs;
     }

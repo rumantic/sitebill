@@ -269,7 +269,12 @@ class Memory_List extends Object_Manager {
 
         require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
-        $data = $data_model->init_model_data_from_db_multi('data', 'id', $ids, $form_data_shared, true, true, true);
+        $data = $data_model->init_model_data_from_db_multi('data', 'id', $ids, $form_data_shared, true);
+        if(!empty($data)){
+            foreach($data as $k => $v){
+                $data[$k]['_href'] = $this->getRealtyHREF($v['id']['value'], true, array('topic_id' => $v['topic_id']['value']));
+            }
+        }
         return $data;
     }
     
@@ -520,10 +525,33 @@ class Memory_List extends Object_Manager {
     }
 
     function grid($params = array(), $default_params = array()) {
+        
+        $admin_zone_url = false;
+        if(isset($params['admin_zone_url'])){
+            $admin_zone_url = true;
+        }
 
         global $smarty;
 
         $user_filters = $this->getUserMemoryLists($this->this_user);
+        
+        if(!empty($user_filters)){
+            foreach($user_filters as $k => $v){
+                if($admin_zone_url){
+                    $user_filters[$k]['_show_link'] = SITEBILL_MAIN_URL.'/admin/?action=data&memorylist_id='.$v['memorylist_id'];
+                    $user_filters[$k]['_pdf_link'] = SITEBILL_MAIN_URL.'/admin/?action=data&do=memorylist&subdo=getpdf&filter_id='.$v['memorylist_id'];
+                    $user_filters[$k]['_excel_link'] = SITEBILL_MAIN_URL.'/admin/?action=data&do=memorylist&subdo=getexcel&filter_id='.$v['memorylist_id'];
+                    $user_filters[$k]['_delete_link'] = SITEBILL_MAIN_URL.'/admin/?action=data&do=memorylist&subdo=delete&filter_id='.$v['memorylist_id'];
+                }else{
+                    $user_filters[$k]['_show_link'] = SITEBILL_MAIN_URL.'/memorylist/?do=showfilter&filter_id='.$v['memorylist_id'];
+                    $user_filters[$k]['_pdf_link'] = SITEBILL_MAIN_URL.'/memorylist/?do=getpdf&filter_id='.$v['memorylist_id'];
+                    $user_filters[$k]['_excel_link'] = SITEBILL_MAIN_URL.'/memorylist/?do=getexcel&filter_id='.$v['memorylist_id'];
+                    $user_filters[$k]['_delete_link'] = SITEBILL_MAIN_URL.'/memorylist/?do=delete&filter_id='.$v['memorylist_id'];
+                }
+                
+            }
+        }
+        
         $smarty->assign('user_filters', $user_filters);
         if (1 == intval($this->getConfigValue('apps.pdfreport.enabled'))) {
             $smarty->assign('memorylist_pdf', 1);
@@ -670,6 +698,27 @@ class Memory_List extends Object_Manager {
             $stmt = $DBC->query($query, array($memorylist_id, $item));
         }
         return true;
+    }
+    
+    function select_data_ids_by_memorylist_id ($user_id, $memorylist_id) {
+        $DBC = DBC::getInstance();
+        $ids = array();
+
+        if ( $this->getConfigValue('apps.memorylist.public_access_enable') ) {
+            $query = "SELECT ml.* FROM ".DB_PREFIX."_memorylist_item ml, ".DB_PREFIX."_memorylist m WHERE m.memorylist_id=ml.memorylist_id AND m.memorylist_id=?";
+            $stmt = $DBC->query($query, array($memorylist_id));
+        } else {
+            $query = "SELECT ml.* FROM ".DB_PREFIX."_memorylist_item ml, ".DB_PREFIX."_memorylist m WHERE m.memorylist_id=ml.memorylist_id AND m.user_id=? AND m.memorylist_id=?";
+            $stmt = $DBC->query($query, array($user_id, $memorylist_id));
+        }
+
+
+        if ($stmt) {
+            while ($ar = $DBC->fetch($stmt)) {
+                $ids[] = $ar['id'];
+            }
+        }
+        return $ids;
     }
     
     public function getUserMemoryLists_indexed_by_data_id($user_id, $domain = false, $deal_id = false) {

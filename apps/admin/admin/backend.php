@@ -7,6 +7,7 @@ $smarty->template_dir = SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template1';
 $smarty->cache_dir    = SITEBILL_DOCUMENT_ROOT.'/cache/smarty';
 $smarty->compile_dir  = SITEBILL_DOCUMENT_ROOT.'/cache/compile';
 
+$smarty->assign('SITEBILL_DOCUMENT_ROOT', SITEBILL_DOCUMENT_ROOT);
 $smarty->assign('ADMIN_BASE', SITEBILL_ADMIN_BASE);
 $smarty->assign('MAIN_URL', SITEBILL_MAIN_URL);
 $smarty->assign('estate_folder', SITEBILL_MAIN_URL);
@@ -27,6 +28,14 @@ require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill.php');
 
 Sitebill::setLangSession();
 Multilanguage::start('backend', $_SESSION['_lang']);
+
+if ( $_SESSION['need_reload_words'] ) {
+    if ( method_exists('Multilanguage', 'reLoadWords') ) {
+        Multilanguage::reLoadWords();
+        $_SESSION['need_reload_words'] = false;
+    }
+}
+
 
 if(file_exists(SITEBILL_DOCUMENT_ROOT.'/inc/db.inc.php') && file_exists(SITEBILL_DOCUMENT_ROOT.'/install')){
 	$msgs=array();
@@ -53,7 +62,7 @@ function appendAppToRecently(){
 		$apps_processor = new Apps_Processor();
 		$_SESSION['_apps_memory']['list']=$apps_processor->load_apps_menu();
 	}
-	
+
 	if($action != '' && $action != 'data'){
 		if(isset($_SESSION['_apps_memory']['list'][$action])){
 			$app_name='<a href="'.SITEBILL_MAIN_URL.'/admin/?action='.$action.'">'.$_SESSION['_apps_memory']['list'][$action]['title'].'</a>';
@@ -70,7 +79,7 @@ function appendAppToRecently(){
 		}else{
 			array_unshift($_SESSION['recently_apps'],$app_name);
 		}
-		
+
 	}
 	if (isset($_SESSION['recently_apps']) && is_array($_SESSION['recently_apps'])) {
 	    $_SESSION['recently_apps'] = array_unique($_SESSION['recently_apps']);
@@ -91,7 +100,7 @@ appendAppToRecently();
 if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/index.php') ) {
 	include_once(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/index.php');
 } else {
-	
+
     $access_allow=true;
 
     require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php');
@@ -231,6 +240,13 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
                 $auth_hash=md5(rand(10000, 99999));
                 $sql = 'UPDATE '.DB_PREFIX.'_user SET `auth_hash`=? WHERE `user_id`=? ';
                 $stmt=$DBC->query($sql, array($auth_hash, $_SESSION['user_id_value']));
+
+                $query = "DELETE FROM " . DB_PREFIX . "_oauth WHERE user_id=?";
+                $stmt = $DBC->query($query, array((string) $_SESSION['user_id_value']));
+
+                $query = "DELETE FROM " . DB_PREFIX . "_oauth WHERE user_id=?";
+                $stmt = $DBC->query($query, array((string) $_SESSION['user_id']));
+
                 unset($_SESSION['user_id']);
                 unset($_SESSION['user_id_value']);
                 unset($_SESSION['group']);
@@ -264,11 +280,11 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
                 //unset($_COOKIE['logged_user_id'])
                 setcookie('logged_user_id', '', time()-60*60*24*5, '/', SiteBill::$_cookiedomain);
                 setcookie('logged_user_token', '', time()-60*60*24*5, '/', SiteBill::$_cookiedomain);
-                
+
                 require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/user/login.php';
                 $Login = new Login();
                 $Login->makeUserLogged($user_id, 0, false, false);
-                
+
                 header('Location: '.SITEBILL_MAIN_URL);
                 exit;
             } elseif( $_REQUEST['action'] == 'cowork' ) {

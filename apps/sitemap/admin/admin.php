@@ -83,18 +83,6 @@ class sitemap_admin extends Object_Manager {
 
     function main() {
         $rs = $this->getTopMenu();
-
-        switch ($this->getRequestValue('do')) {
-            case 'generate' : {
-                    $this->generateSitemap();
-                    $rs .= sprintf(Multilanguage::_('GENERATED', 'sitemap'), 'sitemap.xml');
-                    $rs .= Multilanguage::_('FILE_IS_ON', 'sitemap') . ': <a href="' . $this->site_link . 'sitemap.xml' . '" target="_blank">' . $this->site_link . 'sitemap.xml' . '</a><br>';
-                    break;
-                }
-            default : {
-                    
-                }
-        }
         return $rs;
     }
 
@@ -110,7 +98,7 @@ class sitemap_admin extends Object_Manager {
 
             foreach ($urls as $u) {
                 $ret .= '<sitemap>' . "\n";
-                $ret .= '<loc>' . $this->site_link . $u . '</loc>' . "\n";
+                $ret .= '<loc>' . $this->createUrlTpl($u, true) . '</loc>' . "\n";
                 $ret .= '</sitemap>' . "\n";
             }
         }
@@ -154,7 +142,7 @@ class sitemap_admin extends Object_Manager {
                     continue;
                 } else {
                     $ret .= '<url>' . "\n";
-                    $ret .= '<loc>' . $this->site_link . $u['url'] . '</loc>' . "\n";
+                    $ret .= '<loc>' . $this->createUrlTpl($u['url'], true) . '</loc>' . "\n";
                     $ret .= '<lastmod>' . date('Y-m-d', time()) . '</lastmod>' . "\n";
                     $ret .= '<changefreq>' . $u['changefreq'] . '</changefreq>' . "\n";
                     $ret .= '<priority>' . $u['priority'] . '</priority>' . "\n";
@@ -198,6 +186,9 @@ class sitemap_admin extends Object_Manager {
         $max_count = 10000;
         $urls = $this->getSitemapItems();
         $sitemap_prefix = md5($_SERVER['HTTP_HOST']) . '.';
+        if (1 === intval($this->getConfigValue('apps.language.use_langs'))){
+            $sitemap_prefix .= $this->getCurrentLang() . '.';
+        }
         $output_file = SITEBILL_DOCUMENT_ROOT . '/cache/' . $sitemap_prefix . 'sitemap.xml';
 
         //echo count($urls);
@@ -311,6 +302,9 @@ class sitemap_admin extends Object_Manager {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
         $category_structure = $Structure_Manager->loadCategoryStructure();
+        
+        
+        $urls[] = array('url' => '', 'changefreq' => 'daily', 'priority' => 1);
 
         /*
          * Prepare Topics urls
@@ -328,13 +322,13 @@ class sitemap_admin extends Object_Manager {
                     $url = '';
                     if (1 == $level_enable) {
                         if ($category_structure['catalog'][$ar['id']]['url'] != '') {
-                            $url = $category_structure['catalog'][$ar['id']]['url'] . self::$_trslashes;
+                            $url = $category_structure['catalog'][$ar['id']]['url'];
                         } else {
                             $url = 'topic' . $ar['id'] . '.html';
                         }
                     } else {
                         if ($category_structure['catalog'][$ar['id']]['url'] != '') {
-                            $url = $category_structure['catalog'][$ar['id']]['url'] . self::$_trslashes;
+                            $url = $category_structure['catalog'][$ar['id']]['url'];
                         } else {
                             $url = 'topic' . $ar['id'] . '.html';
                         }
@@ -355,9 +349,6 @@ class sitemap_admin extends Object_Manager {
                 while ($ar = $DBC->fetch($stmt)) {
                     $url = SITEBILL_MAIN_URL . '/' . $ar['url'];
                     if ($url != '') {
-                        if (false === strpos($url, '.')) {
-                            $url .= self::$_trslashes;
-                        }
                         $urls[] = array('url' => $url, 'changefreq' => $this->changefreq['country'], 'priority' => $this->priority['country']);
                     }
                 }
@@ -374,9 +365,6 @@ class sitemap_admin extends Object_Manager {
                 while ($ar = $DBC->fetch($stmt)) {
                     $url = SITEBILL_MAIN_URL . '/' . $ar['url'];
                     if ($url != '') {
-                        if (false === strpos($url, '.')) {
-                            $url .= self::$_trslashes;
-                        }
                         $urls[] = array('url' => $url, 'changefreq' => $this->changefreq['city'], 'priority' => $this->priority['city']);
                     }
                 }
@@ -472,13 +460,13 @@ class sitemap_admin extends Object_Manager {
                         $ret[$k]['parent_category_url'] = '';
                     }
                     if ($v['alias'] == '') {
-                        $ret[$k]['href'] = SITEBILL_MAIN_URL . '/' . $this->getConfigValue('apps.company.namespace') . '/' . $ret[$k]['parent_category_url'] . 'company' . $v['company_id'];
+                        $ret[$k]['href'] = $this->getConfigValue('apps.company.namespace') . '/' . $ret[$k]['parent_category_url'] . 'company' . $v['company_id'];
                     } else {
-                        $ret[$k]['href'] = SITEBILL_MAIN_URL . '/' . $this->getConfigValue('apps.company.namespace') . '/' . $ret[$k]['parent_category_url'] . $v['alias'];
+                        $ret[$k]['href'] = $this->getConfigValue('apps.company.namespace') . '/' . $ret[$k]['parent_category_url'] . $v['alias'];
                     }
                 }
                 foreach ($ret as $k => $d) {
-                    $url = str_replace('\\', '/', $d['href']);
+                    $url = $d['href'];
                     $urls[] = array('url' => $url, 'changefreq' => $this->changefreq['company'], 'priority' => $this->priority['company']);
                 }
             }
@@ -494,6 +482,9 @@ class sitemap_admin extends Object_Manager {
                     //echo '$app_dir = '.$app_dir.'<br>';
                     if (is_dir(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
                         if (is_file(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php')) {
+                            if ( $app_dir === 'fasteditor' ) {
+                                continue;
+                            }
 
                             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/admin/admin.php')) {
                                 require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/admin/admin.php');

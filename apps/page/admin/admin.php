@@ -70,15 +70,37 @@ class page_admin extends Object_Manager {
         
         
     }
+    
+    public function _sitemap_pages_count($sitemap) {
+        $cnt = 0;
+        $DBC = DBC::getInstance();
+        $query = 'SELECT is_service FROM ' . DB_PREFIX . '_page LIMIT 1';
+        $stmt = $DBC->query($query);
+        if ($stmt) {
+            $has_service = true;
+        } else {
+            $has_service = false;
+        }
+
+        if ($has_service) {
+            $query = 'SELECT COUNT(`page_id`) AS _cnt FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE (`is_service` <> 1 OR `is_service` IS NULL) AND `uri` <> ? ';
+        } else {
+            $query = 'SELECT COUNT(`page_id`) AS _cnt FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE `uri` <> ? ';
+        }
+
+        $stmt = $DBC->query($query, array(''));
+        if ($stmt) {
+            $ar = $DBC->fetch($stmt);
+            $cnt += $ar['_cnt'];
+        }
+        if($cnt > 0){
+            $cnt = intval(ceil($cnt/$sitemap->getPerPageCount()));
+        }
+        return $cnt;
+    }
 
     public function sitemap($sitemap) {
         $urls = array();
-
-        if (1 == (int) $this->getConfigValue('apps.seo.no_trailing_slashes')) {
-            $trailing_slashe = '';
-        } else {
-            $trailing_slashe = '/';
-        }
 
         $changefreq = (intval($this->getConfigValue('apps.sitemap.changefreq.page')) < 7 ? intval($this->getConfigValue('apps.sitemap.changefreq.page')) : '6');
         $changefreq = $sitemap->validateFrequency($changefreq);
@@ -109,7 +131,7 @@ class page_admin extends Object_Manager {
                 if ($ar['uri'] != '') {
                     //$url=trim(str_replace('\\', '/', $ar['uri']),'/');
                     $url = SITEBILL_MAIN_URL . '/' . $ar['uri'];
-                    $urls[] = array('url' => $url . (false !== strpos($url, '.') ? '' : $trailing_slashe), 'changefreq' => $changefreq, 'priority' => $priority);
+                    $urls[] = array('url' => $url . (false !== strpos($url, '.') ? '' : self::$_trslashes), 'changefreq' => $changefreq, 'priority' => $priority);
                 }
             }
         }
@@ -168,7 +190,7 @@ class page_admin extends Object_Manager {
         if (isset($form_data['uri']['value'])) {
             $form_data['uri']['value'] = preg_replace('/[^a-zA-Z0-9_\/.-]/', '', $form_data['uri']['value']);
         }
-
+        
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         //$query = $data_model->get_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data, $language_id);
@@ -182,10 +204,25 @@ class page_admin extends Object_Manager {
 
         $new_record_id = $DBC->lastInsertId();
         $imgs = $this->editImageMulti($this->action, $this->table_name, $this->primary_key, $new_record_id);
+        
+        foreach ($form_data as $form_item) {
+            if ($form_item['type'] == 'uploads') {
+                $imgs_uploads = $this->appendUploads($this->table_name, $form_item, $this->primary_key, $new_record_id);
+            }
+        }
+        foreach ($form_data as $form_item) {
+            if ($form_item['type'] == 'docuploads') {
+                $imgs_uploads = $this->appendDocUploads($this->table_name, $form_item, $this->primary_key, $new_record_id);
+            }
+        }
+        
         return $new_record_id;
     }
 
     function edit_data($form_data, $language_id = 0, $primary_key_value = false) {
+        
+        $id = $this->getRequestValue($this->primary_key);
+        
         if (isset($form_data['uri']) && $form_data['uri']['value'] == '') {
             $form_data['uri']['value'] = $this->transliteMe($form_data['title']['value']);
         }
@@ -193,12 +230,13 @@ class page_admin extends Object_Manager {
         if (isset($form_data['uri']['value'])) {
             $form_data['uri']['value'] = preg_replace('/[^a-zA-Z0-9_\/.-]/', '', $form_data['uri']['value']);
         }
+        
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         if ($primary_key_value) {
             $queryp = $data_model->get_prepared_edit_query(DB_PREFIX . '_' . $this->table_name, $this->primary_key, $primary_key_value, $form_data, $language_id);
         } else {
-            $queryp = $data_model->get_prepared_edit_query(DB_PREFIX . '_' . $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data, $language_id);
+            $queryp = $data_model->get_prepared_edit_query(DB_PREFIX . '_' . $this->table_name, $this->primary_key, $id, $form_data, $language_id);
         }
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($queryp['q'], $queryp['p'], $row, $success);
@@ -207,7 +245,21 @@ class page_admin extends Object_Manager {
             return false;
         }
 
-        $imgs = $this->editImageMulti($this->action, $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key));
+        $imgs = $this->editImageMulti($this->action, $this->table_name, $this->primary_key, $id);
+        
+        foreach ($form_data as $form_item) {
+            if ($form_item['type'] == 'uploads') {
+                $imgs_uploads = $this->appendUploads($this->table_name, $form_item, $this->primary_key, $id);
+                //$this->set_imgs($imgs_uploads);
+            }
+        }
+        foreach ($form_data as $form_item) {
+            if ($form_item['type'] == 'docuploads') {
+                $imgs_uploads = $this->appendDocUploads($this->table_name, $form_item, $this->primary_key, $id);
+            }
+        }
+        
+        return $id;
     }
 
     function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {

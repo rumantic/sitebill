@@ -6,7 +6,8 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * RSS v2.0 Exporter at Harvard Law (http://cyber.law.harvard.edu/rss/rss.html) admin backend
  * @author Abushyk Kostyantyn <abushyk@gmail.com> http://www.sitebill.ru
  */
-class rss_admin extends Object_Manager {
+class rss_admin extends Object_Manager
+{
 
     private $length;
     private $output_file;
@@ -14,7 +15,8 @@ class rss_admin extends Object_Manager {
     /**
      * Constructor
      */
-    function __construct($realty_type = false) {
+    function __construct($realty_type = false)
+    {
         $this->SiteBill();
         Multilanguage::appendAppDictionary('rss');
         $this->checkConfiguration();
@@ -23,7 +25,8 @@ class rss_admin extends Object_Manager {
         $this->output_file = SITEBILL_DOCUMENT_ROOT . '/rss.xml';
     }
 
-    function main() {
+    function main()
+    {
         $rs .= $this->get_app_title_bar();
         $rs .= Multilanguage::_('RSS_STREAM_ADDRESS', 'rss') . ': <a href="' . $this->getServerFullUrl() . '/rss/" target="_blank">' . $this->getServerFullUrl() . '/rss/</a><br>';
         $rs .= _e('RSS-объявлений') . ': <a href="' . $this->getServerFullUrl() . '/rss/data/" target="_blank">' . $this->getServerFullUrl() . '/rss/data/</a><br>';
@@ -33,7 +36,8 @@ class rss_admin extends Object_Manager {
         //fclose($f);
     }
 
-    private function checkConfiguration() {
+    private function checkConfiguration()
+    {
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php';
         $CF = new config_admin();
         if ($CF) {
@@ -44,11 +48,11 @@ class rss_admin extends Object_Manager {
             if (!$CF->check_config_item('apps.rss.title')) {
                 $CF->addParamToConfig('apps.rss.title', 'Название RSS канала', 'Название RSS канала');
             }
-            
+
             if (!$CF->check_config_item('apps.rss.data_chanel_title')) {
                 $CF->addParamToConfig('apps.rss.data_chanel_title', '', 'Название RSS канала объектов');
             }
-            
+
             if (!$CF->check_config_item('apps.rss.articles_chanel_title')) {
                 $CF->addParamToConfig('apps.rss.articles_chanel_title', '', 'Название RSS канала статей');
             }
@@ -60,11 +64,11 @@ class rss_admin extends Object_Manager {
             if (!$CF->check_config_item('apps.rss.description')) {
                 $CF->addParamToConfig('apps.rss.description', 'Описание RSS канала', 'Описание RSS канала');
             }
-            
+
             if (!$CF->check_config_item('apps.rss.data_chanel_description')) {
                 $CF->addParamToConfig('apps.rss.data_chanel_description', '', 'Описание RSS канала объектов');
             }
-            
+
             if (!$CF->check_config_item('apps.rss.articles_chanel_description')) {
                 $CF->addParamToConfig('apps.rss.articles_chanel_description', '', 'Описание RSS канала статей');
             }
@@ -161,7 +165,7 @@ class rss_admin extends Object_Manager {
             if (!$CF->check_config_item('apps.rss.news_cachediff')) {
                 $CF->addParamToConfig('apps.rss.news_cachediff', 0, 'Время кеширование в секундах для фида новостей');
             }
-            
+
             if (!$CF->check_config_item('apps.rss.data_imgcount')) {
                 $CF->addParamToConfig('apps.rss.data_imgcount', '', 'Количество фото прикрепляемых к объекту (по-умолчанию - 1)');
             }
@@ -169,7 +173,74 @@ class rss_admin extends Object_Manager {
         unset($CF);
     }
 
-    protected function exportRssData() {
+    protected function exportRssDataFacebook()
+    {
+
+        $ids = $this->getExportedRealtyDataIds();
+        $xml = '';
+        $xml .= '<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">';
+        $xml .= '<channel>';
+        $xml .= '<title>News Publisher</title>
+    <link>http://www.example.com/</link>
+    <description>
+      Read our awesome news, every day.
+    </description>
+    <language>en-us</language>
+    <lastBuildDate>2014-12-11T04:44:16Z</lastBuildDate>';
+
+        foreach ($ids as $id) {
+            $xml .= '<item>
+      <title>This is an Instant Article</title>
+      <link>http://example.com/article.html</link>
+      <guid>2fd4e1c67a2d28fced849ee1bb76e7391b93eb12</guid>
+      <pubDate>2014-12-11T04:44:16Z</pubDate>
+      <author>Mr. Author</author>
+      <description>This is my first Instant Article. How awesome is this?</description>
+      <content:encoded><![CDATA[' . $id . ']]>
+      </content:encoded>
+    </item>';
+        }
+        $xml .= '<item>
+      <title>This is an Instant Article</title>
+      <link>http://example.com/article.html</link>
+      <guid>2fd4e1c67a2d28fced849ee1bb76e7391b93eb12</guid>
+      <pubDate>2014-12-11T04:44:16Z</pubDate>
+      <author>Mr. Author</author>
+      <description>This is my first Instant Article. How awesome is this?</description>
+      <content:encoded><![CDATA[
+        
+        <!doctype html>
+        <html lang="en" prefix="op: http://media.facebook.com/op#">
+          <head>
+            <meta charset="utf-8">
+            <link rel="canonical" href="http://example.com/article.html">
+            <meta property="op:markup_version" content="v1.0">
+          </head>
+          <body>
+            <article>
+              <header>
+                <!— Article header goes here -->
+              </header>
+
+              <!— Article body goes here -->
+
+              <footer>
+                <!— Article footer goes here -->
+              </footer>
+            </article>
+          </body>
+        </html>
+        ]]>
+      </content:encoded>
+    </item>';
+        $xml .= '</channel>';
+        $xml .= '</rss>';
+        return $xml;
+    }
+
+
+    protected function exportRssData()
+    {
         if (intval($this->getConfigValue('apps.rss.data_cachediff')) > 0) {
             $with_cache = true;
             $cashe_diff = intval($this->getConfigValue('apps.rss.data_cachediff'));
@@ -194,40 +265,42 @@ class rss_admin extends Object_Manager {
             }
             ob_start();
         }
-        
-        
+
+
         $title = trim($this->getConfigValue('apps.rss.title'));
-        
-        if('' != trim($this->getConfigValue('apps.rss.data_chanel_title'))){
+
+        if ('' != trim($this->getConfigValue('apps.rss.data_chanel_title'))) {
             $title = trim($this->getConfigValue('apps.rss.data_chanel_title'));
         }
-        
+
         $title = htmlspecialchars($title);
-        
+
         $description = htmlspecialchars(trim($this->getConfigValue('apps.rss.description')));
-        
-        if('' != trim($this->getConfigValue('apps.rss.data_chanel_description'))){
+
+        if ('' != trim($this->getConfigValue('apps.rss.data_chanel_description'))) {
             $description = trim($this->getConfigValue('apps.rss.data_chanel_description'));
         }
-        
+
         $description = htmlspecialchars($description);
-        
+
         $language = htmlspecialchars(trim($this->getConfigValue('apps.rss.language')));
-        
-        
+
+
         echo '<?xml version="1.0" ?>';
         echo '<rss version="2.0">';
         echo '<channel>';
         echo $this->generateChannelInfo($title, $description, $language);
         $mode = intval($this->getConfigValue('apps.rss.data_mode'));
         switch ($mode) {
-            case 1 : {
-                    $this->getRealtyItemsExtended();
-                    break;
-                }
-            default : {
-                    $this->getRealtyItemsStandart();
-                }
+            case 1 :
+            {
+                $this->getRealtyItemsExtended();
+                break;
+            }
+            default :
+            {
+                $this->getRealtyItemsStandart();
+            }
         }
 
         echo '</channel>';
@@ -242,20 +315,21 @@ class rss_admin extends Object_Manager {
         }
     }
 
-    protected function exportRssNews( $turbo = false, $page = 0, $per_page = 0 ) {
-        if ( $turbo ) {
+    protected function exportRssNews($turbo = false, $page = 0, $per_page = 0)
+    {
+        if ($turbo) {
             $config_app_name = 'rss_turbo';
         } else {
             $config_app_name = 'rss';
         }
-        if (intval($this->getConfigValue('apps.'.$config_app_name.'.news_cachediff')) > 0) {
+        if (intval($this->getConfigValue('apps.' . $config_app_name . '.news_cachediff')) > 0) {
             $with_cache = true;
-            $cashe_diff = intval($this->getConfigValue('apps.'.$config_app_name.'.news_cachediff'));
+            $cashe_diff = intval($this->getConfigValue('apps.' . $config_app_name . '.news_cachediff'));
         } else {
             $with_cache = false;
         }
 
-        $cache_file = SITEBILL_DOCUMENT_ROOT . '/cache/'.$config_app_name.'_news.xml';
+        $cache_file = SITEBILL_DOCUMENT_ROOT . '/cache/' . $config_app_name . '_news.xml';
         if ($with_cache) {
             if (file_exists($cache_file) && ((time() - filemtime($cache_file)) > $cashe_diff)) {
                 unlink($cache_file);
@@ -282,20 +356,20 @@ class rss_admin extends Object_Manager {
             echo $d;
         }
     }
-    
-    function echo_news_rss_header_and_footer ($page, $per_page) {
-     
-        
+
+    function echo_news_rss_header_and_footer($page, $per_page)
+    {
+
+
         $title = trim($this->getConfigValue('apps.rss.title'));
         $title = htmlspecialchars($title);
-        
+
         $description = htmlspecialchars(trim($this->getConfigValue('apps.rss.description')));
         $description = htmlspecialchars($description);
-        
+
         $language = htmlspecialchars(trim($this->getConfigValue('apps.rss.language')));
-        
-        
-        
+
+
         echo '<?xml version="1.0" ?>';
         echo '<rss version="2.0">';
         echo '<channel>';
@@ -305,7 +379,8 @@ class rss_admin extends Object_Manager {
         echo '</rss>';
     }
 
-    protected function exportRssArticles() {
+    protected function exportRssArticles()
+    {
         if (intval($this->getConfigValue('apps.rss.articles_cachediff')) > 0) {
             $with_cache = true;
             $cashe_diff = intval($this->getConfigValue('apps.rss.articles_cachediff'));
@@ -330,26 +405,26 @@ class rss_admin extends Object_Manager {
             }
             ob_start();
         }
-        
-        
+
+
         $title = trim($this->getConfigValue('apps.rss.title'));
-        
-        if('' != trim($this->getConfigValue('apps.rss.articles_chanel_title'))){
+
+        if ('' != trim($this->getConfigValue('apps.rss.articles_chanel_title'))) {
             $title = trim($this->getConfigValue('apps.rss.articles_chanel_title'));
         }
-        
+
         $title = htmlspecialchars($title);
-        
+
         $description = htmlspecialchars(trim($this->getConfigValue('apps.rss.description')));
-        
-        if('' != trim($this->getConfigValue('apps.rss.articles_chanel_description'))){
+
+        if ('' != trim($this->getConfigValue('apps.rss.articles_chanel_description'))) {
             $description = trim($this->getConfigValue('apps.rss.articles_chanel_description'));
         }
-        
+
         $description = htmlspecialchars($description);
-        
+
         $language = htmlspecialchars(trim($this->getConfigValue('apps.rss.language')));
-        
+
         //echo 1;
         echo '<?xml version="1.0" ?>';
         echo '<rss version="2.0">';
@@ -368,7 +443,8 @@ class rss_admin extends Object_Manager {
         }
     }
 
-    private function getArticlesItems() {
+    private function getArticlesItems()
+    {
         $count = intval($this->getConfigValue('apps.rss.articles_length'));
 
         if ($count == 0) {
@@ -381,18 +457,19 @@ class rss_admin extends Object_Manager {
         return;
     }
 
-    protected function getNewsItems($page, $per_page) {
+    protected function getNewsItems($page, $per_page)
+    {
 
         $count = intval($this->getConfigValue('apps.rss.length'));
-        
-        if($per_page > 0){
+
+        if ($per_page > 0) {
             $count = $per_page;
         }
-        
+
         $start = 0;
-        
-        if($page > 0){
-            $start = ($page-1)*$count;
+
+        if ($page > 0) {
+            $start = ($page - 1) * $count;
         }
 
         if ($count == 0) {
@@ -469,7 +546,8 @@ class rss_admin extends Object_Manager {
         }
     }
 
-    function echo_news_item($NA, $form_data_shared, $image_field, $image_field_type, $text_field, $title_field) {
+    function echo_news_item($NA, $form_data_shared, $image_field, $image_field_type, $text_field, $title_field)
+    {
         echo '<item>';
         echo '<title>' . htmlspecialchars($form_data_shared[$title_field]['value']) . '</title>';
         echo '<link>' . $NA->getNewsRoute($form_data_shared['news_id']['value'], $form_data_shared['newsalias']['value'], true) . '</link>';
@@ -483,7 +561,8 @@ class rss_admin extends Object_Manager {
         echo '</item>';
     }
 
-    function generateChannelInfo($title = '', $description = '', $language = '') {
+    function generateChannelInfo($title = '', $description = '', $language = '')
+    {
         $ret = '';
         $ret .= '<title>' . $title . '</title>' . "\n";
         $ret .= '<link>' . $this->getServerFullUrl() . '</link>' . "\n";
@@ -498,7 +577,8 @@ class rss_admin extends Object_Manager {
         return $ret;
     }
 
-    private function getExportedRealtyDataIds() {
+    protected function getExportedRealtyDataIds()
+    {
         $ids = array();
         $count = intval($this->getConfigValue('apps.rss.data_length'));
         if ($count > 0) {
@@ -514,7 +594,8 @@ class rss_admin extends Object_Manager {
         return $ids;
     }
 
-    private function getRealtyItemsStandart() {
+    private function getRealtyItemsStandart()
+    {
         $ids = $this->getExportedRealtyDataIds();
 
         if (empty($ids)) {
@@ -548,9 +629,9 @@ class rss_admin extends Object_Manager {
             $image_field = false;
         }
 
-        
+
         $data_imgcount = intval($this->getConfigValue('apps.rss.data_imgcount'));
-        if($data_imgcount == 0){
+        if ($data_imgcount == 0) {
             $data_imgcount = 1;
         }
 
@@ -610,23 +691,25 @@ class rss_admin extends Object_Manager {
         }
     }
 
-    function echo_realty_item_standart($meta_data, $href, $image_field, $image_field_type, $form_data_shared, $description, $data_imgcount) {
+    function echo_realty_item_standart($meta_data, $href, $image_field, $image_field_type, $form_data_shared, $description, $data_imgcount)
+    {
         echo '<item>' . "\n";
         echo '<title>' . htmlspecialchars($meta_data['title']) . '</title>';
         //echo '<link>http://'.$_SERVER['HTTP_HOST'].$href.'</link>';
         echo '<link>' . $href . '</link>';
-        
-        
+
+
         $this->echo_image_item_or_return_url($image_field, $image_field_type, $form_data_shared, $data_imgcount);
         echo '<description><![CDATA[' . $description . ']]></description>';
         echo '<pubDate>' . gmdate('D, d M Y H:i:s T', strtotime($form_data_shared['date_added']['value'])) . '</pubDate>';
         echo '</item>' . "\n";
     }
-    
-    function echo_image_item_or_return_url ($image_field, $image_field_type, $form_data_shared, $imgcount = 1, $return_url = false) {
+
+    function echo_image_item_or_return_url($image_field, $image_field_type, $form_data_shared, $imgcount = 1, $return_url = false)
+    {
         if ($image_field) {
-            
-            if($imgcount > 1){
+
+            if ($imgcount > 1) {
                 $images = array();
                 $image_urls = array();
                 if ($image_field_type == 'uploads' && isset($form_data_shared[$image_field]['value'][0])) {
@@ -636,8 +719,8 @@ class rss_admin extends Object_Manager {
                 }
                 if (!empty($image_src)) {
                     $i = 0;
-                    while($i < $imgcount){
-                        if(isset($image_src[$i])){
+                    while ($i < $imgcount) {
+                        if (isset($image_src[$i])) {
                             $image = $image_src[$i]['normal'];
                             $fn = explode('.', $image);
                             $ext = end($fn);
@@ -648,33 +731,50 @@ class rss_admin extends Object_Manager {
                                 $mime = 'image/png';
                             } elseif ($ext == 'gif') {
                                 $mime = 'image/gif';
+                            } elseif ($ext == 'webp') {
+                                $mime = 'image/webp';
                             }
-                            $is = @filesize(SITEBILL_DOCUMENT_ROOT . '/img/data/' . $image);
-                            $image_url = $this->getServerFullUrl() . '/img/data/' . $image;
+
+                            $remote = false;
+
+                            if (isset($image_src[$i]['remote']) && $image_src[$i]['remote'] === 'true') {
+                                $remote = true;
+                            }
+
+                            if ($remote) {
+                                $is = 58446;
+                            } else {
+                                $is = @filesize($this->createMediaIncPath($image_src[$i], 'normal', 2));
+                            }
+
+
+                            $image_url = $this->createMediaIncPath($image_src[$i], 'normal', 1);
                             $image_urls[] = $image_url;
                             $images[] = '<enclosure url="' . $image_url . '"' . ($mime != '' ? ' type="' . $mime . '"' : '') . ' length="' . $is . '"' . '/>';
                         }
                         $i += 1;
                     }
-                    
-                    if($return_url){
+
+                    if ($return_url) {
                         return $image_urls;
-                    }else{
+                    } else {
                         echo implode('', $images);
                     }
-                    
+
                 }
-            }else{
+            } else {
                 $image = '';
+                $remote = false;
                 if ($image_field_type == 'uploads' && isset($form_data_shared[$image_field]['value'][0])) {
-                    $image = $form_data_shared['image']['value'][0]['normal'];
-                    //echo '<enclosure url="'.$this->getServerFullUrl().'/img/data/'.$form_data_shared['image']['value'][0]['normal'].'"/>';
+                    $image = $form_data_shared['image']['value'][0];
+                    if (isset($image['remote']) && $image['remote'] === 'true') {
+                        $remote = true;
+                    }
                 } elseif ($image_field_type == 'uploadify_image' && isset($form_data_shared['image']['image_array'][0])) {
-                    $image = $form_data_shared['image']['image_array'][0]['normal'];
-                    //echo '<enclosure url="'.$this->getServerFullUrl().'/img/data/'.$form_data_shared['image']['image_array'][0]['normal'].'"/>';
+                    $image = $form_data_shared['image']['image_array'][0];
                 }
-                if ($image != '') {
-                    $fn = explode('.', $image);
+                if ($image['normal'] != '') {
+                    $fn = explode('.', $image['normal']);
                     $ext = end($fn);
                     $mime = '';
                     if ($ext == 'jpeg' || $ext == 'jpg') {
@@ -683,23 +783,32 @@ class rss_admin extends Object_Manager {
                         $mime = 'image/png';
                     } elseif ($ext == 'gif') {
                         $mime = 'image/gif';
+                    } elseif ($ext == 'webp') {
+                        $mime = 'image/webp';
                     }
-                    $is = @filesize(SITEBILL_DOCUMENT_ROOT . '/img/data/' . $image);
-                    $image_url = $this->getServerFullUrl() . '/img/data/' . $image;
-                    if ( !$return_url ) {
+
+                    if ($remote) {
+                        $is = 58446;
+                    } else {
+                        $is = @filesize($this->createMediaIncPath($image, 'normal', 2));
+                    }
+
+                    $image_url = $this->createMediaIncPath($image, 'normal', 1);
+                    if (!$return_url) {
                         echo '<enclosure url="' . $image_url . '"' . ($mime != '' ? ' type="' . $mime . '"' : '') . ' length="' . $is . '"' . '/>';
                     }
                     return $image_url;
                 }
             }
-            
-            
+
+
         }
         return false;
     }
-    
 
-    private function getRealtyItemsExtended() {
+
+    private function getRealtyItemsExtended()
+    {
 
 
         $ids = $this->getExportedRealtyDataIds();
@@ -741,9 +850,9 @@ class rss_admin extends Object_Manager {
         } else {
             $image_field = '';
         }
-        
+
         $data_imgcount = intval($this->getConfigValue('apps.rss.data_imgcount'));
-        if($data_imgcount == 0){
+        if ($data_imgcount == 0) {
             $data_imgcount = 1;
         }
 
@@ -885,7 +994,8 @@ class rss_admin extends Object_Manager {
         }
     }
 
-    function echo_realty_item_extended($title, $href, $image_field, $image_field_type, $form_data_shared, $description, $date1, $data_imgcount = 1) {
+    function echo_realty_item_extended($title, $href, $image_field, $image_field_type, $form_data_shared, $description, $date1, $data_imgcount = 1)
+    {
         echo '<item>';
         echo '<title>' . htmlspecialchars($title) . '</title>';
         echo '<link>' . $href . '</link>';
@@ -896,7 +1006,8 @@ class rss_admin extends Object_Manager {
         echo '</item>';
     }
 
-    protected function getDataCommonDescription($form_data_shared) {
+    protected function getDataCommonDescription($form_data_shared)
+    {
         $fields_description = trim($this->getConfigValue('apps.rss.data_description'));
         $description_trim = intval($this->getConfigValue('apps.rss.data_description_max'));
         $description = '';

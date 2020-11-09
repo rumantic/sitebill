@@ -8,9 +8,9 @@
     <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
     <license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>true</backendMenu>
-    <version status="beta">0.3.2</version>
+    <version status="beta">0.3.3</version>
     <administration>
         <!-- Administration Menu Section -->
         <menu>Помощник</menu>
-    </administration>	
+    </administration>
 </install>

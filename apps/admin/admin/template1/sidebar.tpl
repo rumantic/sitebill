@@ -1,4 +1,4 @@
-<div id="sidebar" class="sidebar                  responsive" data-sidebar="true" data-sidebar-scroll="true" data-sidebar-hover="true">            
+<div id="sidebar" class="sidebar                  responsive" data-sidebar="true" data-sidebar-scroll="true" data-sidebar-hover="true">
     <ul class="nav nav-list">
         <li>
             <a href="{$estate_folder}/admin/"><i class="icon-home"></i> <span class="menu-text">{$L_HOME}</span></a>
@@ -14,7 +14,7 @@
                     <a href="{$estate_folder}/admin/?action=data">
                         <i class="icon-book"></i> <span class="menu-text">{$L_ADMIN_MENU_AUTOADVERTS}</span>
                     </a>
-                    <!-- 
+                    <!--
                     {if $admin_menua.datamain.childs.data.childs|count>0}
                     <ul class="submenu">
                         {foreach from=$admin_menua.datamain.childs.data.childs item=ama}
@@ -23,13 +23,13 @@
                           </li>
                         {/foreach}
                         </ul>
-                    {/if} 
+                    {/if}
                     -->
 
 
                     {if 1==0}
                         <!-- ul class="submenu">
-                        
+
                           <li {if $ama.active}class="active"{/if}>
                           <a href="{$estate_folder}/admin/?action=data">Актуальные</a>
                           </li>
@@ -49,7 +49,7 @@
                           <li {if $ama.active}class="active"{/if}>
                           <a href="{$estate_folder}/admin/?action=data">Архив</a>
                           </li>
-                          
+
                         </ul-->
                     {/if}
                 </li>
@@ -124,7 +124,7 @@
         {/if}
         {if $admin_menua.sitebill}
             <li {if $admin_menua.sitebill.active}class="active open"{/if}>
-                <a href="{$estate_folder}/admin/?action=sitebill"><i class="icon-refresh"></i> 
+                <a href="{$estate_folder}/admin/?action=sitebill"><i class="icon-refresh"></i>
                     <span class="menu-text">{$L_ADMIN_MENU_UPDATES}</span>
                 </a>
             </li>
@@ -139,7 +139,7 @@
                 {/if}
         {if $admin_menua.table}
         <li {if $admin_menua.table.active}class="active open"{/if}><a href="{$estate_folder}/admin/?action=table">
-                <i class="icon-edit"></i> 
+                <i class="icon-edit"></i>
                 <span class="menu-text">{if $L_TABLE_MENU != ''}{$L_TABLE_MENU}{else}Form editor{/if}</span></a></li>
         {/if}
                 {if $admin_menua.access}
@@ -164,7 +164,7 @@
         <li>
             <a href="#" class="dropdown-toggle">
                 <i class="icon-desktop"></i>
-                <span class="menu-text"> Недавние </span>
+                <span class="menu-text"> {_e t="Недавние"} </span>
 
                 <b class="arrow icon-angle-down"></b>
             </a>
@@ -180,7 +180,7 @@
             <li>
                 <a href="#" class="dropdown-toggle">
                     <i class="icon-folder-close"></i>
-                    <span class="menu-text"> Категории </span>
+                    <span class="menu-text"> {_e t="Категории"} </span>
 
                     <b class="arrow icon-angle-down"></b>
                 </a>
@@ -194,7 +194,7 @@
         <li>
             <a href="https://play.google.com/store/apps/details?id=ru.sitebill.mobilecms" target="_blank">
                 <i class="icon-camera"></i>
-                <span class="menu-text">Мобильное фото</span></a>
+                <span class="menu-text">{_e t="Мобильное фото"}</span></a>
         </li>
 
 

@@ -59,26 +59,7 @@
 				</form>
 				<p>Объявление, входящие в удаляемые пункты структуры, будут перенесены на ближайший доступный верхний уровень структуры.</p>
 			</div>
-			<!--<div class="span6">
-				<form class="form-horizontal">
-				  <div class="control-group">
-				    <label class="control-label">Удалить</label>
-				    <div class="controls">
-				      <input type="radio" name="clear_advs" value="delete_all">
-				    </div>
-				  </div>
-				  <div class="control-group">
-				    <label class="control-label">Перенести на уровень выше</label>
-				    <div class="controls">
-				      <input type="radio" name="clear_advs" checked="checked" value="move_up">
-				    </div>
-				  </div>
-				  
-				</form>
-			</div>  -->
-		</div>
-		
-		
+		</div>		
 	</div>
 	<div class="modal-footer">
 		<button class="btn runaction">Выполнить</button>
@@ -91,9 +72,9 @@ var structure_grid_allow_drag={$structure_grid_allow_drag};
 {literal}
 <script>
 $(document).ready(function(){
-	if(structure_grid_allow_drag==1){
+    if(structure_grid_allow_drag==1){
 		$(".dd-list").sortable({
-			handle: ".dd-handle",
+			handle: ".dd-move",
 			connectWith: '.dd-list',
 			stop: function(e, ui){
 				Structure_Control.saveSort(ui);
@@ -103,22 +84,7 @@ $(document).ready(function(){
 	
 	
 	Structure_Control.load_tree();
-	/*
-	$.ajax({
-		url: estate_folder+'/js/ajax.php?action=topic_source',
-		type: 'post',
-		dataType: 'json',
-		success: function(json){
-			if(json.length>0){
-				var tree=$('#topic_tree');
-				for(var i in json){
-					var liel=Structure_Control.format_element(json[i]);
-					tree.append(liel);
-				}
-			}
-		}
-	});*/
-	
+		
 	$(document).on('click', 'button[data-action=expand]', function(e){
 		var parent=$(this).parents('.dd-item').eq(0);
 		var child_list=$(this).nextAll('.dd-list');
@@ -140,7 +106,7 @@ $(document).ready(function(){
 						}
 						if(structure_grid_allow_drag==1){
 							tree.sortable({
-								handle: ".dd-handle",
+								handle: ".dd-move",
 								connectWith: '.dd-list',
 								stop: function(e, ui){
 									Structure_Control.saveSort(ui);
@@ -222,55 +188,6 @@ $(document).ready(function(){
 		}
 		e.preventDefault();
 	});
-	/*$('#topic_tree').tree({
-		onClick: function(node){
-			//document.location.href='/admin/index.php?action=company&topic_id='+node.id;
-		},
-		dnd: true,
-		url: "{/literal}{$estate_folder}{literal}/js/ajax.php?action=topic_source",
-		onDrop: function(target, source, point){
-			var id=source.id;
-			var elt=$('#topic_tree').find('[node-id='+id+']').parents('li').eq(0);
-			var parentul=elt.parents('ul').eq(0);
-			var parent_id=parentul.prev('div.tree-node').eq(0).attr('node-id');
-			var ids=[];
-			
-			if(parent_id === undefined){
-				parent_id=0;
-				
-				$('#topic_tree > li > div.tree-node').each(function(){
-					ids.push($(this).attr('node-id'));
-				});
-				console.log(ids);
-			}else{
-				var es=$('#topic_tree').find('[node-id='+parent_id+']').parents('li').eq(0);
-				es.find('ul > li > div.tree-node').each(function(){
-					ids.push($(this).attr('node-id'));
-				});
-			}
-			
-			if(ids.length>0){
-				$.ajax({
-					url: '{/literal}{$estate_folder}{literal}/js/ajax.php?action=save_topic_sort',
-					data: {parent_topic_id: parent_id, child_topics: ids.join(',')}
-				});
-			}
-		},
-		onLoadSuccess: function(){
-			$('#topic_tree .tree-node').each(function(){
-				var nodeid=$(this).attr('node-id');
-				if($(this).find('span.controls').length==0){
-					var span=$('<span class="controls"></span>');
-					span.append('<a href="?action=structure&do=new&parent_id='+nodeid+'" class="btn btn-info btn-mini"><i class="icon-white icon-plus"></i></a>');
-					span.append('&nbsp;');
-					span.append('<a href="?action=structure&do=edit&id='+nodeid+'" class="btn btn-info btn-mini"><i class="icon-white icon-pencil"></i></a>');
-					span.append('&nbsp;');
-					span.append('<a href="?action=structure&do=delete&id='+nodeid+'" onclick="if ( confirm(\'Действительно хотите удалить категорию?\') ) {return true;} else {return false;}" class="btn btn-danger btn-mini"><i class="icon-white icon-remove"></i></a>');
-					$(this).append(span);
-				}
-			});
-		}
-	});*/
 });
 
 Structure_Control={
@@ -294,30 +211,38 @@ Structure_Control={
 	format_element: function(json){
 		var liel=$('<li class="dd-item" data-id="'+json.id+'"></li>');
 		var buttons_block=$('<div class="pull-right action-buttons"></div>');
+        
 		var a=$('<a class="red structure_control_clear_function" href="'+estate_folder+'/admin/index.php?action=structure&do=delete&id='+json.id+'"></a>');
 		a.append($('<i class="icon-eraser bigger-130"></i>'));
 		buttons_block.append(a);
 		
 		
-		
-		var a=$('<a class="blue structure_control_edit_function" href="'+estate_folder+'/admin/index.php?action=structure&do=edit&id='+json.id+'"></a>');
+        var a=$('<a class="blue structure_control_edit_function" href="'+estate_folder+'/admin/index.php?action=structure&do=edit&id='+json.id+'"></a>');
 		a.append($('<i class="icon-pencil bigger-130"></i>'));
 		buttons_block.append(a);
+        
 		var a=$('<a class="green structure_control_new_function" href="'+estate_folder+'/admin/index.php?action=structure&do=new&parent_id='+json.id+'"></a>');
 		a.append($('<i class="icon-plus bigger-130"></i>'));
 		buttons_block.append(a);
+        
 		var a=$('<a class="red structure_control_delete_function" href="'+estate_folder+'/admin/index.php?action=structure&do=delete&id='+json.id+'"></a>');
 		a.append($('<i class="icon-trash bigger-130"></i>'));
 		buttons_block.append(a);
+        
 		var tmp_element_html;
 		tmp_element_html = '<div class="dd-handle ';
 		if ( json.published == '0' ) {
-			tmp_element_html += ' btn-warning ';
+			tmp_element_html += ' btn-warning  no-hover ';
 		}
 		tmp_element_html += '"></div>';
+        
 		var ddh=$(tmp_element_html);
-		ddh.text(json.text+' [ID:'+json.id+'] ['+json.url+']['+json.order+']');
+		ddh.text(json.text+' [ID:'+json.id+'] ['+json.url+'] ['+json.order+']');
 		ddh.append(buttons_block);
+        
+        var bt=$('<div class="dd-move"><i class="icon-move bigger-130"></i></div>');
+        liel.append(bt);
+        
 		if(json.state=='closed'){
 			var bt=$('<button data-action="expand" type="button" style="display: block;">Expand</button>');
 			liel.append(bt);
@@ -347,13 +272,17 @@ Structure_Control={
 		var neighbours=[];
 		parent_list_element.children('.dd-item').each(function(i, el){
 			neighbours.push(parseInt($(el).attr('data-id')));
-			
 		});
 		
 		if(neighbours.length>0){
 			$.ajax({
-				url: estate_folder+'/js/ajax.php?action=save_topic_sort',
-				data: {parent_topic_id: parent_id, child_topics: neighbours.join(',')}
+                type: 'post',
+                dataType: 'json',
+				url: estate_folder+'/js/ajax.php',
+				data: {action: 'save_topic_sort', parent_topic_id: parent_id, child_topics: neighbours},
+                success: function(json){
+                    
+                }
 			});
 		}
 	}

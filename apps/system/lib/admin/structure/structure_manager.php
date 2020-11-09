@@ -12,6 +12,7 @@ class Structure_Manager extends SiteBill_Krascap {
     private static $_category_urls = NULL;
     var $operation_type_array = array();
     private $context_object = NULL;
+    private $j = 0;
 
     /**
      * Constructor
@@ -63,13 +64,13 @@ class Structure_Manager extends SiteBill_Krascap {
         $query = "alter table " . DB_PREFIX . "_topic add column meta_description text";
         $stmt = $DBC->query($query);
     }
-    
+
     function list2Tree($list){
         $r = array();
         $childs = array();
         $items = array();
         $currentDepth = 0;
-        
+
         foreach($list as $line){
             $name = rtrim($line);
             $lDepth = strlen($line) - strlen(ltrim($name, " "));
@@ -78,7 +79,7 @@ class Structure_Manager extends SiteBill_Krascap {
                 $items[0][] = $name;
             }
            echo $name.' '.$lDepth.'==';
-           
+
         }
         print_r($items);
     }
@@ -99,7 +100,7 @@ class Structure_Manager extends SiteBill_Krascap {
                     $this->list2Tree($catlist);
                     $rs .= '<textarea name="catlist" rows="30">222</textarea>';
                 }else{
-                   
+
                 }
                  $rs .= '<form method="post" action="'.SITEBILL_MAIN_URL.'/admin'.self::$_trslashes.'">'
                             . '<textarea name="catlist" rows="30">'
@@ -1039,7 +1040,7 @@ class Structure_Manager extends SiteBill_Krascap {
     /**
      * Возвращает ассоциативный массив соответствий id категорий и составным иерархическим урлам
      * @return array
-     * 
+     *
      */
     function loadCategoriesUrls() {
 
@@ -1122,10 +1123,16 @@ class Structure_Manager extends SiteBill_Krascap {
         $fname = 'name';
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
             $curlang = $this->getCurrentLang();
-            if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                
+            $default_lng = '';
+            if(1 == $this->getConfigValue('apps.language.use_default_as_ru')){
+                $default_lng = 'ru';
+            }elseif('' != trim($this->getConfigValue('apps.language.use_as_default'))){
+                $default_lng = trim($this->getConfigValue('apps.language.use_as_default'));
+            }
+            if ($default_lng != '' && $default_lng == $curlang) {
+
             } else {
-                $fname .= '_' . $this->getCurrentLang();
+                $fname .= '_' . $curlang;
             }
         }
 
@@ -1180,7 +1187,7 @@ class Structure_Manager extends SiteBill_Krascap {
             $structure['catalog'][$topic_id]['value'] = $structure['catalog'][$topic_id]['breadcrumbs'];
 
             array_push($nested, $structure['catalog'][$topic_id]);
-            if (count($structure['childs'][$topic_id]) > 0) {
+            if (is_array($structure['childs'][$topic_id]) && count($structure['childs'][$topic_id]) > 0) {
                 $tmp = $this->convertToNestedArray($structure, $topic_id, $level);
                 foreach ($tmp as $tmp_item_id => $tmp_array) {
                     array_push($nested, $tmp_array);
@@ -1189,6 +1196,62 @@ class Structure_Manager extends SiteBill_Krascap {
         }
         return $nested;
     }
+    
+    
+    /*function getCategoryTreeArray($first_run = true, $load_published = false, $id = 0, &$el = null, $structure = null){
+        
+        if($first_run){
+            
+            echo 'first run';
+            $ret = array();
+        
+            $structure = $this->loadCategoryStructure($load_published);
+            
+            if(!empty($structure['childs'][0])){
+                foreach($structure['childs'][0] as $cid){
+                    $x = array(
+                        'name' => $structure['catalog'][$cid]['name'],
+                        'url' => $structure['catalog'][$cid]['url'],
+                        'href' => SITEBILL_MAIN_URL.'/'.$structure['catalog'][$cid]['url'].self::$_trslashes
+                    );
+
+                    if(isset($structure['childs'][$cid]) && is_array($structure['childs'][$cid]) && !empty($structure['childs'][$cid])){
+                        $this->getCategoryTreeArray(false, $load_published, $cid, $x, $structure);
+                    }
+                    $ret[] = $x;
+                }
+                
+                
+            }
+            print_r($ret);
+        }else{
+            
+            echo 'inside '.$id;
+            
+            foreach($structure['childs'][$id] as $cid){
+                //print_r($x);
+                $x = array(
+                    'name' => $structure['catalog'][$cid]['name'],
+                    'url' => $structure['catalog'][$cid]['url'],
+                    'href' => SITEBILL_MAIN_URL.'/'.$structure['catalog'][$cid]['url'].self::$_trslashes
+                );
+                //print_r($x);
+                if(isset($structure['childs'][$cid]) && is_array($structure['childs'][$cid]) && !empty($structure['childs'][$cid])){
+                    $this->getCategoryTreeArray(false, $load_published, $cid, $x, $structure);
+                }
+                
+                $el['childs'][] = $x;
+            }
+        }
+        
+        
+        
+        
+        
+        
+        
+        
+    }*/
 
     /**
      * Load category structure
@@ -1558,7 +1621,15 @@ class Structure_Manager extends SiteBill_Krascap {
             foreach ($it as $pid => $pvals) {
                 $rt .= '<div data-id="' . $pid . '" class="levelitem levelitem_' . $pid . '" style="display: none;">';
                 $rt .= '<select'.($classes!='' ? ' class="'.$classes.'"' : '').'>';
-                $rt .= '<option value="0">'.(isset($options['zerotitle']) ? $options['zerotitle'] : '--').'</option>';
+                
+                $tname = '';
+				if($lev == 1){
+					$tname = (isset($options['zerotitle']) && $options['zerotitle'] != '' ? $options['zerotitle'] : '--');
+				}else{
+					$tname = (isset($options['nonzerotitle']) && $options['nonzerotitle'] != '' ? $options['nonzerotitle'] : '--');
+				}
+                
+                $rt .= '<option value="0">'.$tname.'</option>';
                 foreach ($pvals as $pval) {
                     $rt .= '<option value="' . $pval[0] . '"' . ($pval[2] == 1 ? ' selected="selected"' : '') . '>' . $pval[1] . '</option>';
                 }
@@ -2081,7 +2152,7 @@ class Structure_Manager extends SiteBill_Krascap {
 
     function getCategoryTreeModern($current_category_id) {
         global $smarty;
-        $smarty->assign('structure_grid_allow_drag', 0);
+        $smarty->assign('structure_grid_allow_drag', 1);
         $ret = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/system/template/structure_grid.tpl');
         return $ret;
     }
@@ -2661,8 +2732,8 @@ class Structure_Manager extends SiteBill_Krascap {
     }
 
     /**
-     * Get service type tree in array with field 
-     * 'level', which specify the nesting level, and 
+     * Get service type tree in array with field
+     * 'level', which specify the nesting level, and
      * 'child' containing child array with the same structure as parent
      * @param int $current_servicetype_id service type ID
      * @return array
@@ -2699,23 +2770,7 @@ class Structure_Manager extends SiteBill_Krascap {
      * @return string
      */
     function grid() {
-
-        //$rs .= $this->getCategoryTree(0);
         $rs .= $this->getCategoryTreeModern(0);
-        //$rs .= $this->getCategoryTreeModern(0);
-        return $rs;
-        if (NULL != $this->getRequestValue('structure_manager_grid_type')) {
-            $_SESSION['structure_manager_grid_type'] = $this->getRequestValue('structure_manager_grid_type');
-        } else {
-            //$_SESSION['structure_manager_grid_type']='';
-        }
-        $this->upgrade();
-        if (isset($_SESSION['structure_manager_grid_type']) && $_SESSION['structure_manager_grid_type'] == 'new') {
-
-            $rs .= $this->getCategoryTreeModern(0);
-        } else {
-            $rs .= $this->getCategoryTree(0);
-        }
         return $rs;
     }
 

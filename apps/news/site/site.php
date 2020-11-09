@@ -240,9 +240,15 @@ class news_site extends news_admin {
                 $news['img'] = $image_array;
             }
         } elseif ($uploads !== false && is_array($news[$uploads]['value'])) {
-            $news['prev_img'] = SITEBILL_MAIN_URL . '/img/data/' . $news[$uploads]['value'][0]['preview'];
-            $news['normal_img'] = SITEBILL_MAIN_URL . '/img/data/' . $news[$uploads]['value'][0]['normal'];
-            $news['img'] = $news[$uploads]['value'];
+            if ( $news[$uploads]['value'][0]['preview'] != '' ) {
+                $news['prev_img'] = $this->createMediaIncPath($news[$uploads]['value'][0], 'preview');
+            }
+            if ($news[$uploads]['value'][0]['normal'] != '') {
+                $news['normal_img'] = $this->createMediaIncPath($news[$uploads]['value'][0]);
+            }
+            if ( is_array($news[$uploads]['value']) and count($news[$uploads]['value']) > 0 ) {
+                $news['img'] = $news[$uploads]['value'];
+            }
         }
 
         if ($news['date']['type'] == 'dtdatetime') {
@@ -303,16 +309,16 @@ class news_site extends news_admin {
 
 
         $this->set_apps_template('news', $this->getConfigValue('theme'), 'main_file_tpl', 'news_view.tpl');
-        
+
         $this->template->assert('_socialtags', $this->generateSocials($this->getSocialTagsData($news)));
-        
+
         return true;
     }
-    
+
     protected function getSocialTagsData($art){
-        
+
         $params = array();
-        
+
         $params['title'] = $art['title']['value'];
         $params['description'] = $art['anons']['value'];
         $params['image'] = '';
@@ -320,12 +326,12 @@ class news_site extends news_admin {
             $params['image'] = $art['image']['value'][0]['preview'];
         }
         $params['url'] = $this->getNewsRoute($art['news_id']['value'], $art['alias']['value'], true);
-        
+
         $params['tw:cardtype'] = 'summary';
         $params['og:type'] = 'news';
-        
+
         return $params;
-        
+
     }
 
     public function getNewsIdByAlias($url) {
@@ -512,8 +518,8 @@ class news_site extends news_admin {
                         $ims = array();
                     }
                     if (isset($ims[0])) {
-                        $news[$k]['prev_img'] = SITEBILL_MAIN_URL . '/img/data/' . $ims[0]['preview'];
-                        $news[$k]['normal_img'] = SITEBILL_MAIN_URL . '/img/data/' . $ims[0]['normal'];
+                        $news[$k]['prev_img'] = $this->createMediaIncPath($ims[0], 'preview');
+                        $news[$k]['norm_img'] = $this->createMediaIncPath($ims[0]);
                     }
                 }
             }

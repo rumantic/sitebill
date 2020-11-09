@@ -26,6 +26,7 @@ class memorylist_admin extends Object_Manager {
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
         $config_admin->addParamToConfig('apps.memorylist.public_access_enable', '0', 'Все подборки общие', 1);
+        $config_admin->addParamToConfig('apps.memorylist.admingridenable', '0', 'Доступ в списке объектов в админке', 1);
 
 
     }
@@ -183,6 +184,7 @@ class memorylist_admin extends Object_Manager {
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/memory_list.php';
                 $ML = new Memory_List();
                 $result = $ML->deleteItems($listid, array($id));
+                return json_encode(array('result' => $result));
             } elseif ($do == 'add') {
                 $ret = array();
                 $id = $this->getRequestValue('itemid');

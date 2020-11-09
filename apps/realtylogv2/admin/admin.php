@@ -370,7 +370,7 @@ class realtylogv2_admin extends Object_Manager {
                 $stmt = $DBC->query($query);
             }
         } else {
-            $query = 'SELECT SQL_CALC_FOUND_ROWS l.`realtylog_id`, l.`id`, l.`user_id`, l.`editor_id`, l.`log_date`, l.`action`, l.`log_data` FROM ' . DB_PREFIX . '_' . $this->table_name . ' l WHERE l.`action`=?' . ($ids != 0 ? ' AND l.`id`=?' : '') . ' ORDER BY l.`log_date` DESC LIMIT ' . (($page - 1) * $per_page) . ', ' . $per_page;
+            $query = 'SELECT SQL_CALC_FOUND_ROWS l.`realtylog_id`, l.`id`, l.`user_id`, u.`login`, l.`editor_id`, l.`log_date`, l.`action`, l.`log_data` FROM ' . DB_PREFIX . '_' . $this->table_name . ' l LEFT JOIN `' . DB_PREFIX . '_user` u ON l.`editor_id`=u.`user_id` WHERE l.`action`=?' . ($ids != 0 ? ' AND l.`id`=?' : '') . ' ORDER BY l.`log_date` DESC LIMIT ' . (($page - 1) * $per_page) . ', ' . $per_page;
 
             if ($ids != 0) {
                 $stmt = $DBC->query($query, array($type, $ids));

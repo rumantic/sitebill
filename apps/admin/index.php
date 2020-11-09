@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 
     <head>
 
@@ -228,7 +228,7 @@
 
   gtag('config', 'UA-4228243-29');
 </script>
-    
+
 </body>
 
 </html>
