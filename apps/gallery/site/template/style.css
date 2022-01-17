@@ -1,0 +1,57 @@
+/* Gallery */
+#gallerys {
+	padding: 0px;
+	overflow: hidden;
+}
+#gallerys h2 {
+	margin: 10px 0 20px 6px;
+}
+#gallerys .item {
+	float: left;
+	width: 232px;
+	margin: 0 0px 40px 0;
+}
+#gallerys .photo {
+	float: left;
+	width: 220px;
+	margin: 0 20px 23px 0;
+}
+#gallerys .photo {
+	margin: 0 7px 7px 0;
+}
+#gallerys .title {
+	font: bold 14px/1 Calibri, Candara, Segoe, "Segoe UI", Optima, Arial, sans-serif;
+  text-transform: uppercase;
+	margin: 0 0 9px 6px;
+	color: #000;
+}
+#gallerys .title {
+  text-transform: none;
+	height: 20px;
+}
+#gallerys .photo .title {
+	margin: 0 0 8px;
+}
+#gallerys .image {
+    height: 200px;
+    overflow: hidden;
+    padding: 5px;
+    border:1px solid #ddd;
+    box-shadow: 0 0 5px #ccc; 
+    margin:0 20px 10px 0;
+    float: left;	
+}
+#gallerys .image:hover {
+    opacity:0.9; 
+    border: 1px solid #b7b7b7;	
+}
+
+#gallerys .info {
+	clear: both;
+	font: 12px/17px Calibri, Candara, Segoe, "Segoe UI", Optima, Arial, sans-serif;
+	color: #A1A1A1;
+	padding: 20px 0 5px;
+}
+#pager {
+	text-align: center;
+}

@@ -159,6 +159,7 @@ class menu_admin extends Object_Manager {
     function migrations () {
         return [
             "ALTER TABLE " . DB_PREFIX . "_menu_structure ADD column action varchar(255) NOT NULL DEFAULT ''",
+            "ALTER TABLE " . DB_PREFIX . "_menu_structure ADD column action_code varchar(255) NOT NULL DEFAULT ''",
             "ALTER TABLE " . DB_PREFIX . "_menu_structure ADD column icon varchar(255) NOT NULL DEFAULT ''",
             "ALTER TABLE " . DB_PREFIX . "_menu_structure ADD column params text NOT NULL DEFAULT ''",
         ];
