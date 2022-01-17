@@ -80,7 +80,7 @@ $message_array = getResultMessage($answer);
         </span>
     </div>
 
-</div>	
+</div>
 
 
 <form method="post">
@@ -109,7 +109,7 @@ $message_array = getResultMessage($answer);
 
             <?php
         }
-        ?>	
+        ?>
     </div>
 </form>
 
@@ -172,4 +172,4 @@ function check_catalogs_and_permissions() {
     return $error_folder_stack;
 }
 ?>
-<img src="https://www.sitebill.ru/logo_install.png?source=step3" width="1" height="1">
+<img src="https://www.sitebill.ru/logo_install?source=step3" width="1" height="1">

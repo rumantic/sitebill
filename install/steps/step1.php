@@ -182,4 +182,4 @@
         </div>
     </div>
 </form>
-<img src="https://www.sitebill.ru/logo_install.png?source=step1" width="1" height="1">
+<img src="https://www.sitebill.ru/logo_install?source=step1" width="1" height="1">

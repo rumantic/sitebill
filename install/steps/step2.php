@@ -11,7 +11,7 @@
         <div class="col-sm-12  col-sm-6">
             <a href="http://www.sitebill.ru/client/cart.php?a=add&pid=6" target="_blank" class="btn">демо-ключ бесплатно</a>
             <a href="http://www.sitebill.ru/price-cms-sitebill/" target="_blank" class="btn btn-warning pull-right">
-                <i class="menu-icon  ace-icon fa fa-key "></i> 
+                <i class="menu-icon  ace-icon fa fa-key "></i>
                 купить лицензионный ключ
             </a>
         </div>
@@ -64,7 +64,7 @@
 
 <p align="center">Если возникли вопросы по установке, то посмотрите это видео</p><p align="center">
     <iframe width="560" height="315" src="http://www.youtube.com/embed/lJqq2z6nAJs" frameborder="0" allowfullscreen></iframe>
-</p>									
-<img src="https://www.sitebill.ru/logo_install.png?source=step2" width="1" height="1">
+</p>
+<img src="https://www.sitebill.ru/logo_install?source=step2" width="1" height="1">
 
 

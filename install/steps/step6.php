@@ -1,4 +1,4 @@
-<img src="https://www.sitebill.ru/logo_install.png?source=step6" width="1" height="1">
+<img src="https://www.sitebill.ru/logo_install?source=step6" width="1" height="1">
 <?php
 if ($_POST['ready']) {
     echo 'Установка конфигурационного файла...';

@@ -1,4 +1,4 @@
-<img src="https://www.sitebill.ru/logo_install.png?source=step4" width="1" height="1">
+<img src="https://www.sitebill.ru/logo_install?source=step4" width="1" height="1">
 <?php
 $params = array();
 if (isset($_POST['db_host'])) {
