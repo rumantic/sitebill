@@ -76,6 +76,10 @@ if ($_POST['ready']) {
     require_once(__DIR__ . '/../../apps/system/lib/admin/object_manager.php');
     require_once(__DIR__ . '/../../apps/config/admin/admin.php');
     require_once(__DIR__ . '/../../apps/system/lib/system/install/install.php');
+    require_once(__DIR__ . '/../../apps/system/lib/system/multilanguage/multilanguage.class.php');
+
+    Multilanguage::start('frontend', $_SESSION['_lang']);
+
 
     class install_config extends config_admin {
 
@@ -223,18 +227,6 @@ if ($_POST['ready']) {
       echo $install_manager->db->error;
       } */
 
-    //install apps.getrent
-    require_once(SITEBILL_DOCUMENT_ROOT . '/apps/getrent/admin/admin.php');
-    $getrent_admin = new getrent_admin();
-    $query = "update " . DB_PREFIX . "_config set value = '1' where config_key='apps.getrent.enable'";
-    $stmt = $DBC->query($query);
-    if (!$stmt) {
-        //echo 'ERROR ON INSTALL ('.$query.')';
-    }
-    /* $install_manager->db->exec($query);
-      if ( $install_manager->db->error ) {
-      echo $install_manager->db->error;
-      } */
 
     /*
      * Ups
@@ -279,7 +271,7 @@ if ($_POST['ready']) {
     require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/form/contactus.php');
     $contactus_form = new contactus_Form();
     $contactus_form->main();
-    
+
 
 
 

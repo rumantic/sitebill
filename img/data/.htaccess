@@ -1,4 +1,4 @@
-<FilesMatch "\.(jpg|gif|png|jpeg)$">
+<FilesMatch "\.(jpg|gif|png|jpeg|xlsx|webp|svg)$">
 Order allow,deny
 Allow from all
 </FilesMatch>

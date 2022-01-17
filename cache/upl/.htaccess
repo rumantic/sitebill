@@ -1,13 +1,6 @@
-<FilesMatch "\.(jpg|gif|png|jpeg)$">
+<FilesMatch "\.(jpg|gif|png|jpeg|xlsx|webp|svg)$">
 Order allow,deny
 Allow from all
 </FilesMatch>
 Order deny,allow
 Deny from all
-RewriteEngine Off
-<IfModule mod_php5.c>
-  php_value engine off
-</IfModule>
-<IfModule mod_php4.c>
-  php_value engine off
-</IfModule>

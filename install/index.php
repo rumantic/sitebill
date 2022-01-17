@@ -39,9 +39,6 @@ if (!defined('SITEBILL_DOCUMENT_ROOT')) {
     define('SITEBILL_DOCUMENT_ROOT', realpath(__DIR__ . '/..'));
 }
 
-require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/multilanguage/multilanguage.class.php';
-
-Multilanguage::start('frontend', $_SESSION['_lang']);
 
 $wizard = new wizard($db_inc_file);
 //echo 'step = '.$step.'<br>';
