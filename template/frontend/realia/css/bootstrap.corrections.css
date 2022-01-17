@@ -1,0 +1,19 @@
+#YMapsID img {
+	max-width: none;
+}
+
+#geodata>div img {
+	max-width: none;
+}
+
+.modal.fade {
+	top: -200%;
+}
+
+.content_main img {
+	max-width: none;
+}
+
+#YMapsID_onmain img {
+	max-width: none;
+}
