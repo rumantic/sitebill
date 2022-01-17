@@ -10,7 +10,7 @@ session_start();
 if (!defined('__DIR__')) {
     define(__DIR__, dirname(__FILE__));
 }
-$minimal_php_version_text = '5.3';  //Minimal reqiured PHP version
+$minimal_php_version_text = '7.1';  //Minimal reqiured PHP version
 $minimal_gd_version_text = '2';  //Minimal reqiured GD version
 $db_inc_file = __DIR__ . '/../inc/db.inc.php';  //db connections
 $settings_file = __DIR__ . '/../settings.ini.php';  //settings file
@@ -464,8 +464,8 @@ class wizard {
 
                             </ul>
                         </li>
-                    </ul>			
-                </div>				
+                    </ul>
+                </div>
 
 
             </div>
@@ -675,7 +675,7 @@ function checkNeededVersions($params = array()) {
         return TRUE;
     } else {
         if (isset($params['php_need'])) {
-            
+
         }
     }
 }
@@ -784,7 +784,7 @@ function getGDVersion() {
 }
 
 function callCheckConfig() {
-    
+
 }
 
 function getLibXmlStatus() {
