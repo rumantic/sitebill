@@ -7,13 +7,13 @@
     <fieldset>
         <div class="controls">
             <label class="checkbox">
-                <input type="checkbox" name="active" value="1"{if $taskdata.active == 1} checked="checked"{/if}> Активен
+                <input type="checkbox" name="taskdata[active]" value="1"{if $taskdata.active == 1} checked="checked"{/if}> Активен
             </label>
             <span class="help-block">Фид активен и может быть запущен</span>
         </div>
         <div class="controls">
             <label class="checkbox">
-                <input type="checkbox" name="ignoreactivity" value="1"{if $taskdata.ignoreactivity == 1} checked="checked"{/if}> Игнорировать активность при выгрузке
+                <input type="checkbox" name="taskdata[ignoreactivity]" value="1"{if $taskdata.ignoreactivity == 1} checked="checked"{/if}> Игнорировать активность при выгрузке
             </label>
             <span class="help-block">Позволяет выгружать неактивные объекты</span>
         </div>
@@ -21,14 +21,14 @@
         <div class="control-group">
             <label class="control-label">Длина фида</label>
             <div class="controls">
-              <input type="text" name="limit" value="{$taskdata.limit}">
+              <input type="text" name="taskdata[limit]" value="{$taskdata.limit}">
               <span class="help-block">Количество записей получаемых в одном запросе. При неуказании - 1000</span>
             </div>
         </div>
         <div class="control-group">
             <label class="control-label">Алиас</label>
             <div class="controls">
-              <input type="text" name="alias" value="{$taskdata.alias}">
+              <input type="text" name="taskdata[alias]" value="{$taskdata.alias}">
               <span class="help-block">Ссылка</span>
             </div>
             
@@ -48,7 +48,7 @@
         <div class="control-group">
             <label class="control-label">Сортировка</label>
             <div class="controls">
-              <input type="text" name="orderby" value="{$taskdata.orderby}">
+              <input type="text" name="taskdata[orderby]" value="{$taskdata.orderby}">
               <span class="help-block">Системное имя поля сортировки</span>
             </div>
             
@@ -56,7 +56,7 @@
         <div class="control-group">
             <label class="control-label">Направление сортировки</label>
             <div class="controls">
-              <select name="orderdirect">
+              <select name="taskdata[orderdirect]">
                   <option value="asc">по возрастанию значений</option>
                   <option value="desc"{if $taskdata.orderdirect == 'desc'} selected="selected"{/if}>по спаданию значений</option>
               </select>
@@ -68,7 +68,7 @@
         <div class="control-group">
             <label class="control-label">Примечание или описание</label>
             <div class="controls">
-                <textarea name="remark">{$taskdata.remark}</textarea>
+                <textarea name="taskdata[remark]">{$taskdata.remark}</textarea>
             </div>
         </div>
 

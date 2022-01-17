@@ -24,7 +24,7 @@ class contactus_Form extends Object_Manager {
         $this->template->assert('title', _e('Напишите нам'));
         $this->template->assert('meta_title', _e('Напишите нам'));
         $breadcrumbs = array();
-        $breadcrumbs[] = array('title' => Multilanguage::_('L_HOME'), 'href' => SITEBILL_MAIN_URL . '/');
+        $breadcrumbs[] = array('title' => Multilanguage::_('L_HOME'), 'href' => $this->createUrlTpl(''));
         $breadcrumbs[] = array('title' => _e('Напишите нам'), 'href' => '');
         if (!empty($breadcrumbs)) {
             $bc_ar = array();
@@ -182,7 +182,7 @@ class contactus_Form extends Object_Manager {
     protected function _defaultAction() {
         $rs = '';
         $form_data = $this->data_model;
-        $rs .= $this->get_form($form_data[$this->table_name], 'new', 0, Multilanguage::_('L_TEXT_SEND'), SITEBILL_MAIN_URL . '/contactus/');
+        $rs .= $this->get_form($form_data[$this->table_name], 'new', 0, Multilanguage::_('L_TEXT_SEND'), $this->createUrlTpl('contactus'));
         return $rs;
     }
 
@@ -193,7 +193,7 @@ class contactus_Form extends Object_Manager {
         $form_data = $this->data_model;
         $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
         if (!$this->check_data($form_data[$this->table_name])) {
-            $rs .= $this->get_form($form_data[$this->table_name], 'new', 0, Multilanguage::_('L_TEXT_SEND'), SITEBILL_MAIN_URL . '/contactus/');
+            $rs .= $this->get_form($form_data[$this->table_name], 'new', 0, Multilanguage::_('L_TEXT_SEND'), $this->createUrlTpl('contactus'));
         } else {
 
             $order_table = $this->add_data($form_data[$this->table_name]);
@@ -216,7 +216,7 @@ class contactus_Form extends Object_Manager {
                 if (Multilanguage::is_set('CONTACTUS_MESSAGE_SENT')) {
                     $msg = Multilanguage::_('CONTACTUS_MESSAGE_SENT');
                 } else {
-                    $rs = Multilanguage::_('MESSAGE_SENT', 'system');
+                    $rs = $this->getSaveSuccessMessage();
                 }
             } else {
                 $rs = _e('Отправить сообщение в данный момент невозможно. Повторите попытку позже.');
@@ -225,9 +225,25 @@ class contactus_Form extends Object_Manager {
         return $rs;
     }
 
+    function getSaveSuccessMessage() {
+        if ( $this->getConfigValue('apps.client.thankyou_url') != '' ) {
+            return $this->get_ThankYou_Url_redirect();
+        } else {
+            return Multilanguage::_('MESSAGE_SENT', 'system');
+        }
+    }
+
+    function get_ThankYou_Url_redirect () {
+        $rs = '<script>
+            window.location.href = "'.$this->getConfigValue('apps.client.thankyou_url').'";
+        </script>';
+        return $rs;
+    }
+
+
     /**
      * Get top menu
-     * @param void 
+     * @param void
      * @return string
      */
     function getTopMenu() {

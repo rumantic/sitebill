@@ -68,10 +68,13 @@
 </div>
 <script>
 var structure_grid_allow_drag={$structure_grid_allow_drag};
+var use_topic_publish_status={$use_topic_publish_status};
 </script>
 {literal}
 <script>
 $(document).ready(function(){
+
+	// включение перетягивания строк списка
     if(structure_grid_allow_drag==1){
 		$(".dd-list").sortable({
 			handle: ".dd-move",
@@ -82,9 +85,10 @@ $(document).ready(function(){
 		});
 	}
 	
-	
+	// загрузка дерева
 	Structure_Control.load_tree();
-		
+
+	// разворот ветки
 	$(document).on('click', 'button[data-action=expand]', function(e){
 		var parent=$(this).parents('.dd-item').eq(0);
 		var child_list=$(this).nextAll('.dd-list');
@@ -93,8 +97,8 @@ $(document).ready(function(){
 		}else{
 			var id=parent.attr('data-id');
 			$.ajax({
-				url: estate_folder+'/js/ajax.php?action=topic_source',
-				data: {id:id},
+				url: estate_folder+'/js/ajax.php',
+				data: {action: 'topic_source', id:id},
 				type: 'post',
 				dataType: 'json',
 				success: function(json){
@@ -121,7 +125,8 @@ $(document).ready(function(){
 		$(this).attr('data-action', 'collapse');
 		e.preventDefault();
 	});
-	
+
+
 	$(document).on('click', 'button[data-action=collapse]', function(e){
 		var child_list=$(this).nextAll('.dd-list');
 		if(child_list.length>0){
@@ -130,21 +135,22 @@ $(document).ready(function(){
 		}
 		e.preventDefault();
 	});
-	
+
+	// удаление
 	$(document).on('click', '.structure_control_delete_function', function(e){
 		if ( confirm('Действительно хотите удалить запись?') ) {
-			var parent=$(this).parents('.dd-item').eq(0);
-			var id=parent.attr('data-id');
+			var parent = $(this).parents('.dd-item').eq(0);
+			var id = parent.attr('data-id');
 			$.ajax({
-				url: estate_folder+'/js/ajax.php?action=topic_delete',
-				data: {id:id},
+				url: estate_folder + '/js/ajax.php',
+				data: {action: 'topic_delete', id: id},
 				type: 'post',
 				dataType: 'json',
 				success: function(json){
-					if(json.status=='ok'){
+					if(json.status == 1){
 						parent.remove();
 					}else{
-						var txt='<span class="label label-important">Удаление категории невозможно</span><hr />'+json.message;
+						var txt='<span class="label label-important">Удаление категории невозможно</span><hr />' + json.message;
 						Structure_Control.showInformer('Удаление категории', txt);
 					}
 				}
@@ -152,31 +158,57 @@ $(document).ready(function(){
 		}
 		e.preventDefault();
 	});
-	
+
+	// очистка
 	$(document).on('click', '.structure_control_clear_function', function(e){
-		var parent=$(this).parents('.dd-item').eq(0);
-		var id=parent.attr('data-id');
+		var parent = $(this).parents('.dd-item').eq(0);
+		var id = parent.attr('data-id');
 		$('#structure_clear_informer [name=topic_id]').val(id);
 		$('#structure_clear_informer').modal('show');
 		e.preventDefault();
 	});
-	
-	$('#structure_clear_informer .runaction').click(function(e){
-		var informer=$(this).parents('#structure_clear_informer').eq(0);
-		var clear_option=informer.find('[name=clear_option]:checked').val();
-		var clear_advs=informer.find('[name=clear_advs]:checked').val();
-		var id=informer.find('[name=topic_id]').val();
-		console.log(clear_option);
-		console.log(clear_advs);
-		console.log(id);
-		if(clear_option!='' && clear_advs!='' && id!=''){
+
+	// смена статуса
+	if(use_topic_publish_status){
+		$(document).on('click', '.structure_control_publish_function', function(e){
+			e.preventDefault();
+			var parent = $(this).parents('.dd-item').eq(0);
+			var id = parent.data('id');
+			var status = (0 == parent.attr('data-status') ? 1 : 0);
 			$.ajax({
 				url: estate_folder+'/js/ajax.php',
+				data: {action: 'topic_publish', id: id, status: status},
+				type: 'post',
+				dataType: 'json',
+				success: function(json){
+					if(json.status == 1){
+						parent.attr('data-status', json.newstatus);
+						if(json.newstatus == 1){
+							parent.find('.dd-handle').removeClass('btn-warning');
+						}else{
+							parent.find('.dd-handle').addClass('btn-warning');
+						}
+					}else{
+						console.log(json.message);
+					}
+				}
+			});
+		});
+	}
+	
+	$('#structure_clear_informer .runaction').click(function(e){
+		var informer = $(this).parents('#structure_clear_informer').eq(0);
+		var clear_option = informer.find('[name=clear_option]:checked').val();
+		var clear_advs = informer.find('[name=clear_advs]:checked').val();
+		var id = informer.find('[name=topic_id]').val();
+		if(clear_option != '' && clear_advs != '' && id != ''){
+			$.ajax({
+				url: estate_folder + '/js/ajax.php',
 				data: {action: 'topic_delete', id: id, clear_option: clear_option, clear_advs: clear_advs},
 				type: 'post',
 				dataType: 'json',
 				success: function(json){
-					if(json.status=='ok'){
+					if(json.status == 1){
 						informer.modal('hide');
 						Structure_Control.load_tree();
 					}else{
@@ -194,8 +226,9 @@ Structure_Control={
 	load_tree: function(){
 		$('#topic_tree').html('');
 		$.ajax({
-			url: estate_folder+'/js/ajax.php?action=topic_source',
+			url: estate_folder+'/js/ajax.php',
 			type: 'post',
+			data: {action: 'topic_source'},
 			dataType: 'json',
 			success: function(json){
 				if(json.length>0){
@@ -209,8 +242,15 @@ Structure_Control={
 		});
 	},
 	format_element: function(json){
-		var liel=$('<li class="dd-item" data-id="'+json.id+'"></li>');
+		var liel=$('<li class="dd-item" data-id="'+json.id+'" data-status="'+json.published+'"></li>');
 		var buttons_block=$('<div class="pull-right action-buttons"></div>');
+
+		if(use_topic_publish_status){
+			var a=$('<a class="red structure_control_publish_function" href="'+estate_folder+'/admin/index.php?action=structure&do=publish&id='+json.id+'"></a>');
+			a.append($('<i class="icon-off bigger-130"></i>'));
+			buttons_block.append(a);
+		}
+
         
 		var a=$('<a class="red structure_control_clear_function" href="'+estate_folder+'/admin/index.php?action=structure&do=delete&id='+json.id+'"></a>');
 		a.append($('<i class="icon-eraser bigger-130"></i>'));

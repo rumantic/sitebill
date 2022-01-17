@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<install>
+    <name>downloader</name>
+    <creationDate>December 2019</creationDate>
+    <author>The Sitebill Development Team</author>
+    <authorEmail>kondin@etown.ru</authorEmail>
+    <authorUrl>http://www.sitebill.ru</authorUrl>
+    <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
+    <license>http://www.sitebill.ru/licenses/sitebill.html</license>
+    <backendMenu>false</backendMenu>
+    <version status="beta">0.0.6</version>
+    <administration>
+        <!-- Administration Menu Section -->
+        <menu>Downloader</menu>
+        <category>Системные</category>
+    </administration>
+</install>

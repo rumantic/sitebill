@@ -1,4 +1,8 @@
 <?php
+if ( !class_exists('Sitebill') and !defined('INSTALL_MODE')) {
+    require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/bootstrap.php');
+}
+use Illuminate\Database\Capsule\Manager as Capsule;
 
 class DBC {
 
@@ -26,6 +30,28 @@ class DBC {
             $this->pdo = new PDO(DB_DSN, DB_USER, DB_PASS, array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . DB_ENCODING.', sql_mode=""'));
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
+
+            $capsule = new Capsule;
+
+            $capsule->addConnection([
+                'driver'    => 'mysql',
+                'host'      => DB_HOST,
+                'database'  => DB_BASE,
+                'username'  => DB_USER,
+                'password'  => DB_PASS,
+                'charset'   => 'utf8',
+                'collation' => 'utf8_unicode_ci',
+                'prefix'    => DB_PREFIX.'_',
+            ]);
+
+            $capsule->setAsGlobal();
+
+            $capsule->bootEloquent();
+
+            if ( !defined('INSTALL_MODE') ) {
+                SiteBill::add_pdo_debugbar_collector($this->pdo, $capsule);
+            }
+
         } catch (PDOException $e) {
             echo 'Unable to connect to database: ', $e->getMessage(), "\n";
             exit;
@@ -33,7 +59,7 @@ class DBC {
         /* $f=fopen($_SERVER["DOCUMENT_ROOT"].'/ddd.txt', 'a');
           fwrite($f, "1\n");
           fclose($f); */
-        $white_list = array("5.9.72.112", "5.9.72.121", "194.58.111.5", "5.9.92.11", "193.124.207.3", "127.0.0.1", "159.69.119.38");
+        $white_list = array("5.9.72.112", "5.9.72.121", "194.58.111.5", "5.9.92.11", "193.124.207.3", "127.0.0.1", "159.69.119.38", "89.108.114.190");
         if (!preg_match("/admin/", $_SERVER["REQUEST_URI"]) and ! in_array($_SERVER["SERVER_ADDR"], $white_list) and !defined('STDIN')) {
             try {
                 $stmt = $this->pdo->query("select * from " . DB_PREFIX . "_config where config_key = 'license_key'");
@@ -218,7 +244,7 @@ class DBC {
             } else {
                 return PDO::PARAM_STR;
             }
-        } elseif (is_null($param) || (is_string($param) && !$param)) {
+        } elseif (is_null($param)) {
             return PDO::PARAM_NULL;
         } elseif (is_bool($param)) {
             return PDO::PARAM_BOOL;
@@ -232,8 +258,10 @@ class DBC {
         $stmt = $this->pdo->prepare($sql);
         $debug = !defined('AJAX') && defined('DEBUG_ENABLED') && DEBUG_ENABLED;
 
-        for ($i = 0; $i < count($params); $i ++) {
-            $stmt->bindParam($i + 1, $params [$i], $this->paramType($params [$i]));
+        if ( is_array($params) ) {
+            for ($i = 0; $i < count($params); $i ++) {
+                $stmt->bindParam($i + 1, $params [$i], $this->paramType($params [$i]));
+            }
         }
 
         try {

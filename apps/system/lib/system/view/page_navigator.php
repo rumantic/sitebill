@@ -12,6 +12,18 @@ class Page_Navigator {
 	private $active_item_container_close='</span>';
 	private $settings=array();
 	private $pager_items_array=array();
+	private static $sitebill = null;
+
+	public static function setSitebill($sitebill){
+	    self::$sitebill = $sitebill;
+    }
+
+    protected static function formaturl($url){
+	    if(self::$sitebill !== null){
+	        return self::$sitebill->createUrlTpl($url);
+        }
+	    return $url;
+    }
 	
 	/**
 	 * Enter description here ...
@@ -235,41 +247,17 @@ class Page_Navigator {
 	}
 	
 	public static function getPagingArray($total_records, $current_page=1, $per_page=10, $pager_params=array(), $url='', $settings=array()){
-		//echo $current_page;
-        if($current_page == 0){
+	    if($current_page == 0){
             $current_page = 1;
         }
 		
 		if($url==''){
-			//$url=$_SERVER['REQUEST_URI'];
 			$url=SITEBILL_MAIN_URL.'/?';
 		}else{
 			$url=SITEBILL_MAIN_URL.'/'.trim($url, '/').'/?';
 		}
-		
-		//print_r($pager_params);
+
 		unset($pager_params['page']);
-		/*$pairs=array();
-		if(count($pager_params)>0){
-			foreach ( $pager_params as $key => $value ) {
-				if(is_array($value)){
-					if(count($value)>0){
-						foreach($value as $v){
-							if($v!=''){
-								$pairs[] = $key.'[]='.$v;
-							}
-						}
-					}
-				}elseif ( $value != '' ) {
-					$pairs[] = $key."=".$value;
-				}
-			}
-		}
-		if(!empty($pairs)){
-			$pager_params_string=implode('&', $pairs);
-		}else{
-			$pager_params_string='';
-		}*/
 		
 		if(!empty($pager_params)){
 			$pager_params_string=urldecode(http_build_query($pager_params));
@@ -281,11 +269,7 @@ class Page_Navigator {
 		
 		$ret=array();
 		
-		
 		$requestdata=array();
-		//$requestdata=$this->explodeUrl($url);
-		//print_r($url);
-		//print_r($requestdata);
 		
 		$p_prew=$current_page-1;
 		$p_next=$current_page+1;
@@ -293,49 +277,41 @@ class Page_Navigator {
 		if($current_page==1){
 			//$first_page_navigation.='&laquo;&laquo; '.Multilanguage::_('L_TO_START');
 			$fpn['text']='&laquo;&laquo;';
-			$fpn['href']=$url.'page=1'.($pager_params_string!='' ? '&'.$pager_params_string : '');
+			$fpn['href']=self::formaturl($url.'page=1'.($pager_params_string!='' ? '&'.$pager_params_string : ''));
 		}else{
 			//$first_page_navigation.='<a href="'.$url.'page=1'.($pager_params_string!='' ? '&'.$pager_params_string : '').'" title="'.Multilanguage::_('L_TO_START').'">&laquo;&laquo; '.Multilanguage::_('L_TO_START').'</a>';
 			$fpn['text']='&laquo;&laquo;';
-			$fpn['href']=$url.'page=1'.($pager_params_string!='' ? '&'.$pager_params_string : '');
+			$fpn['href']=self::formaturl($url.'page=1'.($pager_params_string!='' ? '&'.$pager_params_string : ''));
 		}
 		
 		$ret['fpn']=$fpn;
-		/*echo '---------';
-		echo $pages_count;
-		echo '---------';*/
+
 		if($current_page==$pages_count){
-			//$last_page_navigation.=Multilanguage::_('L_TO_END').' &raquo;&raquo;';
 			$lpn['text']='&raquo;&raquo;';
 			$lpn['href']='';
 		}else{
-			//$last_page_navigation.='<a href="'.$url.'page='.$pages_count.($pager_params_string!='' ? '&'.$pager_params_string : '').'" title="'.Multilanguage::_('L_TO_END').'">'.Multilanguage::_('L_TO_END').' &raquo;&raquo;</a>';
 			$lpn['text']='&raquo;&raquo;';
-			$lpn['href']=$url.'page='.$pages_count.($pager_params_string!='' ? '&'.$pager_params_string : '');
+			$lpn['href']=self::formaturl($url.'page='.$pages_count.($pager_params_string!='' ? '&'.$pager_params_string : ''));
 		}
 		
 		$ret['lpn']=$lpn;
 		
 		if($p_prew<1){
-			//$prev_page_navigation.='&laquo;';
 			$ppn['text']='&laquo;';
 			$ppn['href']='';
 		}else{
-			//$prev_page_navigation.='<a href="'.$url.'page='.$p_prew.($pager_params_string!='' ? '&'.$pager_params_string : '').'" title="'.Multilanguage::_('L_TO_PREV').'">&laquo; '.Multilanguage::_('L_TO_PREV').'</a>';
 			$ppn['text']='&laquo;';
-			$ppn['href']=$url.'page='.$p_prew.($pager_params_string!='' ? '&'.$pager_params_string : '');
+			$ppn['href']=self::formaturl($url.'page='.$p_prew.($pager_params_string!='' ? '&'.$pager_params_string : ''));
 		}
 		
 		$ret['ppn']=$ppn;
 		
 		if($p_next>$pages_count){
-			//$next_page_navigation.=Multilanguage::_('L_TO_NEXT').' &raquo;';
 			$npn['text']='&raquo;';
 			$npn['href']='';
 		}else{
-			//$next_page_navigation.='<a href="'.$url.'page='.$p_next.($pager_params_string!='' ? '&'.$pager_params_string : '').'" title="'.Multilanguage::_('L_TO_NEXT').'">'.Multilanguage::_('L_TO_NEXT').' &raquo;</a>';
 			$npn['text']='&raquo;';
-			$npn['href']=$url.'page='.$p_next.($pager_params_string!='' ? '&'.$pager_params_string : '');
+			$npn['href']=self::formaturl($url.'page='.$p_next.($pager_params_string!='' ? '&'.$pager_params_string : ''));
 		}
 		
 		$ret['npn']=$npn;
@@ -381,7 +357,7 @@ class Page_Navigator {
 				//$this->pager_items_array[]=$this->settings['active_item_container_open'].$i.$this->settings['active_item_container_close'];
 			}else{
 				//$this->pager_items_array[]=array('text'=>$i, 'href'=>$requestdata['url'].'?page='.$i.($requestdata['params']? '&'.$requestdata['params'] : ''), 'current'=>'0');
-				$ret['pages'][$i]=array('text'=>$i, 'href'=>$url.'page='.$i.($pager_params_string!='' ? '&'.$pager_params_string : ''), 'current'=>'0');
+				$ret['pages'][$i]=array('text'=>$i, 'href'=>self::formaturl($url.'page='.$i.($pager_params_string!='' ? '&'.$pager_params_string : '')), 'current'=>'0');
 			}
 		}
 		
@@ -390,15 +366,6 @@ class Page_Navigator {
 		
 		
 		return $ret;
-		
-		if($linepostfix!=''){
-			//$this->pager_items_array[]=$linepostfix;
-			$this->pager_items_array[]=array('text'=>$linepostfix, 'href'=>'', 'current'=>'0');
-		}
-		
-		//$this->pager_items_array[]=$next_page_navigation;
-		//$this->pager_items_array[]=$last_page_navigation;
-		$this->pager_items_array[]=$npn;
-		$this->pager_items_array[]=$lpn;
+
 	}
 }

@@ -27,63 +27,25 @@ class geodata_admin extends Object_Manager
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
 
-        if (!$config_admin->check_config_item('apps.geodata.enable')) {
-            $config_admin->addParamToConfig('apps.geodata.enable', '0', 'Включить приложение GeoData');
-        }
-
-        if (!$config_admin->check_config_item('apps.geodata.yandex_api_key_server')) {
-            $config_admin->addParamToConfig('apps.geodata.yandex_api_key_server', '', 'Ключь API Yandex');
-        }
-        if (!$config_admin->check_config_item('apps.geodata.query_count')) {
-            $config_admin->addParamToConfig('apps.geodata.query_count', '2500', 'Количество запросов на геокодирование');
-        }
-        if (!$config_admin->check_config_item('apps.geodata.per_step')) {
-            $config_admin->addParamToConfig('apps.geodata.per_step', '100', 'Количество записей за проход');
-        }
-        if (!$config_admin->check_config_item('apps.geodata.geocode_partial')) {
-            $config_admin->addParamToConfig('apps.geodata.geocode_partial', '0', 'Геокодировать неполные данные');
-        }
-        if (!$config_admin->check_config_item('apps.geodata.geocode_element_name')) {
-            $config_admin->addParamToConfig('apps.geodata.geocode_element_name', 'geo', 'Имя элемента геоданных');
-        }
-        if (!$config_admin->check_config_item('apps.geodata.new_map_center')) {
-            $config_admin->addParamToConfig('apps.geodata.new_map_center', '55.751667,37.617778', 'Широта и долгота центра карты для указания положения недвижимости в формате ХХ.XXXXXX,XX.XXXXXX');
-        }
-        if (!$config_admin->check_config_item('apps.geodata.map_cache_time')) {
-            $config_admin->addParamToConfig('apps.geodata.map_cache_time', '0', 'Время жизни кэша для карты в секундах (0 - кэш выклюен)');
-        }
-        if (!$config_admin->check_config_item('apps.geodata.show_grid_map')) {
-            $config_admin->addParamToConfig('apps.geodata.show_grid_map', '0', 'Выводить карту вместе со списком объявлений');
-        }
-        if (!$config_admin->check_config_item('apps.geodata.map_zoom_default')) {
-            $config_admin->addParamToConfig('apps.geodata.map_zoom_default', '', 'Масштаб карты');
-        }
-        if (!$config_admin->check_config_item('apps.geodata.allow_view_coding')) {
-            $config_admin->addParamToConfig('apps.geodata.allow_view_coding', '1', 'Разрешить геокодирование при просмотре объявления');
-        }
-
-        if (!$config_admin->check_config_item('apps.geodata.try_encode')) {
-            $config_admin->addParamToConfig('apps.geodata.try_encode', '1', 'Включить попытку геокодировать положение при сохранении\изменении объявления');
-        }
-        if (!$config_admin->check_config_item('apps.geodata.try_encode_fields')) {
-            $config_admin->addParamToConfig('apps.geodata.try_encode_fields', 'city_id,street_id,number', 'Список системных имен полей для геокодирования при сохранении\изменении объявления(разделитель - запятая)');
-        }
-        if (!$config_admin->check_config_item('apps.geodata.try_encode_anycase')) {
-            $config_admin->addParamToConfig('apps.geodata.try_encode_anycase', '0', 'Проводить геокодирование даже если координаты указаны');
-        }
-        if (!$config_admin->check_config_item('apps.geodata.save_geocoder')) {
-            $config_admin->addParamToConfig('apps.geodata.save_geocoder', 'g', 'Геокодер используемый при сохранении\изменении (g - Google, y - Yandex)');
-        }
-        if (!$config_admin->check_config_item('apps.geodata.prevtext')) {
-            $config_admin->addParamToConfig('apps.geodata.prevtext', '', 'Предварительный текст для геокодирования на форме');
-        }
-        if (!$config_admin->check_config_item('apps.geodata.no_scroll_zoom')) {
-            $config_admin->addParamToConfig('apps.geodata.no_scroll_zoom', '0', 'Выключить зуммирование карты скроллом', 1);
-        }
-        if (!$config_admin->check_config_item('apps.geodata.iframe_map_limit')) {
-            $config_admin->addParamToConfig('apps.geodata.iframe_map_limit', '0', 'Количество объектов выводимых на iframe-карте. 0 - выводить все');
-        }
-        $config_admin->addParamToConfig('apps.geodata.iframe_scroll_zoom', '0', 'Зумировать карту iframe колесиком мыши', 1);
+        $config_admin->addParamToConfig('apps.geodata.enable', '0', 'Включить приложение GeoData', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.geodata.yandex_api_key_server', '', 'Ключь API Yandex');
+        $config_admin->addParamToConfig('apps.geodata.query_count', '2500', 'Количество запросов на геокодирование');
+        $config_admin->addParamToConfig('apps.geodata.per_step', '100', 'Количество записей за проход');
+        $config_admin->addParamToConfig('apps.geodata.geocode_partial', '0', 'Геокодировать неполные данные', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.geodata.geocode_element_name', 'geo', 'Имя элемента геоданных');
+        $config_admin->addParamToConfig('apps.geodata.new_map_center', '55.751667,37.617778', 'Широта и долгота центра карты для указания положения недвижимости в формате ХХ.XXXXXX,XX.XXXXXX');
+        $config_admin->addParamToConfig('apps.geodata.map_cache_time', '0', 'Время жизни кэша для карты в секундах (0 - кэш выклюен)');
+        $config_admin->addParamToConfig('apps.geodata.show_grid_map', '0', 'Выводить карту вместе со списком объявлений', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.geodata.map_zoom_default', '', 'Масштаб карты');
+        $config_admin->addParamToConfig('apps.geodata.allow_view_coding', '1', 'Разрешить геокодирование при просмотре объявления', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.geodata.try_encode', '1', 'Включить попытку геокодировать положение при сохранении\изменении объявления', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.geodata.try_encode_fields', 'city_id,street_id,number', 'Список системных имен полей для геокодирования при сохранении\изменении объявления(разделитель - запятая)');
+        $config_admin->addParamToConfig('apps.geodata.try_encode_anycase', '0', 'Проводить геокодирование даже если координаты указаны', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.geodata.save_geocoder', 'g', 'Геокодер используемый при сохранении\изменении (g - Google, y - Yandex)');
+        $config_admin->addParamToConfig('apps.geodata.prevtext', '', 'Предварительный текст для геокодирования на форме');
+        $config_admin->addParamToConfig('apps.geodata.no_scroll_zoom', '0', 'Выключить зуммирование карты скроллом', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.geodata.iframe_map_limit', '0', 'Количество объектов выводимых на iframe-карте. 0 - выводить все');
+        $config_admin->addParamToConfig('apps.geodata.iframe_scroll_zoom', '0', 'Зумировать карту iframe колесиком мыши', SConfig::$fieldtypeCheckbox);
     }
 
     public function ajax()

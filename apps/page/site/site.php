@@ -444,8 +444,12 @@ class page_site extends page_admin {
             if($check_lang_fields){
                 foreach ($ar as $key => $item_array) {
                     $lang_key = $key . $postfix;
-                    if (isset($ar[$lang_key]) && $ar[$lang_key] != '') {
-                        $ar[$key] = $ar[$lang_key];
+                    if(isset($ar[$lang_key])){
+                        if (1 === intval($this->getConfigValue('apps.language.fulltransmode'))) {
+                            $ar[$key] = $ar[$lang_key];
+                        }elseif ($ar[$lang_key] != '') {
+                            $ar[$key] = $ar[$lang_key];
+                        }
                     }
                 }
             }

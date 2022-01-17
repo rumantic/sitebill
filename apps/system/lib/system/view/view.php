@@ -26,7 +26,7 @@ class Table_View extends Data_Model {
      * @param $form_data form data
      * @return string
      */
-    function compile_view($form_data) {
+    function compile_view($form_data, $add_tooltip = false) {
         //echo '<pre>';
         //print_r($form_data);
         //echo '</pre>';
@@ -107,6 +107,9 @@ class Table_View extends Data_Model {
                     break;
             }
         }
+        if ( $add_tooltip ) {
+            $rs .= $this->get_tooltip_script();
+        }
         return $rs;
     }
 
@@ -139,8 +142,9 @@ class Table_View extends Data_Model {
         $rs .= $item_array['title'];
         $rs .= '</td>';
         $rs .= '<td>';
-
-        $item_array['value_string'] = $this->get_string_value_by_id($item_array['primary_key_table'], $item_array['primary_key_name'], $item_array['value_name'], $item_array['value']);
+        if($item_array['value_string'] == ''){
+            $item_array['value_string'] = $this->get_string_value_by_id($item_array['primary_key_table'], $item_array['primary_key_name'], $item_array['value_name'], $item_array['value']);
+        }
 
         $rs .= $item_array['value_string'];
         $rs .= '</td>';
@@ -320,12 +324,14 @@ class Table_View extends Data_Model {
         $rs .= $item_array['title'];
         $rs .= '</td>';
         $rs .= '<td>';
-        $rs .= $item_array['value'];
+        $rs .= $this->reducer_text($item_array['value'], 1000);
         $rs .= '</td>';
         $rs .= '</tr>';
 
         return $rs;
     }
+
+
 
     function get_tlocaion_row($item_array) {
         $rs = '<tr>';
@@ -369,6 +375,7 @@ class Table_View extends Data_Model {
 
         if (is_array($item_array['value']) && count($item_array['value']) > 0) {
             foreach ($item_array['value'] as $it) {
+                $rs .= '<div>';
                 if ($this->absolute_urls) {
                     $rs .= '<a href="' . $this->getServerFullUrl() . '/img/data/' . $it['normal'] . '" target="_blank"><img style="max-width:300px;" src="' . $this->getServerFullUrl() . '/img/data/' . $it['preview'] . '"></a>';
                 } else {

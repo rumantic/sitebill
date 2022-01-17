@@ -23,6 +23,10 @@ class excelfree_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.excelfree.geodata_strategy')) {
             $config_admin->addParamToConfig('apps.excelfree.geodata_strategy', '', 'Стратегия обработки географических данных');
         }
+        $config_admin->addParamToConfig(
+            'apps.excelfree.rows_per_page',
+            '1000',
+            'Количество строк загружаемых за один шаг');
 
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/excelfree/admin/data_manager_export.php';
         $this->data_manager_export = new Data_Manager_Export();
@@ -82,7 +86,7 @@ class excelfree_admin extends Object_Manager {
     }
 
     function get_export_form() {
-        
+
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/grid/grid_constructor.php';
         $grid_constructor = new Grid_Constructor();
 
@@ -105,14 +109,14 @@ class excelfree_admin extends Object_Manager {
         $params['srch_date_from'] = $this->getRequestValue('srch_date_from') ? $this->getRequestValue('srch_date_from') : 0;
         $params['srch_date_to'] = $this->getRequestValue('srch_date_to') ? $this->getRequestValue('srch_date_to') : 0;
         $params['admin'] = true;
-        
-        
+
+
 
         //спец.параметр для for_press
         $params['for_press'] = $this->getRequestValue('for_press');
 
         $exported_template_fields = $this->getRequestValue('template_fields');
-        
+
         if (is_array($exported_template_fields) && count($exported_template_fields) > 0) {
             $exported_fields = array_keys($exported_template_fields);
         } else {
@@ -146,14 +150,14 @@ class excelfree_admin extends Object_Manager {
             $ar = $DBC->fetch($stmt);
         }
         $cycle_total = $ar['total'];
-        
+
         for ($i = 0; $i <= $cycle_total; $i += $cycle_per_page) {
             $current_page++;
 
             $data_a = $this->data_manager_export->grid_array_e($params, $exported_fields, $this->getRequestValue('per_page'), $current_page);
-            
+
             $objPHPExcel = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-           
+
             $styleArray = array(
                 'font' => array(
                     'bold' => true,
@@ -193,9 +197,9 @@ class excelfree_admin extends Object_Manager {
                 $arrayData[]=SiteBill::iconv(SITE_ENCODING, 'utf-8', $_model[$ef]['title']);
                 $column++;
             }
-            
+
             $objPHPExcel->getActiveSheet()->fromArray($arrayData,NULL,'A1');
-            
+
             $objPHPExcel->getActiveSheet()->getColumnDimension('A')->setAutoSize(true);
             $objPHPExcel->getActiveSheet()->getColumnDimension('B')->setAutoSize(true);
             $objPHPExcel->getActiveSheet()->getColumnDimension('C')->setAutoSize(true);
@@ -237,19 +241,21 @@ class excelfree_admin extends Object_Manager {
             $objPHPExcel->getActiveSheet()->getColumnDimension('AK')->setAutoSize(true);
             $objPHPExcel->getActiveSheet()->getColumnDimension('AL')->setAutoSize(true);
             $objPHPExcel->getActiveSheet()->getColumnDimension('AM')->setAutoSize(true);
-            
+
             $arrayData=array();
             $ai=0;
-            
-           
+
+
 
             foreach ($data_a as $item_id => $data_item_a) {
                 $row = $item_id + 2;
                 $column = 0;
                 foreach ($data_item_a as $key => $item) {
-                    
+
                     if ($item['type'] == 'select_by_query') {
                         $value=$item['value_string'];
+                    } elseif ($item['type'] == 'select_by_query_multi') {
+                        $value=implode(';', $item['value_string']);
                     } elseif ($item['type'] == 'structure' || $item['type'] == 'structure_chain') {
                         $value=$item['value_string'];
                     } elseif ($item['type'] == 'select_box_structure') {
@@ -268,6 +274,8 @@ class excelfree_admin extends Object_Manager {
                         $value='';
                     } elseif ($item['type'] == 'docuploads') {
                         $value='';
+                    } elseif ($item['type'] == 'geodata') {
+                        $value=$item['value_string'];
                     } else {
                         if (is_array($item['value'])) {
                             $value=implode(';', $item['value']);
@@ -286,11 +294,11 @@ class excelfree_admin extends Object_Manager {
                     $arrayData[$ai][]=$value;
                     //$objPHPExcel->getActiveSheet()->setCellValueByColumnAndRow($column, $row, SiteBill::iconv(SITE_ENCODING, 'utf-8', $value));
                     $column++;
-                    
+
                 }
                 $ai+=1;
             }
-            
+
             $objPHPExcel->getActiveSheet()->fromArray($arrayData,NULL,'A2');
 
             $objWriter = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($objPHPExcel);
@@ -310,7 +318,7 @@ class excelfree_admin extends Object_Manager {
                 $rs .= '<a href="' . SITEBILL_MAIN_URL . '/cache/upl/' . $xlsx_file_name . '" download="' . $xlsx_file_name . '">' . $xlsx_file_name . '</a><br>';
             }
         }
-  
+
         $rsr = '<h3>Скачать готовые файлы</h3><br/>' . $rs . '';
 
         return $rsr;
@@ -485,7 +493,8 @@ class excelfree_admin extends Object_Manager {
     }
 
     function run_import() {
-        
+        $rs = '';
+
         $files = $this->load_uploadify_images($this->get_session_key());
         if ($files) {
             $assoc_array = ((isset($_POST['assoc_array']) && count($_POST['assoc_array']) > 0) ? $_POST['assoc_array'] : NULL);
@@ -527,7 +536,7 @@ class excelfree_admin extends Object_Manager {
      * @return string
      */
     function sql_exec($table_name, $data, $mapper, $assoc_array) {
-
+        $rs = '';
         $keys = array_keys($mapper[$table_name]['fields']);
         $primary_key = $mapper[$table_name]['primary_key'];
         unset($data[1]);
@@ -785,16 +794,44 @@ EOF;
         return false;
     }
 
-    function load_xls($xls_file) {
+    function load_xls($xls_file, $normal_array = false, $limit = 0, $page = 1) {
         $ret_data = array();
         $inputFileName = SITEBILL_DOCUMENT_ROOT . '/cache/upl/' . $xls_file;
-        
-        $objPHPExcel = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-       
+        $path_parts = pathinfo($inputFileName);
+        $extension = strtolower($path_parts['extension']);
+        if ($extension  == 'xlsx' ) {
+            $inputFileType = 'Xlsx';
+        } elseif ( $extension == 'xls' ) {
+            $inputFileType = 'Xls';
+        } else {
+            $this->riseError('Error loading file: '.$inputFileName);
+            return false;
+        }
+
+        if ( $limit > 0 ) {
+            $chunkFilter = new \excelfree\admin\ChunkReadFilter();
+        }
+
+
         try {
-            $objPHPExcel = \PhpOffice\PhpSpreadsheet\IOFactory::load($inputFileName);
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputFileType);
+            $worksheetData = $reader->listWorksheetInfo($inputFileName);
+            $this->writeArrayLog($worksheetData);
+            $worksheetData[0]['totalRows']--;
+            if ( intval($worksheetData[0]['totalRows']) > 0 and  intval($this->getConfigValue('apps.excelfree.rows_per_page')) > 0) {
+                $worksheetData[0]['totalPages'] = ceil($worksheetData[0]['totalRows']/$this->getConfigValue('apps.excelfree.rows_per_page'));
+            }
+            $worksheetData[0]['perPage'] = $this->getConfigValue('apps.excelfree.rows_per_page');
+            $this->writeArrayLog($worksheetData);
+            if ( !empty($chunkFilter) ) {
+                $reader->setReadFilter($chunkFilter);
+                $chunkFilter->setRows(($limit*($page-1)),$limit);
+            }
+            $reader->setReadDataOnly(true);
+            $objPHPExcel = $reader->load($inputFileName);
         } catch(\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
-            die('Error loading file: '.$e->getMessage());
+            $this->riseError('Error loading file: '.$e->getMessage());
+            return false;
         }
 
         $sheetData = $objPHPExcel->getActiveSheet()->toArray(null, true, true, true);
@@ -802,12 +839,26 @@ EOF;
         foreach ($sheetData as $k => $v) {
             $v = self::clearUndecodedXmlEntities($v);
             if (!self::is_empty_xls_row($v)) {
-                $ret_data[$k] = $v;
+                if ( $normal_array ) {
+                    $ret_data[] = $v;
+                } else {
+                    $ret_data[$k] = $v;
+                }
             }
+        }
+        if ( empty($ret_data) ) {
+            $this->riseError('Error loading file: empty data');
+            return false;
+        }
+        if ( $normal_array ) {
+            return [
+                'worksheetData' => $worksheetData,
+                'data' => $ret_data
+            ];
         }
         return $ret_data;
     }
-    
+
     function getNameFromNumber($num) {
         $numeric = $num % 26;
         $letter = chr(65 + $numeric);

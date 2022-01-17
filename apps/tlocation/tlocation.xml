@@ -8,9 +8,10 @@
     <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
     <license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>true</backendMenu>
-    <version status="beta">1.1.12</version>
+    <version status="beta">1.2.1</version>
     <administration>
         <!-- Administration Menu Section -->
         <menu>TLocation</menu>
-    </administration>	
+        <category>Геосервисы</category>
+    </administration>
 </install>

@@ -45,7 +45,7 @@ class Common_Grid extends Sitebill {
 
     /**
      * Grid object
-     * @var object
+     * @var Object_Manager
      */
     protected $grid_object;
     protected $pager_params = array();
@@ -56,6 +56,10 @@ class Common_Grid extends Sitebill {
     protected $render_user_id = false;
 
     protected $total_count = 0;
+    /**
+     * @var $API_standalone_runner
+     */
+    private $API_standalone_runner;
 
     function __construct($grid_object) {
         $this->SiteBill();
@@ -219,14 +223,22 @@ class Common_Grid extends Sitebill {
 
         //$sort_params=array_merge($sort_params, $this->conditions);
         $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name . (!empty($where) ? ' WHERE ' . implode('AND', $where) : '') . ' ORDER BY ' . $sortby . ' ' . $sortdir . ' ';
-        //echo $query;
         $this->set_grid_query($query);
     }
 
     function parse_id_values_from_model($column_name, $column_values, $data_model) {
         if ($data_model[$this->grid_object->table_name][$column_name]['type'] == 'select_by_query') {
             foreach ($column_values as $idx => $value) {
-                $val = $this->data_model_controller->get_value_id_by_name($data_model[$this->grid_object->table_name][$column_name]['primary_key_table'], $data_model[$this->grid_object->table_name][$column_name]['value_name'], $data_model[$this->grid_object->table_name][$column_name]['primary_key_name'], $value);
+                $langpostfix = $this->getLangPostfix($this->getCurrentLang());
+                $namefield = $data_model[$this->grid_object->table_name][$column_name]['value_name'];
+                $namefield = $namefield.$langpostfix;
+
+                $val = $this->data_model_controller->get_value_id_by_name(
+                    $data_model[$this->grid_object->table_name][$column_name]['primary_key_table'],
+                    $namefield,
+                    $data_model[$this->grid_object->table_name][$column_name]['primary_key_name'],
+                    $value
+                );
 
                 if (0 != (int) $val) {
                     $column_values[$idx] = $val;
@@ -269,7 +281,7 @@ class Common_Grid extends Sitebill {
         if (isset($_SESSION['model_tags']) && is_array($_SESSION['model_tags'][$this->grid_object->table_name]['tags_array'])) {
             foreach ($_SESSION['model_tags'][$this->grid_object->table_name]['tags_array'] as $column_name => $column_values) {
                 $model = $this->grid_object->data_model[$this->grid_object->table_name];
-                
+
                 $column_values = $this->parse_id_values_from_model($column_name, $column_values, $this->grid_object->data_model);
                 if($model[$column_name]['type'] == 'select_by_query_multi'){
                     $pkname = '';
@@ -345,6 +357,334 @@ class Common_Grid extends Sitebill {
         return $this->render_user_id;
     }
 
+    function get_pre_header () {
+        $rs = '';
+        if (is_array($this->grid_controls)) {
+            if (in_array('memorylist', $this->grid_controls)) {
+                $rs .= $this->get_memory_header();
+            }
+        }
+
+        $rs .= '
+<link rel="stylesheet" href="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template1/assets/css/colorbox.css" />
+<script src="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template1/assets/js/jquery.colorbox-min.js"></script>
+					
+<script type="text/javascript">
+var fast_previews=[];
+var column_values_for_tags = [];
+var datastr={};
+function setColorboxWrapper(id){
+	var $overflow = \'\';
+	var colorbox_params = {
+		rel: \'colorbox\'+id,
+		reposition:true,
+		scalePhotos:true,
+		scrolling:false,
+		previous:\'<i class="ace-icon fa fa-arrow-left"></i>\',
+		next:\'<i class="ace-icon fa fa-arrow-right"></i>\',
+		close:\'&times;\',
+		current:\'{current} of {total}\',
+		maxWidth:\'100%\',
+		maxHeight:\'100%\',
+		onOpen:function(){
+			$overflow = document.body.style.overflow;
+			document.body.style.overflow = \'hidden\';
+		},
+		onClosed:function(){
+			document.body.style.overflow = $overflow;
+		},
+		onComplete:function(){
+			$.colorbox.resize();
+		}
+	};
+
+	$(\'.ace-thumbnails [data-rel="colorbox\'+id+\'"]\').colorbox(colorbox_params);
+}
+
+$(document).ready(function(){
+
+    $(\'.mass_delete\').click(function(){
+		var ids=[];
+		var url=$(this).data(\'url\');
+		$(this).parents(\'table\').eq(0).find(\'input.grid_check_one:checked\').each(function(){
+			ids.push($(this).val());
+		});
+        
+		window.location.replace(url+\'?do=mass_delete&ids=\'+ids.join(\',\'));
+	});
+    
+    $(\'.mass_action\').click(function(){
+		var ids=[];
+		var url=$(this).data(\'url\');
+        var a=$(this).data(\'action\');
+		$(this).parents(\'table\').eq(0).find(\'input.grid_check_one:checked\').each(function(){
+			ids.push($(this).val());
+		});
+        if(ids.length>0){
+            window.location.replace(\'/account/data/?do=mass_action&action_name=\'+a+\'&ids=\'+ids.join(\',\'));
+        }else{
+            return false;
+        }
+    });
+	
+	$(\'.colorboxed\').each(function(item){
+		setColorboxWrapper($(this).data(\'cbxid\'));
+	});
+    
+    $(\'.tags-clear\').click(function(e){
+        e.preventDefault();
+        $.ajax({url: \'' . SITEBILL_MAIN_URL . '/js/ajax.php?action=get_tags&do=clear&model_name=' . $this->grid_object->table_name . '\'}).done(function(){location.reload();});
+    });
+    
+            $(\'.fast_preview\').click(function () {
+                var id = $(this).data(\'id\');
+                if (fast_previews[id] === undefined) {
+                    $.ajax({
+                        url: estate_folder + \'/js/ajax.php?action=fast_preview_public&id=\' + id,
+                        dataType: \'json\',
+                        success: function (html) {
+                            fast_previews[id] = html;
+                            $(\'#fast_preview_modal\').find(\'.modal-body\').html(html.data);
+                            $(\'#fast_preview_modal\').find(\'.newwin\').attr(\'href\', html.href);
+                            $(\'#fast_preview_modal\').modal(\'show\');
+                        }
+                    });
+                } else {
+                    $(\'#fast_preview_modal\').find(\'.modal-body\').html(fast_previews[id].data);
+                    $(\'#fast_preview_modal\').find(\'.newwin\').attr(\'href\', fast_previews[id].href);
+                    $(\'#fast_preview_modal\').modal(\'show\');
+                }
+            });
+
+		
+		$(\'.ranged-tags\').each(function(e){
+			var _this=$(this);
+			var name=_this.data(\'field\');
+			_this.find(\'.ranged-tags-title\').click(function(e){
+				e.preventDefault();
+				_this.find(\'.ranged-tags-params\').fadeToggle();
+			});
+			_this.find(\'.cancel\').click(function(e){
+				e.preventDefault();
+				_this.find(\'.ranged-tags-params\').fadeToggle();
+			});
+			var min=null;
+			var max=null;
+			var txt=\''._e('не задано').'\';
+			
+			_this.find(\'input\').each(function(e){
+				var iname=$(this).attr(\'name\');
+				var val=$(this).val();
+				var tag_array = {};
+				
+				
+				var reg=/(.*)\[(.*)\]/;
+				var matches=$(this).attr(\'name\').match(reg);
+				if(typeof datastr[name] != \'undefined\'){
+					tag_array=datastr[name];
+				}
+				if(val!=\'\'){
+					tag_array[matches[2]]=val;
+				}else{
+					delete tag_array[matches[2]];
+				}
+				datastr[name] = tag_array;
+				if(iname==name+\'[min]\' && val!=\'\'){
+					min=val;
+				}
+				if(iname==name+\'[max]\' && val!=\'\'){
+					max=val;
+				}
+				
+				
+				
+			});
+			
+			if(min !== null && max !== null){
+				var txt=min+\' - \'+max;
+			}else if(min !== null){
+				var txt=\'от \'+min;
+			}else if(max !== null){
+				var txt=\'до \'+max;
+			}
+			_this.find(\'.ranged-tags-title\').html(txt);
+					
+			_this.find(\'.apply\').click(function(e){
+				e.preventDefault();
+				var tag_array = {};
+				var reg=/(.*)\[(.*)\]/;
+				if(typeof datastr[name] != \'undefined\'){
+					tag_array=datastr[name];
+				}
+				_this.find(\'input\').each(function(){
+					var val=$(this).val();
+					var matches=$(this).attr(\'name\').match(reg);
+					if(typeof datastr[name] != \'undefined\'){
+						tag_array=datastr[name];
+					}
+					if(val!=\'\'){
+						tag_array[matches[2]]=val;
+					}else{
+						delete tag_array[matches[2]];
+					}
+					
+					datastr[name] = tag_array;
+				});
+				$.ajax({type: "POST", url: "' . SITEBILL_MAIN_URL . '/js/ajax.php?action=get_tags&do=set&model_name=' . $this->grid_object->table_name . '", data: {tags_array:datastr}}).done(function(result_items){location.reload();});
+			});
+			
+			_this.find(\'.clear\').click(function(e){
+				e.preventDefault();
+				if(typeof datastr[name] != \'undefined\'){
+					tag_array=datastr[name];
+					delete datastr[name];
+				}
+				$.ajax({type: "POST", url: \'' . SITEBILL_MAIN_URL . '/js/ajax.php?action=get_tags&do=set&model_name=' . $this->grid_object->table_name . '\', data: {tags_array:datastr}}).done(function(result_items){location.reload();});
+			});
+			
+		});
+});
+
+
+</script>';
+        if($this->batchUpdate){
+            $rs .= '<script>$(document).ready(function(){
+      $(\'.batch_update\').click(function () {
+        var ids = [];
+        var action = $(this).attr(\'alt\');
+        $(this).parents(\'table\').eq(0).find(\'input.grid_check_one:checked\').each(function () {
+            ids.push($(this).val());
+        });
+        if(ids.length>0){
+            window.location.replace(\''.$this->batchUpdateUrl.'?action=\' + action + \'&do=batch_update&batch_ids=\' + ids.join(\',\'));
+        }else{
+            return false;
+        }
+        });  
+    });</script>';
+        }
+
+
+        $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h3>'._e('Быстрый просмотр').' <a target="_blank" class="btn btn-success newwin" href="#">'._e('открыть в новом окне').'</a></h3>
+    </div>
+    <div class="modal-body"></div>
+    <div class="modal-footer"></div>
+</div>
+</div>
+</div>';
+        return $rs;
+    }
+
+    function get_tags_input ($item_name) {
+        if ( $this->getConfigValue('use_vue') ) {
+            return $this->vue_tags_input($this->grid_object->table_name, $item_name);
+        } else {
+            return $this->classic_tags_input($item_name);
+        }
+    }
+
+    function vue_tags_input ( $model_name, $item_name  ) {
+        if (isset($_SESSION['model_tags']) && is_array($_SESSION['model_tags'][$model_name]['tags_array'][$item_name])) {
+            $input_tags_array = json_encode($_SESSION['model_tags'][$model_name]['tags_array'][$item_name]);
+        } else {
+            $input_tags_array = '';
+        }
+
+        return "<tags-input column_name='$item_name' model_name='$model_name' input_tags_array='$input_tags_array'></tags-input>";
+    }
+
+    function classic_tags_input ($item_name) {
+        $tags_input = '
+                        <div class="inline-tags">
+                            <input type="text" name="' . $item_name . '" id="' . $item_name . '" class="input-tag tagged" value="" placeholder="..." />
+                        </div>';
+        $tags_input .= "
+			<script type=\"text/javascript\">
+			$(document).ready(function(){
+				var tag_input = $('#" . $item_name . "');
+				var tag_array = [];
+				try{
+				   tag_input.tag({
+				      placeholder: tag_input.attr('placeholder'),
+				      source: function(query, process) {
+				    	  column_name = tag_input.attr('name');
+							$.ajax({
+								url: estate_folder+'/js/ajax.php?action=get_tags&column_name='+column_name+'&model_name=" . $this->grid_object->table_name . "&term='+query+''
+				        	}).done(function(result_items){
+								process(result_items);
+							});
+						}
+				   });
+					var tag_obj = tag_input.data('tag');";
+
+
+        if (
+            isset($_SESSION['model_tags']) &&
+            is_array($_SESSION['model_tags'][$this->grid_object->table_name]['tags_array']) &&
+            is_array($_SESSION['model_tags'][$this->grid_object->table_name]['tags_array'][$item_name])
+        ) {
+            foreach ($_SESSION['model_tags'][$this->grid_object->table_name]['tags_array'][$item_name] as $tag_item) {
+                $tags_input .= 'tag_obj.add("' . $tag_item . '");
+                                            tag_array.push("' . $tag_item . '");
+                                            datastr["' . $item_name . '"] = tag_array;';
+            }
+        }
+        $tags_input .= "
+				}
+				catch(e) {
+                
+				   //display a textarea for old IE, because it doesn't support this plugin or another one I tried!
+				   tag_input.after('<textarea id=\"'+tag_input.attr('id')+'\" name=\"'+tag_input.attr('name')+'\" rows=\"3\">'+tag_input.val()+'</textarea>').remove();
+				}
+				tag_input.on('added', function (e, value) {
+					tag_array.push(value);
+			   		datastr[$(this).attr('name')] = tag_array;
+			   		var body = {tags_array:datastr};
+			        $.ajax(
+			            {
+			                type: 'POST',
+			                url: estate_folder+'/js/ajax.php?action=get_tags&model_name=" . $this->grid_object->table_name . "&do=set',
+			                data: body
+			            }
+			        )
+			        .done(function(result_items){
+			        	location.reload();
+			           //process(result_items);
+			        });
+				})
+				tag_input.on('removed', function (e, value) {
+                    var val = (Array.isArray(value) ? value[0] : value);
+			   		var item_index = datastr[$(this).attr('name')].indexOf(val);
+			   		datastr[$(this).attr('name')].splice(item_index, 1);
+			   		var body = {tags_array:datastr};
+			        $.ajax(
+			            {
+			                type: 'POST',
+			                url: estate_folder+'/js/ajax.php?action=get_tags&model_name=" . $this->grid_object->table_name . "&do=set',
+			                data: body
+			            }
+			        )
+			        .done(function(result_items){
+			        	location.reload();
+			           //process(result_items);
+			        });
+				})
+    						
+    	
+			});
+    						
+			</script>
+    	
+    	
+                                        ";
+        return $tags_input;
+    }
+
     function construct_grid($control_params = false, $disable_mass_delete = false) {
 
         //Регистрируем hook для обработки элементов грида при выводе
@@ -358,27 +698,6 @@ class Common_Grid extends Sitebill {
 
             return $this->_construct_grid($control_params, $disable_mass_delete);
         } else {
-
-            /*$_props=array();
-            if(isset($_GET['_props']) && is_array($_GET['_props']) && !empty($_GET['_props'])){
-                $_props=$_GET['_props'];
-            }
-
-            print_r($_props);
-
-            foreach ($_props as $column_name => $column_values) {
-                $column_values = $this->parse_id_values_from_model($column_name, $column_values, $this->get_model());
-                if (isset($params[$column_name]) and ! is_array($params[$column_name])) {
-                    if ($params[$column_name] != 0) {
-                        array_push($column_values, $params[$column_name]);
-                    }
-                    $params[$column_name] = $column_values;
-                } elseif (isset($params[$column_name]) and is_array($params[$column_name])) {
-                    $params[$column_name] = array_merge($params[$column_name], $column_values);
-                } elseif (is_array($column_values)) {
-                    $params[$column_name] = $column_values;
-                }
-            }*/
 
 
             $DBC = DBC::getInstance();
@@ -499,47 +818,9 @@ class Common_Grid extends Sitebill {
                 $ra = array();
             }
 
-            /*echo '<pre>';
-            print_r($ra);*/
-
             if(!empty($ra) && $this->grid_object->table_name=='data'){
                 if(1==intval($this->getConfigValue('use_topic_actual_days'))){
-                    //$fe=reset($ra);
-                    /*$actual_dates=array();
-                    $actual_topics=array();*/
-
-                    //$topic_actuals=array();
                     $DBC=DBC::getInstance();
-                    /*if(!isset($fe['date_added'])){
-                        $query='SELECT id, date_added FROM '.DB_PREFIX.'_data WHERE id IN ('.implode(',', array_keys($ra)).')';
-                        $stmt=$DBC->query($query);
-                        if($stmt){
-                            while($ar=$DBC->fetch($stmt)){
-                                $actual_dates[$ar['id']]=$ar['date_added'];
-                            }
-                        }
-
-                    }else{
-                        foreach($ra as $k=>$v){
-                            $actual_dates[$k]=$v['date_added'];
-                        }
-                    }
-
-                    if(!isset($fe['topic_id'])){
-                        $query='SELECT id, topic_id FROM '.DB_PREFIX.'_data WHERE id IN ('.implode(',', array_keys($ra)).')';
-                        $stmt=$DBC->query($query);
-                        if($stmt){
-                            while($ar=$DBC->fetch($stmt)){
-                                $actual_topics[$ar['id']]=$ar['topic_id'];
-                            }
-                        }
-
-                    }else{
-                        foreach($ra as $k=>$v){
-                            $actual_topics[$k]=$v['topic_id'];
-                        }
-                    }*/
-
                     $topic_actuals=array();
 
                     $query='SELECT id, actual_days FROM '.DB_PREFIX.'_topic';
@@ -562,227 +843,10 @@ class Common_Grid extends Sitebill {
 
             //Отсюда начинаем формировать таблицу со всеми подключаемыми плагинами
             $rs = '';
-
-            if (is_array($this->grid_controls)) {
-                if (in_array('memorylist', $this->grid_controls)) {
-                    $rs .= $this->get_memory_header();
-                }
-            }
-
-            $rs .= '
-<link rel="stylesheet" href="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template1/assets/css/colorbox.css" />
-<script src="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template1/assets/js/jquery.colorbox-min.js"></script>
-					
-<script type="text/javascript">
-var fast_previews=[];
-var column_values_for_tags = [];
-var datastr={};
-function setColorboxWrapper(id){
-	var $overflow = \'\';
-	var colorbox_params = {
-		rel: \'colorbox\'+id,
-		reposition:true,
-		scalePhotos:true,
-		scrolling:false,
-		previous:\'<i class="ace-icon fa fa-arrow-left"></i>\',
-		next:\'<i class="ace-icon fa fa-arrow-right"></i>\',
-		close:\'&times;\',
-		current:\'{current} of {total}\',
-		maxWidth:\'100%\',
-		maxHeight:\'100%\',
-		onOpen:function(){
-			$overflow = document.body.style.overflow;
-			document.body.style.overflow = \'hidden\';
-		},
-		onClosed:function(){
-			document.body.style.overflow = $overflow;
-		},
-		onComplete:function(){
-			$.colorbox.resize();
-		}
-	};
-
-	$(\'.ace-thumbnails [data-rel="colorbox\'+id+\'"]\').colorbox(colorbox_params);
-}
-
-$(document).ready(function(){
-
-    $(\'.mass_delete\').click(function(){
-		var ids=[];
-		var url=$(this).data(\'url\');
-		$(this).parents(\'table\').eq(0).find(\'input.grid_check_one:checked\').each(function(){
-			ids.push($(this).val());
-		});
-        
-		window.location.replace(url+\'?do=mass_delete&ids=\'+ids.join(\',\'));
-	});
-    
-    $(\'.mass_action\').click(function(){
-		var ids=[];
-		var url=$(this).data(\'url\');
-        var a=$(this).data(\'action\');
-		$(this).parents(\'table\').eq(0).find(\'input.grid_check_one:checked\').each(function(){
-			ids.push($(this).val());
-		});
-        if(ids.length>0){
-            window.location.replace(\'/account/data/?do=mass_action&action_name=\'+a+\'&ids=\'+ids.join(\',\'));
-        }else{
-            return false;
-        }
-    });
-	
-	$(\'.colorboxed\').each(function(item){
-		setColorboxWrapper($(this).data(\'cbxid\'));
-	});
-    
-    $(\'.tags-clear\').click(function(e){
-        e.preventDefault();
-        $.ajax({url: \'' . SITEBILL_MAIN_URL . '/js/ajax.php?action=get_tags&do=clear&model_name=' . $this->grid_object->table_name . '\'}).done(function(){location.reload();});
-    });
-    
-            $(\'.fast_preview\').click(function () {
-                var id = $(this).data(\'id\');
-                if (fast_previews[id] === undefined) {
-                    $.ajax({
-                        url: estate_folder + \'/js/ajax.php?action=fast_preview_public&id=\' + id,
-                        dataType: \'html\',
-                        success: function (html) {
-                            fast_previews[id] = html;
-                            $(\'#fast_preview_modal\').find(\'.modal-body\').html(html);
-                            $(\'#fast_preview_modal\').find(\'.newwin\').attr(\'href\', estate_folder + \'/realty\' + id);
-                            $(\'#fast_preview_modal\').modal(\'show\');
-                        }
-                    });
-                } else {
-                    $(\'#fast_preview_modal\').find(\'.modal-body\').html(fast_previews[id]);
-                    $(\'#fast_preview_modal\').find(\'.newwin\').attr(\'href\', estate_folder + \'/realty\' + id);
-                    $(\'#fast_preview_modal\').modal(\'show\');
-                }
-            });
-
-		
-		$(\'.ranged-tags\').each(function(e){
-			var _this=$(this);
-			var name=_this.data(\'field\');
-			_this.find(\'.ranged-tags-title\').click(function(e){
-				e.preventDefault();
-				_this.find(\'.ranged-tags-params\').fadeToggle();
-			});
-			_this.find(\'.cancel\').click(function(e){
-				e.preventDefault();
-				_this.find(\'.ranged-tags-params\').fadeToggle();
-			});
-			var min=null;
-			var max=null;
-			var txt=\''._e('не задано').'\';
-			
-			_this.find(\'input\').each(function(e){
-				var iname=$(this).attr(\'name\');
-				var val=$(this).val();
-				var tag_array = {};
-				
-				
-				var reg=/(.*)\[(.*)\]/;
-				var matches=$(this).attr(\'name\').match(reg);
-				if(typeof datastr[name] != \'undefined\'){
-					tag_array=datastr[name];
-				}
-				if(val!=\'\'){
-					tag_array[matches[2]]=val;
-				}else{
-					delete tag_array[matches[2]];
-				}
-				datastr[name] = tag_array;
-				if(iname==name+\'[min]\' && val!=\'\'){
-					min=val;
-				}
-				if(iname==name+\'[max]\' && val!=\'\'){
-					max=val;
-				}
-				
-				
-				
-			});
-			
-			if(min !== null && max !== null){
-				var txt=min+\' - \'+max;
-			}else if(min !== null){
-				var txt=\'от \'+min;
-			}else if(max !== null){
-				var txt=\'до \'+max;
-			}
-			_this.find(\'.ranged-tags-title\').html(txt);
-					
-			_this.find(\'.apply\').click(function(e){
-				e.preventDefault();
-				var tag_array = {};
-				var reg=/(.*)\[(.*)\]/;
-				if(typeof datastr[name] != \'undefined\'){
-					tag_array=datastr[name];
-				}
-				_this.find(\'input\').each(function(){
-					var val=$(this).val();
-					var matches=$(this).attr(\'name\').match(reg);
-					if(typeof datastr[name] != \'undefined\'){
-						tag_array=datastr[name];
-					}
-					if(val!=\'\'){
-						tag_array[matches[2]]=val;
-					}else{
-						delete tag_array[matches[2]];
-					}
-					
-					datastr[name] = tag_array;
-				});
-				$.ajax({url: \'' . SITEBILL_MAIN_URL . '/js/ajax.php?action=get_tags&do=set&model_name=' . $this->grid_object->table_name . '&tags_array=\'+JSON.stringify(datastr)}).done(function(result_items){location.reload();});
-			});
-			
-			_this.find(\'.clear\').click(function(e){
-				e.preventDefault();
-				if(typeof datastr[name] != \'undefined\'){
-					tag_array=datastr[name];
-					delete datastr[name];
-				}
-				$.ajax({url: \'' . SITEBILL_MAIN_URL . '/js/ajax.php?action=get_tags&do=set&model_name=' . $this->grid_object->table_name . '&tags_array=\'+JSON.stringify(datastr)}).done(function(result_items){location.reload();});
-			});
-			
-		});
-});
+            $rs .= $this->get_pre_header();
 
 
-</script>';
-if($this->batchUpdate){
-    $rs .= '<script>$(document).ready(function(){
-      $(\'.batch_update\').click(function () {
-        var ids = [];
-        var action = $(this).attr(\'alt\');
-        $(this).parents(\'table\').eq(0).find(\'input.grid_check_one:checked\').each(function () {
-            ids.push($(this).val());
-        });
-        if(ids.length>0){
-            window.location.replace(\''.$this->batchUpdateUrl.'?action=\' + action + \'&do=batch_update&batch_ids=\' + ids.join(\',\'));
-        }else{
-            return false;
-        }
-        });  
-    });</script>';
-}
-
-
-$rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dialog">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-    <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h3>'._e('Быстрый просмотр').' <a target="_blank" class="btn btn-success newwin" href="#">'._e('открыть в новом окне').'</a></h3>
-    </div>
-    <div class="modal-body"></div>
-    <div class="modal-footer"></div>
-</div>
-</div>
-</div>
-
-                                <table class="table table-striped table-hover dataTable">';
+            $rs .= '<table class="table table-striped table-hover dataTable">';
             $rs .= '<thead>';
             $rs .= '<tr>';
             if (!$disable_mass_delete) {
@@ -838,77 +902,7 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
     						</div>';
                     $rs .= '>' . $s . $tags_input . '</th>';
                 } else {
-                    $tags_input = '
-                        <div class="inline-tags">
-                            <input type="text" name="' . $item_name . '" id="' . $item_name . '" class="input-tag tagged" value="" placeholder="..." />
-                        </div>';
-                    $tags_input .= "
-			<script type=\"text/javascript\">
-			$(document).ready(function(){
-				var tag_input = $('#" . $item_name . "');
-				var tag_array = [];
-				try{
-				   tag_input.tag({
-				      placeholder: tag_input.attr('placeholder'),
-				      source: function(query, process) {
-				    	  column_name = tag_input.attr('name');
-							$.ajax({
-								url: estate_folder+'/js/ajax.php?action=get_tags&column_name='+column_name+'&model_name=" . $this->grid_object->table_name . "&term='+query+''
-				        	}).done(function(result_items){
-								process(result_items);
-							});
-						}
-				   });
-					var tag_obj = tag_input.data('tag');";
-
-
-                    if (isset($_SESSION['model_tags']) && is_array($_SESSION['model_tags'][$this->grid_object->table_name]['tags_array'][$item_name])) {
-                        foreach ($_SESSION['model_tags'][$this->grid_object->table_name]['tags_array'][$item_name] as $tag_item) {
-                            $tags_input .= 'tag_obj.add("' . $tag_item . '");
-                                            tag_array.push("' . $tag_item . '");
-                                            datastr["' . $item_name . '"] = tag_array;';
-                        }
-                    }
-                    $tags_input .= "
-				}
-				catch(e) {
-                
-				   //display a textarea for old IE, because it doesn't support this plugin or another one I tried!
-				   tag_input.after('<textarea id=\"'+tag_input.attr('id')+'\" name=\"'+tag_input.attr('name')+'\" rows=\"3\">'+tag_input.val()+'</textarea>').remove();
-				}
-				tag_input.on('added', function (e, value) {
-					tag_array.push(value);
-			   		datastr[$(this).attr('name')] = tag_array;
-			        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&model_name=" . $this->grid_object->table_name . "&do=set&tags_array='+JSON.stringify(datastr)})
-			        .done(function(result_items){
-			        	location.reload();
-			           //process(result_items);
-			        });
-				})
-				tag_input.on('removed', function (e, value) {
-                    var val = (Array.isArray(value) ? value[0] : value);
-			   		var item_index = datastr[$(this).attr('name')].indexOf(val);
-			   		datastr[$(this).attr('name')].splice(item_index, 1);
-			        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&model_name=" . $this->grid_object->table_name . "&do=set&tags_array='+JSON.stringify(datastr)})
-			        .done(function(result_items){
-			        	location.reload();
-			           //process(result_items);
-			        });
-				})
-    						
-    	
-			});
-    						
-			</script>
-    	
-    	
-                                        ";
-
-                    /*$tags_input = '
-                        <div class="inline-tags1">
-                            <input type="text" name="' . $item_name . '" id="' . $item_name . '" class="input-tag tagged" value="" />
-                        </div>';*/
-
+                    $tags_input = $this->get_tags_input($item_name);
                     $rs .= '>' . $s . $tags_input . '</th>';
                 }
             }
@@ -929,7 +923,8 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
                     $ids[]=$primary_key_value;
                 }
 
-                $row_datas=$this->grid_object->load_by_id($ids);
+                $row_datas = $this->grid_object->load_by_id($ids);
+                $row_datas = $this->grid_object->applyGCompose($row_datas);
 
                 //echo count($row_datas);
 
@@ -987,7 +982,11 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
                         } elseif ($row_data[$item_name]['type'] == 'client_id') {
                             $rs .= '<td>' . $row_data[$item_name]['value_string'] . '</td>';
                         } elseif ($row_data[$item_name]['type'] == 'select_box') {
-                            $rs .= '<td  >' . $row_data[$item_name]['select_data'][$row_data[$item_name]['value']] . '</td>';
+                            if(isset($row_data[$item_name]['parameters']) && isset($row_data[$item_name]['parameters']['multiselect']) && $row_data[$item_name]['parameters']['multiselect'] == 1){
+                                $rs .= '<td>' . (!empty($row_data[$item_name]['value_variants_array']) ? implode('<br>', $row_data[$item_name]['value_variants_array']) : '') . '</td>';
+                            }else{
+                                $rs .= '<td>' . $row_data[$item_name]['select_data'][$row_data[$item_name]['value']] . '</td>';
+                            }
                         } elseif ($row_data[$item_name]['type'] == 'photo') {
                             if ($row_data[$item_name]['value'] != '') {
                                 $rs .= '<td><img width="100" src="/img/data/user/' . $row_data[$item_name]['value'] . '"></td>';
@@ -1010,7 +1009,7 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
                                         //echo $preview_url.'<br>';
                                     $normal_url = $this->createMediaIncPath($vv);
                                     if ($counter == 0) {
-                                        $rs .= '<li><img src="' . $preview_url . '" style="width: 40px; height: 40px;">
+                                        $rs .= '<li><img src="' . $preview_url . '" style="min-width: 40px; max-width: 100px;">
 					<div class="tags">
 						<span class="label-holder">
 							<span class="label label-info">' . count($row_data[$item_name]['value']) . '</span>
@@ -1038,12 +1037,12 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
                             }
                             $rs .= '</td>';
                         } elseif ($row_data[$item_name]['type'] == 'docuploads') {
-                            $rs .= '<td>' . count($row_data[$item_name]['value']) . '</td>';
+                            $rs .= '<td>' . @count($row_data[$item_name]['value']) . '</td>';
                         } else {
                             if (is_array($row_data[$item_name]['value'])) {
                                 $rs .= '<td>' . implode(';', $row_data[$item_name]['value']) . '</td>';
                             } else {
-                                $rs .= '<td' . $a . '>' . $row_data[$item_name]['value'] . '</td>';
+                                $rs .= '<td' . $a . '>' . $this->reducer_text($row_data[$item_name]['value']) . '</td>';
                             }
                         }
                     }
@@ -1103,7 +1102,11 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
                                   $control_params_oth_string.='&'.http_build_query($this->controls_params);
                                   } */
                                 if (is_array($control_name)) {
-                                    $rs .= ' <a href="?action=' . $this->grid_object->action . '&do=' . $control_name['name'] . '&' . $this->grid_object->primary_key . '=' . $primary_key_value . $control_params_oth_string . '" class="btn ' . ($control_name['btnclass'] != '' ? $control_name['btnclass'] : 'btn-warning') . '"><i class="icon-white ' . ($control_name['btnicon'] != '' ? $control_name['btnicon'] : 'icon-tasks') . '"></i>' . ($control_name['btntext'] != '' ? ' ' . $control_name['btntext'] : '') . '</a> ';
+                                    if ( $control_name['type'] == 'iframe_modal' ) {
+                                        $rs .= $this->iframe_modal_control($this->grid_object->primary_key, $primary_key_value, $control_name);
+                                    } else {
+                                        $rs .= ' <a href="?action=' . $this->grid_object->action . '&do=' . $control_name['name'] . '&' . $this->grid_object->primary_key . '=' . $primary_key_value . $control_params_oth_string . '" class="btn ' . ($control_name['btnclass'] != '' ? $control_name['btnclass'] : 'btn-warning') . '"><i class="icon-white ' . ($control_name['btnicon'] != '' ? $control_name['btnicon'] : 'icon-tasks') . '"></i>' . ($control_name['btntext'] != '' ? ' ' . $control_name['btntext'] : '') . '</a> ';
+                                    }
                                 } else {
                                     $rs .= ' <a href="?action=' . $this->grid_object->action . '&do=' . $control_name . '&' . $this->grid_object->primary_key . '=' . $primary_key_value . $control_params_oth_string . '" class="btn btn-warning"><i class="icon-white icon-tasks"></i></a> ';
                                 }
@@ -1190,12 +1193,31 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
             if($this->grid_object->table_name == 'complex' && intval($this->getConfigValue('apps.complex.use_billing'))==1){
                 $rs .= $this->getB();
             }
+            $rs .= $this->get_tooltip_script();
 
 
 
             return $rs;
         }
     }
+
+    private function iframe_modal_control ( $primary_key, $primary_key_value, $params ) {
+        if ( !$this->API_standalone_runner ) {
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/api/classes/class.common.php');
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/api/classes/class.standalone_runner.php');
+            $this->API_standalone_runner = new API_standalone_runner();
+        }
+        $params['object_id'] = $primary_key_value;
+        $params['primary_key'] = $primary_key;
+        $params['primary_key_value'] = $primary_key_value;
+        return $this->API_standalone_runner->_iframe_button(
+            $params['name'],
+            $params['modal_title'],
+            $params['component'],
+            $params
+        );
+    }
+
 
     private function getB(){
         $status_cost=array();
@@ -1408,7 +1430,11 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
                     } elseif ($row_data[$item_name]['type'] == 'date') {
                         $rs .= '<td  >' . $row_data[$item_name]['value_string'] . '</td>';
                     } elseif ($row_data[$item_name]['type'] == 'select_box') {
-                        $rs .= '<td  >' . $row_data[$item_name]['select_data'][$row_data[$item_name]['value']] . '</td>';
+						if(isset($row_data[$item_name]['parameters']) && isset($row_data[$item_name]['parameters']['multiselect']) && $row_data[$item_name]['parameters']['multiselect'] == 1){
+                        	$rs .= '<td>' . (!empty($row_data[$item_name]['value_variants_array']) ? implode('<br>', $row_data[$item_name]['value_variants_array']) : '') . '</td>';
+                  		}else{
+                        	$rs .= '<td>' . $row_data[$item_name]['select_data'][$row_data[$item_name]['value']] . '</td>';
+                    	}
                     } elseif ($row_data[$item_name]['type'] == 'checkbox') {
                         $rs .= '<td>' . ($row_data[$item_name]['value'] == 1 ? '<img src="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template/img/radio_yes.png">' : '<img src="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template/img/radio_no.png">') . '</td>';
                     } else {
@@ -1475,7 +1501,7 @@ $rs .= '<div class="modal fade" id="fast_preview_modal" tabindex="-1" role="dial
             $data = array();
             foreach ($row_data as $item_name => $v) {
                 //$item_name=$item_id['name'];
-                if ($row_data[$item_name]['type'] == 'select_by_query') {
+                if ($row_data[$item_name]['type'] == 'select_by_query' || $row_data[$item_name]['type'] == 'select_by_query_multi') {
                     $data[$item_name]['value'] = $row_data[$item_name]['value'];
                     $data[$item_name]['value_string'] = $row_data[$item_name]['value_string'];
                 } elseif ($row_data[$item_name]['type'] == 'date') {

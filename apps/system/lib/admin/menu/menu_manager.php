@@ -8,7 +8,7 @@ class Menu_Manager extends Object_Manager {
     /**
      * Constructor
      */
-    function Menu_Manager() {
+    function __construct() {
         $this->SiteBill();
         $this->check_table();
         $this->table_name = 'menu';
@@ -109,7 +109,7 @@ CREATE IF NOT EXIST TABLE `" . DB_PREFIX . "_menu_structure` (
                 $form_menu['menu']['name_' . $ln]['value'] = '';
                 $form_menu['menu']['name_' . $ln]['length'] = 40;
                 $form_menu['menu']['name_' . $ln]['type'] = 'safe_string';
-                $form_menu['menu']['name_' . $ln]['required'] = 'on';
+                $form_menu['menu']['name_' . $ln]['required'] = 'off';
                 $form_menu['menu']['name_' . $ln]['unique'] = 'off';
             }
             /* if($current_lang=='ru' || $current_lang==''){
@@ -185,6 +185,10 @@ CREATE IF NOT EXIST TABLE `" . DB_PREFIX . "_menu_structure` (
 
             case 'edit' : {
                     $form_menu_structure['menu_structure'] = $data_model->init_model_data_from_db($menu_structure_manager->table_name, $menu_structure_manager->primary_key, $this->getRequestValue($menu_structure_manager->primary_key), $form_menu_structure['menu_structure']);
+                    if (1 == $this->getConfigValue('apps.language.autotrans_enable')) {
+                        $form_menu_structure['menu_structure'] = $data_model->init_model_data_auto_translate($form_menu_structure['menu_structure']);
+                    }
+
                     //echo '<pre>';
                     //print_r($form_data[$this->table_name]);
                     $rs .= $this->get_form_extended($form_menu_structure['menu_structure'], 'structure', 'edit_done');
@@ -222,7 +226,7 @@ CREATE IF NOT EXIST TABLE `" . DB_PREFIX . "_menu_structure` (
                             $rs .= $this->get_form_extended($form_menu_structure['menu_structure'], 'structure', 'new_done');
                             break;
                         }
-                        
+
                         $rs .= $menu_structure_manager->grid_e($menu_id);
                         //$rs .= 'добавлен';
                     }
@@ -324,12 +328,54 @@ CREATE IF NOT EXIST TABLE `" . DB_PREFIX . "_menu_structure` (
         return $rs;
     }
 
+    function check_language_columns () {
+        $first_menu = \system\lib\model\eloquent\Menu::first();
+        if ( $first_menu->menu_id ) {
+            $menu_record = $this->load_by_id($first_menu->menu_id);
+            $this->edit_data($menu_record, 0, $first_menu->menu_id);
+            if ( $this->getError() ) {
+                $this->riseError(_e('Необходимо обновить структуру таблицы menu: ').$this->getError());
+                return false;
+            }
+        }
+
+        $first_menu_structure = \system\lib\model\eloquent\MenuStructure::first();
+        if ( $first_menu_structure->menu_structure_id ) {
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/menu/menu_structure_manager.php');
+            $menu_structure_manager = new Menu_Structure_Manager();
+
+            $menu_structure_record = $menu_structure_manager->load_by_id($first_menu_structure->menu_structure_id);
+            $menu_structure_manager->edit_data($menu_structure_record, 0, $first_menu_structure->menu_structure_id);
+            if ( $menu_structure_manager->getError() ) {
+                $this->riseError(_e('Необходимо обновить структуру таблицы menu_structure: ').$menu_structure_manager->getError());
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function _update_tablesAction () {
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php');
+        $helper = new Admin_Table_Helper();
+        $rs = $helper->alter_table('menu', $this->data_model['menu']).'<br>';
+
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/menu/menu_structure_manager.php');
+        $menu_structure_manager = new Menu_Structure_Manager();
+        $rs .= $helper->alter_table('menu_structure', $menu_structure_manager->data_model['menu_structure']).'<br>';
+
+        return $rs .= '<p>Обновлено успешно</p>';
+
+    }
+
     /**
      * Grid
      * @param void
      * @return string
      */
     function grid($params = array(), $default_params = array()) {
+        if ( !$this->check_language_columns() ) {
+            return '<p></p>'.$this->getError().'<p></p>'.'<a href="?action=menu&do=update_tables" class="btn btn-primary">'._e('Обновить').'</a>';
+        }
 
         $DBC = DBC::getInstance();
         $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $this->table_name . ' ORDER BY `' . $this->grid_key . '`';
@@ -363,7 +409,7 @@ CREATE IF NOT EXIST TABLE `" . DB_PREFIX . "_menu_structure` (
 
     /**
      * Get top menu
-     * @param void 
+     * @param void
      * @return string
      */
     function getTopMenu() {

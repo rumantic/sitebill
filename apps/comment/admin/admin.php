@@ -180,7 +180,7 @@ class comment_admin extends Object_Manager {
 
     private function saveComment($admin = false) {
 
-        $comments_delta_time = 30;
+        $comments_delta_time = $this->getConfigValue('apps.comment.delta_time');
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
@@ -188,11 +188,11 @@ class comment_admin extends Object_Manager {
 
         $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
         if (!$admin && $form_data[$this->table_name]['user_id']['value'] != $_SESSION['user_id']) {
-            return 'Error';
+            return 'Error: you dont have access to commented object';
         }
 
         if (isset($_SESSION['apps_comment']['last_comment'][$_SESSION['user_id']]) && (time() - $_SESSION['apps_comment']['last_comment'][$_SESSION['user_id']]) < $comments_delta_time) {
-            return 'Error';
+            return 'Error: to much comment request per '.$comments_delta_time.' seconds';
         }
 
         if (1 == $this->getConfigValue('apps.comment.premoderation_enabled')) {

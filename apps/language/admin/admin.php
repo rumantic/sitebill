@@ -32,23 +32,81 @@ class language_admin extends Object_Manager {
 
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
-        $config_admin->addParamToConfig('apps.language.use_langs', '0', 'Использовать мультиязычность', 1);
+        $config_admin->addParamToConfig('apps.language.use_langs', '0', 'Использовать мультиязычность', SConfig::$fieldtypeCheckbox);
         $config_admin->addParamToConfig('apps.language.languages', '', 'Список языков (Пример: ru=Русский|en=English)');
         $config_admin->addParamToConfig('apps.language.default_lang_code', '', 'Код языка по умолчанию');
-        $config_admin->addParamToConfig('apps.language.use_default_as_ru', 1, 'Использовать технические значения как RU', 1);
+        $config_admin->addParamToConfig('apps.language.use_default_as_ru', 1, 'Использовать технические значения как RU', SConfig::$fieldtypeCheckbox);
         $config_admin->addParamToConfig('apps.language.google_translate_api_key', '', 'Google Translate API key <a href=https://cloud.google.com/translate/docs/getting-started target=_blank>получить</a>');
-        $config_admin->addParamToConfig('apps.language.autotrans_enable', '1', 'Активировать автоперевод', 1);
-        $config_admin->addParamToConfig('apps.language.autotrans_api', '0', 'API переводов');
+        $config_admin->addParamToConfig('apps.language.autotrans_enable', '1', 'Активировать автоперевод', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.language.autotrans_api', '0', 'API переводов', SConfig::$fieldtypeSelectbox, array(
+            'select_data' => array('0'=>'Google', '1'=>'Yandex')
+        ));
         $config_admin->addParamToConfig('apps.language.yandex_translate_api_key', '', 'Yandex Translate API key <a href=https://translate.yandex.ru/developers/keys target=_blank>получить</a>');
-        $config_admin->addParamToConfig('apps.language.prefixmode', '0', 'Префиксный режим', 1);
+        $config_admin->addParamToConfig('apps.language.prefixmode', '0', 'Префиксный режим', SConfig::$fieldtypeCheckbox);
         $config_admin->addParamToConfig('apps.language.use_as_default', '', 'Код локали технических значений');
         $config_admin->addParamToConfig('apps.language.language_prefix_list', '', 'Список префиксов языков (=ru|ukr=ua|eng=en)');
-        $config_admin->addParamToConfig('apps.language.fulltransmode', '0', 'Полный перевод', 1);
+        $config_admin->addParamToConfig('apps.language.fulltransmode', '0', 'Полный перевод', SConfig::$fieldtypeCheckbox);
     }
 
     function _preload() {
         //echo 1;
         $this->template->assert('available_langs', $this->getLanguages());
+        //
+
+        $links = array();
+
+        if(1 == intval($this->getConfigValue('apps.language.use_langs'))){
+
+            $REQUESTURIPATH = self::getClearRequestURI();
+            $locales = Multilanguage::availableLanguages();
+            $currentlocale = $this->getCurrentLang();
+
+            $links['lang'] = $currentlocale;
+
+            $prefix_list = array();
+            $prefixlistconf = trim($this->getConfigValue('apps.language.language_prefix_list'));
+            if ($prefixlistconf !== '') {
+                $prefix_pairs = explode('|', $prefixlistconf);
+                if (count($prefix_pairs) > 0) {
+                    foreach ($prefix_pairs as $lp) {
+                        list($pr, $lo) = explode('=', $lp);
+                        $prefix_list[$lo] = $pr;
+                    }
+                }
+            }
+
+
+            //Набор ссылок для языковых версий текущей страницы
+            foreach ($locales as $locale){
+                $links['currenturl'][] = array(
+                    'href' => $this->createUrlTpl($REQUESTURIPATH, false, false, $prefix_list[$locale]),
+                    'name' => mb_strtoupper($locale),
+                    'current' => ($currentlocale == $locale ? 1 : 0)
+                );
+            }
+
+            //Набор ссылок для языковых версий главной страницы
+            foreach ($locales as $locale){
+                $links['homeurl'][] = array(
+                    'href' => $this->createUrlTpl('', false, false, $prefix_list[$locale]),
+                    'name' => mb_strtoupper($locale),
+                    'current' => ($currentlocale == $locale ? 1 : 0)
+                );
+            }
+
+            foreach ($locales as $locale){
+                if($currentlocale != $locale){
+                    $links['hreflangs'][$locale] = array(
+                        'href' => $this->createUrlTpl('', true, false, $prefix_list[$locale]),
+                        'hreflang' => $locale
+                    );
+                }
+
+            }
+
+            $this->template->assert('languagedata', $links);
+        }
+
     }
     
     

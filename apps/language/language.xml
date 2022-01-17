@@ -8,9 +8,10 @@
     <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
     <license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>true</backendMenu>
-    <version>1.8.11</version>
+    <version>1.8.14</version>
     <administration>
         <!-- Administration Menu Section -->
-        <menu>Редактор переводов</menu>
-    </administration>   
+        <menu>Редактор переводов (старая версия)</menu>
+        <category>Системные</category>
+    </administration>
 </install>

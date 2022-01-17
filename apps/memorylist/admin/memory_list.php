@@ -255,7 +255,7 @@ class Memory_List extends Object_Manager {
         echo $this->compile_pdf($ids, $data_site, $USER_ID);
         exit();
     }
-    
+
     /**
      * Получение массива моделей объектов
      * @param array $ids
@@ -277,7 +277,7 @@ class Memory_List extends Object_Manager {
         }
         return $data;
     }
-    
+
     /**
      * Дополняет модель данных объявления дополнительными данными, например связанными данными из других объектов
      * @param array $data
@@ -285,28 +285,36 @@ class Memory_List extends Object_Manager {
     public function adopt_model_to_pdfexport($data){
         return $data;
     }
-    
+
     /**
      * Формирует pdf-страницу для списка объектов заданных массивом id
      * @global object $smarty
      * @param array $ids
      * @param boolean $stuff
      */
-    public function compile_rich_pdf ( $ids, $stuff = false ) {
+    public function compile_rich_pdf ( $ids, $stuff = false, $user_id = 0 ) {
         global $smarty;
-        
+
         $data = $this->init_exported_data($ids);
 
         if(!empty($data)){
             $data = $this->adopt_model_to_pdfexport($data);
         }
-        
+
+        if ( $user_id != 0 ) {
+            require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/users/user_object_manager.php');
+            $user_object_manager = new User_Object_Manager();
+            $user_data = $user_object_manager->load_by_id($user_id);
+            $this->template->assign('user_data', $user_data);
+
+        }
+
         $tpl = '';
         $tplfile = 'pdf_memory_list_grid_client.tpl';
         if($stuff){
             $tplfile = 'pdf_memory_list_grid_stuff.tpl';
         }
-        
+
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/memorylist/site/template/' . $tplfile)) {
             $tpl = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/memorylist/site/template/' . $tplfile;
         } else {
@@ -318,7 +326,7 @@ class Memory_List extends Object_Manager {
         $this->template->assign('grid_items', $data);
 
         $html = $smarty->fetch($tpl);
-        
+
         $dompdfoptions = new \Dompdf\Options();
         $dompdfoptions->set('isRemoteEnabled', TRUE);
         $dompdf = new \Dompdf\Dompdf($dompdfoptions);
@@ -525,7 +533,7 @@ class Memory_List extends Object_Manager {
     }
 
     function grid($params = array(), $default_params = array()) {
-        
+
         $admin_zone_url = false;
         if(isset($params['admin_zone_url'])){
             $admin_zone_url = true;
@@ -534,7 +542,7 @@ class Memory_List extends Object_Manager {
         global $smarty;
 
         $user_filters = $this->getUserMemoryLists($this->this_user);
-        
+
         if(!empty($user_filters)){
             foreach($user_filters as $k => $v){
                 if($admin_zone_url){
@@ -548,10 +556,10 @@ class Memory_List extends Object_Manager {
                     $user_filters[$k]['_excel_link'] = SITEBILL_MAIN_URL.'/memorylist/?do=getexcel&filter_id='.$v['memorylist_id'];
                     $user_filters[$k]['_delete_link'] = SITEBILL_MAIN_URL.'/memorylist/?do=delete&filter_id='.$v['memorylist_id'];
                 }
-                
+
             }
         }
-        
+
         $smarty->assign('user_filters', $user_filters);
         if (1 == intval($this->getConfigValue('apps.pdfreport.enabled'))) {
             $smarty->assign('memorylist_pdf', 1);
@@ -583,11 +591,11 @@ class Memory_List extends Object_Manager {
         }
         return false;
     }
-    
+
     /**
      * Получаем memory_list_id по входным параметрам
      * Если такого листа еще нет, тогда метод попробует создать его и присвоит ему ИД
-     * 
+     *
      * @param type $domain
      * @param type $user_id
      * @param type $deal_id
@@ -615,7 +623,7 @@ class Memory_List extends Object_Manager {
         $memorylist_id = $this->create_domain_memory_list($domain, $user_id, $deal_id, $title);
         return $memorylist_id;
     }
-    
+
     public function create_domain_memory_list ( $domain, $user_id, $deal_id, $title ) {
         $DBC = DBC::getInstance();
         $query = 'INSERT INTO ' . DB_PREFIX . '_' . $this->memorylist_table . ' (user_id, title, created_at, domain, deal_id) VALUES (?, ?, ?, ?, ?)';
@@ -625,7 +633,7 @@ class Memory_List extends Object_Manager {
         }
         return false;
     }
-    
+
     public function toggle_item (  $memorylist_id, $data_id ) {
         $DBC = DBC::getInstance();
         $query = 'SELECT memorylist_id, id FROM ' . DB_PREFIX . '_' . $this->memorylist_item_table . ' WHERE memorylist_id=? and id=?';
@@ -643,18 +651,19 @@ class Memory_List extends Object_Manager {
         $this->add_item($memorylist_id, $data_id);
         return 'add';
     }
-    
+
     public function parse_memory_list ( $domain, $deal_id, $user_id, $primary_key, $rows ) {
         $user_memory_list = $this->getUserMemoryLists_indexed_by_data_id($user_id, $domain, $deal_id);
         foreach ($rows as $idx => $item) {
             if ( isset($user_memory_list[$rows[$idx][$primary_key]['value']]) ) {
                 $rows[$idx][$primary_key]['collections'] = $deal_id;
+                $rows[$idx][$primary_key]['memorylist_id'] = $user_memory_list[$rows[$idx][$primary_key]['value']]['items'][0]['memorylist_id'];
             }
             //$ra['index'][$item[$primary_key]['value']] = $idx;
         }
         return $rows;
     }
-    
+
     public function delete_item($memorylist_id, $data_id) {
         $DBC = DBC::getInstance();
         $query = 'DELETE FROM ' . DB_PREFIX . '_' . $this->memorylist_item_table . ' WHERE memorylist_id=? and id=?';
@@ -673,7 +682,7 @@ class Memory_List extends Object_Manager {
         }
         return true;
     }
-    
+
 
     public function appendItems($memorylist_id, $items) {
         $DBC = DBC::getInstance();
@@ -699,7 +708,7 @@ class Memory_List extends Object_Manager {
         }
         return true;
     }
-    
+
     function select_data_ids_by_memorylist_id ($user_id, $memorylist_id) {
         $DBC = DBC::getInstance();
         $ids = array();
@@ -720,7 +729,23 @@ class Memory_List extends Object_Manager {
         }
         return $ids;
     }
-    
+    public function getUserMemoryLists_indexed_by_data_id_using_memorylist_id($memorylist_id) {
+        $DBC = DBC::getInstance();
+        $query =
+            'SELECT * FROM ' . DB_PREFIX . '_' . $this->memorylist_item_table .
+            ' WHERE memorylist_id = ?';
+
+        $stmt = $DBC->query($query, array($memorylist_id));
+        if ($stmt) {
+            while ($ar = $DBC->fetch($stmt)) {
+                $mls[$ar['id']]['items'][] = $ar;
+            }
+        } else {
+            $this->writeLog($DBC->getLastError());
+        }
+        return $mls;
+    }
+
     public function getUserMemoryLists_indexed_by_data_id($user_id, $domain = false, $deal_id = false) {
         $DBC = DBC::getInstance();
         $mlids = array();
@@ -746,7 +771,7 @@ class Memory_List extends Object_Manager {
 
 
         $stmt = $DBC->query($query, $dbc_array);
-        
+
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
                 $mls_tmp[$ar['memorylist_id']] = $ar;
@@ -773,7 +798,7 @@ class Memory_List extends Object_Manager {
         }
         return $mls;
     }
-    
+
 
     public function getUserMemoryLists($user_id, $domain = false, $deal_id = false) {
         $DBC = DBC::getInstance();
@@ -799,7 +824,7 @@ class Memory_List extends Object_Manager {
 
 
         $stmt = $DBC->query($query, $dbc_array);
-        
+
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
                 $mls[$ar['memorylist_id']] = $ar;

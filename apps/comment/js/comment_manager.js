@@ -12,18 +12,18 @@ Comment_Manager={
 		});
 	},
 	submitComment : function(formElement){
-		
+
 		var form=$(formElement);
 		form.find('textarea[name=text]').focus(function(){
 			form.find('.errors').hide();
 		});
-		
+
 		var submit=form.find('#submit');
-		
+
 		var message=$('<div>').text('Идет отправка...');
 		message.insertAfter(submit);
 		submit.hide();
-		
+
 		var object_type=this.object_type;
 		var object_id=new Number($.trim(form.find('input[name=object_id]').val()));
 		var user_id=new Number($.trim(form.find('input[name=user_id]').val()));
@@ -33,7 +33,7 @@ Comment_Manager={
 			submit.show().next('div').remove();
 			return false;
 		}
-		
+
 		$.ajax({
 			url: estate_folder+'/apps/comment/js/ajax.php',
 			type: 'post',
@@ -42,7 +42,6 @@ Comment_Manager={
 			success: function(json){
 				if(json=='Ok'){
 					form.find('textarea[name=text]').val('');
-					alert('Ваш комментарий добавлен');
 					submit.show().next('div').remove();
 					$.ajax({
 						url: estate_folder+'/apps/comment/js/ajax.php',
@@ -61,7 +60,7 @@ Comment_Manager={
 		});
 	},
 	refreshCommentList : function(){
-		
+
 	}
 
 }

@@ -1,1 +1,0 @@
-{include file="$inc_file_tpl"}

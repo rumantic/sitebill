@@ -9,6 +9,16 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
 class API_model extends API_Common {
 
     private $record_id;
+    /**
+     * @var Data_Model
+     */
+    private $model_object;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->model_object = new Data_Model();
+    }
 
     public function _get_models() {
         $DBC = DBC::getInstance();
@@ -23,6 +33,25 @@ class API_model extends API_Common {
         return $this->json_string($models);
     }
 
+    public function _get_models_list() {
+        $DBC = DBC::getInstance();
+        $query = "SELECT * FROM " . DB_PREFIX . "_table ORDER BY name ASC, table_id DESC";
+        $stmt = $DBC->query($query);
+        if (!$stmt) {
+            return $this->request_failed('models list not defined');
+        }
+        while ($ar = $DBC->fetch($stmt)) {
+            $models[] = array(
+                'id' => $ar['table_id'],
+                'description' => $ar['description'],
+                'name' => $ar['name']
+            );
+        }
+        $response = new API_Response('success', 'models loaded', $models);
+        return $this->json_string($response->get());
+    }
+
+
     public function _load_config() {
         $SConfig = SConfig::getInstance();
         $data = $SConfig->getPublicConfig();
@@ -30,6 +59,10 @@ class API_model extends API_Common {
         $local_data = $this->_load_local_config_from_file();
         if ( $local_data ) {
             $data = array_merge($data, $local_data);
+        }
+        $languages = Multilanguage::availableLanguages();
+        if ( is_array($languages) and count($languages) > 0 ) {
+            $data['languages'] = $languages;
         }
 
         $ret = array(
@@ -92,10 +125,33 @@ class API_model extends API_Common {
     }
 
 
+    protected function slice_model($model_object, $model_name, $primary_key, $model_data, $ql_items) {
+        foreach ($ql_items as $key => $value) {
+            if ( $key != $primary_key) {
+                $new_model[$model_name][$key] = $model_object->data_model[$model_name][$key];
+            }
+        }
+        $new_model[$model_name][$primary_key] = $model_object->data_model[$model_name][$primary_key];
+        $model_object->data_model = $new_model;
+        if ( !empty($model_data) ) {
+            foreach ($model_data as $key => $item) {
+                if (!isset($new_model[$model_name][$key]) and $key != $primary_key) {
+                    unset($model_data[$key]);
+                }
+            }
+        }
+        return array(
+            'model_object' => $model_object,
+            'model_data' => $model_data
+        );
+    }
+
     public function _load_data( $custom_model_object = null ) {
         $model_name = $this->request->get('model_name');
         $primary_key = $this->request->get('primary_key');
         $key_value = $this->request->get('key_value');
+        $entity_uri = $this->request->get('entity_uri');
+        $ql_items = $this->request->get('ql_items');
         if ( $custom_model_object != null ) {
             $model_object = $custom_model_object;
         } else {
@@ -112,7 +168,20 @@ class API_model extends API_Common {
 
 
         if ($model_object) {
+            if ( !empty($entity_uri) ) {
+                if ( $model_object->table_name == 'lang_words' ) {
+                    $key_value = $model_object->get_id_by_filter('word_key', $entity_uri, array('lang_key' => 'ru'));
+                } else {
+                    $key_value = $model_object->get_id_by_filter('uri', $entity_uri);
+                }
+                $primary_key = $model_object->primary_key;
+            }
             $data_array = $model_object->load_by_id($key_value);
+            if ( !empty($ql_items) ) {
+                $sliced_result = $this->slice_model($model_object, $model_name, $primary_key, $data_array, $ql_items);
+                $data_array = $sliced_result['model_data'];
+                $model_object = $sliced_result['model_object'];
+            }
             if ( $key_value == null and $model_name == 'data' and isset($data_array['user_id']) ) {
                 $data_array['user_id']['value'] = $user_id;
             }
@@ -121,6 +190,8 @@ class API_model extends API_Common {
             $ret = array(
                 'state' => 'success',
                 $primary_key => $key_value,
+                'primary_key' => $primary_key,
+                'table_name' => $model_object->table_name,
                 'data' => $data_array,
                 'tabs' => $tabs
             );
@@ -221,11 +292,13 @@ class API_model extends API_Common {
             $ar = $DBC->fetch($stmt);
             $used_fields = json_decode($ar['grid_fields']);
             $meta_fields = (array) json_decode($ar['meta']);
-            if (count($used_fields) > 0) {
+            if (is_array($used_fields) and count($used_fields) > 0) {
                 $ra['grid_fields'] = $used_fields;
-                $ra['meta'] = $meta_fields;
-                return $ra;
             }
+            if (is_array($meta_fields) and count($meta_fields) > 0) {
+                $ra['meta'] = $meta_fields;
+            }
+            return $ra;
         }
         return false;
     }
@@ -266,10 +339,24 @@ class API_model extends API_Common {
 
 
             $model_object = $this->init_custom_model_object($model_name);
-            if ($model_object->delete_data($model_name, $primary_key, $key_value)) {
-                $response = new API_Response('success', 'delete complete');
+            if ( is_array($key_value) and count($key_value) > 0 ) {
+                $errors = false;
+                foreach ( $key_value as $item_id ) {
+                    if (!$model_object->delete_data($model_name, $primary_key, $item_id)) {
+                        $errors[] = $model_object->GetErrorMessage();
+                    }
+                }
+                if ( $errors ) {
+                    $response = new API_Response('error', implode($errors));
+                } else {
+                    $response = new API_Response('success', 'delete complete');
+                }
             } else {
-                $response = new API_Response('error', $model_object->GetErrorMessage());
+                if ($model_object->delete_data($model_name, $primary_key, $key_value)) {
+                    $response = new API_Response('success', 'delete complete');
+                } else {
+                    $response = new API_Response('error', $model_object->GetErrorMessage());
+                }
             }
         } else {
             $response = new API_Response('error', _e('Доступ запрещен'));
@@ -333,6 +420,31 @@ class API_model extends API_Common {
         }
         return $this->json_string($response->get());
     }
+
+    public function _change_data_id() {
+        $user_id = $this->get_my_user_id();
+
+        $data_id = $this->request->get('id');
+
+        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
+        $permission = new Permission();
+        //внутри get_access еще надо реализовать проверку доступа к записям из data
+        //сейчас проверка опционально проверяет только группу и разрешает админам удалять
+        if ($permission->get_access($user_id, 'data', 'access')) {
+            require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/data/data_manager.php');
+            $data_manager = new Data_Manager();
+            $AUTO_INCREMENT = $data_manager->change_data_id($data_id);
+            if ($AUTO_INCREMENT) {
+                $response = new API_Response('success', $data_id.' -> '.$AUTO_INCREMENT);
+            } else {
+                $response = new API_Response('error', $data_manager->GetErrorMessage());
+            }
+        } else {
+            $response = new API_Response('error', 'error on change data id');
+        }
+        return $this->json_string($response->get());
+    }
+
 
     public function _unpublish_data() {
         $user_id = $this->get_my_user_id();
@@ -486,8 +598,17 @@ class API_model extends API_Common {
         $model_object = $this->init_custom_model_object($model_name);
 
         $dictionary_array = $model_tags->get_array($model_name, $columnName, 'array', $model_object->data_model[$model_name]);
-        if ( $this->getConfigValue('system_email') == 'info@sklyuchami.com' and (isset($params['region_id']) or isset($params['topic_id'])) ) {
+        if (
+            $this->getConfigValue('system_email') == 'info@sklyuchami.com' and
+            (
+                isset($params['region_id']) or
+                isset($params['user_id']) or
+                isset($params['topic_id'])
+            )
+        ) {
             $dictionary_array = $this->cleanup_array($model_object, $columnName, $dictionary_array, $params, $model_tags);
+        } elseif ( function_exists('load_dictionary_with_params_cleanup_array_hook') ) {
+            $dictionary_array = load_dictionary_with_params_cleanup_array_hook($model_object, $columnName, $dictionary_array, $params, $model_tags);
         }
         //$this->writeArrayLog($dictionary_array);
 
@@ -640,7 +761,12 @@ class API_model extends API_Common {
         return $ra;
     }
 
-    public function update_native_request_params($ql_items, $model_object = false) {
+    public function update_native_request_params(
+        $ql_items,
+        $model_object = false,
+        $force_parse_select_by_query = false,
+        $force_add_select_by_query_value = false
+    ) {
         foreach ($ql_items as $key => $value) {
             if ( $model_object ) {
                 if ( $model_object->data_model[$model_object->table_name][$key]['type'] == 'checkbox' ) {
@@ -648,6 +774,35 @@ class API_model extends API_Common {
                         $value = NULL;
                     }
                 }
+
+                if ( $model_object->data_model[$model_object->table_name][$key]['type'] == 'select_by_query' and $force_parse_select_by_query ) {
+                    $value_id = $this->model_object->get_value_id_by_name(
+                        $model_object->data_model[$model_object->table_name][$key]['primary_key_table'],
+                        $model_object->data_model[$model_object->table_name][$key]['value_name'],
+                        $model_object->data_model[$model_object->table_name][$key]['primary_key_name'],
+                        $value
+                    );
+
+                    if ( $value_id != '' ) {
+                        $value = $value_id;
+                    } elseif ( $force_add_select_by_query_value ) {
+                        $this->model_object->add_new_record(
+                            $model_object->data_model[$model_object->table_name][$key]['primary_key_table'],
+                            $model_object->data_model[$model_object->table_name][$key]['value_name'],
+                            $model_object->data_model[$model_object->table_name][$key]['primary_key_name'],
+                            $value
+                        );
+
+                        //После добавления записи снова обращаемся в базу за новым ID
+                        $value = $this->model_object->get_value_id_by_name(
+                            $model_object->data_model[$model_object->table_name][$key]['primary_key_table'],
+                            $model_object->data_model[$model_object->table_name][$key]['value_name'],
+                            $model_object->data_model[$model_object->table_name][$key]['primary_key_name'],
+                            $value
+                        );
+                    }
+                }
+
             }
             $_REQUEST[$key] = $value;
             $_POST[$key] = $value;
@@ -659,6 +814,7 @@ class API_model extends API_Common {
         $model_name = $this->request->get('model_name');
         $key_value = $this->request->get('key_value');
         $ql_items = $this->request->get('ql_items');
+        $only_ql = $this->request->get('only_ql');
         $user_id = $this->get_my_user_id();
         //$this->writeArrayLog($ql_items);
 
@@ -669,16 +825,20 @@ class API_model extends API_Common {
         $permission = new Permission();
         // @todo: Экспериментальная проверка на edit
         if ($permission->get_access($user_id, $model_name, 'edit')) {
-            if ( $ql_items['user_id'] != $user_id ) {
-                $response = new API_Response('error', _e('Доступ запрещен'));
+            if ( $ql_items['user_id'] != $user_id and !$permission->is_admin($user_id)) {
+                $response = new API_Response('error', _e('Доступ запрещен. edit.reason'));
                 return $this->json_string($response->get());
             }
         } elseif (!$permission->get_access($user_id, $model_name, 'access')) {
-            $response = new API_Response('error', _e('Доступ запрещен'));
+            $response = new API_Response('error', _e('Доступ запрещен. access.reason'));
             return $this->json_string($response->get());
         }
 
         $model_object = $this->init_custom_model_object($model_name);
+        if ( $only_ql ) {
+            $sliced_result = $this->slice_model($model_object, $model_name, $model_object->primary_key, null, $ql_items);
+            $model_object = $sliced_result['model_object'];
+        }
         if (count($ql_items) > 0) {
             $this->update_native_request_params($ql_items, $model_object);
         }
@@ -694,13 +854,7 @@ class API_model extends API_Common {
         }
         return $this->json_string($response->get());
     }
-
-    public function _native_insert() {
-        $model_name = $this->request->get('model_name');
-        $key_value = $this->request->get('key_value');
-        $ql_items = $this->request->get('ql_items');
-        $user_id = $this->get_my_user_id();
-
+    public function _native_insert_with_params($model_name, $key_value, $ql_items, $only_ql, $user_id) {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
 
@@ -712,6 +866,11 @@ class API_model extends API_Common {
         }
 
         $model_object = $this->init_custom_model_object($model_name);
+        if ( $only_ql ) {
+            $sliced_result = $this->slice_model($model_object, $model_name, $model_object->primary_key, null, $ql_items);
+            $model_object = $sliced_result['model_object'];
+        }
+
         if (count($ql_items) > 0) {
             $this->update_native_request_params($ql_items, $model_object);
         }
@@ -727,6 +886,15 @@ class API_model extends API_Common {
             $response = new API_Response('success', 'new native complete', array('new_record_id' => $new_record_id, 'items' => $data));
         }
         return $this->json_string($response->get());
+    }
+
+    public function _native_insert() {
+        $model_name = $this->request->get('model_name');
+        $key_value = $this->request->get('key_value');
+        $ql_items = $this->request->get('ql_items');
+        $only_ql = $this->request->get('only_ql');
+        $user_id = $this->get_my_user_id();
+        return $this->_native_insert_with_params($model_name, $key_value, $ql_items, $only_ql, $user_id);
     }
 
     /**
@@ -1026,15 +1194,21 @@ class API_model extends API_Common {
     }
 
     public function _update_column_meta() {
-        $model_name = $this->request->get('model_name');
-        $column_name = $this->request->get('column_name');
-        $key = $this->request->get('key');
-        $params = $this->request->get('params');
+        $model_name = $this->request()->get('model_name');
+        $column_name = $this->request()->get('column_name');
+        $key = $this->request()->get('key');
+        $params = $this->request()->get('params');
         $user_id = $this->get_my_user_id();
 
         $action = $this->get_grid_action_code($model_name, $user_id);
         $current_meta = $this->load_meta($model_name, $user_id);
-        //$this->writeLog('$current_meta');
+        //$this->writeLog('_update_column_meta');
+        //$this->writeLog($params);
+        //$this->writeArrayLog($this->request()->all());
+        //$this->writeArrayLog($this->request()->get('model_name'));
+        //$this->writeArrayLog($this->request()->get('params'));
+        //$this->writeLog($this->request()->get('params'));
+        //$this->writeLog('end request debug');
         //$this->writeArrayLog($current_meta);
         //$response = new API_Response('success', 'true', $current_meta);
         //return $this->json_string($response->get());
@@ -1042,17 +1216,27 @@ class API_model extends API_Common {
 
 
         $DBC = DBC::getInstance();
-        if (count($params) > 0) {
+        $need_update = false;
+        if (is_array($params) and count($params) > 0) {
             if ($column_name != '') {
                 $current_meta[$key][$column_name] = $params;
             } else {
                 $current_meta[$key] = $params;
             }
+            $need_update = true;
+        } elseif ( $key == 'per_page' ) {
+            $current_meta[$key] = $params;
+            $need_update = true;
+        }
+        if ( $need_update ) {
             $query = 'INSERT INTO ' . DB_PREFIX . '_table_grids (`action_code`, `meta`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `meta`=?';
             $stmt = $DBC->query($query, array($action, json_encode($current_meta), json_encode($current_meta)));
-        }
-        if (!$stmt) {
-            return $this->request_failed('update format_grid meta failed: ' . $DBC->getLastError());
+
+            if (!$stmt) {
+                return $this->request_failed('update format_grid meta failed: ' . $DBC->getLastError());
+            }
+        } else {
+            return $this->request_failed('update format_grid meta failed: nothing for update');
         }
         $response = new API_Response('success', 'true');
         return $this->json_string($response->get());
@@ -1094,6 +1278,7 @@ class API_model extends API_Common {
                 $only_collections = true;
                 //unset($input_params['only_collections']);
             }
+
             $this->writeLog($collections_deal_id);
             $this->writeLog($only_collections);
             unset($input_params['load_collections']);
@@ -1221,6 +1406,11 @@ class API_model extends API_Common {
 
             //$this->writeLog('<h1>params</h1>');
             //$this->writeArrayLog($params);
+            if ( $model_name == 'data' ) {
+                $this->setRequestValue('_sortby', 'date_added');
+            }
+            //Отключим кэш, чтобы выбрать свежие записи
+            $this->setConfigValue('query_cache_enable', false);
             $rows = $customentity_admin->grid_array($params, $default_params);
             if ($customentity_admin->getError()) {
                 $response = new API_Response('error', $customentity_admin->GetErrorMessage());
@@ -1267,6 +1457,11 @@ class API_model extends API_Common {
         $collections_domain = null,
         $collections_deal_id = null
     ) {
+
+        if ( isset($input_params['memorylist_id']) ) {
+            $memorylist_id = $input_params['memorylist_id'];
+            unset($input_params['memorylist_id']);
+        }
 
         if ( isset($input_params['load_collections']) ) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/memory_list.php';
@@ -1346,8 +1541,11 @@ class API_model extends API_Common {
                     $params['grid_conditions_sql'][$key] = "( `".DB_PREFIX."_{$model_name}`.`$key` >= " . strtotime($value['startDate']) . " and `".DB_PREFIX."_{$model_name}`.`$key` <= " . strtotime($value['endDate']) . ") ";
                 }
             } elseif ($key == 'only_collections') {
-                $collections_ids = $ML->getUserMemoryLists_indexed_by_data_id($user_id, $collections_domain, $collections_deal_id);
-                $this->writeArrayLog($collections_ids);
+                if ( $memorylist_id ) {
+                    $collections_ids = $ML->getUserMemoryLists_indexed_by_data_id_using_memorylist_id($memorylist_id);
+                } else {
+                    $collections_ids = $ML->getUserMemoryLists_indexed_by_data_id($user_id, $collections_domain, $collections_deal_id);
+                }
                 if (is_array($collections_ids) and count($collections_ids) > 0 ) {
                     $params['grid_conditions_sql']['collections_ids'] = "`".DB_PREFIX."_{$model_name}`.`".$customentity_admin->primary_key."` in (". implode(',', array_keys($collections_ids)).") ";
                 } else {
@@ -1388,16 +1586,31 @@ class API_model extends API_Common {
         foreach ($data_model as $key => $item) {
             if ( $item['dbtype'] != 'notable' ) {
                 if (in_array($item['type'], array('select_by_query'))) {
-                    $left_joins['tables'][] = ' LEFT JOIN `'.DB_PREFIX.'_'.$item['primary_key_table'].'` on (`'.DB_PREFIX.'_'.$item['primary_key_table'].'`.`'.$item['primary_key_name'].'`=`' .DB_PREFIX.'_'. $model_name . '`.`'.$item['name'].'`) ';
-                    $left_joins['where'][] = ' ( `'.DB_PREFIX.'_'.$item['primary_key_table'].'`.`'.$item['value_name'].'` like \'%'.$value.'%\' ) ';
+                    //@todo: тут пока жесткая подстройка под navigatortrub, там где несколько свойств хранятся в одной таблице
+                    // Если вдруг понадобится еще где-то, придется править это условие
+                    if ( $item['primary_key_table'] == 'attribute_values' ) {
+                        $left_join_table_multi_storage = $item['primary_key_table'];
+                        $left_join_or_coditions_multi_storage[] = '`'.DB_PREFIX.'_'.$item['primary_key_table'].'`.`'.$item['primary_key_name'].'`=`' .DB_PREFIX.'_'. $model_name . '`.`'.$item['name'].'`';
+                        $where_multi_storage = ' ( `'.DB_PREFIX.'_'.$item['primary_key_table'].'`.`'.$item['value_name'].'` like \'%'.$value.'%\' ) ';
+
+                    } else {
+                        $left_joins['tables'][] = ' LEFT JOIN `'.DB_PREFIX.'_'.$item['primary_key_table'].'` on (`'.DB_PREFIX.'_'.$item['primary_key_table'].'`.`'.$item['primary_key_name'].'`=`' .DB_PREFIX.'_'. $model_name . '`.`'.$item['name'].'`) ';
+                        $left_joins['where'][] = ' ( `'.DB_PREFIX.'_'.$item['primary_key_table'].'`.`'.$item['value_name'].'` like \'%'.$value.'%\' ) ';
+                    }
                 } elseif ($item['type'] == 'select_box_structure') {
                     $left_joins['tables'][] = ' LEFT JOIN `'.DB_PREFIX.'_topic` on (`'.DB_PREFIX.'_topic`.`id`=`' .DB_PREFIX.'_'. $model_name . '`.`topic_id`) ';
                     $left_joins['where'][] = ' ( `'.DB_PREFIX.'_topic`.`name` like \'%'.$value.'%\' ) ';
                 }
             }
         }
+        if ( !empty($left_join_table_multi_storage) ) {
+            $left_joins['tables'][] = ' LEFT JOIN `'.DB_PREFIX.'_'.$left_join_table_multi_storage.
+                '` on ('.join(' OR ', $left_join_or_coditions_multi_storage).') ';
+            $left_joins['where'][] = $where_multi_storage;
+        }
         return $left_joins;
     }
+
 
 
     private function get_grid_action_code($model_name, $user_id) {
@@ -1465,7 +1678,7 @@ class API_model extends API_Common {
         $query = false;
         //$this->writeArrayLog($compose_columns);
         //$this->writeArrayLog($input_params);
-        $condition_glue = ' OR ';
+        $condition_glue = ' AND ';
         if ( is_array($compose_columns) and count($compose_columns) > 0 ) {
             foreach ( $compose_columns as $item ) {
                 //$this->writeLog($item);
@@ -1475,7 +1688,10 @@ class API_model extends API_Common {
                     $condition_glue = ' AND ';
 
                 } elseif ( isset($input_params[$item]) and is_array($input_params[$item]) and count($input_params[$item]) > 0 ) {
-                    $query_part[] = "`".DB_PREFIX."_{$table_name}`.`$item` in (".implode(',', $input_params[$item]).")";
+                    if ( $item == 'number' ) {
+                        $condition_glue = ' AND ';
+                    }
+                    $query_part[] = "`".DB_PREFIX."_{$table_name}`.`$item` in ("."'".implode("','", $input_params[$item])."')";
                 }
             }
 

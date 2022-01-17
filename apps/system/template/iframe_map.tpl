@@ -86,7 +86,7 @@ var options={scrollZoom: {/literal}{if $scroll_zoom}true{else}false{/if}{literal
             </div>
         </div>
     </div>
-    <div id="ActiveMap" class="" data-center-lat="55.753215" data-center-lng="37.622504" data-zoom="14"></div>
+    <div id="ActiveMap" class="" data-center-lat="{$map_center[0]}" data-center-lng="{$map_center[1]}" data-zoom="{$map_zoom}"></div>
     <canvas id="ActiveMapCanvas" class="" style="position: absolute; left: 0; top: 0; display: none;"></canvas>
     
 </div>
@@ -256,42 +256,8 @@ var options={scrollZoom: {/literal}{if $scroll_zoom}true{else}false{/if}{literal
 {elseif $map_type=='leaflet_osm'}
     <script>
     $(document).ready(function(){
-        ActiveMap.init('ActiveMapContainer', 'leaflet_osm'); 
+        ActiveMap.init('ActiveMapContainer', 'leaflet_osm');
     });
     </script>
-{/if}
-
-{if 1==0}
-    <script type="text/javascript" src="{$estate_folder}/apps/system/js/realtymap.js"></script>
-    {if isset($custom_center)}
-    <script>
-    options.custom_center = [{$custom_center}];
-    options.adopt_bounds = false;
-    </script>
-    {/if}
-    {if isset($defaultZoom)}
-    <script>
-    options.defaultZoom = Number({$defaultZoom});
-    </script>
-    {/if}
-    {if isset($smarty.get.clusterGridSize)}
-    <script>
-    options.gridSize = Number({$smarty.get.clusterGridSize});
-    </script>
-    {/if}
-    {literal}
-    <script type="text/javascript">
-    $(document).ready(function(){
-        var RM=new RealtyMap('2.1');
-        RM.initJSON('YMapsID', loc_objects, map_type, options);
-    });
-    </script>
-    {/literal}
-    </head>
-    <body style="margin:0;">
-    <div class="bigmap">
-    <div id="YMapsID" style="width: {$map_w}; height: {$map_h}"></div>
-    </div>
-    </body>
 {/if}
 </html>

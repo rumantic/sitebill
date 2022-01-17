@@ -13,11 +13,14 @@ class API_memorylist extends API_Common {
         $deal_id = $this->request->get('deal_id');
         $title = $this->request->get('title');
         $data_id = $this->request->get('data_id');
+        $memorylist_id = $this->request->get('memorylist_id');
         $user_id = $this->get_my_user_id();
-        
+
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/memory_list.php';
         $ML = new Memory_List();
-        $memorylist_id = $ML->get_domain_memory_list_id($domain, $user_id, $deal_id, $title);
+        if ( $memorylist_id == 0 or $memorylist_id == '' ) {
+            $memorylist_id = $ML->get_domain_memory_list_id($domain, $user_id, $deal_id, $title);
+        }
         if ( $memorylist_id ) {
             $operation = $ML->toggle_item($memorylist_id, $data_id);
         }

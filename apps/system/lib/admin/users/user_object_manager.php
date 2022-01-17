@@ -495,7 +495,7 @@ class User_Object_Manager extends Object_Manager {
     }
 
 
-    protected function deleteUserpic($user_id) {
+    public function deleteUserpic($user_id) {
         $DBC = DBC::getInstance();
         $query = 'SELECT imgfile FROM ' . DB_PREFIX . '_user WHERE user_id=?';
         $stmt = $DBC->query($query, array($user_id));
@@ -509,6 +509,11 @@ class User_Object_Manager extends Object_Manager {
 
             $query = 'UPDATE ' . DB_PREFIX . '_user SET imgfile=\'\' WHERE user_id=?';
             $stmt = $DBC->query($query, array($user_id));
+            if ( !$stmt ) {
+                $this->riseError($DBC->getLastError());
+            }
+        } else {
+            $this->riseError($DBC->getLastError());
         }
     }
 
@@ -550,6 +555,11 @@ class User_Object_Manager extends Object_Manager {
         }
 
         $new_record_id = $DBC->lastInsertId();
+
+        if ($_SESSION['new_avatar_img'] != '') {
+            $this->update_user_pic($new_record_id, $_SESSION['new_avatar_img']);
+            $_SESSION['new_avatar_img'] = '';
+        }
 
         if (strlen($form_data['imgfile']['value']) > 0) {
             //$this->user_image_dir = $form_data['imgfile']['path'];
@@ -787,6 +797,15 @@ class User_Object_Manager extends Object_Manager {
                     }
                 }
             }
+        }
+    }
+
+    function update_user_pic ($user_id, $avatar) {
+        $query = 'UPDATE ' . DB_PREFIX . '_user SET imgfile=? WHERE user_id=?';
+        $DBC = DBC::getInstance();
+        $stmt = $DBC->query($query, array($avatar, $user_id));
+        if ( !$stmt ) {
+            $this->riseError($DBC->getLastError());
         }
     }
 
@@ -1246,6 +1265,11 @@ class User_Object_Manager extends Object_Manager {
      * @return string
      */
     function getTopMenu() {
+        $do = $this->getRequestValue('do');
+        if(in_array($do, array('new', 'edit', 'new_done', 'edit_done'))){
+            $this->enable_vue();
+        }
+
         $rs = '';
         $rs .= '<a href="?action=' . $this->action . '&do=new" class="btn btn-primary">' . Multilanguage::_('ADD_USER', 'system') . '</a>';
 

@@ -50,6 +50,25 @@ class Config_Form_Generator extends Form_Generator {
 	return $string;
     }
 
+    function get_langselect($item_array){
+        $langs = Multilanguage::availableLanguages();
+        $string = '';
+        $string .= '<div class="control-group">';
+        $string .= '<label class="control-label">' . $item_array['title'] . (isset($item_array['required']) && $item_array['required'] == "on" ? '<span style=\"color: red;\">*</span>' : '') . ($item_array['hint'] != '' ? ' <span class="help-block">(' . $item_array['hint'] . ')</span>' : '') . '</label>';
+        $string .= '<input type="hidden" name="conf_param_value[' . $item_array['name'] . ']" value=""  />';
+        $string .= '<div class="controls">';
+        if (!empty($langs)) {
+            foreach ($langs as $lang) {
+                $string .= '<div><input type="checkbox" name="conf_param_value[' . $item_array['name'] . '][]" value="'.$lang.'"'.(in_array($lang, $item_array['value']) ? ' checked="checked"' : '').'></div>'.$lang.'';
+            }
+        }
+        $string .= '</div>';
+        $string .= '<input type="hidden" class="sort_order" value="' . $item_array['name'] . '"  />';
+        $string .= '</div>';
+
+        return $string;
+    }
+
     function get_select_box($item_array) {
 	/* $rs = '<select name="conf_param_value['.$item_array['name'].']">';
 	  if ( !empty($item_array['select_data']) ) {

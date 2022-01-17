@@ -16,6 +16,7 @@ if (!defined('ERROR')) {
 }
 
 class logger_admin extends Object_Manager {
+    private static $first_run = true;
 
     /**
      * Constructor
@@ -187,6 +188,9 @@ class logger_admin extends Object_Manager {
     }
 
     public function clean_log() {
+        if ( !self::$first_run ) {
+            return;
+        }
         $max_limit_id = 0;
         $DBC = DBC::getInstance();
         $query = 'SELECT MAX(logger_id) as max_id FROM ' . DB_PREFIX . '_logger';
@@ -200,6 +204,7 @@ class logger_admin extends Object_Manager {
             $query = 'DELETE FROM ' . DB_PREFIX . '_logger WHERE logger_id < ?';
             $stmt = $DBC->query($query, array($max_limit_id));
         }
+        self::$first_run = false;
     }
 
     /**
@@ -217,8 +222,23 @@ class logger_admin extends Object_Manager {
         }
 
         $user_id = intval($_SESSION['user_id']);
+        $logger = new \logger\model\Logger();
+        $logger->apps_name = (isset($message_array['apps_name'])) ? $message_array['apps_name'] : '';
+        $logger->method = (isset($message_array['method'])) ? $message_array['method'] : '';
+        //Обрезаем слишком длинные тексты
+        if ( is_string($message_array['message']) ) {
+            $logger->message = substr($message_array['message'], 0, 30000);
+        } else {
+            $logger->message = substr(serialize($message_array['message']), 0, 30000);
+        }
+        $logger->type = intval($message_array['type']);
+        $logger->ipaddr = (isset($ip)) ? $ip : '';
+        $logger->user_id = intval($user_id);
+        $logger->save();
+        /*
         $query = 'INSERT INTO ' . DB_PREFIX . '_logger (`apps_name`, `method`, `message`, `type`, `ipaddr`, `user_id`) VALUES (?, ?, ?, ?, ?, ?)';
         $stmt = $DBC->query($query, array($message_array['apps_name'], $message_array['method'], $message_array['message'], $message_array['type'], $ip, $user_id));
+        */
     }
 
 }

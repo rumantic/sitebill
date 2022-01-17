@@ -1,1 +1,0 @@
-<tr><td><b>{$wg_item.title}</b></td><td>{if is_array($wg_item.value)}{$wg_item.value|implode:','}{else}{$wg_item.value}{/if}</td></tr>

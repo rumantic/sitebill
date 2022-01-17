@@ -7,6 +7,7 @@ use system\lib\system\form\Form_Injector;
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
 class Form_Generator extends SiteBill {
+    use \system\lib\system\apps\traits\ContextTrait;
 
     protected $form_id = null;
     protected $use_placeholders = false;
@@ -132,11 +133,11 @@ class Form_Generator extends SiteBill {
                 $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/md5.js';
             } elseif ($item_array['type'] == 'docuploads') {
                 $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.js';
-                $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=1';
+                $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=2';
                 $styles[] = SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css?v=1';
             } elseif ($item_array['type'] == 'uploads') {
                 $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.js';
-                $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=1';
+                $scripts[] = SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=2';
                 $styles[] = SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css?v=1';
             } elseif ($item_array['type'] == 'tlocation') {
                 $styles[] = SITEBILL_MAIN_URL . '/apps/system/js/bootstrap/css/bootstrap-combobox.css';
@@ -213,7 +214,8 @@ class Form_Generator extends SiteBill {
     }
 
     function compile_textarea_editor_element($item_array) {
-      global $smarty;
+        $parameters = $item_array['parameters'];
+        global $smarty;
         $tpl=$this->get_field_tpl($item_array['type'],$item_array['table_name'],$item_array['name']);
 
         $id = $item_array['name'] . '_' . md5(time() . '_' . rand(10, 99));
@@ -223,6 +225,8 @@ class Form_Generator extends SiteBill {
             } else {
                 $editor_code = $this->getConfigValue('editor');
             }
+        } elseif (isset($parameters['editor']) AND ( $parameters['editor'] !== '')) {
+            $editor_code = $parameters['editor'];
         } else {
             $editor_code = $this->getConfigValue('editor');
         }
@@ -236,16 +240,14 @@ class Form_Generator extends SiteBill {
         }
 
         if($tpl){
-          $smarty->assign('id',$id);
-          $smarty->assign('editor_code',$editor_code);
-          $smarty->assign('classes',$this->classes);
-          $smarty->assign('item_array',$item_array);
-          $smarty->assign('theme',$this->getConfigValue('theme'));
-          $smarty->assign('NO_DYNAMIC_INCS',defined('NO_DYNAMIC_INCS') ? NO_DYNAMIC_INCS : false);
-          $rs=$smarty->fetch($tpl);
+            $smarty->assign('id',$id);
+            $smarty->assign('editor_code',$editor_code);
+            $smarty->assign('classes',$this->classes);
+            $smarty->assign('item_array',$item_array);
+            $smarty->assign('theme',$this->getConfigValue('theme'));
+            $smarty->assign('NO_DYNAMIC_INCS',defined('NO_DYNAMIC_INCS') ? NO_DYNAMIC_INCS : false);
+            $rs=$smarty->fetch($tpl);
         }else{
-          $parameters = $item_array['parameters'];
-          //sleep(1);
           $rs = '';
           if ($editor_code == 'ckeditor') {
               if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
@@ -256,12 +258,12 @@ class Form_Generator extends SiteBill {
               $rs .= '<script type="text/javascript">
                   $(document).ready(function() {
                       $("textarea#' . $id . '").ckeditor({
-          filebrowserBrowseUrl : \'/ckfinder/ckfinder.html\',
-          filebrowserImageBrowseUrl : \'/ckfinder/ckfinder.html?Type=Images\',
-          filebrowserFlashBrowseUrl : \'/ckfinder/ckfinder.html?Type=Flash\',
-          filebrowserUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files\',
-          filebrowserImageUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images\',
-          filebrowserFlashUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Flash\'
+                          filebrowserBrowseUrl : \'/ckfinder/ckfinder.html\',
+                          filebrowserImageBrowseUrl : \'/ckfinder/ckfinder.html?Type=Images\',
+                          filebrowserFlashBrowseUrl : \'/ckfinder/ckfinder.html?Type=Flash\',
+                          filebrowserUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files\',
+                          filebrowserImageUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Images\',
+                          filebrowserFlashUploadUrl : \'/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Flash\'
                       });
                   });
               </script>';
@@ -276,6 +278,47 @@ class Form_Generator extends SiteBill {
                       $("textarea#' . $id . '").wysibb({
                       buttons: "bold,italic,underline,|,img,link,|,code,quote"
                       });
+                  });
+              </script>';
+          } elseif($editor_code == 'codemirror') {
+                $rs .= '<link rel="stylesheet" href="' . SITEBILL_MAIN_URL . '/apps/third/codemirror/lib/codemirror.css">';
+                $rs .= '<link rel="stylesheet" href="' . SITEBILL_MAIN_URL . '/apps/third/codemirror/addon/fold/foldgutter.css" />';
+                $rs .= '<link rel="stylesheet" href="' . SITEBILL_MAIN_URL . '/apps/third/codemirror/addon/display/fullscreen.css">';
+
+                $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/third/codemirror/lib/codemirror.js"></script>';
+                $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/third/codemirror/addon/fold/foldcode.js"></script>';
+                $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/third/codemirror/addon/fold/foldgutter.js"></script>';
+                $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/third/codemirror/addon/fold/brace-fold.js"></script>';
+                $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/third/codemirror/addon/fold/xml-fold.js"></script>';
+                $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/third/codemirror/addon/fold/comment-fold.js"></script>';
+
+                $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/third/codemirror/mode/xml/xml.js"></script>';
+                $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/third/codemirror/mode/css/css.js"></script>';
+                $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/third/codemirror/mode/javascript/javascript.js"></script>';
+                $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/third/codemirror/mode/htmlmixed/htmlmixed.js"></script>';
+                $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/third/codemirror/addon/display/fullscreen.js"></script>';
+
+              $rs .= '<script type="text/javascript">
+                  $(document).ready(function() {
+                      
+                      CodeMirror.fromTextArea(document.getElementById("' . $id . '"),{
+                        mode: "htmlmixed",
+                        lineNumbers: true,
+                        viewportMargin: Infinity,
+                        lineWrapping: true,
+                        foldGutter: true,
+                        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+                        extraKeys: {
+                            "F11": function(cm) {
+                                cm.setOption("fullScreen", !cm.getOption("fullScreen"));
+                            },
+                            "Esc": function(cm) {
+                                if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
+                            }
+                        }
+                    });
+                      
+                     
                   });
               </script>';
           } else {
@@ -294,7 +337,7 @@ class Form_Generator extends SiteBill {
 
 
 
-          $rs .= '<textarea id="' . $id . '" class="input" name="' . $item_array['name'] . '" rows="' . $item_array['rows'] . '" cols="' . $item_array['cols'] . '">' . $item_array['value'] . '</textarea>';
+          $rs .= '<textarea id="' . $id . '" class="input editor_'.$editor_code.'" name="' . $item_array['name'] . '" rows="' . $item_array['rows'] . '" cols="' . $item_array['cols'] . '">' . $item_array['value'] . '</textarea>';
         }
         return array(
             'title' => $item_array['title'],
@@ -467,82 +510,102 @@ class Form_Generator extends SiteBill {
         );
     }
 
+    function compile_youtube_element($item_array) {
+        global $smarty;
+        $tpl = $this->get_field_tpl($item_array['type'], $item_array['table_name'], $item_array['name']);
+        $html='';
+        if($tpl){
+            $smarty->assign('id',$this->form_id . '_' . $item_array['name']);
+            $smarty->assign('classes',$this->classes);
+            $smarty->assign('item_array',$item_array);
+            $smarty->assign('theme',$this->getConfigValue('theme'));
+            $smarty->assign('NO_DYNAMIC_INCS',defined('NO_DYNAMIC_INCS') ? NO_DYNAMIC_INCS : false);
+            $html=$smarty->fetch($tpl);
+        }else{
+
+            $value = htmlspecialchars($item_array['value'], ENT_QUOTES, SITE_ENCODING);
+            $params = array();
+            if (isset($item_array['parameters'])) {
+                $params = $item_array['parameters'];
+            }
+            $html = '<input id="' . $this->form_id . '_' . $item_array['name'] . '" placeholder="' . $item_array['title'] . '" type="text" class="' . $this->classes['input'] . '" name="' . $item_array['name'] . '" value="' . $value . '"' . ((isset($params['styles']) && $params['styles'] != '') ? ' style="' . $params['styles'] . '"' : '') . ((isset($params['onclick']) && $params['onclick'] != '') ? ' onclick="' . $params['onclick'] . '"' : '') . ((isset($params['onchange']) && $params['onchange'] != '') ? ' onchange="' . $params['onchange'] . '"' : '') . ' />';
+        }
+        return array(
+            'title' => $item_array['title'],
+            'required' => ($item_array['required'] == "on" ? 1 : 0),
+            'html' => $html,
+            'tab' => (isset($item_array['tab']) ? $item_array['tab'] : ''),
+            'id' => $this->form_id . '_' . $item_array['name'],
+            'type' => $item_array['type'],
+        );
+    }
+
     function compile_safe_string_element($item_array) {
         global $smarty;
         $tpl=$this->get_field_tpl($item_array['type'],$item_array['table_name'],$item_array['name']);
         $html='';
         if($tpl){
-          $smarty->assign('id',$this->form_id . '_' . $item_array['name']);
-          $smarty->assign('classes',$this->classes);
-          $smarty->assign('item_array',$item_array);
-          $smarty->assign('theme',$this->getConfigValue('theme'));
-          $smarty->assign('NO_DYNAMIC_INCS',defined('NO_DYNAMIC_INCS') ? NO_DYNAMIC_INCS : false);
-          $html=$smarty->fetch($tpl);
+            $smarty->assign('id',$this->form_id . '_' . $item_array['name']);
+            $smarty->assign('classes',$this->classes);
+            $smarty->assign('item_array',$item_array);
+            $smarty->assign('theme',$this->getConfigValue('theme'));
+            $smarty->assign('NO_DYNAMIC_INCS',defined('NO_DYNAMIC_INCS') ? NO_DYNAMIC_INCS : false);
+            $html=$smarty->fetch($tpl);
         }else{
 
-        $value = htmlspecialchars($item_array['value'], ENT_QUOTES, SITE_ENCODING);
-        $params = array();
-        if (isset($item_array['parameters'])) {
-            $params = $item_array['parameters'];
-        }
-        if ( $params['dadata'] == 1 ) {
-            $test = "<link rel='stylesheet prefetch' href='https://cdn.jsdelivr.net/npm/suggestions-jquery@latest/dist/css/suggestions.min.css'>\n";
-            //$test .= "<script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js'></script>";
-            $test .= "<script src='https://cdn.jsdelivr.net/npm/suggestions-jquery@latest/dist/js/jquery.suggestions.min.js'></script>";
-            if (file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/js/dadata/dadata.js') ) {
-                $test .= "<script src='".SITEBILL_MAIN_URL."/template/frontend/".$this->getConfigValue('theme')."/js/dadata/dadata.js?t=".time()."'></script>";
-            } else {
-                $test .= "<script src='".SITEBILL_MAIN_URL."/apps/system/js/dadata/dadata.js?t=".time()."'></script>";
+            $value = htmlspecialchars($item_array['value'], ENT_QUOTES, SITE_ENCODING);
+            $params = array();
+            if (isset($item_array['parameters'])) {
+                $params = $item_array['parameters'];
             }
-            $test .= '<script type="text/javascript">
-$(document).ready(function () {
-    $("#'. $this->form_id . '_' . $item_array['name'] .'").suggestions({
-        token: "f26c98c6b12d1deb3c1ea1205db88e5cf6e652a0",
-        type: "ADDRESS",
-        onSelect: showSelected
-    });
-});
-</script>
-';
-
-
-        }
-        $html = $test.'<input id="' . $this->form_id . '_' . $item_array['name'] . '" placeholder="' . $item_array['title'] . '" type="text" class="' . $this->classes['input'] . '" name="' . $item_array['name'] . '" value="' . $value . '"' . ((isset($params['styles']) && $params['styles'] != '') ? ' style="' . $params['styles'] . '"' : '') . ((isset($params['onclick']) && $params['onclick'] != '') ? ' onclick="' . $params['onclick'] . '"' : '') . ((isset($params['onchange']) && $params['onchange'] != '') ? ' onchange="' . $params['onchange'] . '"' : '') . ' />';
-        /*$dp=array();
-        $dp['id']=$this->form_id.'_'.$item_array['name'];
-        $dp['placeholder']=$item_array['title'];
-        $dp['class']=$this->classes['input'];
-
-        $dp['class']=$this->classes['input'];
-        if(isset($params['styles']) && $params['styles']!=''){
-            $dp['styles']=$params['styles'];
-        }
-        if(isset($params['onchange']) && $params['onchange']!=''){
-            $dp['onchange']=$params['onchange'];
-        }
-        if(isset($params['onclick']) && $params['onclick']!=''){
-            $dp['onclick']=$params['onclick'];
-        }
-
-        $html=$this->form_decorator->decorateTextInput($item_array['name'], $value, $dp);*/
-
-      //  $html='<input id="'.$this->form_id.'_'.$item_array['name'].'" placeholder="'.$item_array['title'].'" type="text" class="'.$this->classes['input'].'" name="'.$item_array['name'].'" value="'.$value.'"'.((isset($params['styles']) && $params['styles']!='') ? ' style="'.$params['styles'].'"' : '').((isset($params['onclick']) && $params['onclick']!='') ? ' onclick="'.$params['onclick'].'"' : '').((isset($params['onchange']) && $params['onchange']!='') ? ' onchange="'.$params['onchange'].'"' : '').' />';
-
-        /*if(intval($params['meashurable'])==1){
-            $vars=explode(',', $params['meashurable_vars']);
-            $def=trim($params['meashurable_def']);
-            $html.='<div class="meashtype" data-variants="sqm,ar,ha">';
-            foreach($vars as $var){
-                $html.='<input type="radio" name="_meash_'.$item_array['name'].'" value="'.$var.'"'.($var==$def ? ' checked="checked"' : '').'>'.$var.'';
+            if ( $params['dadata'] == 1 ) {
+                $test = "<link rel='stylesheet prefetch' href='https://cdn.jsdelivr.net/npm/suggestions-jquery@latest/dist/css/suggestions.min.css'>\n";
+                //$test .= "<script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js'></script>";
+                $test .= "<script src='https://cdn.jsdelivr.net/npm/suggestions-jquery@latest/dist/js/jquery.suggestions.min.js'></script>";
+                if (file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/js/dadata/dadata.js') ) {
+                    $test .= "<script src='".SITEBILL_MAIN_URL."/template/frontend/".$this->getConfigValue('theme')."/js/dadata/dadata.js?t=".time()."'></script>";
+                } else {
+                    $test .= "<script src='".SITEBILL_MAIN_URL."/apps/system/js/dadata/dadata.js?t=".time()."'></script>";
+                }
+                $test .= '<script type="text/javascript">$(document).ready(function () { $("#'. $this->form_id . '_' . $item_array['name'] .'").suggestions({ token: "f26c98c6b12d1deb3c1ea1205db88e5cf6e652a0", type: "ADDRESS", onSelect: showSelected }); });</script>';
             }
-            $html.='</div>';
-        }*/
-        /*return array(
-                'title'=>$item_array['title'],
-                'required'=>($item_array['required'] == "on" ? 1 : 0),
-                'html'=>
-                'tab'=>(isset($item_array['tab']) ? $item_array['tab'] : '')
-        );*/
+
+            $html = $test.'<input id="' . $this->form_id . '_' . $item_array['name'] . '" placeholder="' . (isset($item_array['placeholder']) ? $item_array['placeholder'] : $item_array['title']) . '" type="text" class="sform_datata ' . $this->classes['input'] . '" name="' . $item_array['name'] . '" value="' . $value . '"' . ((isset($params['styles']) && $params['styles'] != '') ? ' style="' . $params['styles'] . '"' : '') . ((isset($params['onclick']) && $params['onclick'] != '') ? ' onclick="' . $params['onclick'] . '"' : '') . ((isset($params['onchange']) && $params['onchange'] != '') ? ' onchange="' . $params['onchange'] . '"' : '') . ' />';
+            /*$dp=array();
+            $dp['id']=$this->form_id.'_'.$item_array['name'];
+            $dp['placeholder']=$item_array['title'];
+            $dp['class']=$this->classes['input'];
+
+            $dp['class']=$this->classes['input'];
+            if(isset($params['styles']) && $params['styles']!=''){
+                $dp['styles']=$params['styles'];
+            }
+            if(isset($params['onchange']) && $params['onchange']!=''){
+                $dp['onchange']=$params['onchange'];
+            }
+            if(isset($params['onclick']) && $params['onclick']!=''){
+                $dp['onclick']=$params['onclick'];
+            }
+
+            $html=$this->form_decorator->decorateTextInput($item_array['name'], $value, $dp);*/
+
+          //  $html='<input id="'.$this->form_id.'_'.$item_array['name'].'" placeholder="'.$item_array['title'].'" type="text" class="'.$this->classes['input'].'" name="'.$item_array['name'].'" value="'.$value.'"'.((isset($params['styles']) && $params['styles']!='') ? ' style="'.$params['styles'].'"' : '').((isset($params['onclick']) && $params['onclick']!='') ? ' onclick="'.$params['onclick'].'"' : '').((isset($params['onchange']) && $params['onchange']!='') ? ' onchange="'.$params['onchange'].'"' : '').' />';
+
+            /*if(intval($params['meashurable'])==1){
+                $vars=explode(',', $params['meashurable_vars']);
+                $def=trim($params['meashurable_def']);
+                $html.='<div class="meashtype" data-variants="sqm,ar,ha">';
+                foreach($vars as $var){
+                    $html.='<input type="radio" name="_meash_'.$item_array['name'].'" value="'.$var.'"'.($var==$def ? ' checked="checked"' : '').'>'.$var.'';
+                }
+                $html.='</div>';
+            }*/
+            /*return array(
+                    'title'=>$item_array['title'],
+                    'required'=>($item_array['required'] == "on" ? 1 : 0),
+                    'html'=>
+                    'tab'=>(isset($item_array['tab']) ? $item_array['tab'] : '')
+            );*/
         }
         return array(
             'title' => $item_array['title'],
@@ -579,7 +642,6 @@ $(document).ready(function () {
             </div>
             <div class="found-contractors" style="display: none;"></div>
         </div>';
-            if (defined('ADMIN_MODE')) {
                 $html .= '<div class="new-contractor" style="display: none;">
             <div class="input text"><label for="ContractorFio">Имя</label><input alt="fio" class="search-contractor" maxlength="255" type="text" id="ContractorFio"></div>
             <div class="input tel"><label for="ContractorPhone">Телефон</label><input alt="phone" class="search-contractor" maxlength="255" type="tel" id="ContractorPhone">
@@ -587,7 +649,6 @@ $(document).ready(function () {
             <button class="new-contractor-button-save" style="display: block;">Создать</button>
         </div>
     <button class="new-contractor-button" style="display: block;">Создать нового</button>';
-            }
 
             $html .= '<button class="search-contractor-button" style="display: none;">Искать</button>';
         } else {
@@ -597,14 +658,12 @@ $(document).ready(function () {
             </div>
             <div class="found-contractors" style="display: none;"></div>
         </div>';
-            if (defined('ADMIN_MODE')) {
                 $html .= '<div class="new-contractor" style="display: none;">
             <div class="input text"><label for="ContractorFio">Имя</label><input alt="fio" class="search-contractor" maxlength="255" type="text" id="ContractorFio"></div>
             <div class="input tel"><label for="ContractorPhone">Телефон</label><input alt="phone" class="search-contractor" maxlength="255" type="tel" id="ContractorPhone">
                     </div>
             <button class="new-contractor-button-save" style="display: block;">Создать</button></div>
     <button class="new-contractor-button" style="display: block;">Создать нового</button>';
-            }
             $html .= '<button class="search-contractor-button" style="display: none;">Искать</button>';
         }
 
@@ -635,7 +694,7 @@ $(document).ready(function () {
         if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
             $script_code[] = '<script src="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.js"></script>';
             $script_code[] = '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css?v=1">';
-            $script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=1"></script>';
+            $script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=2"></script>';
         }
 
         //$html.='<script src="'.SITEBILL_MAIN_URL.'/apps/system/js/dropzone_sitebill.js"></script>';
@@ -659,13 +718,13 @@ $(document).ready(function () {
 
 
 
-            foreach ($item_array['value'] as $ita) {
+            foreach ($item_array['value'] as $itk => $ita) {
                 if (!empty($ita['remote']) and $ita['remote'] === 'true') {
                     $prefix = '';
                 } else {
                     $prefix = SITEBILL_MAIN_URL . '/img/mediadocs/';
                 }
-                $html .= '<li class="dz-preview-uploaded-item dz-preview-uploaded-item-docs">
+                $html .= '<li class="dz-preview-uploaded-item dz-preview-uploaded-item-docs" data-order="'.$itk.'">
                         <div class="dz-preview-uploaded-item-image-preview">
                             <div class="dz-preview-uploaded-item-doc">
                                 <a href="' . $prefix . $ita['normal'] . '" target="_blank" download>' . $ita['normal'] . '</a>
@@ -722,7 +781,7 @@ $(document).ready(function () {
         if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
             $script_code[] = '<script src="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.js"></script>';
             $script_code[] = '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css?v=1">';
-            $script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=1"></script>';
+            $script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=2"></script>';
         }
 
         $params = $item_array['parameters'];
@@ -753,8 +812,8 @@ $(document).ready(function () {
                 $image_list = unserialize($ar[$item_array['name']]);
             }
         }
-        
-        
+
+
         $code = $item_array['table_name'].'.'.$item_array['name'];
         if(isset($params['tagged']) && $params['tagged'] == 1){
             $tagged = true;
@@ -763,15 +822,15 @@ $(document).ready(function () {
             $tagged = false;
             $taggedlng = false;
         }
-        
+
         $imagedescused = true;
         if(isset($params['disableimagedesc']) && $params['disableimagedesc'] == 1){
             $imagedescused = false;
         }
-        
-        
+
+
         $DBC = DBC::getInstance();
-        
+
         if($tagged){
             $query = 'SELECT imagetag_id, name FROM '.DB_PREFIX.'_imagetag WHERE `code` = ?';
             $stmt = $DBC->query($query, array($code));
@@ -781,24 +840,24 @@ $(document).ready(function () {
                 }
             }
         }
-        
-        
-        
+
+
+
         /*require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/system/uploader_tagger.php';
         $tagger = new uploader_tagger();
         $tagger->setItem($code);*/
-            
+
         //print_r($image_list);
         if (is_array($image_list) && count($image_list) > 0) {
 
             $uploadedid = 'uploaded_' . md5(time() . rand(100, 999));
-            
-            
-            
-        
+
+
+
+
             $html .= '<script>';
             $html .= '$(document).ready(function(){';
-            $html .= 'DataImagelist.dz_addSortable(\''.$uploadedid.'\', ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\')';
+            //$html .= 'DataImagelist.dz_addSortable(\''.$uploadedid.'\', ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\')';
             $html .= '});';
 			$html .= '</script>';
 
@@ -811,7 +870,7 @@ $(document).ready(function () {
             $html .= '<ul class="dz-preview-uploaded-list">';
             $bootstrap_version = trim($this->getConfigValue('bootstrap_version'));
             foreach ($image_list as $itk => $ita) {
-                
+
                 if($tagged){
                     if(isset($ita['tags'])){
                         $currenttags = $ita['tags'];
@@ -832,35 +891,40 @@ $(document).ready(function () {
                       $taghtml .= '</div>';
                     }
                 }
-                
+
                 /**
                  * TODO
                  * проверить зависимость размещение селекта тегов
                  */
-            
-            
+
+
                 if ( filter_var($ita['preview'], FILTER_VALIDATE_URL) ) {
                     $img_url = $ita['preview'];
+                    $normal_img_url = $ita['normal'];
                 } else {
                     $img_url = SITEBILL_MAIN_URL . '/img/data/' . $ita['preview'];
+                    $normal_img_url = $this->getServerFullUrl(true).SITEBILL_MAIN_URL . '/img/data/' . $ita['normal'];
+                }
+                if ($this->getConfigValue('apps.downloader.src_enable')) {
+                    $normal_img_url = SITEBILL_MAIN_URL.'/'.$this->getConfigValue('apps.downloader.src_alias').'/?url='.$normal_img_url;
                 }
                 $html .= '<li class="dz-preview-uploaded-item" data-order="'.$itk.'">
     					<div class="dz-preview-uploaded-item-image-preview">
 							<div class="dz-preview-uploaded-item-image">
-								<img src="' . $img_url . '" />
+								<a href="'.$normal_img_url.'" download><img src="' . $img_url . '" /></a>
 							</div>';
                 if($imagedescused){
                     $html .= '<div class="get_field_tpl" onDblClick="DataImagelist.dz_dblClick(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');">
 								' . ($ita['title'] == '' ? _e('Описание') : $ita['title']) . '
 							</div>'.$taghtml.'';
-                
+
                     $html .= '<div class="dz-preview-uploaded-item-description-editable" style="display: none;">
 								<input type="text" value="' . ($ita['title'] == '' ? _e('Описание') : $ita['title']) . '" />
 								<button class="btn btn-success btn-small save_desc"><i class="icon-white icon-ok"></i></button>
 								<button class="btn btn-danger btn-small canc_desc"><i class="icon-white icon-remove"></i></button>
 							</div>';
                 }
-				
+
 				$html .= '<a href="javascript:void(0);" onClick="DataImagelist.dz_upImage(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small go_up" title="Выше">' . (($bootstrap_version == '3' && !defined('ADMIN_MODE')) ? '<span class="glyphicon glyphicon-chevron-left"></span>' : '<i class="icon icon-chevron-left"></i>') . '</a>
 <a href="javascript:void(0);" onClick="DataImagelist.dz_deleteImage(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small remove" title="Удалить">' . (($bootstrap_version == '3' && !defined('ADMIN_MODE')) ? '<span class="glyphicon glyphicon-remove"></span>' : '<i class="icon icon-remove"></i>') . '</a>
 <a href="javascript:void(0);" onClick="DataImagelist.dz_downImage(this, ' . $primary_key_value . ', \'' . $table_name . '\', \'' . $primary_key . '\', \'' . $item_array['name'] . '\');" class="btn btn-small go_down" title="Ниже">' . (($bootstrap_version == '3' && !defined('ADMIN_MODE')) ? '<span class="glyphicon glyphicon-chevron-right"></span>' : '<i class="icon icon-chevron-right"></i>') . '</a>
@@ -902,7 +966,7 @@ $(document).ready(function () {
         );
     }
 
-    
+
 
     function compile_gadres_element($item_array) {
       global $smarty;
@@ -1086,7 +1150,7 @@ $(document).ready(function () {
             if ($autocomplete) {
                 $rs .= '<option></option>';
             } else {
-                $rs .= '<option value="0" ' . $selected . '>' . (isset($default_titles['country_id']) ? $default_titles['country_id'] : '--') . '</option>';
+                $rs .= '<option value="0">' . (isset($default_titles['country_id']) ? $default_titles['country_id'] : '--') . '</option>';
             }
 
             /*
@@ -1643,24 +1707,31 @@ $(document).ready(function () {
         $value = $item_array['value'];
         $str = '';
         $map_options = array();
+        $mapsizes = array();
 
         if(isset($parameters['map_width']) && trim($parameters['map_width'])!=0){
             if(preg_match('/(\d+)%$/', $parameters['map_width'], $matches)){
                 $map_options[]='width: \''.trim($parameters['map_width']).'\'';
+                $mapsizes[] = 'width: '.trim($parameters['map_width']);
             }elseif(preg_match('/(\d+)px$/', $parameters['map_width'], $matches)){
                 $map_options[]='width: \''.trim($parameters['map_width']).'\'';
+                $mapsizes[] = 'width: '.trim($parameters['map_width']);
             }elseif(intval($parameters['map_width'])>0){
                 $map_options[]='width: \''.intval($parameters['map_width']).'px\'';
+                $mapsizes[] = 'width: '.intval($parameters['map_width']).'px';
             }
 
         }
         if(isset($parameters['map_height']) && trim($parameters['map_height'])!=0){
             if(preg_match('/(\d+)%$/', $parameters['map_height'], $matches)){
                 $map_options[]='height: \''.trim($parameters['map_height']).'\'';
+                $mapsizes[] = 'height: '.trim($parameters['map_height']);
             }elseif(preg_match('/(\d+)px$/', $parameters['map_height'], $matches)){
                 $map_options[]='height: \''.trim($parameters['map_height']).'\'';
+                $mapsizes[] = 'height: '.trim($parameters['map_height']);
             }elseif(intval($parameters['map_height'])>0){
                 $map_options[]='height: \''.intval($parameters['map_height']).'px\'';
+                $mapsizes[] = 'height: '.intval($parameters['map_height']).'px';
             }
 
         }
@@ -1683,6 +1754,11 @@ $(document).ready(function () {
         } else {
             $map_options[] = 'confields: []';
         }
+
+        if(isset($parameters['usemapsearch']) && intval($parameters['usemapsearch']) == 1){
+            $map_options[] = 'usemapsearch: true';
+        }
+
         if (1 == $this->getConfigValue('apps.geodata.no_scroll_zoom')) {
             $map_options[] = 'no_scroll_zoom: 1';
         }
@@ -1725,12 +1801,12 @@ $(document).ready(function () {
         $map_lat_input = '<input type="text" geodata="lat" class="' . $this->classes['input'] . '" name="' . $item_array['name'] . '[lat]" value="' . (isset($value['lat']) ? $value['lat'] : '') . '" />';
         //$str.= $map_lat_input;
         $map_lng_input = '<input type="text" geodata="lng" class="' . $this->classes['input'] . '" name="' . $item_array['name'] . '[lng]" value="' . (isset($value['lng']) ? $value['lng'] : '') . '" />';
-        $map_div_map = '<div class="geodata_map_holder"></div>';
+        $map_div_map = '<div class="geodata_map_holder" style="'.(!empty($mapsizes) ? implode('; ', $mapsizes).';' : '').'"></div>';
         //$str.= $map_lng_input;
         //$str.='</div>';
         //$str.='</div>';
         $str .= $map_div_open;
-        $str .= '<div class="geodata_form_co">';
+        $str .= '<div class="geodata_form_co"><div class="geodata_form_name"></div><input type="hidden" name="geodata" value="">';
         $str .= $map_lat_input;
         $str .= $map_lng_input;
         $str .= '</div>';
@@ -1769,7 +1845,7 @@ $(document).ready(function () {
         $script_code = array();
         $collection = array();
         if (!defined('NO_DYNAMIC_INCS') || !NO_DYNAMIC_INCS) {
-            $script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=1"></script>';
+            $script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=2"></script>';
         }
 
         $html = '';
@@ -1827,7 +1903,7 @@ $(document).ready(function () {
     function compile_photo_element($item_array) {
         $image_list = '';
         if ($item_array['value'] != '') {
-            $image_list .= '<div class="photo_element">';
+            $image_list .= '<div id="photo_element_image_list_deprecated" class="photo_element">';
             $image_list .= '<img src="' . SITEBILL_MAIN_URL . '/img/data/user/' . $item_array['value'] . '" border="0"/>';
             switch ($this->bootstrap_version) {
                 case '3' : {
@@ -1848,12 +1924,44 @@ $(document).ready(function () {
             }
             $image_list .= '</div>';
         }
+        try {
+            if ( $this->get_context() ) {
+                $update_user_id = $this->getRequestValue($this->get_context()->primary_key);
+                if ( $this->getRequestValue('do') == 'new' or  $this->getRequestValue('do') == 'new_done') {
+                    $update_user_id = 'new';
+                }
+            } else {
+                $update_user_id = '0';
+            }
+        } catch (Exception $e) {
+            $update_user_id = '0';
+        }
+
+        if ($item_array['value'] != '') {
+            $image = SITEBILL_MAIN_URL . '/img/data/user/' . $item_array['value'];
+        } elseif ($_SESSION['new_avatar_img'] != '') {
+            $image = SITEBILL_MAIN_URL . '/img/data/user/' . $_SESSION['new_avatar_img'];
+        } else {
+            $image = '';
+        }
+
+        $image_cropper = '
+            <image-cropper 
+                update_user_id="'.$update_user_id.'" 
+                language="ru" 
+                image_url="' . $image . '" 
+                width="'.$this->getConfigValue('user_pic_width').'"
+                height="'.$this->getConfigValue('user_pic_height').'"
+                upload_button_title="'._e('Загрузить новое фото').'"
+                image_delete_title="'._e('Удалить фото').'"
+                >
+            </image-cropper>';
 
 
         return array(
             'title' => $item_array['title'],
             'required' => ($item_array['required'] == "on" ? 1 : 0),
-            'html' => '<input type="file" name="' . $item_array['name'] . '" />',
+            'html' => $image_cropper.'<input id="photo_element_deprecated" type="file" name="' . $item_array['name'] . '" />',
             'tab' => (isset($item_array['tab']) ? $item_array['tab'] : ''),
             'image_list' => $image_list,
             'type' => $item_array['type']
@@ -1986,6 +2094,7 @@ $(document).ready(function () {
     }
 
     function compile_select_entity_element($item_array, $model = null) {
+        $rs = '';
         if (isset($item_array['parameters'])) {
             $parameters = $item_array['parameters'];
         } else {
@@ -2432,6 +2541,10 @@ $(document).ready(function () {
                     $rs = $this->compile_injector_element($item_array, $form_data);
                     break;
 
+                case 'youtube':
+                    $rs = $this->compile_youtube_element($item_array);
+                    break;
+
                 default:
                     $rs = FALSE;
                     break;
@@ -2519,6 +2632,11 @@ $(document).ready(function () {
                 $item_array['type'] = '';
             }
             switch ($item_array['type']) {
+
+                case 'langselect': {
+                    $rs = $this->get_langselect($item_array);
+                    break;
+                }
                 case 'price':
                     $rs = $this->get_price_input($item_array);
                     break;
@@ -2769,7 +2887,7 @@ $(document).ready(function () {
                 }
             }
         } else {
-            if (count($elements[$default_tab_name]) > 0) {
+            if (is_array($elements[$default_tab_name]) && count($elements[$default_tab_name]) > 0) {
                 foreach ($elements[$default_tab_name] as $el) {
                     $rt .= $el;
                 }
@@ -2785,6 +2903,7 @@ $(document).ready(function () {
      * @return string
      */
     function get_spacer_text($item_array) {
+        $string = '';
         $string .= "<tr>\n";
         $string .= '<td>';
         $string .= $item_array['title'];
@@ -2865,6 +2984,16 @@ $(document).ready(function () {
      * @return string
      */
     function get_single_select_box_by_query($item_array, $model = null) {
+        if ( defined('VUE_ENABLED') and VUE_ENABLED == true ) {
+            $rs = '<select-by-query 
+                    column_name="'.$item_array['name'].'" 
+                    model_name="'.$item_array['table_name'].'"
+                    placeholder="'.$item_array['title_default'].'"
+                    value="'.$item_array['value'].'"
+                    >
+                   </select-by-query>';
+            return $rs;
+        }
 
         $lang = $this->getCurrentLang();
         $item_md5 = md5(serialize($item_array).$lang);
@@ -3070,7 +3199,7 @@ $(document).ready(function () {
 
                     } else {
                         /*if (isset($form_data_c[$item_array['primary_key_table']][$value_name . '_' . $lang])) {
-                            
+
                         }*/
                         $value_name_l = $value_name . '_' . $lang;
                     }
@@ -3098,7 +3227,7 @@ $(document).ready(function () {
                 }
             }
 
-            return '<div class="geoautocomplete_block"><input class="' . (isset($this->classes['input']) ? $this->classes['input'] : '') . ' geoautocomplete" type="text" placeholder="' . $item_array['title_default'] . '" name="geoautocomplete[' . $item_array['name'] . ']" value="' . $value . '" pk="' . $item_array['primary_key_name'] . '" from="' . $item_array['primary_key_table'] . '" data-depel="' . (isset($parameters['autocomplete_dep_el']) ? $parameters['autocomplete_dep_el'] : '') . '" data-depelkey="' . (isset($parameters['autocomplete_dep_el_key']) ? $parameters['autocomplete_dep_el_key'] : '') . '"' . ($_no_insert ? ' data-notappend="true"' : '') . ' data-model="' . $item_array['table_name'] . '" /><input type="hidden" onchange="' . implode(' ', $onchange) . ' ' . '" name="' . $item_array['name'] . '" value="' . $item_array['value'] . '" /></div>';
+            return '<div class="geoautocomplete_block"><input class="' . (isset($this->classes['input']) ? $this->classes['input'] : '') . ' geoautocomplete" type="text" placeholder="' . $item_array['title_default'] . '" '.($_no_insert ? '' : 'name="geoautocomplete[' . $item_array['name'] . ']"').' value="' . $value . '" pk="' . $item_array['primary_key_name'] . '" from="' . $item_array['primary_key_table'] . '" data-depel="' . (isset($parameters['autocomplete_dep_el']) ? $parameters['autocomplete_dep_el'] : '') . '" data-depelkey="' . (isset($parameters['autocomplete_dep_el_key']) ? $parameters['autocomplete_dep_el_key'] : '') . '"' . ($_no_insert ? ' data-notappend="true"' : '') . ' data-model="' . $item_array['table_name'] . '" /><input type="hidden" onchange="' . implode(' ', $onchange) . ' ' . '" name="' . $item_array['name'] . '" value="' . $item_array['value'] . '" /></div>';
         } elseif (1 == $this->getConfigValue('apps.realty.off_system_ajax')/* || 1==1 */) {
             $selected = '';
             $onchange = array();
@@ -3400,7 +3529,8 @@ $(document).ready(function () {
 
 
     function get_select_by_query_multi($item_array, $model = null){
-        
+
+
         if (isset($item_array['parameters'])) {
             $parameters = $item_array['parameters'];
         } else {
@@ -3427,14 +3557,26 @@ $(document).ready(function () {
         }
 
         $DBC = DBC::getInstance();
-        
-        
+
+
         $options = array();
-        
-        
+
+
         $query = $item_array['query'];
         $query_params = array();
-        
+
+        $value_name = $item_array['value_name'];
+        $value_name_l = $item_array['value_name'];
+        if (1 === intval($this->getConfigValue('apps.language.use_langs')) && 0 === intval($parameters['no_ml'])) {
+            $curlang = $this->getCurrentLang();
+            if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
+
+            } else {
+                $value_name_l = $value_name . '_' . $curlang;
+            }
+        }
+
+
         if (1 == intval($this->getConfigValue('apps.realty.off_system_ajax'))) {
             $depended_element_name = '';
             if (isset($parameters['depended']) && $parameters['depended'] != '') {
@@ -3447,24 +3589,14 @@ $(document).ready(function () {
                     $depended_element_name_key=$depended_element_name;
                 }
             }
-            
-            $value_name = $item_array['value_name'];
-            $value_name_l = $item_array['value_name'];
-            if (1 === intval($this->getConfigValue('apps.language.use_langs')) && 0 === intval($parameters['no_ml'])) {
-                $curlang = $this->getCurrentLang();
-                if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
 
-                } else {
-                    $value_name_l = $value_name . '_' . $lang;
-                }
-            }
-            
-            
-            
-            
+
+
+
+
             if ($depended_element_name != '') {
                 $depended_value = intval($model[$depended_element_name]['value']);
-            
+
                 if ($depended_value != 0) {
                     $query = 'SELECT `' . $item_array['primary_key_name'] . '`, `' . $value_name_l . '` AS ' . $value_name . ' FROM ' . DB_PREFIX . '_' . $item_array['primary_key_table'] . ' WHERE `' . $depended_element_name . '`=?'.($parameters['addwhere']>'' ? ' and '.$parameters['addwhere'] : '');
 
@@ -3487,7 +3619,7 @@ $(document).ready(function () {
                     if (!empty($sorts)) {
                         $query = $query . ' ORDER BY ' . implode(',', $sorts);
                     }
-                    
+
                     $query_params[] = $depended_value;
                     /*$stmt = $DBC->query($query, array((int) $depended_value));
                     if ($stmt) {
@@ -3501,21 +3633,21 @@ $(document).ready(function () {
                 }
             }
         }
-        
+
         if($query != ''){
             if(!empty($query_params)){
                 $stmt = $DBC->query($query, $query_params);
             }else{
                 $stmt = $DBC->query($query);
             }
-            
+
             if ($stmt) {
                 while ($ar = $DBC->fetch($stmt)) {
 
                     //var_dump($ar);
 
                     $this->total_in_select[$item_array['name']] ++;
-                    $value = $ar[$item_array['value_name']];
+                    $value = $ar[$value_name_l];
                     $value = trim($value);
                     $value = htmlspecialchars($value, ENT_QUOTES, SITE_ENCODING);
                     $selected = false;
@@ -3530,9 +3662,9 @@ $(document).ready(function () {
                 }
             }
         }
-        
-        
-        
+
+
+
         //print_r($options);
 
         $this->total_in_select[$item_array['name']] = 0;
@@ -3545,7 +3677,7 @@ $(document).ready(function () {
                     $value = $option[1];
                     $value = trim($value);
                     $value = htmlspecialchars($value, ENT_QUOTES, SITE_ENCODING);
-                    $rs .= '<div class="multiselect_set_item"'.($parameters['data_field']>'' ? ' data-'.$parameters['data_field'].'="'.$ar[$parameters['data_field']].'"' : '').'><label><input type="checkbox"' . ($option[2] == 1 ? ' checked="checked"' : '') . ' name="' . $item_array['name'] . '[]" value="' . $option[0] . '"><span>' . $value . '</span></label></div>';
+                    $rs .= '<div class="multiselect_set_item"'.($parameters['data_field']>'' ? ' data-'.$parameters['data_field'].'="'.$ar[$parameters['data_field']].'"' : '').'><label><input type="checkbox"' . ($option[2] == 1 ? ' checked="checked"' : '') . ' name="' . $item_array['name'] . '[]" value="' . $option[0] . '"> <span>' . $value . '</span></label></div>';
 
                 }
             }
@@ -3637,6 +3769,7 @@ $(document).ready(function () {
      * @return string
      */
     function get_uploader_row($item_array) {
+        $rs = '';
         $rs .= '<tr  alt="' . $item_array['name'] . '">';
         $rs .= '<td colspan="2">';
         $rs .= '<h2>' . Multilanguage::_('L_PHOTO_1') . '</h2>';
@@ -3670,6 +3803,7 @@ $(document).ready(function () {
      * @return string
      */
     function get_pluploader_row($item_array) {
+        $rs = '';
         $rs .= '<tr  class="row3">';
         $rs .= '<td colspan="2">';
         $rs .= '<h2>' . Multilanguage::_('L_PHOTO_1') . '</h2>';
@@ -3704,6 +3838,7 @@ $(document).ready(function () {
      * @return string
      */
     function get_uploadify_row($item_array) {
+        $rs = '';
         $rs .= '<tr  class="row3">';
         $rs .= '<td colspan="2">';
         $rs .= '<h2>' . Multilanguage::_('L_PHOTO_1') . '</h2>';
@@ -3744,7 +3879,7 @@ $(document).ready(function () {
      * @return string
      */
     function get_uploadify_file_row($item_array) {
-
+        $rs = '';
         $rs .= '<tr  class="row3"  alt="' . $item_array['name'] . '">';
         $rs .= '<td colspan="2">';
         $rs .= '<h2>' . Multilanguage::_('L_ATTACH_FILE') . '</h2>';
@@ -3779,7 +3914,7 @@ $(document).ready(function () {
      * @return string
      */
     function get_separator_row($item_array) {
-
+        $rs = '';
         $rs .= '<tr>';
         $rs .= '<td colspan="2">';
         $rs .= '<h2>' . $item_array['title'] . '</h2>';
@@ -4083,7 +4218,7 @@ $(document).ready(function () {
                 $rs .= '<span>' . $item_id_name . '</span><input type="radio" name="' . $item_array['name'] . '" value="' . $item_id . '" ' . $checked . '>&nbsp;&nbsp;&nbsp;';
             }
         } else {
-            $html .= '<input type="text" name="' . $item_array['name'] . '" value="' . $item_array['value'] . '" />';
+            $rs .= '<input type="text" name="' . $item_array['name'] . '" value="' . $item_array['value'] . '" />';
         }
 
 
@@ -4133,7 +4268,7 @@ $(document).ready(function () {
         }
 
         if (isset($parameters['multiselect']) && 1 == (int) $parameters['multiselect']) {
-            $rs.=$this->form_decorator->decorateMultiselectItem($item_array['name'], $item_array['select_data'], $item_array['values_array']);
+            $rs = $this->form_decorator->decorateMultiselectItem($item_array['name'], $item_array['select_data'], $item_array['values_array']);
             /*foreach ( $item_array['select_data'] as $item_id => $item_value ) {
                 $rs .= '<input type="checkbox" name="'.$item_array['name'].'[]" value="'.$item_id.'"'.((isset($item_array['values_array']) && in_array($item_id, $item_array['values_array'])) ? ' checked="checked"' : '').'>'.$item_value.'<br/>';
             }*/
@@ -4177,7 +4312,7 @@ $(document).ready(function () {
     }
 
     function get_radiogroup($item_array) {
-        $val = $item['value'];
+        $val = $item_array['value'];
 
         $ret = '';
         if (!empty($item['select_data'])) {
@@ -4292,23 +4427,13 @@ $(document).ready(function () {
      * @return string
      */
     function get_date_input($item_array) {
-        /* Un-quote slashes */
-        $value = stripslashes($value);
-        /* HTML code */
+        $string = '';
         $string .= '<script type="text/javascript">$(document).ready(function() {$( "#' . $item_array['name'] . '" ).datepicker({showOn: "button",dateFormat: "dd.mm.yy",buttonImage: "' . SITEBILL_MAIN_URL . '/img/calendar.gif",buttonImageOnly: true});});</script>';
         $string .= "<tr  class=\"row3\" alt=\"" . $item_array['name'] . "\">\n";
 
-        /* Mark required field with simbol '*' */
-        if ($item_array['required'] == "on") {
-            $string .= "<td class=\"$bg_color\">" . $item_array['title'] . " <span style=\"color: red;\">*</span> </td>\n";
-        } else {
-            $string .= "<td class=\"$bg_color\">" . $item_array['title'] . "</td>\n";
-        }
+        $string .= '<td>' . $item_array['title'] . ($item_array['required'] == "on" ? '<span style="color: red;">*</span>' : '').'</td>'."\n";
 
-        /* if($item_array['value']==='' || $item_array['value']===0){
-          $item_array['value'] = date('d.m.Y', time());
-          //$item_array['value'] = '';
-          }else */if (preg_match('/(\d{4,4})-(\d{2,2})-(\d{2,2}) (\d{2,2}):(\d{2,2}):(\d{2,2})/', $item_array['value'])) {
+        if (preg_match('/(\d{4,4})-(\d{2,2})-(\d{2,2}) (\d{2,2}):(\d{2,2}):(\d{2,2})/', $item_array['value'])) {
             $item_array['value'] = date('d.m.Y', strtotime($item_array['value']));
         } elseif (preg_match('/(\d{4,4})-(\d{2,2})-(\d{2,2})/', $item_array['value'])) {
             $item_array['value'] = date('d.m.Y', strtotime($item_array['value']));
@@ -4319,8 +4444,8 @@ $(document).ready(function () {
             $item_array['value'] = date('d.m.Y', $item_array['value']);
         }
 
-        $string .= "<td class=\"$bg_color\"><input type=\"text\" name=\"" . $item_array['name'] . "\" id=\"" . $item_array['name'] . "\" value=\"" . htmlspecialchars($item_array['value'], ENT_QUOTES, SITE_ENCODING) . "\" size=\"10\" maxlength=\"" . $item_array['maxlength'] . "\" class=\"$css_name\"></td>\n";
-        $string .= "</tr>\n";
+        $string .= '<td><input type="text" name="'.$item_array['name'].'" id="'.$item_array['name'].'" value="'.htmlspecialchars($item_array['value'], ENT_QUOTES, SITE_ENCODING).'" size="10" maxlength="'.$item_array['maxlength'].'"></td>';
+        $string .= '</tr>'."\n";
 
         /* Return html code */
         return $string;
@@ -4411,13 +4536,14 @@ $(document).ready(function () {
             $string .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/bootstrap/js/bootstrap-datetimepicker.min.js"></script>';
         }
 
-        $string .= '<script type="text/javascript">$(document).ready(function() {$( "#' . $id . '" ).datetimepicker({pick12HourFormat: false,language: "ru",' . $tpp . '});});</script>';
+        $string .= '<script type="text/javascript">$(document).ready(function() {$( "#' . $id . ' div.dt-element" ).datetimepicker({pick12HourFormat: false,language: "ru",' . $tpp . '});});</script>';
         $bootstrap_version = trim($this->getConfigValue('bootstrap_version'));
         if ($bootstrap_version == '3' && !defined('ADMIN_MODE')) {
-            $html = '<div id="' . $id . '" class="input-group input-append date"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><div class="add-on input-group-addon"><span class="glyphicon glyphicon-calendar"></span></div></div>';
+            $html = '<div class="input-group input-append date dt-element"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><div class="add-on input-group-addon"><span class="glyphicon glyphicon-calendar"></span></div></div>';
         } else {
-            $html = '<div id="' . $id . '" class="input-append date"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><span class="add-on"><i data-time-icon="icon-time" data-date-icon="icon-calendar"></i></span></div>';
+            $html = '<div class="input-append date dt-element"><input class="' . $this->classes['input'] . '" data-format="" type="text" name="' . $item_array['name'] . '" value="' . $value . '"></input><span class="add-on"><i data-time-icon="icon-time" data-date-icon="icon-calendar"></i></span></div>';
         }
+        $html = '<div id="' . $id . '">'.$html.'</div>';
         return array(
             'title' => $item_array['title'],
             'required' => ($item_array['required'] == "on" ? 1 : 0),
@@ -4645,17 +4771,16 @@ $(document).ready(function () {
     }
 
     function get_geodata_input($item_array) {
-
-        $value = stripslashes($value);
+        $string = '';
         $string .= "<tr class=\"row3\" alt=\"" . $item_array['name'] . "\">\n";
 
         if ($item_array['required'] == "on") {
-            $string .= "<td class=\"$bg_color\">" . $item_array['title'] . " <span style=\"color: red;\">*</span>" . ((isset($item_array['hint']) && $item_array['hint'] != '') ? ' <span class="hint">(' . $item_array['hint'] . ')</span>' : '') . "</td>\n";
+            $string .= "<td>" . $item_array['title'] . " <span style=\"color: red;\">*</span>" . ((isset($item_array['hint']) && $item_array['hint'] != '') ? ' <span class="hint">(' . $item_array['hint'] . ')</span>' : '') . "</td>\n";
         } else {
-            $string .= "<td class=\"$bg_color\">" . $item_array['title'] . ((isset($item_array['hint']) && $item_array['hint'] != '') ? ' <span class="hint">(' . $item_array['hint'] . ')</span>' : '') . "</td>\n";
+            $string .= "<td>" . $item_array['title'] . ((isset($item_array['hint']) && $item_array['hint'] != '') ? ' <span class="hint">(' . $item_array['hint'] . ')</span>' : '') . "</td>\n";
         }
 
-        $string .= "<td class=\"$bg_color\">";
+        $string .= "<td>";
         $string .= '<div id="geodata" coords="' . $this->getConfigValue('apps.geodata.new_map_center') . '">';
         $string .= "Lat: <input type=\"text\" geodata=\"lat\" name=\"" . $item_array['name'] . "[lat]\" value=\"" . (isset($item_array['value']['lat']) ? htmlspecialchars($item_array['value']['lat'], ENT_QUOTES, SITE_ENCODING) : '') . "\" size=\"" . $item_array['length'] . "\" />";
         $string .= "Lng: <input type=\"text\" geodata=\"lng\" name=\"" . $item_array['name'] . "[lng]\" value=\"" . (isset($item_array['value']['lng']) ? htmlspecialchars($item_array['value']['lng'], ENT_QUOTES, SITE_ENCODING) : '') . "\" size=\"" . $item_array['length'] . "\" />";
@@ -4694,12 +4819,12 @@ $(document).ready(function () {
         $string .= "<tr class=\"row3\" alt=\"" . $item_array['name'] . "\">\n";
 
         if ($item_array['required'] == "on") {
-            $string .= "<td class=\"$bg_color\">" . $item_array['title'] . " <span style=\"color: red;\">*</span> </td>\n";
+            $string .= "<td>" . $item_array['title'] . " <span style=\"color: red;\">*</span> </td>\n";
         } else {
-            $string .= "<td class=\"$bg_color\">" . $item_array['title'] . "</td>\n";
+            $string .= "<td>" . $item_array['title'] . "</td>\n";
         }
 
-        $string .= "<td class=\"$bg_color\"><input type=\"text\" id=\"" . $id . "\" name=\"" . $item_array['name'] . "\"  size=\"" . $item_array['length'] . "\" maxlength=\"" . $item_array['maxlength'] . "\" class=\"$css_name\" value=\"$value\" /></td>\n";
+        $string .= "<td><input type=\"text\" id=\"" . $id . "\" name=\"" . $item_array['name'] . "\"  size=\"" . $item_array['length'] . "\" maxlength=\"" . $item_array['maxlength'] . "\" value=\"$value\" /></td>\n";
         $string .= "</tr>\n";
 
         return $string;
@@ -4712,19 +4837,17 @@ $(document).ready(function () {
      */
     function get_email_input($item_array) {
 
-        /* Un-quote slashes */
-        $value = stripslashes($value);
-        /* HTML code */
+        $string = '';
         $string .= "<tr  class=\"row3\" alt=\"" . $item_array['name'] . "\">\n";
 
         /* Mark required field with simbol '*' */
         if ($item_array['required'] == "on") {
-            $string .= "<td class=\"$bg_color\">" . $item_array['title'] . " <span style=\"color: red;\">*</span> </td>\n";
+            $string .= "<td>" . $item_array['title'] . " <span style=\"color: red;\">*</span> </td>\n";
         } else {
-            $string .= "<td class=\"$bg_color\">" . $item_array['title'] . "</td>\n";
+            $string .= "<td>" . $item_array['title'] . "</td>\n";
         }
 
-        $string .= "<td class=\"$bg_color\"><input type=\"text\" name=\"" . $item_array['name'] . "\" value=\"" . htmlspecialchars($item_array['value']) . "\" size=\"" . $item_array['length'] . "\" maxlength=\"" . $item_array['maxlength'] . "\" class=\"$css_name\"></td>\n";
+        $string .= "<td><input type=\"text\" name=\"" . $item_array['name'] . "\" value=\"" . htmlspecialchars($item_array['value']) . "\" size=\"" . $item_array['length'] . "\" maxlength=\"" . $item_array['maxlength'] . "\"></td>\n";
         $string .= "</tr>\n";
 
         /* Return html code */
@@ -4750,12 +4873,12 @@ $(document).ready(function () {
         $string .= "<tr  class=\"row3\" alt=\"" . $item_array['name'] . "\">\n";
 
         if ($item_array['required'] == "on") {
-            $string .= "<td class=\"$bg_color\">" . $item_array['title'] . " <span style=\"color: red;\">*</span> </td>\n";
+            $string .= "<td>" . $item_array['title'] . " <span style=\"color: red;\">*</span> </td>\n";
         } else {
-            $string .= "<td class=\"$bg_color\">" . $item_array['title'] . "</td>\n";
+            $string .= "<td>" . $item_array['title'] . "</td>\n";
         }
 
-        $string .= "<td class=\"$bg_color\"><input id=\"" . $id . "\" type=\"text\" name=\"" . $item_array['name'] . "\" value=\"" . htmlspecialchars($item_array['value'], ENT_QUOTES, SITE_ENCODING) . "\" size=\"" . $item_array['length'] . "\" maxlength=\"" . $item_array['maxlength'] . "\" class=\"$css_name\"></td>\n";
+        $string .= "<td><input id=\"" . $id . "\" type=\"text\" name=\"" . $item_array['name'] . "\" value=\"" . htmlspecialchars($item_array['value'], ENT_QUOTES, SITE_ENCODING) . "\" size=\"" . $item_array['length'] . "\" maxlength=\"" . $item_array['maxlength'] . "\"></td>\n";
         $string .= "</tr>\n";
 
         return $string;
@@ -4768,19 +4891,17 @@ $(document).ready(function () {
      */
     function get_password_input($item_array) {
 
-        /* Un-quote slashes */
-        $value = stripslashes($value);
-        /* HTML code */
+        $string = '';
         $string .= "<tr  class=\"row3\" alt=\"" . $item_array['name'] . "\">\n";
 
         /* Mark required field with simbol '*' */
         if ($item_array['required'] == "on") {
-            $string .= "<td class=\"$bg_color\">" . $item_array['title'] . " <span style=\"color: red;\">*</span> </td>\n";
+            $string .= "<td>" . $item_array['title'] . " <span style=\"color: red;\">*</span> </td>\n";
         } else {
-            $string .= "<td class=\"$bg_color\">" . $item_array['title'] . "</td>\n";
+            $string .= "<td>" . $item_array['title'] . "</td>\n";
         }
 
-        $string .= "<td class=\"$bg_color\"><input type=\"password\" name=\"" . $item_array['name'] . "\" value=\"\" size=\"" . $item_array['length'] . "\" maxlength=\"" . $item_array['maxlength'] . "\" class=\"$css_name\"></td>\n";
+        $string .= "<td><input type=\"password\" name=\"" . $item_array['name'] . "\" value=\"\" size=\"" . $item_array['length'] . "\" maxlength=\"" . $item_array['maxlength'] . "\"></td>\n";
         $string .= "</tr>\n";
 
         /* Return html code */
@@ -4794,16 +4915,14 @@ $(document).ready(function () {
      */
     function get_photo_input($item_array) {
 
-        /* Un-quote slashes */
-        $value = stripslashes($value);
-        /* HTML code */
+        $string = '';
         $string .= "<tr  class=\"row3\" alt=\"" . $item_array['name'] . "\">\n";
 
         /* Mark required field with simbol '*' */
         if ($item_array['required'] == "on") {
-            $string .= "<td class=\"$bg_color\">" . $item_array['title'] . " <span style=\"color: red;\">*</span> </td>\n";
+            $string .= "<td>" . $item_array['title'] . " <span style=\"color: red;\">*</span> </td>\n";
         } else {
-            $string .= "<td class=\"$bg_color\">" . $item_array['title'] . "</td>\n";
+            $string .= "<td>" . $item_array['title'] . "</td>\n";
         }
 
         $string .= '<td>';
@@ -4842,12 +4961,8 @@ $(document).ready(function () {
      * @return string
      */
     function get_hidden_input($item_array) {
-
-        /* Un-quote slashes */
-        $value = stripslashes($value);
-        /* HTML code */
-        $string .= "<input type=\"hidden\" name=\"" . $item_array['name'] . "\" value=\"" . $item_array['value'] . "\" /></td>\n";
-        /* Return html code */
+        $string = '';
+        $string .= '<input type="hidden" name="'.$item_array['name'].'" value="'.$item_array['value'].'" />';
         return $string;
     }
 
@@ -5314,7 +5429,7 @@ $(document).ready(function () {
             if(Multilanguage::is_set('L_AGREEMENT_TEXT_FORM')){
                 $text=Multilanguage::_('L_AGREEMENT_TEXT_FORM');
             }else{
-                $text=$this->getConfigValue('post_form_agreement_text_add');
+                $text=_e($this->getConfigValue('post_form_agreement_text_add'));
             }
 
             $id=md5(time().rand(100,999));

@@ -8,9 +8,10 @@
     <copyright>Copyright (C) 2012-2014 Sitebill Team. All rights reserved.</copyright>
     <license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>false</backendMenu>
-    <version status="beta">1.4.4</version>
+    <version status="beta">1.7.6</version>
     <administration>
         <!-- Administration Menu Section -->
         <menu>CMS Sitebill API</menu>
+        <category>Системные</category>
     </administration>
 </install>

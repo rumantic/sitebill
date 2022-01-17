@@ -14,7 +14,7 @@ class system_update extends SiteBill {
 
             self::removeDirectory(SITEBILL_DOCUMENT_ROOT . '/install', $msgs);
 
-            if (count($msg) > 0) {
+            if (count($msgs) > 0) {
                 foreach ($msgs as $msg) {
                     echo $msg . '<br/>';
                 }
@@ -35,13 +35,13 @@ class system_update extends SiteBill {
 
     function rewrite_file($htaccess_file) {
         if (is_writable($htaccess_file) or ! file_exists($htaccess_file)) {
-            $content = "<FilesMatch \"\.(jpg|gif|png|jpeg|xlsx|webp)$\">\nOrder allow,deny\nAllow from all\n</FilesMatch>\nOrder deny,allow\nDeny from all";
+            $content = "<FilesMatch \"\.(jpg|gif|png|jpeg|xlsx|webp|svg)$\">\nOrder allow,deny\nAllow from all\n</FilesMatch>\nOrder deny,allow\nDeny from all";
             if (file_put_contents($htaccess_file, $content)) {
                 $rs = 'Файл ' . $htaccess_file . ' успешно перезаписан</br>';
                 return $rs;
             }
         }
-        $rs = "<font color=\"red\">Ошибка перезаписи файла '.$htaccess_file.' необходимо вручную прописать в файл следующие строчки: <strong><br><FilesMatch \"\.(jpg|gif|png|jpeg|webp)$\">\nOrder allow,deny\nAllow from all\n</FilesMatch>\nOrder deny,allow\nDeny from all</strong></font></br>";
+        $rs = "<font color=\"red\">Ошибка перезаписи файла '.$htaccess_file.' необходимо вручную прописать в файл следующие строчки: <strong><br><FilesMatch \"\.(jpg|gif|png|jpeg|webp|svg)$\">\nOrder allow,deny\nAllow from all\n</FilesMatch>\nOrder deny,allow\nDeny from all</strong></font></br>";
         return $rs;
     }
 
@@ -145,9 +145,6 @@ class system_update extends SiteBill {
         $columns = array();
 
         //удаление неиспользуемой колонки street
-
-
-
         $query = 'SELECT * FROM ' . DB_PREFIX . '_columns WHERE name=? AND table_id=(SELECT table_id FROM ' . DB_PREFIX . '_table WHERE name=? LIMIT 1)';
         $stmt = $DBC->query($query, array('street', 'data'));
         if (!$stmt) {
@@ -156,7 +153,6 @@ class system_update extends SiteBill {
         }
 
         //Добавление в модель user полей для socialauth
-
         $rs .= 'Добавление колонок для хранения идентификаторов социальных сетей.<br>';
 
         $ss = array();
@@ -181,7 +177,7 @@ class system_update extends SiteBill {
             $stmt = $DBC->query($query, array('vk_id', 'gl_id', 'tw_id', 'ok_id', 'fb_id', $tid));
             if ($stmt) {
                 while ($ar = $DBC->fetch($stmt)) {
-                    $ss[] = $ar;
+                    $ss[] = $ar['name'];
                 }
             }
         }
@@ -204,11 +200,15 @@ class system_update extends SiteBill {
                 if (!in_array($s, $ss)) {
                     $max_sort_order += 1;
                     $query = "INSERT INTO `re_columns` (`active`, `table_id`, `group_id`, `name`, `title`, `type`, `required`, `unique`, `hint`, `parameters`, `sort_order`) VALUES
-    (1, " . $tid . ", '" . $agroup . "', '" . $s . "', '" . $s . "', 'safe_string', 0, 0, '', 'a:0:{}', '" . $max_sort_order . "');";
+    (1, " . $tid . ", '" . $agroup . "', '" . $s . "', '" . $s . "', 'hidden', 0, 0, '', 'a:0:{}', '" . $max_sort_order . "');";
                     $stmt = $DBC->query($query);
                     $query = "ALTER TABLE " . DB_PREFIX . "_user ADD column `" . $s . "` varchar(50)";
                     $stmt = $DBC->query($query);
                     $rs .= 'Колонка ' . $s . ' добавлена.<br>';
+                }else{
+                    $query = "UPDATE `re_columns` SET `type` = ? WHERE name = ? AND table_id = ?;";
+                    $stmt = $DBC->query($query, array('hidden', $s, $tid));
+                    $rs .= 'Тип свойства ' . $s . ' изменен на hidden.<br>';
                 }
             }
         }
@@ -324,6 +324,14 @@ class system_update extends SiteBill {
   `message` text,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
+        $query_data[] = "ALTER TABLE " . DB_PREFIX . "_apps ADD column `params` text";
+
+        $query_data[] = "CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_stat_useractivity_d` (
+                `user_id` int(11) NOT NULL,
+                `date` date NOT NULL,
+                UNIQUE KEY `user_id_2` (`user_id`,`date`),
+                KEY `user_id` (`user_id`)
+              ) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
 
         $DBC = DBC::getInstance();
 
@@ -351,6 +359,14 @@ class system_update extends SiteBill {
 
 
         }
+
+        /**
+         * Смена типа поля для полей с именем 'youtube' и типом 'safe_string' на тип 'youtube'
+         */
+        $query_upd_col2 = 'UPDATE ' . DB_PREFIX . '_columns SET `type` = ? WHERE `name`=? AND `type` = ?';
+        $stmt = $DBC->query($query_upd_col2, array('youtube', 'youtube', 'safe_string'));
+
+
 
         $media_docs_folder = SITEBILL_DOCUMENT_ROOT . '/img/mediadocs/';
         if (!file_exists($media_docs_folder)) {
@@ -406,55 +422,45 @@ class system_update extends SiteBill {
             //get apps.menu
             $rs .= $sitebill_admin->update_app('menu', $secret_key);
         }
-        $rs .= $sitebill_admin->update_app('geodata', $secret_key);
-        //if ( !$this->get_app_version('logger') ) {
+        //$rs .= $sitebill_admin->update_app('geodata', $secret_key);
         $rs .= $sitebill_admin->update_app('logger', $secret_key);
-        //}
-        if (!$this->get_app_version('customentity')) {
-            $rs .= $sitebill_admin->update_app('customentity', $secret_key);
-        }
-        if (!$this->get_app_version('toolbox')) {
-            $rs .= $sitebill_admin->update_app('toolbox', $secret_key);
-        }
 
-        //if (!$this->get_app_version('third')) {
         $rs .= $sitebill_admin->update_app('third', $secret_key);
-        //}
-
-        //if ( !$this->get_app_version('api') ) {
         $rs .= $sitebill_admin->update_app('api', $secret_key);
         $rs .= $sitebill_admin->update_app('sitebill', $secret_key);
-        $rs .= $sitebill_admin->update_app('realtylogv2', $secret_key);
 
+        $dependency_apps_array = array(
+            'customentity',
+            'toolbox',
+            'bridge',
+            'realtylogv2',
+            'admin3',
+            'profile',
+            'angular',
+            'vue',
+            'realtyview',
+            'data',
+            'memorylist',
+            'akismet',
+            'cloud',
+        );
+        //@todo: нужно для браузерной версии сделать пошаговую загрузку обновлений
+        //if ( php_sapi_name() == 'cli' ) {
+            foreach ($dependency_apps_array as $app_name) {
+                $rs .= $this->check_and_update($sitebill_admin, $secret_key, $app_name);
+            }
         //}
-        if (!$this->get_app_version('realtyview')) {
-            $rs .= $sitebill_admin->update_app('realtyview', $secret_key);
-        }
-
-        if (!$this->get_app_version('data')) {
-            $rs .= $sitebill_admin->update_app('data', $secret_key);
-        }
-        /*
-        if (!$this->get_app_version('messenger')) {
-            $rs .= $sitebill_admin->update_app('messenger', $secret_key);
-        }
-         *
-         */
-        if (!$this->get_app_version('memorylist')) {
-            $rs .= $sitebill_admin->update_app('memorylist', $secret_key);
-        }
-        if (!$this->get_app_version('akismet')) {
-            $rs .= $sitebill_admin->update_app('akismet', $secret_key);
-        }
-        if (!$this->get_app_version('cloud')) {
-            $rs .= $sitebill_admin->update_app('cloud', $secret_key);
-        }
-
-
-
-
 
         $rs .= 'Зависимые приложения обновлены<br>';
+        $rs .= $this->update_null();
+        return $rs;
+    }
+
+    function check_and_update ($sitebill_admin, $secret_key, $app_name ) {
+        $rs = '';
+        if (!$this->get_app_version($app_name)) {
+            $rs .= $sitebill_admin->update_app($app_name, $secret_key);
+        }
         return $rs;
     }
 
@@ -482,4 +488,46 @@ class system_update extends SiteBill {
         return $version;
     }
 
+    function update_null () {
+        $rs = '';
+        $columns_list = $this->get_columns_list();
+        if ( !empty($columns_list) ) {
+            $rs .= $this->set_nullable($columns_list);
+        }
+        return $rs;
+    }
+
+    function set_nullable ( $columns_list ) {
+        $DBC = DBC::getInstance();
+        $rs = '';
+        foreach ( $columns_list as $ar ) {
+            $query = "ALTER TABLE `".$ar['TABLE_NAME']."` MODIFY `".$ar['COLUMN_NAME']."` ".$ar['COLUMN_TYPE']." null";
+            $stmt = $DBC->query($query, array());
+            if ( $stmt ) {
+                $rs .= 'set nullable for column '.$ar['TABLE_NAME'].'.'.$ar['COLUMN_NAME'].'<br>';
+            }
+        }
+        return $rs;
+    }
+
+    function get_columns_list () {
+        $DBC = DBC::getInstance();
+        $query = 'select * from information_schema.columns where 
+                                               table_schema = ? and 
+                                               IS_NULLABLE=? AND 
+                                               DATA_TYPE != \'datetime\' AND 
+                                               DATA_TYPE != \'timestamp\' AND
+                                               COLUMN_KEY<>? AND 
+                                               COLUMN_DEFAULT IS NULL
+                                               ';
+        $stmt = $DBC->query($query, array(DB_BASE,'NO', 'PRI'));
+        if ( $stmt ) {
+            while ($ar = $DBC->fetch($stmt)) {
+                $ra[] = $ar;
+            }
+        } else {
+            echo $DBC->getLastError();
+        }
+        return $ra;
+    }
 }

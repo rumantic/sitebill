@@ -1,44 +1,36 @@
 <form id="save_fields_form" method="post" action="{$save_url}">
-<div id="fields">
-{foreach from=$model_fields item=model_field}
-	<div class="field well well-sm">
-		<input type="checkbox" name="field[]" value="{$model_field.name}"{if in_array($model_field.name, $used_fields)} checked="checked"{/if}>{$model_field.title} ({$model_field.name})
-		<a href="" class="up btn btn-sm btn-info" title="{_e t="Выше (up)"}">{if isset($bootstrap_version) && $bootstrap_version < 3}<i class="icon-white icon-arrow-up"></i>{else}<i class="fa fa-arrow-up"></i>{/if}</a>
-		<a href="" class="down btn btn-sm btn-info" title="{_e t="Ниже (down)"}">{if isset($bootstrap_version) && $bootstrap_version < 3}<i class="icon-white icon-arrow-down"></i>{else}<i class="fa fa-arrow-down"></i>{/if}</a>
-		<a href="" class="first btn btn-sm btn-info" title="{_e t="Первая (First)"}">{if isset($bootstrap_version) && $bootstrap_version < 3}<i class="icon-white icon-backward"></i>{else}<i class="fa fa-fast-backward"></i>{/if}</a>
-		<a href="" class="last btn btn-sm btn-info" title="{_e t="Последняя (Last)"}">{if isset($bootstrap_version) && $bootstrap_version < 3}<i class="icon-white icon-forward"></i>{else}<i class="fa fa-fast-forward"></i>{/if}</a>
-	</div>
-{/foreach}
-</div>
-<button id="save_fields" type="submit">{_e t="Сохранить"}</button>
-</form>
+	<div id="fields">
+		<div class="dd dd-draghandle">
+			<ol class="dd-list" id="grid_list2">
+				{foreach from=$model_fields item=model_field}
+					<li class="dd-item dd2-item">
+						<div class="dd-handle dd2-handle">
+							<i class="normal-icon icon-move pink bigger-130"></i>
+						</div>
+						<div class="dd2-content">
+							<b>{$model_field.title}</b> ({$model_field.name})
+							<div class="pull-right">
+								<label>
+									<input name="field[]" value="{$model_field.name}" type="checkbox" class="ace control-activity"{if in_array($model_field.name, $used_fields)} checked="checked"{/if}>
+									<span class="lbl"> </span>
+								</label>
+							</div>
+						</div>
+					</li>
+				{/foreach}
 
+			</ol>
+		</div>
+	</div>
+	<button class="btn btn-primary" id="save_fields" type="submit">{_e t="Сохранить"}</button>
+</form>
 
 {literal}
 <script>
-$('.up').click(function(e){
-	e.preventDefault();
-	var p=$(this).parents('div.field').eq(0);
-	var prev=p.prevAll('div.field').eq(0);
-	p.insertBefore(prev);
-});
-$('.down').click(function(e){
-	e.preventDefault();
-	var p=$(this).parents('div.field').eq(0);
-	var next=p.nextAll('div.field').eq(0);
-	p.insertAfter(next);
-});
-$('.first').click(function(e){
-	e.preventDefault();
-	var p=$(this).parents('div.field').eq(0);
-	var first=$('#fields').find('div.field:first');
-	p.insertBefore(first);
-});
-$('.last').click(function(e){
-	e.preventDefault();
-	var p=$(this).parents('div.field').eq(0);
-	var last=$('#fields').find('div.field:last');
-	p.insertAfter(last);
-});
+	$(document).ready(function () {
+		$('#grid_list2').sortable({
+			handle: ".dd-handle"
+		}).disableSelection();
+	});
 </script>
 {/literal}

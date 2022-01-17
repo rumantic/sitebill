@@ -121,7 +121,7 @@ CREATE TABLE `" . DB_PREFIX . "_component` (
             case 'edit' : {
                     $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
                     //echo '<pre>';
-                    //print_r($form_data[$this->table_name]);			    
+                    //print_r($form_data[$this->table_name]);
                     $rs = $this->get_form($form_data[$this->table_name], 'edit');
 
                     break;
@@ -176,12 +176,12 @@ CREATE TABLE `" . DB_PREFIX . "_component` (
 
     /**
      * Get top menu
-     * @param void 
+     * @param void
      * @return string
      */
     function getTopMenu() {
         $rs = '';
-        //$rs .= '<a href="?action='.$this->action.'&do=new" class="btn btn-primary">Добавить компонент</a>';
+        $rs .= '<a href="?action='.$this->action.'&do=new" class="btn btn-primary">Добавить компонент</a>';
         return $rs;
     }
 
@@ -203,7 +203,7 @@ CREATE TABLE `" . DB_PREFIX . "_component` (
     /**
      * Get name
      * @param int $component_id
-     * @return string 
+     * @return string
      */
     function getName($component_id) {
         $query = "select * from " . DB_PREFIX . "_component where component_id=$component_id";
@@ -245,7 +245,7 @@ CREATE TABLE `" . DB_PREFIX . "_component` (
     }
 
     /**
-     * Get function select box 
+     * Get function select box
      * @param
      * @return
      */
@@ -331,7 +331,7 @@ CREATE TABLE `" . DB_PREFIX . "_component` (
 
     /**
      * Get structure processor
-     * @param int $component_id 
+     * @param int $component_id
      * @return string
      */
     function getStructureProcessor($component_id) {

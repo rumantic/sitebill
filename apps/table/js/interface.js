@@ -1,4 +1,35 @@
+function showTableBlocksByLetters(letters) {
+    if(letters.length == 0){
+        $('.columnslist_accordion_group').show();
+    }else{
+        $('.columnslist_accordion_group').each(function () {
+            if(-1 === letters.indexOf($(this).data('letter'))){
+                $(this).hide();
+            }else{
+                $(this).show();
+            }
+        });
+    }
+}
 $(document).ready(function () {
+
+    $('.firstletter').click(function () {
+        if($(this).hasClass('active')){
+            $(this).removeClass('active');
+        }else{
+            $(this).addClass('active')
+        }
+        var letters = [];
+        $(this).parents('.firstletters').eq(0).find('.firstletter').each(function () {
+            if($(this).hasClass('active')){
+                letters.push($(this).data('letter'));
+            }
+        });
+        showTableBlocksByLetters(letters);
+    });
+
+    $('.tooltipe_block').popover({trigger: 'hover'});
+
     var fixHelper = function (e, ui) {
         ui.children().each(function () {
             $(this).width($(this).width());
@@ -31,6 +62,7 @@ $(document).ready(function () {
      * применение сортировки к полям модели
      */
     $(".applied").sortable({
+        handle: ".dd-move",
         stop: function (event, ui) {
             var parent = $(ui.item).parents('.accordion-group').eq(0);
             if (parent.length != 1) {

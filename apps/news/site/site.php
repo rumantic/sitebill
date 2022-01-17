@@ -46,7 +46,7 @@ class news_site extends news_admin {
         }
 
         $breadcrumbs = array();
-        $breadcrumbs[] = '<a href="' . $this->createUrlTpl('') . '/">' . Multilanguage::_('L_HOME') . '</a>';
+        $breadcrumbs[] = '<a href="' . $this->createUrlTpl('') . '">' . Multilanguage::_('L_HOME') . '</a>';
 
         if ($topic_id != 0) {
             $breadcrumbs[] = '<a href="' . $this->createUrlTpl($app_alias) . '">' . $app_title . '</a>';

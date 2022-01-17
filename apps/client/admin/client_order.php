@@ -117,7 +117,7 @@ class Client_Order extends client_site {
                                     header('location: ' . SITEBILL_MAIN_URL . '/client/order/' . $order_model . '/online-' . $order_model . '/');
                                     exit();
                                 } else {
-                                    $rs = '<div class="alert alert-success">' . Multilanguage::_('L_MESSAGE_ORDER_ACCEPTED_EXT') . '</div>';
+                                    $rs = $this->getSaveSuccessMessage();
                                 }
                             }
                         }
@@ -279,7 +279,7 @@ class Client_Order extends client_site {
                 unset($form_data['phone']);
                 $client_admin->data_model['client']['order_text']['value'] = $order_table;
 
-                $client_order_id = $client_admin->add_data($client_admin->data_model['client']);
+                $client_order_id = $this->add_record_to_client_table($client_admin);
                 $this->writeLog(array('apps_name' => 'apps.client', 'method' => __METHOD__, 'message' => 'add client record', 'type' => NOTICE));
 
                 if ($client_admin->getError()) {
@@ -289,6 +289,13 @@ class Client_Order extends client_site {
                 } else {
                     $subject = $_SERVER['SERVER_NAME'] . ': Новая заявка от клиента / ' . $client_admin->data_model['client']['type_id']['select_data'][$order_model];
                     $to = $this->get_email_list();
+                    $_owner_user_id = intval($this->request()->get('_owner_user_id'));
+                    if ( $_owner_user_id > 0 ) {
+                        $owner_user_record = \system\lib\model\eloquent\User::where('user_id', '=', $_owner_user_id)->first();
+                        if ( $owner_user_record->email ) {
+                            $to[$owner_user_record->email] = $owner_user_record->email;
+                        }
+                    }
 
                     $from = $this->getConfigValue('system_email');
                     $order_mail_body = $order_table;
@@ -300,12 +307,36 @@ class Client_Order extends client_site {
 
                     $this->afterClientOrderSave($order_model, $client_order_id, $form_data, $client_admin->data_model['client']);
 
-                    return json_encode(array('status' => 'ok', 'message' => '<div class="alert alert-success">' . Multilanguage::_('L_MESSAGE_ORDER_ACCEPTED_EXT') . '</div>'));
+                    return json_encode(
+                        array(
+                            'status' => 'ok',
+                            'message' => $this->getSaveSuccessMessage()
+                        )
+                    );
                 }
             } else {
 
             }
         }
+    }
+
+    function add_record_to_client_table ($client_admin) {
+        return $client_admin->add_data($client_admin->data_model['client']);
+    }
+
+    function getSaveSuccessMessage() {
+        if ( $this->getConfigValue('apps.client.thankyou_url') != '' ) {
+            return $this->get_ThankYou_Url_redirect();
+        } else {
+            return '<div class="alert alert-success">' . Multilanguage::_('L_MESSAGE_ORDER_ACCEPTED_EXT') . '</div>';
+        }
+    }
+
+    function get_ThankYou_Url_redirect () {
+        $rs = '<script>
+            window.location.href = "'.$this->getConfigValue('apps.client.thankyou_url').'";
+        </script>';
+        return $rs;
     }
 
     function afterClientOrderSave($order_model_name, $client_order_id, $form_data, $client_form_data){
@@ -405,6 +436,7 @@ class Client_Order extends client_site {
       } */
 
     function get_order_form($model_name, $options = array(), $custom_template = false) {
+        $rs = '';
         if (in_array($model_name, array('data', 'city', 'country', 'region', 'user'))) {
             return '';
         }
@@ -443,12 +475,21 @@ class Client_Order extends client_site {
 
         $rs .= $this->get_ajax_functions();
         if (1 == $this->getConfigValue('apps.geodata.enable')) {
-            $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/geodata/js/geodata.js"></script>';
+            $hasgeofield = false;
+            foreach ($form_data as $item){
+                if($item['type'] == 'geodata'){
+                    $hasgeofield = true;
+                    break;
+                }
+            }
+            if(!$hasgeofield){
+                $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/geodata/js/geodata.js"></script>';
+            }
         }
         $rs .= '<form method="post" class="client_form '.$options_form_class.'" action="" enctype="multipart/form-data" id="client_form">';
 
         if ($this->getError()) {
-            $smarty->assign('form_error', $form_generator->get_error_message_row($this->GetErrorMessage()));
+            $this->template->assert('form_error', $form_generator->get_error_message_row($this->GetErrorMessage()));
         }
 
         $el = $form_generator->compile_form_elements($form_data);
@@ -462,25 +503,76 @@ class Client_Order extends client_site {
         $el['form_footer'] = '</form>';
 
         $el['controls']['submit'] = array('html' => '<input type="submit" class="btn btn-primary" value="' . $button_title . '">');
-        $smarty->assign('form_elements', $el);
-        $custom_template_name = basename($custom_template);
-        $custom_template_name = trim($custom_template_name, '.');
+        $this->template->assert('form_elements', $el);
 
-        if ($custom_template == '') {
-            $tpl_name = $this->getAdminTplFolder() . '/data_form.tpl';
-        } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $custom_template_name . '.tpl') and $custom_template) {
-            $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $custom_template_name . '.tpl';
-        } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $model_name . '_form.tpl')) {
-            $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $model_name . '_form.tpl';
-        } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl')) {
-            $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl';
-        } else {
+        $custom_template_name = '';
+        if($custom_template){
+            $custom_template_name = basename($custom_template);
+            $custom_template_name = trim($custom_template_name, '.');
+        }
+
+        $tpl_name = '';
+
+        //var_dump($custom_template_name);
+
+        //Проверяем наличие шаблона по его имени
+        if($custom_template_name != ''){
+            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $custom_template_name . '.tpl')) {
+                $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $custom_template_name . '.tpl';
+            }elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/resources/smartypages/' . $custom_template_name . '.tpl')) {
+                $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/resources/smartypages/' . $custom_template_name . '.tpl';
+            }
+        }
+
+        //Проверяем наличие шаблона по предопределенным именам модели формы
+        if($tpl_name == ''){
+            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $model_name . '_form.tpl')) {
+                $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $model_name . '_form.tpl';
+            }elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/resources/smartypages/' . $model_name . '_form.tpl')) {
+                $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/resources/smartypages/' . $model_name . '_form.tpl';
+            }
+        }
+
+        //Проверяем наличие переопределенной общей формы
+        if($tpl_name == ''){
+            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl')) {
+                $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl';
+            }
+        }
+
+        //Устанавливаем в качестве шаблона дефолтную системную форму
+        if($tpl_name == ''){
             $tpl_name = $this->getAdminTplFolder() . '/data_form.tpl';
         }
-        return $smarty->fetch($tpl_name);
+
+        //var_dump($tpl_name);
+
+
+
+        /*if ($custom_template == '') {
+            $tpl_name = $this->getAdminTplFolder() . '/data_form.tpl';
+        } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $custom_template_name . '.tpl') and $custom_template) {
+            //$tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $custom_template_name . '.tpl';
+        } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $model_name . '_form.tpl')) {
+            //$tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $model_name . '_form.tpl';
+        } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl')) {
+            //$tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl';
+        } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/resources/smartypages/' . $model_name . '_form.tpl')) {
+            //$tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/resources/smartypages/' . $model_name . '_form.tpl';
+        } else {
+            $tpl_name = $this->getAdminTplFolder() . '/data_form.tpl';
+        }*/
+        if ( $options['user_id'] ) {
+            $_owner_user_id = '<input type="hidden" name="_owner_user_id" id="_owner_user_id" value="'.$options['user_id'].'">';
+        } else {
+            $_owner_user_id = '';
+        }
+
+        return $this->template->fetch($tpl_name).$_owner_user_id;
     }
 
     function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
+        $rs = '';
         $_SESSION['allow_disable_root_structure_select'] = true;
         global $smarty;
         if ($button_title == '') {
@@ -538,7 +630,7 @@ class Client_Order extends client_site {
         $DBC = DBC::getInstance();
         $query = 'SELECT COUNT(table_id) AS cnt FROM ' . DB_PREFIX . '_table WHERE name=?';
         $stmt = $DBC->query($query, array($model_name));
-        if (!stmt) {
+        if (!$stmt) {
             return false;
         }
 
@@ -549,7 +641,7 @@ class Client_Order extends client_site {
 
         $query = 'SELECT COUNT(entity_name) AS cnt FROM ' . DB_PREFIX . '_customentity WHERE entity_name=?';
         $stmt = $DBC->query($query, array($model_name));
-        if (!stmt) {
+        if (!$stmt) {
             return false;
         }
 
@@ -573,12 +665,12 @@ class Client_Order extends client_site {
         return $form_data[$model_name];
     }
 
-    private function loadOrderModel($model_name) {
+    protected function loadOrderModel($model_name) {
 
         $DBC = DBC::getInstance();
         $query = 'SELECT COUNT(table_id) AS cnt FROM ' . DB_PREFIX . '_table WHERE name=?';
         $stmt = $DBC->query($query, array($model_name));
-        if (!stmt) {
+        if (!$stmt) {
             return false;
         }
 

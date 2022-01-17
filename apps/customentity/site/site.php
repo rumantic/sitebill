@@ -41,6 +41,30 @@ class customentity_site extends customentity_admin {
 		if($title!=''){
 			$this->template->assign('breadcrumbs', $this->getEntityListBreadcrumbs($cent, $title));
 		}
+
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/page/admin/admin.php';
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/page/site/site.php';
+        $PS = new page_site();
+        $page = $PS->getPageByURI('_customentity_'.$cent['alias']);
+
+        if ($page != 0) {
+            if ($page['meta_title'] != '') {
+                $this->template->assign('meta_title', $page['meta_title']);
+            }
+            if ($page['meta_description'] != '') {
+                $this->template->assign('meta_description', $page['meta_description']);
+            }
+            if ($page['title'] != '') {
+                $this->template->assign('title', $page['title']);
+            }
+            if ($page['body'] != '') {
+                $this->template->assign('description', $page['body']);
+            }
+
+            if ($page['meta_keywords'] != '') {
+                $this->template->assign('meta_keywords', $page['meta_keywords']);
+            }
+        }
 	}
 	
 	function catchEntityItem($REQUESTURIPATH){

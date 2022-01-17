@@ -7,6 +7,10 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
 class table_admin extends Object_Manager {
+    /**
+     * @var Admin_Table_Helper
+     */
+    public $helper;
 
     /**
      * Constructor
@@ -61,7 +65,7 @@ class table_admin extends Object_Manager {
 
     public function _preload() {
         if (1 == $this->getConfigValue('block_user_search_forms')) {
-            
+
         } else {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/search_forms_admin.php';
             $SFA = new search_forms_admin();
@@ -70,7 +74,7 @@ class table_admin extends Object_Manager {
     }
 
     function main() {
-
+        $rs = '';
         if ($this->section == 'search_forms') {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/search_forms_admin.php';
             $SFA = new search_forms_admin();
@@ -239,6 +243,7 @@ class table_admin extends Object_Manager {
     }
 
     protected function getOptypeCheckboxes($name, $vals = array(), $variants = array()) {
+        $rs = '';
         $rs .= '<div class="checkbox_collection">';
         $rs .= '<a href="#" class="checkbox_collection_decheck">Очистить все</a>';
         foreach ($variants as $k => $v) {
@@ -343,22 +348,14 @@ class table_admin extends Object_Manager {
     }
 
     protected function _importtableAction() {
-        
-        /*if (!defined('DEVMODE')) {
-            return $this->_defaultAction();
-        }*/
-        
+
         $table_id = (int) $this->getRequestValue('table_id');
 
         if (isset($_POST['submit'])) {
-            
+
             if (!empty($_FILES)) {
-                
                 $tempFile = $_FILES['importfile']['tmp_name'];
                 $targetPath = SITEBILL_DOCUMENT_ROOT . '/cache/upl' . '/';
-
-
-
                 $arr = explode('.', $_FILES['importfile']['name']);
                 $ext = strtolower(end($arr));
                 if ($ext != 'json') {
@@ -366,29 +363,31 @@ class table_admin extends Object_Manager {
                 }
                 $content = file_get_contents($tempFile);
                 $columns = json_decode($content, true);
-                
+
                 if (isset($columns['elements']) && count($columns['elements']) > 0) {
-                    $existing_columns = require_once SITEBILL_DOCUMENT_ROOT . '/apps/columns/admin/admin.php';
+                    $errors = '';
+                    require_once SITEBILL_DOCUMENT_ROOT . '/apps/columns/admin/admin.php';
                     $CM = new columns_admin();
                     $model = $CM->data_model;
-                    //print_r($model);
                     $tablec = $CM->table_name;
 
                     $DBC = DBC::getInstance();
-                    $query = 'SELECT columns_id, name FROM ' . DB_PREFIX . '_' . $tablec . ' WHERE table_id=?';
-                    $stmt = $DBC->query($query, array($table_id));
+                    //$query = 'SELECT columns_id, name FROM ' . DB_PREFIX . '_' . $tablec . ' WHERE table_id=?';
+                    //$stmt = $DBC->query($query, array($table_id));
 
 
                     foreach ($columns['elements'] as $k => $v) {
                         $v['table_id'] = $table_id;
 
                         foreach ($model[$tablec] as $it => $iv) {
-                            $model[$p][$it]['value'] = $v[$it];
+                            $model[$tablec][$it]['value'] = $v[$it];
                         }
                         $CM->clearError();
-                        $CM->add_data($model[$p]);
+                        $CM->add_data($model[$tablec]);
                         if ( $CM->getError() ) {
                             $errors .= $CM->getError().'<br>';
+                        }else{
+                            $errors .= 'Свойство '.$v['name'].' импортировано<br>';
                         }
                     }
                     return 'Импорт завершен<br>'.$errors;
@@ -437,12 +436,12 @@ class table_admin extends Object_Manager {
             $file_name = $ar['name'] . '.model.json';
             header('Content-Type: text');
             header('Content-Disposition: attachment; filename="' . $file_name . '"');
-            echo json_encode(array('elements' => $columns));
+            echo json_encode(array('elements' => $columns), JSON_PRETTY_PRINT);
         }
         exit();
     }
-    
- 
+
+
     /**
      * Управление активностью полей в разделах в одной общей таблице
      * @global type $smarty
@@ -456,7 +455,7 @@ class table_admin extends Object_Manager {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
         $cs = $Structure_Manager->loadCategoryStructure();
-        
+
         $active_topic_id = intval($this->getRequestValue('active_topic_id'));
         if($active_topic_id > 0){
             //print_r($cs);
@@ -469,12 +468,12 @@ class table_admin extends Object_Manager {
             }
             //$cs['childs'][0] = array($topic_id);
         }
-        
+
         $DBC = DBC::getInstance();
 
         if (strtolower($_SERVER['REQUEST_METHOD']) == 'post') {
             $rules = $_POST['rule'];
-            
+
             if($active_topic_id > 0 && empty($rules)){
                 $query = 'SELECT `columns_id`, `active_in_topic` FROM ' . DB_PREFIX . '_columns WHERE `table_id`=? AND `active`=1 AND `type` != ?';
                 $stmt = $DBC->query($query, array($table_id, 'select_box_structure'));
@@ -517,24 +516,24 @@ class table_admin extends Object_Manager {
                         }
                     }
                 }
-                
-                
-                
+
+
+
                 $query = 'UPDATE ' . DB_PREFIX . '_columns SET `active_in_topic`=? WHERE `columns_id`=?';
                 foreach ($columns as $cid => $v) {
                     if($active_topic_id > 0){
-                        
-                        
+
+
                         if (!isset($rules[$cid]) || (isset($rules[$cid]) && count($rules[$cid]) == count($ch))) {
                             if(empty($columns[$cid])){
-                                
+
                             }else{
                                 $columns[$cid] = array_merge($columns[$cid], array_keys($rules[$cid]));
                             }
                         } else {
                             $columns[$cid] = array_merge($columns[$cid], array_keys($rules[$cid]));
                         }
-                        
+
                     }else{
                         if (!isset($rules[$cid])) {
                             $columns[$cid] = array();
@@ -553,7 +552,7 @@ class table_admin extends Object_Manager {
                         $s = '';
                     }
                     $stmt = $DBC->query($query, array($s, $cid));
-                    
+
                 }
             }
         }
@@ -659,14 +658,14 @@ class table_admin extends Object_Manager {
             return $this->_defaultAction();
         }
         $langs = array_values(Multilanguage::availableLanguages());
-        
+
         $default_lng = '';
         if(1 == $this->getConfigValue('apps.language.use_default_as_ru')){
             $default_lng = 'ru';
         }elseif('' != trim($this->getConfigValue('apps.language.use_as_default'))){
             $default_lng = trim($this->getConfigValue('apps.language.use_as_default'));
         }
-        
+
         if($default_lng != ''){
             foreach ($langs as $k => $lng) {
                 if ($lng == $default_lng) {
@@ -675,7 +674,7 @@ class table_admin extends Object_Manager {
                 }
             }
         }
-        
+
         if(!empty($langs)){
             $needle_filds = array('title', 'hint', 'value', 'title_default', 'select_data', 'tab');
 
@@ -683,9 +682,9 @@ class table_admin extends Object_Manager {
             foreach ($needle_filds as $nf) {
                 foreach ($langs as $lng) {
                     if ($nf != 'select_data') {
-                        $queries[] = 'ALTER TABLE  `' . DB_PREFIX . '_columns` ADD  `' . $nf . '_' . $lng . '` VARCHAR( 255 ) NOT NULL ;';
+                        $queries[] = 'ALTER TABLE  `' . DB_PREFIX . '_columns` ADD  `' . $nf . '_' . $lng . '` VARCHAR( 255 );';
                     } else {
-                        $queries[] = 'ALTER TABLE  `' . DB_PREFIX . '_columns` ADD  `' . $nf . '_' . $lng . '` TEXT NOT NULL ;';
+                        $queries[] = 'ALTER TABLE  `' . DB_PREFIX . '_columns` ADD  `' . $nf . '_' . $lng . '` TEXT;';
                     }
                 }
             }
@@ -695,8 +694,8 @@ class table_admin extends Object_Manager {
                 $stmt = $DBC->query($query);
             }
         }
-        
-        
+
+
 
         return $this->_defaultAction();
     }
@@ -946,6 +945,8 @@ class table_admin extends Object_Manager {
 		</div><!-- /span -->
 		</div>';
 
+        $ra = array();
+
 
 
         if (count($ra) > 0) {
@@ -1001,9 +1002,9 @@ class table_admin extends Object_Manager {
                 }
 
                 $rs .= '</div>';
-                $rs .= '<div id="formeditoracc_' . $item_array['name'] . '" class="accordion-body' . ($current_table == $item_array['name'] ? ' in' : '') . ' collapse">';
+                $rs .= '<div id="formeditoracc_' . $item_array['name'] . '" class="accordion-body' . ($table_info['name'] == $item_array['name'] ? ' in' : '') . ' collapse">';
                 $rs .= '<div class="accordion-inner">';
-                $cols = $this->get_columns_list($item_array['table_id']);
+                $cols = $this->get_columns_list($item_array);
                 if (false !== $cols) {
                     $rs .= $cols;
                 }
@@ -1017,8 +1018,6 @@ class table_admin extends Object_Manager {
         } else {
             $rs .= '<br><br>Записей не найдено';
         }
-
-        return $rs;
         return $rs;
     }
 
@@ -1027,8 +1026,26 @@ class table_admin extends Object_Manager {
         $DBC = DBC::getInstance();
         $query = 'DELETE FROM ' . DB_PREFIX . '_columns WHERE table_id=?';
         $stmt = $DBC->query($query, array(intval($this->getRequestValue($this->primary_key))));
-        $rs .= $this->grid();
-        return $rs;
+        return $this->grid();
+    }
+
+    public function force_delete_table($table_id) {
+        $table_record = $this->load_by_id($table_id);
+        $this->delete_data($this->table_name, $this->primary_key, $table_id);
+        $DBC = DBC::getInstance();
+        $query = 'DELETE FROM ' . DB_PREFIX . '_columns WHERE table_id=?';
+        $stmt = $DBC->query($query, array(intval($table_id)), $rows, $success );
+        if ( !$success ) {
+            throw new Exception($DBC->getLastError());
+        }
+
+        $table_name = $table_record['name']['value'];
+
+        $query = "DROP TABLE IF EXISTS `" . DB_PREFIX . "_".$table_name."`";
+        $stmt = $DBC->query($query, array(), $rows, $success );
+        if ( !$success ) {
+            throw new Exception($DBC->getLastError());
+        }
     }
 
     private function loadAllRules($columns_ids) {
@@ -1044,6 +1061,54 @@ class table_admin extends Object_Manager {
         }
 
         return $ret;
+    }
+
+    function create_customentity_record(
+        $table,
+        $entity_title,
+        $is_public = 0,
+        $alias = '',
+        $list_tpl = '',
+        $view_tpl = '',
+        $sortby = '',
+        $sortorder = '',
+        $per_page = 0,
+        $list_title = '',
+        $view_title = ''
+    ) {
+        $DBC = DBC::getInstance();
+        $query = 'INSERT INTO ' . DB_PREFIX . '_customentity (`entity_name`, `entity_title`, `is_public`, `alias`, `list_tpl`, `view_tpl`, `sortby`, `sortorder`, `per_page`, `list_title`, `view_title`) VALUES (?,?,?,?,?,?,?,?,?,?,?)';
+
+        $params = array();
+        $params[] = $table;
+        $params[] = trim($entity_title);
+        $params[] = intval($is_public);
+        $params[] = trim($alias);
+        $params[] = trim($list_tpl);
+        $params[] = trim($view_tpl);
+        $params[] = trim($sortby);
+        $params[] = trim($sortorder);
+        $params[] = intval($per_page);
+        $params[] = trim($list_title);
+        $params[] = trim($view_title);
+        $stmt = $DBC->query($query, $params);
+        if ( $DBC->getLastError() ) {
+            $this->writeLog($DBC->getLastError());
+            return false;
+        }
+        return true;
+    }
+
+    function check_entity_exist($entity_name)
+    {
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/customentity/admin/admin.php');
+        $custom_admin_entity_menu = customentity_admin::getEntityList();
+        return isset($custom_admin_entity_menu[$entity_name]);
+    }
+
+    public function handlerAction_public() {
+        $this->disable_redirect();
+        $this->_handlerAction();
     }
 
     protected function _handlerAction() {
@@ -1074,18 +1139,27 @@ class table_admin extends Object_Manager {
             $params[] = trim($this->getRequestValue('view_title'));
             $stmt = $DBC->query($query, $params);
             //echo $DBC->getLastError();
+            if ( $this->isRedirectDisabled() ) {
+                return true;
+            }
             header('location:' . SITEBILL_MAIN_URL . '/admin/?action=table');
             exit();
         } elseif ($subdo == 'update_handler' && '' != $table && '' != $this->getRequestValue('entity_title') && isset($custom_admin_entity_menu[$table])) {
             $DBC = DBC::getInstance();
             $query = 'UPDATE ' . DB_PREFIX . '_customentity SET `entity_title`=?, `is_public`=?, `alias`=?, `list_tpl`=?, `view_tpl`=?, `sortby`=?, `sortorder`=?, `per_page`=?, `list_title`=?, `view_title`=? WHERE `entity_name`=?';
             $stmt = $DBC->query($query, array($this->getRequestValue('entity_title'), intval($this->getRequestValue('is_public')), trim($this->getRequestValue('alias')), trim($this->getRequestValue('list_tpl')), trim($this->getRequestValue('view_tpl')), trim($this->getRequestValue('sortby')), trim($this->getRequestValue('sortorder')), intval($this->getRequestValue('per_page')), trim($this->getRequestValue('list_title')), trim($this->getRequestValue('view_title')), $table));
+            if ( $this->isRedirectDisabled() ) {
+                return true;
+            }
             header('location:' . SITEBILL_MAIN_URL . '/admin/?action=table');
             exit();
         } elseif ($subdo == 'delete_handler' && '' != $table && isset($custom_admin_entity_menu[$table])) {
             $DBC = DBC::getInstance();
             $query = 'DELETE FROM ' . DB_PREFIX . '_customentity WHERE entity_name=?';
             $stmt = $DBC->query($query, array($table));
+            if ( $this->isRedirectDisabled() ) {
+                return true;
+            }
             header('location:' . SITEBILL_MAIN_URL . '/admin/?action=table');
             exit();
         }
@@ -1206,7 +1280,53 @@ class table_admin extends Object_Manager {
         //print_r($kvartira_model);
     }
 
-    function create_table_and_columns($model, $table_name) {
+    protected function _init_dummyAction() {
+        if ( $this->request()->get('table_name') != '' ) {
+            $rs = $this->init_dummy_model($this->request()->get('table_name'));
+            if ( $this->getError() ) {
+                return $this->getError();
+            }
+            $rs .= '<br>Модель создана успешно';
+        } else {
+            $tables_list = $this->getOnlyTablesList();
+
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/modelmanager_admin.php';
+            $SFA = new modelmanager_admin();
+
+            $model_list = $SFA->loadAllModels();
+            $rs = _e('Для создания (обновления) модели кликните по названию таблицы.
+                    <br>Если модель уже есть, то при обновлении будут добавлены новые поля с типом safe_string и статусом active = 0, если поля есть в таблице, но нет в модели. 
+                    <br><span class="error">Красные</span> - модели не существует, а таблица есть');
+            $rs .= '<br>';
+            $rs .= '<br>';
+            foreach ( $tables_list as $table_name ) {
+                $class = '';
+                if ( !$model_list[$table_name] ) {
+                    $class = "error";
+                }
+                $rs .= '<a href="?action=table&do=init_dummy&table_name='.$table_name.'" class="'.$class.'">'.$table_name.'</a><br>';
+            }
+        }
+        return $rs;
+    }
+
+
+    function init_dummy_model ( $table_name ) {
+        $columns = $this->getOnlyTableFields($table_name);
+
+        $dummy_model[$table_name] = [];
+        foreach ( $columns as $column ) {
+            $dummy_model[$table_name] = $dummy_model[$table_name] +
+            \system\factories\model\Item::base(
+                \system\types\model\Dictionary::SAFE_STRING,
+                $column,
+                $column
+            );
+        }
+        return $this->create_table_and_columns($dummy_model, $table_name, 0);
+    }
+
+    function create_table_and_columns($model, $table_name, $default_active_value = 1) {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/columns/admin/admin.php');
         $columns_admin = new columns_admin();
 
@@ -1221,10 +1341,12 @@ class table_admin extends Object_Manager {
 
         $columns_admin->data_model['columns']['table_id']['value'] = $table_id;
 
+        $rs = '';
+
         foreach ($model[$table_name] as $item_id => $item) {
 
             $columns_admin->data_model['columns']['name']['value'] = $item['name'];
-            $columns_admin->data_model['columns']['active']['value'] = 1;
+            $columns_admin->data_model['columns']['active']['value'] = $default_active_value;
             $columns_admin->data_model['columns']['title']['value'] = $item['title'];
             $columns_admin->data_model['columns']['type']['value'] = $item['type'];
             $columns_admin->data_model['columns']['value']['value'] = $item['value'];
@@ -1362,6 +1484,8 @@ class table_admin extends Object_Manager {
         $rs .= '<a href="?action=table&section=search_forms" class="btn btn-primary">Формы поиска</a> ';
         //$rs .= '<a href="?action=table&section=modelmanager" class="btn btn-primary">Model Manager</a> ';
         $rs .= '<a href="?action=table&section=front_gridmanager" class="btn btn-primary">Сетки</a> ';
+        $rs .= '<a href="?action=table&do=init_dummy" class="btn btn-primary">Таблицы без моделей</a> ';
+
 
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
             $rs .= '<a href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=add_langs" class="btn btn-primary">Добавить языковые поля в модель редактора форм</a> ';
@@ -1373,8 +1497,61 @@ class table_admin extends Object_Manager {
     }
 
     function grid($params = array(), $default_params = array()) {
+        if ( self::$replace_grid_with_angular ) {
+            return $this->angular_grid('models-editor');
+        }
+
         $rs = $this->get_table_list();
         return $rs;
+    }
+
+    function loadTablesInfo(){
+        $DBC = DBC::getInstance();
+
+        // groups list
+        $groups = array();
+        $query = 'SELECT `name`, `group_id` FROM '.DB_PREFIX.'_group';
+        $stmt = $DBC->query($query);
+        if($stmt){
+            while($ar = $DBC->fetch($stmt)){
+                $groups[$ar['group_id']] = $ar['name'];
+            }
+        }
+
+        // custom entities list
+        if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/customentity/admin/admin.php')) {
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/customentity/admin/admin.php');
+            $custom_admin_entity_menu = customentity_admin::getEntityList();
+        }
+
+        $tables = array();
+        $query = "SELECT * FROM " . DB_PREFIX . "_table ORDER BY name ASC, table_id DESC";
+
+        $stmt = $DBC->query($query);
+        if ($stmt) {
+            while ($ar = $DBC->fetch($stmt)) {
+                $ar['_firstletter'] = mb_strtolower(mb_substr($ar['name'], 0, 1, 'utf-8'), 'utf-8');
+
+                if (isset($custom_admin_entity_menu[$ar['name']])) {
+                    $ar['_customentityhandler'] = 1;
+                } else {
+                    $ar['_customentityhandler'] = 0;
+                }
+
+                $tables[$ar['table_id']] = $ar;
+            }
+        }
+
+
+        if(!empty($tables)){
+            foreach ($tables as $tableid => $table){
+                $tables[$tableid]['_tableexists'] = ($this->helper->check_table_exist($table['name']) ? 1 : 0);
+                $tables[$tableid]['_groups'] = $groups;
+            }
+        }
+
+        return $tables;
+
     }
 
     function get_table_list() {
@@ -1382,6 +1559,7 @@ class table_admin extends Object_Manager {
         //$control_langs=(count($langs)>0 ? true : false);
         $rs = '';
 
+        $tableid = intval($this->getRequestValue('table_id'));
 
 
 
@@ -1392,39 +1570,64 @@ class table_admin extends Object_Manager {
             $control_langs = true;
         }
 
+
+        $tables = $this->loadTablesInfo();
+
         $DBC = DBC::getInstance();
 
-        $query = "SELECT * FROM " . DB_PREFIX . "_table ORDER BY name ASC, table_id DESC";
 
-        if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/customentity/admin/admin.php')) {
-            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/customentity/admin/admin.php');
-            $custom_admin_entity_menu = customentity_admin::getEntityList();
-        }
-
-
+        /*$groups = array();
+        $query = 'SELECT name, group_id FROM '.DB_PREFIX.'_group';
         $stmt = $DBC->query($query);
-        if (!$stmt) {
-            echo 'ERROR';
-            return false;
+        if($stmt){
+            while($ar = $DBC->fetch($stmt)){
+                $groups[$ar['group_id']] = $ar['name'];
+            }
         }
-        while ($ar = $DBC->fetch($stmt)) {
-            $ra[$ar['table_id']] = $ar;
-        }
+
+        $params = array(
+           'groups' => $groups
+        );*/
+        /*
+                $query = "SELECT * FROM " . DB_PREFIX . "_table ORDER BY name ASC, table_id DESC";
+
+                if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/customentity/admin/admin.php')) {
+                    require_once(SITEBILL_DOCUMENT_ROOT . '/apps/customentity/admin/admin.php');
+                    $custom_admin_entity_menu = customentity_admin::getEntityList();
+                }
+
+
+                $stmt = $DBC->query($query);
+                if (!$stmt) {
+                    echo 'ERROR';
+                    return false;
+                }
+                while ($ar = $DBC->fetch($stmt)) {
+                    $ar['_firstletter'] = mb_strtolower(mb_substr($ar['name'], 0, 1, 'utf-8'), 'utf-8');
+                    $ra[$ar['table_id']] = $ar;
+                }*/
         $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/table/js/interface.js"></script>';
+        $rs .= '<link href="' . SITEBILL_MAIN_URL . '/apps/table/css/style.css" rel="stylesheet">';
         $current_table = $this->getRequestValue('table_name');
 
-        if (count($ra) > 0) {
+        if (count($tables) > 0) {
 
-            //global $smarty;
-            //$smarty->assign('tables_list', $ra);
-            //$rs.=$smarty->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/template/tables_list.tpl');
+            $firstletters = [];
+            foreach($tables as $table){
+                $firstletters[$table['_firstletter']] = $table['_firstletter'];
+            }
 
+            $rs .= '<div class="firstletters">';
+            foreach($firstletters as $firstletter){
+                $rs .= '<div class="firstletter" data-letter="'.$firstletter.'">'.$firstletter.'</div>';
+            }
+            $rs .= '</div>';
 
-            $rs .= '<div class="accordion" id="accordion2">';
-            foreach ($ra as $primary_key_value => $item_array) {
-                $rs .= '<div class="accordion-group">';
+            $rs .= '<div class="accordion" id="columnslist_accordion">';
+            foreach ($tables as $primary_key_value => $item_array) {
+                $rs .= '<div class="accordion-group columnslist_accordion_group" data-letter="'.$item_array['_firstletter'].'">';
                 $rs .= '<div class="accordion-heading">';
-                $rs .= '<a class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="#formeditoracc_' . $item_array['name'] . '">';
+                $rs .= '<a class="accordion-toggle accordion-toggle-'.$primary_key_value.'" data-toggle="collapse" data-parent="#columnslist_accordion" href="#formeditoracc_' . $item_array['name'] . '">';
                 $rs .= $item_array['name'] . ($item_array['description'] != '' ? ' (' . $item_array['description'] . ')' : '');
                 $rs .= '</a>';
                 $rs .= '<div class="model-accordion-controls">';
@@ -1439,13 +1642,13 @@ class table_admin extends Object_Manager {
                 }
                 $rs .= '<a class="btn btn-mini btn-danger" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=delete&table_id=' . $primary_key_value . '" title="Удалить модель" onclick="if ( confirm(\'Действительно хотите удалить запись?\') ) {return true;} else {return false;}"><i class="icon-white icon-remove"></i></a> ';
 
-                if (isset($custom_admin_entity_menu[$item_array['name']])) {
+                if ($item_array['_customentityhandler'] == 1) {
                     $rs .= '<a class="btn btn-mini btn-success" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=handler&table=' . $item_array['name'] . '" title="Зарегистрированный обработчик"><i class="icon-white icon-asterisk"></i></a> ';
                 } else {
                     $rs .= '<a class="btn btn-mini" href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=handler&table=' . $item_array['name'] . '" title="Обработчик по-умолчанию"><i class="icon-white icon-asterisk"></i></a> ';
                 }
 
-                if ($this->helper->check_table_exist($item_array['name'])) {
+                if ($item_array['_tableexists'] == 1) {
                     //$rs .= '<a class="btn btn-info update_table" href="#" title="Сохранить сортировку"><i class="icon-white icon-refresh"></i></a> ';
                     $rs .= '<a class="btn btn-mini btn-info" href="?action=table&do=structure&subdo=update_table&table_name=' . $item_array['name'] . '" title="Обновить таблицу" ><i class="icon-white icon-repeat"></i></a>';
                 } else {
@@ -1456,9 +1659,9 @@ class table_admin extends Object_Manager {
                 $rs .= '<li><a href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=copytable&table_id=' . $primary_key_value . '">Копировать модель</a></li>';
                 $rs .= '<li><a href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=exporttable&table_id=' . $primary_key_value . '">Экспортировать модель</a></li>';
                 $rs .= '<li><a href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=importtable&table_id=' . $primary_key_value . '">Импортировать модель</a></li>';
-                
+
                 //$rs .= '<li><a href="' . SITEBILL_MAIN_URL . '/admin/?action=table&do=createmany&table_id=' . $primary_key_value . '">Создать несколько</a></li>';
-                
+
                 $rs .= '</ul>';
                 $rs .= '</div> ';
                 if (defined('DEVMODE')) {
@@ -1469,7 +1672,7 @@ class table_admin extends Object_Manager {
 
                 $rs .= '<div class="btn-group"><a class="btn btn-mini dropdown-toggle" data-toggle="dropdown" href="#">Быстрое добавление<span class="caret"></span></a>';
                 $rs .= '<ul class="dropdown-menu">';
-                $rs .= '<li><a href="' . SITEBILL_MAIN_URL . '/admin/?action=columns&do=add_meta&table_id=' . $primary_key_value . '">Добавить мета поля (3 поля)</a></li>';
+                $rs .= '<li><a href="' . SITEBILL_MAIN_URL . '/admin/?action=columns&do=add_meta&table_id=' . $primary_key_value . '">Добавить мета поля (3 поля) и поле описания</a></li>';
                 $rs .= '</ul>';
                 $rs .= '</div> ';
                 if ($control_langs) {
@@ -1478,9 +1681,9 @@ class table_admin extends Object_Manager {
                 $rs .= '</div>';
 
                 $rs .= '</div>';
-                $rs .= '<div id="formeditoracc_' . $item_array['name'] . '" class="accordion-body' . ($current_table == $item_array['name'] ? ' in' : '') . ' collapse">';
+                $rs .= '<div id="formeditoracc_' . $item_array['name'] . '" class="accordion-body' . ($current_table == $item_array['name'] || $tableid == $item_array['table_id'] ? ' in' : '') . ' collapse">';
                 $rs .= '<div class="accordion-inner">';
-                $cols = $this->get_columns_list($item_array['table_id']);
+                $cols = $this->get_columns_list($item_array);
                 if (false !== $cols) {
                     $rs .= $cols;
                 }
@@ -1528,6 +1731,8 @@ class table_admin extends Object_Manager {
     }
 
     function get_columns_list_m($table_id) {
+
+        $rs = '';
 
         $control_langs = false;
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
@@ -1648,8 +1853,7 @@ class table_admin extends Object_Manager {
         return $rs;
     }
 
-    function get_columns_list($table_id) {
-
+    function get_columns_list($table_info) {
         $control_langs = false;
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
             $control_langs = true;
@@ -1664,12 +1868,16 @@ class table_admin extends Object_Manager {
           $structure=$structure['catalog'];
           $structure[0]['name']='Без ограничений';
          */
-        $query = 'SELECT `name` FROM ' . DB_PREFIX . '_table WHERE table_id=? LIMIT 1';
+       /* $query = 'SELECT `name` FROM ' . DB_PREFIX . '_table WHERE table_id=? LIMIT 1';
         $stmt = $DBC->query($query, array($table_id));
         if ($stmt) {
             $ar = $DBC->fetch($stmt);
             $table_name = $ar['name'];
-        }
+        }*/
+
+        $table_name = $table_info['name'];
+        $table_id = $table_info['table_id'];
+        $params['groups'] = $table_info['_groups'];
 
         /* $query='SHOW COLUMNS FROM `'.DB_PREFIX.'_'.$table_name.'`';
           $stmt=$DBC->query($query);
@@ -1693,7 +1901,7 @@ class table_admin extends Object_Manager {
         }
         if (count($ra) > 0) {
             $rs = '<table border="0" width="100%" class="columns_list">';
-            $rs .= '<tbody class="applied table">';
+            $rs .= '<tbody class="applied table table-hover">';
 
             foreach ($ra as $primary_key_value => $item_array) {
 
@@ -1701,14 +1909,15 @@ class table_admin extends Object_Manager {
                 if ($item_array['active'] == 0) {
                     $class = "row3notactive column";
                 } else {
-                    $class = "row3 column";
+                    $class = "-row3 column";
                 }
                 if (isset($this->grid_controls) && count($this->grid_controls) > 0) {
                     $rs .= '<tr alt="' . $primary_key_value . '" class="' . $class . '">';
                 } else {
                     $rs .= '<tr alt="' . $primary_key_value . '" class="' . $class . '">';
                 }
-                $rs .= '<td><input type="checkbox" class="checker" value="' . $item_array['columns_id'] . '" /></td>';
+                $rs .= '<td><div class="dd-move"><i class="icon-move bigger-130"></i></div></td>';
+                $rs .= '<td><input id="col_check_' . $item_array['columns_id'] . '" type="checkbox" class="checker ace" value="' . $item_array['columns_id'] . '"><label for="col_check_' . $item_array['columns_id'] . '" class="lbl"></label></td>';
 
                 $icon_class = '';
                 switch ($item_array['type']) {
@@ -1759,6 +1968,12 @@ class table_admin extends Object_Manager {
 
                 //$rs .= '<td>'.$item_array['name'].' ('.$rcolumns[$item_array['name']].')</td>';
                 $rs .= '<td>' . $item_array['name'] . '</td>';
+
+                //$rs .= '<td>' . $item_array['active_in_topic'] . '</td>';
+
+
+                //$rs .= '<td>' . (!empty($gnames) ? implode(', ', $gnames) : '') . '</td>';
+
                 $rs .= '<td><i class="icon ' . $icon_class . '"></i> ' . $item_array['type'];
                 /* if(($item_array['type']=='select_box' || $item_array['type']=='checkbox') && !preg_match('/^int\((\d+)\)/', $rcolumns[$item_array['name']])){
                   $rs .= '<div style="font-size: 11px;color: #9c2626;"><i class="icon icon-exclamation-sign"></i> Возможно данное поле имеет неправильный тип</div>';
@@ -1780,9 +1995,9 @@ class table_admin extends Object_Manager {
                   }
                   $rs .= '</td>'; */
                 if ($item_array['required'] == 1) {
-                    $rs .= '<td><a class="state_change btn btn-warning" href="derequired" title="Обязательное" alt="' . $primary_key_value . '"><i class="icon-white icon-ok-circle"></i></a></td>';
+                    $rs .= '<td><a class="state_change btn btn-mini btn-warning" href="derequired" title="Обязательное" alt="' . $primary_key_value . '"><i class="icon-white icon-ok-circle"></i></a></td>';
                 } else {
-                    $rs .= '<td><a class="state_change btn" href="required" title="Обязательное" alt="' . $primary_key_value . '"><i class="icon-white icon-ok-circle"></i></a></td>';
+                    $rs .= '<td><a class="state_change btn btn-mini" href="required" title="Обязательное" alt="' . $primary_key_value . '"><i class="icon-white icon-ok-circle"></i></a></td>';
                 }
                 //$rs .= '<td>'.$item_array['unique'].'</td>';
                 if ($item_array['unique'] == 1) {
@@ -1791,19 +2006,41 @@ class table_admin extends Object_Manager {
                     $rs .= '<td></td>';
                 }
                 $rs .= '<td><a href="#" id="' . $item_array['name'] . '" data-type="text" data-pk="' . $item_array['columns_id'] . '" class="editable editable-click addeditable" style="display: inline;">' . $item_array['title'] . '</a></td>';
+
+                $gnames = array();
+                if($item_array['group_id'] != ''){
+                    $gr = explode(',', $item_array['group_id']);
+                    foreach ($gr as $gid){
+                        if($gid != 0){
+                            if(isset($params['groups'][$gid])){
+                                $gnames[] = $params['groups'][$gid];
+                            }else{
+                                $gnames[] = '???';
+                            }
+                        }
+
+
+                    }
+                }
+                if(count($gnames) == 0){
+                    $rs .= '<td>Ограничений по группам: н/д</td>';
+                }else{
+                    $rs .= '<td>Ограничений по группам: <a href="javascript:void(0);" rel="popover" class="tooltipe_block label label-info" data-content="'.implode(', ', $gnames).'">'.count($gnames).'</a></td>';
+                }
+
                 $rs .= '<td class="field_tab" alt="' . $primary_key_value . '">' . ($item_array['tab'] != '' ? '<span class="defined">' . $item_array['tab'] . '</span>' : '<span class="undefined">Не указано</span>') . '</td>';
 
                 $rs .= '<td width="15%" nowrap>';
-                $rs .= '<a href="?action=columns&do=edit&table_name=' . $table_name . '&columns_id=' . $primary_key_value . '" class="btn btn-info" title="Редактировать"><i class="icon-white icon-pencil"></i></a>';
-                $rs .= ' <a href="?action=columns&do=delete&table_name=' . $table_name . '&columns_id=' . $primary_key_value . '" title="Удалить" class="btn btn-danger" onclick="if ( confirm(\'Действительно хотите удалить запись?\') ) {return true;} else {return false;}"><i class="icon-white icon-remove"></i></a>';
+                $rs .= '<a href="?action=columns&do=edit&table_name=' . $table_name . '&columns_id=' . $primary_key_value . '" class="btn btn-mini btn-info" title="Редактировать"><i class="icon-white icon-pencil"></i></a>';
+                $rs .= ' <a href="?action=columns&do=delete&table_name=' . $table_name . '&columns_id=' . $primary_key_value . '" title="Удалить" class="btn btn-mini btn-danger" onclick="if ( confirm(\'Действительно хотите удалить запись?\') ) {return true;} else {return false;}"><i class="icon-white icon-remove"></i></a>';
                 if ($item_array['active'] == 0) {
-                    $rs .= ' <a class="state_change btn" href="activate" title="Активация" alt="' . $primary_key_value . '"><i class="icon-white icon-off"></i></a>';
+                    $rs .= ' <a class="state_change btn btn-mini" href="activate" title="Активация" alt="' . $primary_key_value . '"><i class="icon-white icon-off"></i></a>';
                 } else {
-                    $rs .= ' <a class="state_change btn btn-warning" href="deactivate" title="Активация" alt="' . $primary_key_value . '"><i class="icon-white icon-off"></i></a>';
+                    $rs .= ' <a class="state_change btn btn-mini btn-warning" href="deactivate" title="Активация" alt="' . $primary_key_value . '"><i class="icon-white icon-off"></i></a>';
                 }
                 // GROUPS MANAGEMENT $rs .= ' <a class="btn show_groups" data-cid="'.$primary_key_value.'" href="#" title=""><i class="icon-white icon-plus"></i> G</a> ';
                 if ($control_langs) {
-                    $rs .= ' <a class="btn" href="' . SITEBILL_MAIN_URL . '/admin/?action=columns&do=add_lang_fields&columns_id=' . $primary_key_value . '" title="Добавить\проверить мультиязычные поля для этого поля"><i class="icon-white icon-plus"></i> ML</a> ';
+                    $rs .= ' <a class="btn btn-mini" href="' . SITEBILL_MAIN_URL . '/admin/?action=columns&do=add_lang_fields&columns_id=' . $primary_key_value . '" title="Добавить\проверить мультиязычные поля для этого поля"><i class="icon-white icon-plus"></i> ML</a> ';
                 }
                 $rs .= '</td>';
 
@@ -1832,6 +2069,7 @@ class table_admin extends Object_Manager {
         if (!is_array($form_data)) {
             return false;
         }
+        $rs = '';
         if ($button_title == '') {
             $button_title = Multilanguage::_('L_TEXT_SAVE');
         }
@@ -2134,7 +2372,10 @@ class table_admin extends Object_Manager {
             } else {
                 $ret = '';
             }
-            $stmt = $DBC->query($q, array($id));
+            $stmt = $DBC->query($q, array($id), $rows, $success);
+            if ( !$success ) {
+                $this->riseError($DBC->getLastError());
+            }
         } else {
             $ret = '';
         }
@@ -2143,6 +2384,10 @@ class table_admin extends Object_Manager {
 
     function getTablesNames() {
         $tables = array('' => 'выбрать');
+        return array_merge($tables, $this->getOnlyTablesList());
+    }
+
+    function getOnlyTablesList () {
         $DBC = DBC::getInstance();
         $query = 'SHOW FULL TABLES';
         $stmt = $DBC->query($query);
@@ -2167,7 +2412,11 @@ class table_admin extends Object_Manager {
     }
 
     function getTableFields($table) {
-        $columns = array('' => 'выбрать');
+        $tables = array('' => 'выбрать');
+        return array_merge($tables, $this->getOnlyTableFields($table));
+    }
+
+    function getOnlyTableFields($table) {
         if ($table != '') {
             $DBC = DBC::getInstance();
             $query = 'SHOW COLUMNS FROM `' . DB_PREFIX . '_' . $table . '`';
@@ -2180,6 +2429,7 @@ class table_admin extends Object_Manager {
         }
         return $columns;
     }
+
 
     function getFormElementPreview($data) {
         $element_data = array();

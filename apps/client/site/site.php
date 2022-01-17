@@ -10,13 +10,29 @@ class client_site extends client_admin {
 
     function frontend() {
 
-        $reserved_urls = array('ciodart' => 'raschet');
+        $reserved_urls = array(
+            'ciodart' => 'raschet',
+            'myclient' => 'myclient'
+        );
 
         if (!$this->getConfigValue('apps.client.enable')) {
             return false;
         }
 
         $REQUESTURIPATH = $this->getClearRequestURI();
+
+        if(preg_match('/^'.$this->getConfigValue('apps.client.front_manager_alias').'/', $REQUESTURIPATH)){
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/client/site/frontend_client_manager.php';
+            $frontend_client_manager = new frontend_client_manager();
+            $content = $frontend_client_manager->main();
+            if ( $content ) {
+                $this->template->assign('main', $content);
+                return true;
+            }
+            return false;
+        }
+
+        //echo $REQUESTURIPATH;
         /*
           $client_namespace='';
           if($this->getConfigValue('apps.client.namespace')!=''){
@@ -30,7 +46,13 @@ class client_site extends client_admin {
 
 
 
-        if (!key_exists($REQUESTURIPATH, $reserved_urls) && ($this->getConfigValue('apps.client.namespace') != '' && !preg_match('/^' . $this->getConfigValue('apps.client.namespace') . '/', $REQUESTURIPATH))) {
+        if (
+            !key_exists($REQUESTURIPATH, $reserved_urls) &&
+            (
+                $this->getConfigValue('apps.client.namespace') != '' &&
+                !preg_match('/^' . $this->getConfigValue('apps.client.namespace') . '/', $REQUESTURIPATH)
+            )
+        ) {
             return false;
         }
 
@@ -42,10 +64,11 @@ class client_site extends client_admin {
             $clearrequesturi = $requesturi;
         }
 
+
         //$action=$this->getRequestValue('subaction')
 
         if (preg_match('/^order\/(\w+)[\/]?$/', $clearrequesturi, $matches) || key_exists($REQUESTURIPATH, $reserved_urls)) {
-            //echo 
+            //echo
             if (in_array($matches[1], array('data', 'city', 'country', 'region', 'user'))) {
                 return false;
             }
@@ -80,7 +103,10 @@ class client_site extends client_admin {
 
 
             $this->template->assign('form', $form);
-            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/client_order_' . $order_model . '.tpl')) {
+            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/resources/views/layout/partials/client_order_' . $order_model . '.tpl')) {
+                $this->template->assign('main_file_tpl', 'client_order_' . $order_model . '.tpl');
+                //$this->set_apps_template('client', $this->getConfigValue('theme'), 'main_file_tpl', 'client_order_'.$order_model.'.tpl');
+            } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/client_order_' . $order_model . '.tpl')) {
                 $this->template->assign('main_file_tpl', 'client_order_' . $order_model . '.tpl');
                 //$this->set_apps_template('client', $this->getConfigValue('theme'), 'main_file_tpl', 'client_order_'.$order_model.'.tpl');
             } else {

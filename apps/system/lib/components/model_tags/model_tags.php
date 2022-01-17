@@ -71,13 +71,23 @@ class model_tags extends ajax_common {
             $column_name = $this->getRequestValue('column_name');
         }
 
-        if ($form_data[$column_name]['type'] == 'select_by_query') {
+        if (
+            $form_data[$column_name]['type'] == 'select_by_query' or
+            $form_data[$column_name]['type'] == 'select_by_query_multiple' or
+            $form_data[$column_name]['type'] == 'select_by_query_multi'
+        ) {
             $tags_array = $this->get_array_by_query($form_data[$column_name]);
             //} elseif ( $form_data[$this->getRequestValue('column_name')]['type'] == 'checkbox' ) {
             //	$tags_array = array();
+        } elseif ($form_data[$column_name]['type'] == 'select_by_query_multi') {
+            $tags_array = $this->get_array_by_query($form_data[$column_name]);
         } elseif ($form_data[$column_name]['type'] == 'client_id') {
             $tags_array = $this->get_array_by_client_id($form_data[$column_name]);
-        } elseif ($form_data[$column_name]['type'] == 'select_box_structure') {
+        } elseif (
+            $form_data[$column_name]['type'] == 'select_box_structure' or
+            $form_data[$column_name]['type'] == 'select_box_structure_simple_multiple' or
+            $form_data[$column_name]['type'] == 'select_box_structure_multiple_checkbox'
+        ) {
             $nc = $this->get_array_by_structure($form_data[$column_name]);
             if ($result == 'json') {
                 foreach ($nc as $v) {
@@ -90,7 +100,9 @@ class model_tags extends ajax_common {
             $tags_array = array(0, 1);
         } elseif ($form_data[$column_name]['type'] == 'select_box') {
             $tags_array = $this->get_array_by_select_box($form_data[$column_name], $form_data);
-        } else {
+        } elseif ($form_data[$column_name]['type'] == 'dtdatetime') {
+            $tags_array = $this->get_distinct_values($form_data[$column_name]);
+        }  else {
             $tags_array = $this->get_distinct_values($form_data[$column_name]);
         }
 
@@ -136,17 +148,22 @@ class model_tags extends ajax_common {
     }
 
     function init_session_tags() {
-        $tags_array_string = $this->getRequestValue('tags_array');
+        $tags_array = $this->getRequestValue('tags_array');
+        //$this->writeArrayLog($tags_array_string);
         $model_name = $this->getRequestValue('model_name');
-        $tags_array_string = html_entity_decode($tags_array_string);
-        $decoded = json_decode($tags_array_string, true);
+        //$tags_array_string = html_entity_decode($tags_array_string);
+        //$decoded = json_decode($tags_array_string, true);
         if ($model_name != '') {
-            $_SESSION['model_tags'][$model_name]['tags_array'] = $decoded;
+            $_SESSION['model_tags'][$model_name]['tags_array'] = $tags_array;
         } else {
-            $_SESSION['tags_array'] = $decoded;
+            $_SESSION['tags_array'] = $tags_array;
         }
         //$this->writeLog(__METHOD__.var_export($_SESSION['tags_array'], true));
         return true;
+    }
+
+    function set_model_tags ( $model_name, $tags_array ) {
+        $_SESSION['model_tags'][$model_name]['tags_array'] = $tags_array;
     }
 
     function get_distinct_values($item_array) {
@@ -164,7 +181,7 @@ class model_tags extends ajax_common {
                 `' . $item_array['name'] . '` != \'\'
                 '.$LIKE_TERM.' 
              ORDER BY `' . $item_array['name'] . '`';
-        $query .= ' LIMIT 0,100';
+        //$query .= ' LIMIT 0,100';
         //$this->writeLog(__METHOD__.', query = '.$query);
         $stmt = $DBC->query($query, array("%{$this->get_term()}%"));
 
@@ -231,14 +248,28 @@ class model_tags extends ajax_common {
         if ($this->get_ai_mode()) {
             $query = $this->modify_query($query, $item_array);
         }
+
+        if (is_array($item_array['parameters']) && $item_array['parameters']['only_owner_access']) {
+            $query = $this->modify_query_only_owner($query, $item_array, $this->getSessionUserId());
+        }
+
         $stmt = $DBC->query($query);
 
         $ra = array();
 
+        $namefield = $item_array['value_name'];
+        $langpostfix = $this->getLangPostfix($this->getCurrentLang());
+
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
                 $this->total_in_select[$item_array['name']] ++;
-                $value = $ar[$item_array['value_name']];
+
+
+                if(isset($ar[$namefield.$langpostfix]) && $ar[$namefield.$langpostfix] != ''){
+                    $value = $ar[$namefield.$langpostfix];
+                }else{
+                    $value = $ar[$namefield];
+                }
                 $value = trim($value);
 
                 $value = htmlspecialchars($value, ENT_QUOTES, SITE_ENCODING);
@@ -273,6 +304,16 @@ class model_tags extends ajax_common {
             }
             $result_query = $query_parts[0] . " where " . $item_array['name'] . " in (" . $query_filter . ") " . " order " . $query_parts[1];
             return $result_query;
+        }
+        return $query;
+    }
+
+    function modify_query_only_owner($query, $item_array, $user_id) {
+        //$this->writeLog(__METHOD__ . "query = $query" . '<pre>' . var_export($item_array, true) . '</pre>');
+        // $query = strtolower($query);
+        if (!preg_match('/where/i', $query) and intval($user_id) > 0 ) {
+            $query = $query . " where user_id=".intval($user_id);
+            return $query;
         }
         return $query;
     }

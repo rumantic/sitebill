@@ -81,7 +81,7 @@ class Vk_Logger extends Common_Logger {
             if (isset($result->error)) {
                 throw new Exception('Ошибка получения Access Token Error: ' . $result->error . ' , Description: ' . $result->error_description);
             } else {
-                $sRequest = "https://api.vk.com/method/users.get?uids=" . $result->user_id . "&access_token=" . $result->access_token . "&fields=has_mobile,photo_400_orig,contacts,personal&v=5.80";
+                $sRequest = "https://api.vk.com/method/users.get?uids=" . $result->user_id . "&access_token=" . $result->access_token . "&fields=has_mobile,photo_400_orig,contacts,personal&v=5.81";
                 $ch = curl_init();
 
                 curl_setopt($ch, CURLOPT_URL, $sRequest);

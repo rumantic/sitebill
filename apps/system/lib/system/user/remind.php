@@ -17,6 +17,68 @@ class Remind extends User_Object {
     function Remind() {
         $this->SiteBill();
     }
+    
+    
+    function ajax(){
+        if ( !$this->getConfigValue('allow_remind_password') ) {
+            $resp = array(
+                'status' => 0,
+                'msg' => 'Функция восстановления пароля отключена администратором'
+            );
+        } else {
+            $resp = array(
+                'status' => 0,
+                'msg' => ''
+            );
+            if('post' === strtolower($_SERVER['REQUEST_METHOD'])){
+                $login = trim($this->getRequestValue('login'));
+                $email = trim($this->getRequestValue('email'));
+                if ($login == '' && $email == '') {
+                    $resp['msg'] = Multilanguage::_('NO_SUCH_USER', 'system');
+                }else{
+                    if($login == ''){
+                        $login = $email;
+                    }
+                    if ($this->getConfigValue('email_as_login')) {
+                        $user_array = $this->getUserIdByEmail($login);
+                    } else {
+                        $user_array = $this->getUserId($login, $email);
+                        
+                    }
+                    if($user_array){
+                        $code = $this->addPasswordRecovery($user_array['user_id']);
+                        $message = sprintf(Multilanguage::_('REMIND_PASSWORD_BODY', 'system'), $_SERVER['HTTP_HOST'], '<a href="' . $this->getServerFullUrl() . '/remind/?recovery_code=' . $code . '">' . $this->getServerFullUrl() . '/remind/?recovery_code=' . $code . '</a>');
+                        $message .= '<br>'._e('Код доступа к смене пароля:').' <strong>'.$code.'</strong>';
+
+                        $subject = sprintf(Multilanguage::_('REMIND_PASSWORD_TITLE', 'system'), $_SERVER['HTTP_HOST']);
+                        $to = trim($user_array['email']);
+                        $from = $this->getConfigValue('order_email_acceptor');
+                        $this->sendFirmMail($to, $from, $subject, $message);
+                        $fto = array();
+                        $fto = explode('@', $to);
+                        if (isset($fto[0])) {
+                            $str11 = substr($fto[0], 0, 2);
+                            $str12 = substr($fto[0], -1);
+                            $fto[0] = $str11 . '***' . $str12;
+                        }
+                        if (isset($fto[1])) {
+                            $str11 = substr($fto[1], 0, 2);
+                            $str12 = substr($fto[1], -1);
+                            $fto[1] = $str11 . '***' . $str12;
+                        }
+
+                        $resp['msg'] = sprintf(Multilanguage::_('REMIND_INSTRUCTION', 'system'), implode('@', $fto));
+                        $resp['status'] = 1;
+
+                    }else{
+                        $resp['msg'] = Multilanguage::_('NO_SUCH_USER', 'system');
+                    }
+                }
+            }
+        }
+        
+        return json_encode($resp);
+    }
 
     /**
      * Main
@@ -162,7 +224,8 @@ class Remind extends User_Object {
         if (1 == $this->getConfigValue('email_as_login')) {
             $this->template->assign('email_as_login', 1);
         }
-        $this->template->assign('remind_href', SITEBILL_MAIN_URL . '/remind' . Sitebill::$_trslashes);
+        //$this->template->assign('remind_href', SITEBILL_MAIN_URL . '/remind' . Sitebill::$_trslashes);
+        $this->template->assign('remind_href', $this->createUrlTpl('remind'));
         $ftpl = SITEBILL_DOCUMENT_ROOT . '/apps/system/template/user.remind.form.tpl';
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/system/template/user.remind.form.tpl')) {
             $ftpl = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/system/template/user.remind.form.tpl';
@@ -173,7 +236,8 @@ class Remind extends User_Object {
     }
 
     function getRecoveryForm() {
-        $this->template->assign('recovery_href', SITEBILL_MAIN_URL . '/remind' . Sitebill::$_trslashes);
+        //$this->template->assign('recovery_href', SITEBILL_MAIN_URL . '/remind' . Sitebill::$_trslashes);
+        $this->template->assign('recovery_href', $this->createUrlTpl('remind'));
         $ftpl = SITEBILL_DOCUMENT_ROOT . '/apps/system/template/user.remind.recoveryform.tpl';
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/system/template/user.remind.recoveryform.tpl')) {
             $ftpl = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/system/template/user.remind.recoveryform.tpl';

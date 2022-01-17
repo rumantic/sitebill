@@ -40,12 +40,10 @@ class condition_helper {
      * @return boolean
      */
     protected function checkOneCondition($oc, $data_item){
-
         $f = $oc[0];
         $o = $oc[1];
         $v = $oc[2];
         return $this->isConditionValid($f, $o, $v, $data_item);
-        
     }
     
     /**
@@ -57,6 +55,10 @@ class condition_helper {
      * @return boolean
      */
     protected function isConditionValid($f, $o, $v, $data_item){
+        //Возвращаем несовпадение при отсуствии свойства
+        if(!isset($data_item[$f])){
+            return false;
+        }
         switch($o){
             case '=' : {
                 $method = 'isConditionEQ';
@@ -208,7 +210,7 @@ class condition_helper {
      * @return boolean
      */
     protected function isConditionZERO($f, $v, $data_item){
-        if(isset($data_item[$f]) && intval($data_item[$f]['value']) == 0){
+        if(intval($data_item[$f]['value']) == 0){
             return true;
         }
         return false;
@@ -216,14 +218,19 @@ class condition_helper {
 
     /**
      * Check value is empty string (== '')
+     * Поддерживает скалярные и массивные виды value
      * @param string $f Testing field name
      * @param mixed $v Testing value
      * @param array $data_item
      * @return boolean
      */
     protected function isConditionEMPTY($f, $v, $data_item){
-        if(isset($data_item[$f]) && strval($data_item[$f]['value']) == ''){
+        if(is_array($data_item[$f]['value']) && empty($data_item[$f]['value'])){
             return true;
+        }else{
+            if(strval($data_item[$f]['value']) == ''){
+                return true;
+            }
         }
         return false;
     }
@@ -236,7 +243,7 @@ class condition_helper {
      * @return boolean
      */
     protected function isConditionEMPTYZ($f, $v, $data_item){
-        if(isset($data_item[$f]) && (strval($data_item[$f]['value']) == '' || intval($data_item[$f]['value']) == 0)){
+        if(strval($data_item[$f]['value']) == '' || intval($data_item[$f]['value']) == 0){
             return true;
         }
         return false;
@@ -244,29 +251,47 @@ class condition_helper {
 
     /**
      * Check value is equal (== $v)
+     * Поддерживает скалярные и массивные виды value
      * @param string $f Testing field name
      * @param mixed $v Testing value
      * @param array $data_item
      * @return boolean
      */
     protected function isConditionEQ($f, $v, $data_item){
-
-        if(isset($data_item[$f]) && $data_item[$f]['value'] == $v){
-            return true;
+        if(is_array($data_item[$f]['value'])){
+            if(in_array($v, $data_item[$f]['value'])){
+                return true;
+            }
+        }else{
+            if($data_item[$f]['value'] == $v){
+                return true;
+            }
         }
         return false;
     }
 
     /**
      * Check value is in set (in_array)
+     * Поддерживает скалярные и массивные виды value
      * @param string $f Testing field name
      * @param mixed $v Testing value
      * @param array $data_item
      * @return boolean
      */
     protected function isConditionINSet($f, $v, $data_item){
-        if(isset($data_item[$f]) && in_array($data_item[$f]['value'], $v)){
-            return true;
+        if(is_array($data_item[$f]['value']) && empty($data_item[$f]['value'])){
+            return false;
+        }
+        if(is_array($data_item[$f]['value'])){
+            foreach ($data_item[$f]['value'] as $item) {
+                if(in_array($item, $v)){
+                    return true;
+                }
+            }
+        }else{
+            if(in_array($data_item[$f]['value'], $v)){
+                return true;
+            }
         }
         return false;
     }
@@ -304,8 +329,7 @@ class condition_helper {
      * @return boolean
      */
     protected function isConditionGT($f, $v, $data_item){
-
-        if(isset($data_item[$f]) && $data_item[$f]['value'] > $v){
+        if($data_item[$f]['value'] > $v){
             return true;
         }
         return false;
@@ -319,7 +343,7 @@ class condition_helper {
      * @return boolean
      */
     protected function isConditionLT($f, $v, $data_item){
-        if(isset($data_item[$f]) && $data_item[$f]['value'] < $v){
+        if($data_item[$f]['value'] < $v){
             return true;
         }
         return false;
@@ -347,7 +371,6 @@ class condition_helper {
      * @return boolean
      */
     protected function isConditionGTEQ($f, $v, $data_item){
-
         if($this->isConditionEQ($f, $v, $data_item) || $this->isConditionGT($f, $v, $data_item)){
             return true;
         }

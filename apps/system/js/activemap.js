@@ -991,17 +991,18 @@ var ActiveMap = {
                         center: latlng,
                         mapTypeId: google.maps.MapTypeId.ROADMAP
                     };
+                    if(window.innerWidth >= 600){
+                        mapOptions.scrollwheel = true;
+                    }
                     this.parent.map = new google.maps.Map(document.getElementById("ActiveMap"), mapOptions);      
                     var parent = this.parent;
                     var _map = this.parent.map;
                     google.maps.event.addListener(this.parent.map, 'tilesloaded', function(evt) {
-                        console.log('tilesloaded');
+
                         parent.reloadMapData(true);
                         parent.reloadListingData(true);
                         
-                        //parent.catchEvents
-                        
-                        console.log(parent.catchEvents);
+
                         
                         google.maps.event.clearListeners(_map, 'tilesloaded');
                     });
@@ -1065,6 +1066,12 @@ var ActiveMap = {
                     }
                 
                     for(var i in markers){
+
+                        if(markers[i].lat >= -180 && markers[i].lat <= 180 && markers[i].lng >= -90 && markers[i].lng <= 90){
+                            //Проверка на качество координат
+                        }
+
+
                         var baloonContent={
                             iconContent: ''
                         }
@@ -1114,6 +1121,9 @@ var ActiveMap = {
                     var centerlng = this.parent.mapdefaults.center.lng;
                     var zoom = this.parent.mapdefaults.zoom;
                     this.parent.map = new ymaps.Map('ActiveMap', { center: [centerlat, centerlng], zoom: zoom });
+                    if(window.innerWidth < 600){
+                        this.parent.map.behaviors.disable('drag');
+                    }
                     
                     var _map = this.parent.map;
                     var parent = this.parent;
@@ -1128,11 +1138,7 @@ var ActiveMap = {
                     
                     parent.reloadMapData(true);
                     parent.reloadListingData(true);
-                    /*google.maps.event.addListener(this.parent.map, 'tilesloaded', function(evt) {
-                        
-                        parent.reloadMapData();
-                        google.maps.event.clearListeners(_map, 'tilesloaded');
-                    });*/
+
                     if(!parent.nomapbehaviors){
                         this.parent.map.events.add('boundschange', function (e) {
                             if(parent.currentPolygoneCoordinates.length == 0 && !parent.isMapInDrawMode && parent.catchEvents){

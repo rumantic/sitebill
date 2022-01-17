@@ -28,7 +28,7 @@ class Menu_Structure_Manager extends Object_Manager {
     function get_menu_structure_model() {
         $form_menu_structure = array();
         $languages = Multilanguage::availableLanguages();
-        
+
         $default_lng = '';
 		if(1 == $this->getConfigValue('apps.language.use_default_as_ru')){
 			$default_lng = 'ru';
@@ -96,6 +96,23 @@ class Menu_Structure_Manager extends Object_Manager {
         $form_menu_structure['menu_structure']['sort_order']['type'] = 'safe_string';
         $form_menu_structure['menu_structure']['sort_order']['required'] = 'off';
         $form_menu_structure['menu_structure']['sort_order']['unique'] = 'off';
+
+        $form_menu_structure['menu_structure'] = $form_menu_structure['menu_structure'] +
+            \system\factories\model\Item::base(
+                \system\types\model\Dictionary::SAFE_STRING,
+                'action_code',
+                'action_code'
+            ) +
+            \system\factories\model\Item::base(
+                \system\types\model\Dictionary::SAFE_STRING,
+                'icon',
+                'icon'
+            ) +
+            \system\factories\model\Item::base(
+                \system\types\model\Dictionary::PARAMETER,
+                'params',
+                'params'
+            );
 
         return $form_menu_structure;
     }

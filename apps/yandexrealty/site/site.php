@@ -14,8 +14,8 @@ class yandexrealty_site extends yandexrealty_admin {
     protected $category_structure = array();
     protected $form_data_shared = array();
     protected $errors = array();
-    protected $contracts = array();
     protected $one_item_query;
+    protected $magic_multiplicator = 28;
 
 
     function ch($model_item, $cond, $value){
@@ -472,6 +472,37 @@ class yandexrealty_site extends yandexrealty_admin {
       return '';
       } */
 
+    private function get_user_id_from_feed_key($feed) {
+        $false_status = -1;
+        if ( $this->getConfigValue('apps.yandexrealty.allow_personal_feeds') != 1 ) {
+            return $false_status;
+        }
+        $feed_array = explode('z', $feed);
+        if ( $feed_array[0] != $this->getConfigValue('apps.yandexrealty.allow_personal_feeds_token') ) {
+            return $false_status;
+        }
+        $user_id = intval(intval($feed_array[1])/$this->magic_multiplicator);
+        if ( intval($user_id) > 0 ) {
+             return intval($user_id);
+        }
+        return $false_status;
+    }
+
+    public function get_user_id_feed_key ($user_id) {
+        if ( $this->getConfigValue('apps.yandexrealty.allow_personal_feeds') == 1 ) {
+            return $this->getConfigValue('apps.yandexrealty.allow_personal_feeds_token').'z'.$user_id*$this->magic_multiplicator;
+        }
+        return false;
+    }
+
+    public function get_user_id_feed_url ( $user_id ) {
+        $feed_key = $this->get_user_id_feed_key($user_id);
+        if ( $feed_key ) {
+            return $this->getServerFullUrl().'/'.$this->getConfigValue('apps.yandexrealty.alias').'?feed='.$feed_key;
+        }
+        return false;
+    }
+
     public function run_export() {
 
 
@@ -493,7 +524,9 @@ class yandexrealty_site extends yandexrealty_admin {
         if (isset($_GET['user_id'])) {
 
             $user_id = -1;
-            if (1 == $this->getConfigValue('apps.yandexrealty.allow_personal_feeds') && '' != trim($this->getConfigValue('apps.yandexrealty.allow_personal_feeds_token')) && $_GET['token'] == $this->getConfigValue('apps.yandexrealty.allow_personal_feeds_token')) {
+            if (1 == $this->getConfigValue('apps.yandexrealty.allow_personal_feeds') &&
+                '' != trim($this->getConfigValue('apps.yandexrealty.allow_personal_feeds_token')) &&
+                $_GET['token'] == $this->getConfigValue('apps.yandexrealty.allow_personal_feeds_token')) {
                 $DBC = DBC::getInstance();
                 if (1 == $this->getConfigValue('use_registration_email_confirm')) {
                     $query = 'SELECT `user_id` FROM ' . DB_PREFIX . '_user WHERE `user_id`=? AND `active`=?';
@@ -509,6 +542,14 @@ class yandexrealty_site extends yandexrealty_admin {
             }
 
             $this->exportable_user_id = $user_id;
+        } elseif (isset($_GET['feed'])) {
+            $user_id = $this->get_user_id_from_feed_key($_GET['feed']);
+            if ( $user_id != -1 ) {
+                $this->exportable_user_id = $user_id;
+            } else {
+                header('HTTP/1.0 404 Not Found');
+                exit;
+            }
         }
 
         $this->remove_old_file($cachefile);
@@ -599,35 +640,9 @@ class yandexrealty_site extends yandexrealty_admin {
             }
         }*/
 
-        $contracts = array();
 
-        if ('' != trim($this->getConfigValue('apps.yandexrealty.sell'))) {
-            $st = explode(':', $this->getConfigValue('apps.yandexrealty.sell'));
-            if (count($st) > 1) {
-                $stv = explode(',', $st[1]);
-                if (count($stv) > 0) {
-                    $contracts['sale']['f'] = trim($st[0]);
-                    foreach ($stv as $_stv) {
-                        $contracts['sale']['v'][] = $_stv;
-                    }
-                }
-            }
-        }
 
-        if ('' != trim($this->getConfigValue('apps.yandexrealty.rent'))) {
-            $st = explode(':', $this->getConfigValue('apps.yandexrealty.rent'));
-            if (count($st) > 1) {
-                $stv = explode(',', $st[1]);
-                if (count($stv) > 0) {
-                    $contracts['rent']['f'] = trim($st[0]);
-                    foreach ($stv as $_stv) {
-                        $contracts['rent']['v'][] = $_stv;
-                    }
-                }
-            }
-        }
-
-        $this->contracts = $contracts;
+        $this->mappingContract();
 
         $this->mappingCommBldTypes();
 
@@ -651,6 +666,8 @@ class yandexrealty_site extends yandexrealty_admin {
 
         $this->mappingLotType();
 
+        $this->mapContactsMode();
+
         $xml_obj = array();
 
         if ($tofile) {
@@ -672,61 +689,7 @@ class yandexrealty_site extends yandexrealty_admin {
         $this->errors = array();
 
 
-        $this->contacts_export_mode = intval($this->getConfigValue('apps.yandexrealty.contacts_export_mode'));
 
-        if ($this->contacts_export_mode == 1) {
-
-            require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/users/users_manager.php';
-            $UM = new Users_Manager();
-
-            $contacts_str = trim($this->getConfigValue('apps.yandexrealty.contacts_assoc_str'));
-
-            if ($contacts_str == '') {
-                $this->contacts_mode['*'] = 2;
-            } else {
-                $matches = array();
-                if (preg_match('/^\*:([1-4])$/', $contacts_str, $matches)) {
-                    $this->contacts_mode['*'] = $matches[1];
-                } else {
-                    $matches_all = array();
-                    if (preg_match_all('/((\*|[\d]+):([1-4]))/', $contacts_str, $matches_all)) {
-                        foreach ($matches_all[2] as $k => $g) {
-                            if ($g == '*') {
-                                $this->contacts_mode['*'] = $matches_all[3][$k];
-                            } else {
-                                $this->contacts_mode[intval($g)] = $matches_all[3][$k];
-                            }
-                        }
-                    } else {
-                        $this->contacts_mode['*'] = 2;
-                    }
-                }
-            }
-
-            $groups_assoc_str = trim($this->getConfigValue('apps.yandexrealty.groups_assoc_str'));
-
-            if ($groups_assoc_str == '') {
-                $this->group_assoc['*'] = 'o';
-            } else {
-                $matches = array();
-                if (preg_match('/^\*:([oad])$/', $groups_assoc_str, $matches)) {
-                    $this->group_assoc['*'] = $matches[1];
-                } else {
-                    $matches_all = array();
-                    if (preg_match_all('/((\*|[\d]+):([oad]))/', $groups_assoc_str, $matches_all)) {
-                        foreach ($matches_all[2] as $k => $g) {
-                            if ($g == '*') {
-                                $this->group_assoc['*'] = trim($matches_all[3][$k]);
-                            } else {
-                                $this->group_assoc[intval($g)] = trim($matches_all[3][$k]);
-                            }
-                        }
-                    } else {
-                        $this->group_assoc['*'] = 'o';
-                    }
-                }
-            }
-        }
 
 
 
@@ -739,7 +702,7 @@ class yandexrealty_site extends yandexrealty_admin {
             }
 
             $xml_collectorp = array();
-            $xml_str = '';         
+            $xml_str = '';
 
             $data_topic = (int) $data_item['topic_id'];
 
@@ -767,7 +730,7 @@ class yandexrealty_site extends yandexrealty_admin {
                 $xml_str = implode("\n", $xml_collectorp);
             }
 
-            
+
 
             if (empty($this->errors) && $xml_str != '') {
                 if ($tofile) {
@@ -810,7 +773,7 @@ class yandexrealty_site extends yandexrealty_admin {
     }
 
     function hook_data ($data_item) {
-        if ( $this->isHookEnabled() ) {
+        if ( $this->isHookEnabled() and function_exists('yandex_data_hook')) {
             $data_item = yandex_data_hook($data_item);
 
         }
@@ -894,27 +857,28 @@ class yandexrealty_site extends yandexrealty_admin {
         $xml_collectorp[] = $this->exBathroomUnit($data_item);
         $xml_collectorp[] = $this->exBalcony($data_item);
         $xml_collectorp[] = $this->exRefrigerator($data_item);
-        
+
         $xml_collectorp[] = $this->exFloorCount($data_item);
         $xml_collectorp[] = $this->exFloor($data_item);
         $xml_collectorp[] = $this->exWindowView($data_item);
-        
-        
+
+
         $xml_collectorp[] = $this->exYandexBuildingId($data_item);
         $xml_collectorp[] = $this->exYandexHouseId($data_item);
         $xml_collectorp[] = $this->exBuildingType($data_item);
         $xml_collectorp[] = $this->exBuildingName($data_item);
         $xml_collectorp[] = $this->exBuiltYear($data_item);
-        
-        if ($data_item['__new_flat'] == 1) {            
+
+        if ($data_item['__new_flat'] == 1) {
             $xml_collectorp[] = $this->exReadyQuarter($data_item);
             $xml_collectorp[] = $this->exBuildingState($data_item);
             $xml_collectorp[] = $this->exBuildingSeries($data_item);
         }
-        
+
         $xml_collectorp[] = $this->exIsElite($data_item);
         $xml_collectorp[] = $this->exRubbishChute($data_item);
         $xml_collectorp[] = $this->exLift($data_item);
+        $xml_collectorp[] = $this->exOfficeClass($data_item);
         $xml_collectorp[] = $this->exCeilingHeight($data_item);
         $xml_collectorp[] = $this->exAlarm($data_item);
         $xml_collectorp[] = $this->exParking($data_item);
@@ -1739,14 +1703,39 @@ class yandexrealty_site extends yandexrealty_admin {
         return '';
     }
 
+    /**
+     * Получение yandex_house_id
+     * 1. Из "родной" модели объявления из свойства yandex_house_id
+     * 2. Из инъецированных данных связанного ЖК из его своства yandex_house_id
+     * 3. Из данных дома ЖК связанного через свойство complex_building_id из его свойства, указанного через точку. напр.  complex_building.yandex_house_id
+     * @param $data_item
+     * @return string
+     */
     protected function exYandexHouseId($data_item) {
-        //echo 'building';
+
         if (isset($this->form_data_shared['yandex_house_id']) && $data_item['yandex_house_id'] != '') {
             return '<yandex-house-id>' . $data_item['yandex_house_id'] . '</yandex-house-id>';
         }
 
         if ($this->getConfigValue('apps.yandexrealty.complex_enable') == 1 && isset($data_item['yandex_house_id']) && $data_item['yandex_house_id'] != '') {
             return '<yandex-house-id>' . $data_item['yandex_house_id'] . '</yandex-house-id>';
+        }
+
+        $conf = trim($this->getConfigValue('apps.yandexrealty.yandex_house_id'));
+        if ('' != $conf) {
+            $matches = array();
+            if(preg_match('/^complex_building\.(.+)$/', $conf, $matches) && isset($data_item['complex_building_id']) && 0 != intval($data_item['complex_building_id'])){
+                $field = $matches[1];
+                $DBC = DBC::getInstance();
+                $query = 'SELECT `'.$field.'` FROM ' . DB_PREFIX . '_complex_building WHERE `complex_building_id` = ?';
+                $stmt = $DBC->query($query, array($data_item['complex_building_id']));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+                    if ($ar[$field] != '') {
+                        return '<yandex-house-id>' . $ar[$field] . '</yandex-house-id>';
+                    }
+                }
+            }
         }
         return '';
     }
@@ -1975,7 +1964,7 @@ class yandexrealty_site extends yandexrealty_admin {
     protected function exKitchenSpace($data_item) {
         $rs = '';
         $data_topic = (int) $data_item['topic_id'];
-        
+
         $area_field = trim($this->getConfigValue('apps.yandexrealty.areakitchen_field'));
         if('' == $area_field){
             $area_field = 'square_kitchen';
@@ -2016,7 +2005,7 @@ class yandexrealty_site extends yandexrealty_admin {
     protected function exLivingSpace($data_item) {
         $rs = '';
         $data_topic = (int) $data_item['topic_id'];
-        
+
         $area_field = trim($this->getConfigValue('apps.yandexrealty.arealive_field'));
         if('' == $area_field){
             $area_field = 'square_live';
@@ -2057,13 +2046,39 @@ class yandexrealty_site extends yandexrealty_admin {
     protected function exArea($data_item) {
         $rs = '';
         $data_topic = (int) $data_item['topic_id'];
-        
-        $area_field = trim($this->getConfigValue('apps.yandexrealty.area_field'));
-        if('' == $area_field){
-            $area_field = 'square_all';
+
+        $defaultareafield = 'square_all';
+
+        if('' != trim($this->getConfigValue('apps.yandexrealty.area_field'))){
+            $defaultareafield = trim($this->getConfigValue('apps.yandexrealty.area_field'));
         }
-        
-        if (!in_array($this->associations[$data_topic]['realty_category'], array(4, 15, 16))) {
+
+        if(in_array($this->associations[$data_topic]['realty_category'], array(3, 7, 8, 9, 10, 11, 12, 13, 14))){
+            $area_field = trim($this->getConfigValue('apps.yandexrealty.area_field_houses'));
+            if('' == $area_field){
+                $area_field = $defaultareafield;
+            }
+        }elseif(in_array($this->associations[$data_topic]['realty_category'], array(17))){
+            $area_field = trim($this->getConfigValue('apps.yandexrealty.area_field_garage'));
+            if('' == $area_field){
+                $area_field = $defaultareafield;
+            }
+        }elseif(in_array($this->associations[$data_topic]['realty_category'], array(21, 22, 23, 24, 26, 27, 28, 29, 30, 31))){
+            $area_field = trim($this->getConfigValue('apps.yandexrealty.area_field_comm'));
+            if('' == $area_field){
+                $area_field = $defaultareafield;
+            }
+        }else{
+           $area_field = $defaultareafield;
+        }
+
+
+
+        if (!in_array($this->associations[$data_topic]['realty_category'], array(4, 15, 16, 25))) {
+            if(!isset($data_item[$area_field])){
+                $this->errors[]=$data_item['id'].' DECLINED: Total area error';
+                return '';
+            }
             $x = preg_replace('/[^0-9.,]/', '', $data_item[$area_field]);
             $x = str_replace(',', '.', $x);
             $x = floatval($x);
@@ -2072,6 +2087,9 @@ class yandexrealty_site extends yandexrealty_admin {
                 $rs .= '<value>' . $x . '</value>' . "\n";
                 $rs .= '<unit>кв.м</unit>' . "\n";
                 $rs .= '</area>';
+            }else{
+                $this->errors[]=$data_item['id'].' DECLINED: Total area error';
+                return '';
             }
         }
         return $rs;
@@ -2377,6 +2395,11 @@ class yandexrealty_site extends yandexrealty_admin {
         $rs = '';
         if (is_array($imgs) && count($imgs) > 0) {
 
+            $picslimitsize = intval($this->getConfigValue('apps.yandexrealty.objphotolimit'));
+            if($picslimitsize > 0){
+                $imgs = array_slice($imgs, 0, $picslimitsize);
+            }
+
             if (1 == (int) $this->getConfigValue('apps.yandexrealty.nowatermark_export') && 1 == (int) $this->getConfigValue('save_without_watermark')) {
                 $image_dest = $this->getServerFullUrl() . '/img/data/nowatermark/';
             } else {
@@ -2398,27 +2421,54 @@ class yandexrealty_site extends yandexrealty_admin {
     }
 
     protected function exDescription($data_item) {
-        
-        $from = trim($this->getConfigValue('apps.yandexrealty.descriptionfrom'));
-        if($from == ''){
-            $from = 'text';
+
+        $field = trim($this->getConfigValue('apps.yandexrealty.descriptionfrom'));
+        if($field == ''){
+            $field = 'text';
         }
-        
+
+        if($field != '' && isset($data_item[$field])){
+            $string = trim($data_item[$field]);
+            $string = htmlspecialchars_decode($string);
+            $string = strip_tags($string);
+            if('' != $string){
+                $stringparts = explode("\n", $string);
+                foreach($stringparts as $sk => $sv){
+                    $sv = preg_replace('/[[:cntrl:]]/iu', '', $sv);
+                    $sv = str_replace(array('"', '&', '>', '<', '\''), array('&quot;', '&amp;', '&gt;', '&lt;', '&apos;'), $sv);
+                    $sv = trim($sv);
+                    if($sv == ''){
+                        unset($stringparts[$sk]);
+                    }else{
+                        $stringparts[$sk] = $sv;
+                    }
+                }
+
+                if(!empty($stringparts)){
+                    $string = implode("\n", $stringparts);
+                }else{
+                    $string = '';
+                }
+            }
+
+        }
+
+        return '<description>' . $string . '</description>';
+
+        /*
         $text = '';
-        
+
         if (isset($this->form_data_shared[$from]) && isset($data_item[$from]) && $data_item[$from] != '') {
             $text = $data_item[$from];
         }
-        
-        //$text = $data_item['text'];
-        //var_dump($text);
+
         $text = SiteBill::iconv(SITE_ENCODING, 'utf-8', $text);
 
         $text = htmlspecialchars_decode($text);
         $text = strip_tags($text);
         $text = preg_replace('/[[:cntrl:]]/i', '', $text);
         $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
-        return '<description>' . $text . '</description>';
+        return '<description>' . $text . '</description>';*/
     }
 
     protected function exWithChildren($data_item) {
@@ -2462,6 +2512,20 @@ class yandexrealty_site extends yandexrealty_admin {
             }
             return $rs;
         }
+
+    }
+
+    /**
+     * Временная заглушка для реализаций кастомизации
+     * @param $data_item
+     * @return string
+     */
+    protected function exOfficeClass($data_item) {
+
+        return '';
+
+        $classes = array('a', 'aplus', 'b', 'bplus', 'c', 'cplus');
+        return '<office-class></office-class>';
 
     }
 
@@ -2649,10 +2713,20 @@ class yandexrealty_site extends yandexrealty_admin {
     }
 
     protected function exCadastralNumber($data_item) {
+        $cadastralnumbers = array();
         $rs = '';
         $cd_nr_from = trim($this->getConfigValue('apps.yandexrealty.cadastralnr_from'));
-        if ($cd_nr_from != '' && isset($this->form_data_shared[$cd_nr_from]) && isset($data_item[$cd_nr_from]) && $data_item[$cd_nr_from] != '') {
-            $rs .= '<cadastral-number>' . self::symbolsClear($data_item[$cd_nr_from]) . '</cadastral-number>';
+        if($cd_nr_from != ''){
+            $fields = explode(',', $cd_nr_from);
+            foreach ($fields as $field){
+                $field = trim($field);
+                if ($field != '' && isset($this->form_data_shared[$field]) && isset($data_item[$field]) && $data_item[$field] != '') {
+                    $cadastralnumbers[] = self::symbolsClear($data_item[$field]);
+                }
+            }
+        }
+        if(!empty($cadastralnumbers)){
+            $rs .= '<cadastral-number>' . implode(', ', $cadastralnumbers) . '</cadastral-number>';
         }
         return $rs;
     }
@@ -2682,7 +2756,7 @@ class yandexrealty_site extends yandexrealty_admin {
     }
 
     protected function exPrice($data_item, $operational_type) {
-        
+
         $from = trim($this->getConfigValue('apps.yandexrealty.pricefrom'));
         if($from == ''){
             $from = 'price';
@@ -2691,7 +2765,7 @@ class yandexrealty_site extends yandexrealty_admin {
             $this->errors[]=$data_item['id'].' DECLINED: Price error';
             return '';
         }
-        
+
         $rs = '<price>' . "\n";
         $rs .= '<value>' . self::symbolsClear($data_item[$from]) . '</value>' . "\n";
         if ('' != $this->getConfigValue('apps.yandexrealty.global_currency_code')) {
@@ -2735,16 +2809,23 @@ class yandexrealty_site extends yandexrealty_admin {
         return $rs;
     }
 
+    protected function getUserData($uid){
+        if (!isset($this->users_cache[$uid])) {
+            $UM = new Users_Manager();
+            $this->users_cache[$uid] = $UM->getUserProfileData($uid);
+        }
+        return $this->users_cache[$uid];
+    }
+
     protected function exSalesAgent($data_item) {
 
         if ($this->contacts_export_mode == 1) {
             $rs = '<sales-agent>' . "\n";
             $uid = intval($data_item['user_id']);
-            if (!isset($this->users_cache[$uid])) {
-                $UM = new Users_Manager();
-                $this->users_cache[$uid] = $UM->getUserProfileData($uid);
-            }
-            $user = $this->users_cache[$uid];
+
+
+            $user = $this->getUserData($uid);
+
             $gid = intval($user['group_id']);
 
             $user = $this->hook_data($user);
@@ -2930,9 +3011,9 @@ class yandexrealty_site extends yandexrealty_admin {
      * проанализировать варианты исползования
      */
     protected function exSalesAgent_Variant($data_item) {
-        
+
         $default_phones_array = array();
-            
+
         $defphonesstr = trim($this->getConfigValue('apps.yandexrealty.defaultphones'));
         if($defphonesstr != ''){
             $defphones = explode("\n", $defphonesstr);
@@ -2949,11 +3030,7 @@ class yandexrealty_site extends yandexrealty_admin {
         if ($this->contacts_export_mode == 1) {
             $rs = '<sales-agent>' . "\n";
             $uid = intval($data_item['user_id']);
-            if (!isset($this->users_cache[$uid])) {
-                $UM = new Users_Manager();
-                $this->users_cache[$uid] = $UM->getUserProfileData($uid);
-            }
-            $user = $this->users_cache[$uid];
+            $user = $this->getUserData($uid);
             $gid = intval($user['group_id']);
 
             $user = $this->hook_data($user);
@@ -3003,8 +3080,8 @@ class yandexrealty_site extends yandexrealty_admin {
             }
 
             //$rs.='<gid>'.$contact_export_variant.'</gid>'."\n";
-            
-            
+
+
 
             if ($contact_export_variant == 1) {
                 if(!empty($default_phones_array)){
@@ -3017,7 +3094,7 @@ class yandexrealty_site extends yandexrealty_admin {
                         $rs .= '<phone>' . self::symbolsClear($data_item[$field_f]) . '</phone>' . "\n";
                     }
                 }
-                
+
                 $field_f = trim($this->getConfigValue('apps.yandexrealty.data_email'));
                 if ($field_f != '' && isset($data_item[$field_f]) && $data_item[$field_f] != '') {
                     $rs .= '<email>' . self::symbolsClear($data_item[$field_f]) . '</email>' . "\n";
@@ -3037,7 +3114,7 @@ class yandexrealty_site extends yandexrealty_admin {
                         $rs .= '<phone>' . self::symbolsClear($user[$field_f]) . '</phone>' . "\n";
                     }
                 }
-                
+
                 $field_f = trim($this->getConfigValue('apps.yandexrealty.profile_email'));
                 if ($field_f != '' && isset($user[$field_f]) && $user[$field_f] != '') {
                     $rs .= '<email>' . self::symbolsClear($user[$field_f]) . '</email>' . "\n";
@@ -3060,7 +3137,7 @@ class yandexrealty_site extends yandexrealty_admin {
                         $rs .= '<phone>' . self::symbolsClear($user[$field_f12]) . '</phone>' . "\n";
                     }
                 }
-                
+
 
                 $field_f1 = trim($this->getConfigValue('apps.yandexrealty.data_email'));
                 $field_f2 = trim($this->getConfigValue('apps.yandexrealty.profile_email'));
@@ -3091,7 +3168,7 @@ class yandexrealty_site extends yandexrealty_admin {
                         $rs .= '<phone>' . self::symbolsClear($data_item[$field_f1]) . '</phone>' . "\n";
                     }
                 }
-                
+
 
                 $field_f1 = trim($this->getConfigValue('apps.yandexrealty.data_email'));
                 $field_f2 = trim($this->getConfigValue('apps.yandexrealty.profile_email'));
@@ -3122,7 +3199,7 @@ class yandexrealty_site extends yandexrealty_admin {
                 }else{
                     $rs .= '<phone>' . self::symbolsClear($data_item['phone']) . '</phone>' . "\n";
                 }
-                
+
                 $rs .= '<email>' . self::symbolsClear($data_item['email']) . '</email>' . "\n";
                 $rs .= '<name>' . self::symbolsClear($data_item['fio']) . '</name>' . "\n";
             } else {
@@ -3135,7 +3212,7 @@ class yandexrealty_site extends yandexrealty_admin {
                         require_once SITEBILL_DOCUMENT_ROOT . '/apps/company/admin/admin.php';
                         $CA = new company_admin();
                         $company = $CA->load_by_id($user['company_id']);
-                        
+
                         if(!empty($default_phones_array)){
                             foreach ($default_phones_array as $default_phone){
                                 $rs .= '<phone>' . self::symbolsClear($default_phone) . '</phone>' . "\n";
@@ -3144,7 +3221,7 @@ class yandexrealty_site extends yandexrealty_admin {
                             $rs .= '<phone>' . self::symbolsClear($db->row['agency_agentphone']) . '</phone>' . "\n";
                         }
 
-                        
+
                         $rs .= '<organization>' . self::symbolsClear($company['name']['value']) . '</organization>' . "\n";
                         $rs .= '<category>agency</category>' . "\n";
                         $rs .= '<url>' . self::symbolsClear($company['site']['value']) . '</url>' . "\n";
@@ -3160,7 +3237,7 @@ class yandexrealty_site extends yandexrealty_admin {
                         }else{
                             $rs .= '<phone>' . self::symbolsClear($user['phone']) . '</phone>' . "\n";
                         }
-                        
+
                         $rs .= '<email>' . self::symbolsClear($user['email']) . '</email>' . "\n";
                         $rs .= '<name>' . self::symbolsClear($user['fio']) . '</name>' . "\n";
                     }
@@ -3173,7 +3250,7 @@ class yandexrealty_site extends yandexrealty_admin {
                     }else{
                         $rs .= '<phone>' . self::symbolsClear($user['phone']) . '</phone>' . "\n";
                     }
-                    
+
                     $rs .= '<email>' . self::symbolsClear($user['email']) . '</email>' . "\n";
                     $rs .= '<name>' . self::symbolsClear($user['fio']) . '</name>' . "\n";
                 }
@@ -3817,65 +3894,6 @@ class yandexrealty_site extends yandexrealty_admin {
             $this->errors[] = $data_item['id'] . ' DECLINED: Operational type unknown';
         }
 
-        return $rs;
-
-        if (!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['operation_type'] != 0) {
-            $rs .= '<type>' . $this->op_types[$this->associations[$data_topic]['operation_type']] . '</type>';
-            if ($this->associations[$data_topic]['operation_type'] == 2) {
-                $operational_type = 'rent';
-            } else {
-                $operational_type = 'sale';
-            }
-        } else {
-            if (isset($this->contracts['sale']) && $this->contracts['sale']['f'] != '' && isset($data_item[$this->contracts['sale']['f']]) && in_array($data_item[$this->contracts['sale']['f']], $this->contracts['sale']['v'])) {
-                $rs .= '<type>продажа</type>';
-                $operational_type = 'sale';
-            } elseif (isset($this->contracts['rent']) && $this->contracts['rent']['f'] != '' && isset($data_item[$this->contracts['rent']['f']]) && in_array($data_item[$this->contracts['rent']['f']], $this->contracts['rent']['v'])) {
-                if ($this->export_mode == 'EST.UA') {
-                    $rs .= '<type>сдача</type>';
-                } else {
-                    $rs .= '<type>аренда</type>';
-                }
-
-                $operational_type = 'rent';
-            }/* elseif(isset($data_item['optype']) && (int)$data_item['optype']==1){
-              $rs.='<type>аренда</type>';
-              $operational_type='rent';
-              } */ else {
-                $this->errors[] = $data_item['id'] . ' DECLINED: Operational type unknown';
-                $rs .= '<type>продажа</type>';
-            }
-        }
-
-
-        /* $operational_type='sale';
-          if(!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['operation_type']!=0){
-          $rs.='<type>'.$this->op_types[$this->associations[$data_topic]['operation_type']].'</type>';
-          if($this->associations[$data_topic]['operation_type']==2){
-          $operational_type='rent';
-          }
-
-          }else{
-          $st=explode(':', $this->getConfigValue('apps.yandexrealty.sell'));
-          $rt=explode(':', $this->getConfigValue('apps.yandexrealty.rent'));
-          $selltype_field=trim($st[0]);
-          $selltype_value=trim($st[1]);
-          $renttype_field=trim($rt[0]);
-          $renttype_value=trim($rt[1]);
-
-          if($selltype_field!='' && $selltype_value!='' && isset($data_item[$selltype_field]) && $data_item[$selltype_field]==$selltype_value){
-          $rs.='<type>продажа</type>';
-          }elseif($renttype_field!='' && $renttype_value!='' && isset($data_item[$renttype_field]) && $data_item[$renttype_field]==$renttype_value){
-          $rs.='<type>аренда</type>';
-          $operational_type='rent';
-          }elseif(isset($data_item['optype']) && (int)$data_item['optype']==1){
-          $rs.='<type>аренда</type>';
-          $operational_type='rent';
-          }else{
-          $this->errors[]=$data_item['id'].' DECLINED: Operational type unknown';
-          $rs.='<type>продажа</type>';
-          }
-          } */
         return $rs;
     }
 

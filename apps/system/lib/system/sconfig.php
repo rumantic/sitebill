@@ -5,6 +5,13 @@ class SConfig {
     public static $instance;
     private static $config_array = array();
     private static $public_config_array = array();
+    public static $check_config_array = array();
+
+    public static $fieldtypeString = 0;
+    public static $fieldtypeCheckbox = 1;
+    public static $fieldtypeSelectbox = 2;
+    public static $fieldtypeTextarea = 3;
+    public static $fieldtypeLangSelect = 4;
 
     public static function getInstance() {
         if (!self::$instance) {
@@ -28,10 +35,22 @@ class SConfig {
         return false;
     }
 
+    public static function getConfigValueStatic($key) {
+        if (isset(self::$config_array[$key])) {
+            return self::$config_array[$key];
+        }
+        return false;
+    }
+
+
     public function setConfigValue($key, $value) {
         self::$config_array[$key] = $value;
     }
-    
+
+    public static function setConfigValueStatic($key, $value) {
+        self::$config_array[$key] = $value;
+    }
+
     /**
      * Обновляем значение параметра в hidden_config
      * Если параметра нет, то он создается автоматически
@@ -47,7 +66,7 @@ class SConfig {
         }
         return true;
     }
-    
+
     /**
      * Если нет ключа, создаем его. Но при этом не перезаписываем существующий ключ и его значение
      * @param type $key
@@ -58,7 +77,7 @@ class SConfig {
         $query='INSERT INTO '.DB_PREFIX.'_hidden_config (`config_key`, `config_value`) VALUES (?,?) ON DUPLICATE KEY UPDATE `config_value`=`config_value`';
         $stmt = $DBC->query($query, array($key, $value));
     }
-    
+
     public static function getHiddenConfigValue($key) {
         $DBC = DBC::getInstance();
         $query = 'SELECT `config_value` FROM ' . DB_PREFIX . '_hidden_config WHERE `config_key`=?';
@@ -68,8 +87,25 @@ class SConfig {
             return $ar['config_value'];
         }
     }
-    
-    
+
+    /**
+     * Изменяем или добавляем новые параметры в блок параметров
+     * @param string $key Ключ блока парметров
+     * @param array $params Массив изменяемых\добавляемых значений в виде имя параметра+значение
+     * @return bool
+     */
+    public static function storeHiddenConfigValueParams($key, $params){
+        $configItem = self::getHiddenConfigValue($key);
+        if(is_null($configItem)){
+            $configItem = array();
+        }else{
+            $configItem = json_decode($configItem, true);
+        }
+        $configItem = array_merge($configItem, $params);
+        return self::updateHiddenConfigValue($key, json_encode($configItem));
+    }
+
+
 
     private function __construct() {
         self::loadConfig();
@@ -117,7 +153,14 @@ class SConfig {
         $stmt = $DBC->query($query);
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
+                if($ar['vtype'] == self::$fieldtypeLangSelect){
+                    if('' != $ar['value']){
+                        $ar['value'] = json_decode($ar['value'], true);
+                    }
+                }
                 self::$config_array[$ar['config_key']] = $ar['value'];
+                self::$check_config_array[$ar['config_key']] = '1';
+
                 if ( $ar['public'] == 1 ) {
                     self::$public_config_array[$ar['config_key']] = $ar['value'];
                 }

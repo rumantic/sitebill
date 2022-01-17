@@ -21,7 +21,7 @@ class News_Grid_Constructor extends Grid_Constructor {
      * @return array
      */
     function main($params) {
-        
+
     }
 
     /**
@@ -92,6 +92,10 @@ class News_Grid_Constructor extends Grid_Constructor {
             $where[] = '`date`<=' . time();
         }
 
+        if ( $this->getConfigValue('apps.news.use_active_status') ) {
+            $where[] = '`active`=1';
+        }
+
 
         if (isset($_SESSION['user_domain_owner']) && (int) $_SESSION['user_domain_owner']['user_id'] != 0) {
             $where[] = 'user_id=' . $_SESSION['user_domain_owner']['user_id'];
@@ -128,7 +132,7 @@ class News_Grid_Constructor extends Grid_Constructor {
         $this->template->assert('pager', $Pager->getPagerArray());
         $paging = Page_Navigator::getPagingArray($total, $page, $limit, array(), $paging_alias);
         $this->template->assert('news_paging', $paging);
-        
+
         $this->template->assert('news_pager', $this->get_page_links_list ($page, $total, $limit, array('page_url' => $paging_alias)));
 
 

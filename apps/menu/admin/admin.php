@@ -21,8 +21,7 @@ class menu_admin extends Object_Manager {
         $this->loadMenus();
     }
 
-    private function loadMenus() {
-        global $smarty;
+    public function loadMenus() {
         $ra = array();
         $DBC = DBC::getInstance();
 
@@ -45,13 +44,49 @@ class menu_admin extends Object_Manager {
                 $ra[$ar['tag']][] = $ar;
             }
         }
+        //echo '<pre>';
+        //print_r($ra);
+        //exit();
         if (!empty($ra)) {
             foreach ($ra as $tag => $menu_structure) {
-                $smarty->assign($tag, $menu_structure);
+                $this->template->assign($tag, $menu_structure);
                 $tag_title = $tag . '_title';
-                $smarty->assign($tag_title, $menu_structure[0]['menu_title']);
+                $this->template->assign($tag_title, $menu_structure[0]['menu_title']);
             }
         }
+        return $ra;
+    }
+
+    public function sitemap_pages_count($sitemap) {
+        $cnt = 0;
+        $DBC = DBC::getInstance();
+        $query = 'SELECT `url` FROM ' . DB_PREFIX . '_menu_structure WHERE `url` <> ?';
+        $stmt = $DBC->query($query, array(''));
+        $domain = $_SERVER['HTTP_HOST'];
+        if ($stmt) {
+            while ($ar = $DBC->fetch($stmt)) {
+                $url = trim($ar['url']);
+                $url = trim(str_replace('\\', '/', $url), '/');
+                if ($url == '' || $url == '#') {
+                    $url = '';
+                } elseif (preg_match('/^(http:|https:)/', $url) && preg_match('/' . $domain . '/', $url)) {
+                    $url = trim($url);
+                } elseif (preg_match('/^(http:|https:)/', $url)) {
+                    $url = '';
+                } elseif (preg_match('/^' . $domain . '/', $url)) {
+                    $url = trim(preg_replace('/^(' . $domain . ')/', '', $url), '/');
+                } else {
+                    //explode
+                }
+                if ($url != '') {
+                    $cnt += 1;
+                }
+            }
+        }
+        if($cnt > 0){
+            $cnt = intval(ceil($cnt/$sitemap->getPerPageCount()));
+        }
+        return $cnt;
     }
 
     public function sitemap($sitemap) {
@@ -119,6 +154,14 @@ class menu_admin extends Object_Manager {
         }
 
         return $urls;
+    }
+
+    function migrations () {
+        return [
+            "ALTER TABLE " . DB_PREFIX . "_menu_structure ADD column action varchar(255) NOT NULL DEFAULT ''",
+            "ALTER TABLE " . DB_PREFIX . "_menu_structure ADD column icon varchar(255) NOT NULL DEFAULT ''",
+            "ALTER TABLE " . DB_PREFIX . "_menu_structure ADD column params text NOT NULL DEFAULT ''",
+        ];
     }
 
 }

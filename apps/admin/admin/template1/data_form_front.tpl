@@ -29,7 +29,7 @@ $(document).ready(function(){
 		{$form_element_script}
 	{/foreach}
 {/if}
-<script type="text/javascript" src="{$estate_folder}/apps/system/js/form_tabs.js?v=1"></script>
+<script type="text/javascript" src="{$estate_folder}/apps/system/js/form_tabs.js?v=2"></script>
 {if $form_elements.public|count eq 1}
     <div class="tab-content tab-margin-top">
     {foreach from=$form_elements.public key=tab item=tab_elements}
@@ -43,7 +43,7 @@ $(document).ready(function(){
 						{$element.title}{if $element.required eq 1}<span style="color: red;">*</span>{/if}{if $element.hint!=''} <a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-xs" data-content="{$element.hint}"> <i class="fa fa-question"></i></a>{/if}
 						{if $element.html_array.src ne ''}<img id="capcha_img" class="capcha_img" src="{$element.html_array.src}" width="180" height="80" /><br/>{/if}
 						{$element.html_array.refresh}
-						
+
 						{$element.html_array.input}
 						{$element.html_array.hidden}
 						{$element.html_array.js_string}
@@ -117,9 +117,9 @@ $(document).ready(function(){
 					</div>
 					{/foreach}
 				{/if}
-	{/foreach}    
+	{/foreach}
 	</div>
-	
+
 {else}
 
 	{if $divide_by_step==1}
@@ -127,7 +127,7 @@ $(document).ready(function(){
 		<script type="text/javascript" src="{$estate_folder}/apps/system/js/form_tabs.js"></script>
 		<link rel="stylesheet" type="text/css" href="{$estate_folder}/apps/system/css/form_tabs.css" />
 		<link rel="stylesheet" type="text/css" href="{$estate_folder}/apps/system/css/form_tabs_divided.css" />
-		
+
 		<div id="form_tab_switcher" style="display:none;">
 		{foreach name=tab_foreach from=$form_elements.public key=tab item=tab_elements}
 			{assign var=tab_id value=md5($tab)}
@@ -140,7 +140,7 @@ $(document).ready(function(){
 			{/if}
 		{/foreach}
 		</div>
-		
+
 		<div class="steps">
 		{foreach name=tab_foreach from=$form_elements.public key=tab item=tab_elements}
 			{assign var=tab_id value=md5($tab)}
@@ -153,7 +153,7 @@ $(document).ready(function(){
 			{/if}
 		{/foreach}
 		</div>
-		
+
 		{foreach name=tab_foreach_els from=$form_elements.public key=tab item=tab_elements}
 			{assign var=tab_id value=md5($tab)}
 			{if $smarty.foreach.tab_foreach_els.iteration==$current_step}
@@ -198,12 +198,12 @@ $(document).ready(function(){
 				</div>
 			{/if}
 		{/foreach}
-		
-		
-		
-			
-		
-		
+
+
+
+
+
+
 		<!-- .DIVIDED BY STEPS FORM -->
 	{else}
 		<!-- USUAL FORM WITH TABS -->
@@ -213,10 +213,10 @@ $(document).ready(function(){
 			<li role="presentation" {if $smarty.foreach.tbf.iteration==1}class="active"{/if}><a href="#t{$tab_id}" aria-controls="{$tab_id}" role="tab" data-toggle="tab">{$tab}</a></li>
 		{/foreach}
 		</ul>
-		
+
 		<div class="tab-content">
 		{foreach name=tbf from=$form_elements.public key=tab item=tab_elements}
-		
+
 			{assign var=tab_id value=md5($tab)}
 			<div role="tabpanel" class="tab-pane fade in{if $smarty.foreach.tbf.iteration==1} active{/if}" id="t{$tab_id}">
 				{if $bootstrap_version=='3' && $smarty.const.ADMIN_MODE!=1}
@@ -229,7 +229,7 @@ $(document).ready(function(){
 						{$element.title}{if $element.required eq 1}<span style="color: red;">*</span>{/if}{if $element.hint!=''} <a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-xs" data-content="{$element.hint}"> <i class="fa fa-question"></i></a>{/if}
 						<img id="capcha_img" class="capcha_img" src="{$element.html_array.src}" width="180" height="80" /><br/>
 						{$element.html_array.refresh}
-						
+
 						{$element.html_array.input}
 						{$element.html_array.hidden}
 						{$element.html_array.js_string}
@@ -306,7 +306,7 @@ $(document).ready(function(){
 			</div>
 		{/foreach}
 		</div>
-		
+
 		{literal}
 		<script>
 		 $(document).ready(function(){$('#form_tab a:first').tab('show');});

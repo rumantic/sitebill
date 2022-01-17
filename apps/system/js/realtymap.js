@@ -5,11 +5,11 @@ function RealtyMap(version){
 		this.version=version;
 	}
 	this.map=null;
-	
+
 	this.clusterer=null;
 	this.bounds=null;
 	this.type='google';
-	
+
 	this.map_element=null;
 	this.locations=[];
 	this.markers=[];
@@ -31,57 +31,57 @@ function RealtyMap(version){
 	   custom_center: [],
 	   gridSize: 64
 	};
-	
+
 	this.markersVariants={
 		_default: {
 			icon: estate_folder+'/template/frontend/agency/img/marker.png',
 			size: [42, 57],
 			offset: [-21, -57]
 		}
-	}
+	};
 
 	if(window.RM_Custom_Markers !== undefined){
 		this.markersVariants=$.extend(true, {}, this.markersVariants, window.RM_Custom_Markers);
 	}
 	var self=this;
-	
+
 	this.stripslashes=function(str){
 		str = str.replace(/\\'/g, '\'');
-        str = str.replace(/\\"/g, '"');
-        str = str.replace(/\\0/g, '\0');
-        str = str.replace(/\\\\/g, '\\');
-        return str;
+		str = str.replace(/\\"/g, '"');
+		str = str.replace(/\\0/g, '\0');
+		str = str.replace(/\\\\/g, '\\');
+		return str;
 	};
-	
+
 	this.setDefaultIconImage=function(marker_icon){
 		this.markersVariants._default.icon=marker_icon;
 	};
-	
+
 	this.setDefaultIconSize=function(size){
 		this.markersVariants._default.size=size;
 	};
-	
+
 	this.setDefaultIconOffset=function(offset){
 		this.markersVariants._default.offset=offset;
 	};
-	
+
 	this.makeInfoWin=function(marker, infowindow, data) {
 		google.maps.event.addListener(marker, 'click', function() {
 			infowindow.setContent(data);
 			infowindow.open(marker.getMap(), marker);
 		});  
-	}
-	
+	};
+
 	this.saveGeoCoordinates=function(coords){
 		$.ajax({
 			url: estate_folder+'/js/ajax.php',
 			type: 'post',
 			data: {actionlat: coords[0], lng: coords[1]}
 		});
-	}
-	
+	};
+
 	this.clusterizeLocations=function(){
-		
+
 		for(var i in this.locations){
 			if(this.locations[i].lat && this.locations[i].lat!='' && this.locations[i].lng && this.locations[i].lng!=''){
 				var g_c_i=this.locations[i].lat+'_'+this.locations[i].lng;
@@ -92,13 +92,13 @@ function RealtyMap(version){
 					this.clustered_objects[g_c_i].push(this.locations[i]);
 				}
 			}else if(this.locations[i].address && this.locations[i].address!=''){
-				
+
 			}else{
 				this.locations[i]=null;
 			}
 		}
-		
 	};
+
 	this.refreshBounds=function(lat_lng){
 		var boundsCenter=this.bounds.getCenter();
 		this.map.setCenter(boundsCenter);
@@ -108,17 +108,17 @@ function RealtyMap(version){
 		if(this.type=='google'){
 			this.createGoogleMap();
 		}else if(this.type=='leaflet_osm'){
-            this.createLeafletOsmMap();
-        }else{
-	    	this.createYandexMap();
-	    }
+			this.createLeafletOsmMap();
+		}else{
+			this.createYandexMap();
+		}
 	};
 	this.createSimpleMap=function(markers_array){
 		if(this.type=='google'){
 			this.createSimpleGoogleMap(markers_array);
 		}else{
 			this.createSimpleYandexMap(markers_array);
-	    }
+		}
 	};
 	this.createSimpleYandexMap=function(markers_array){
 		ymaps.ready(function(){
@@ -135,7 +135,7 @@ function RealtyMap(version){
 				}else{
 					markerOpts.content='';
 				}
-				
+
 				if(markers_array[i].hint != undefined){
 					markerOpts.hint=markers_array[i].hint;
 				}else{
@@ -151,11 +151,11 @@ function RealtyMap(version){
 				/*if(markers_array[i].marker_size!=undefined){
 					markerOpts.marker_size=markers_array[i].marker_size;
 				}*/
-				
+
 				var marker=self._putYandexMarker(latlng, markerOpts);
 				self.markers.push(marker);
 			}
-			
+
 			if(count==1){
 				self.map.setCenter(latlng);
 				self.map.setZoom(self.options.defaultZoom);
@@ -178,7 +178,7 @@ function RealtyMap(version){
 				}else{
 					markerOpts.content='';
 				}
-				
+
 				if(markers_array[i].hint != undefined){
 					markerOpts.hint=markers_array[i].hint;
 				}else{
@@ -194,7 +194,7 @@ function RealtyMap(version){
 				/*if(markers_array[0].marker_size!=undefined){
 					markerOpts.icon=markers_array[0].marker_size;
 				}*/
-				
+
 				var marker=self._putGoogleMarker(latlng, markerOpts);
 				this.markers.push(marker);
 				this.bounds.extend(latlng);
@@ -210,20 +210,20 @@ function RealtyMap(version){
 			}else{
 				markerOpts.content='';
 			}
-			
+
 			if(markers_array[0].hint != undefined){
 				markerOpts.hint=markers_array[0].hint;
 			}else{
 				markerOpts.hint='';
 			}
-			
+
 			/*if(markers_array[0].showPopup!=undefined){
 				markerOpts.showPopup=markers_array[0].showPopup;
 			}*/
 			if(markers_array[0].icon!=undefined){
 				markerOpts.icon=markers_array[0].icon;
 			}
-			
+
 			var marker=self._putGoogleMarker(latlng, markerOpts);
 			this.markers.push(marker);
 			this.map.setCenter(latlng);
@@ -233,8 +233,8 @@ function RealtyMap(version){
 		if(this.type=='google'){
 			this.geocodeGoogle(rname);
 		}else{
-	    	this.geocodeYandex(rname);
-	    }
+			this.geocodeYandex(rname);
+		}
 	};
 	this.geocodeYandex=function(rname){
 		ymaps.ready(function(){
@@ -257,40 +257,40 @@ function RealtyMap(version){
 			self._createGoogleMap();
 			var geocoder = new google.maps.Geocoder();
 			geocoder.geocode({'address':rname},function(data){
-				
+
 				var lat=data[0].geometry.location.lat();
 				var lng=data[0].geometry.location.lng();
 				var latlng = new google.maps.LatLng(lat, lng);
 				self._pushGoogleMarker(latlng, rname, '');
 				self.map.setCenter(latlng);
-				
+
 			});
 		}
 	};
-	
+
 	this._createGoogleMap=function(){
 		var _this=this;
 		var mapOptions = {
-	        center: new google.maps.LatLng(0, 0),
-	        zoom: this.options.defaultZoom,
-	        mapTypeId: google.maps.MapTypeId.ROADMAP,
-	        scrollwheel: this.options.scrollZoom
-	    };
+			center: new google.maps.LatLng(0, 0),
+			zoom: this.options.defaultZoom,
+			mapTypeId: google.maps.MapTypeId.ROADMAP,
+			scrollwheel: this.options.scrollZoom
+		};
 
 		this.map = new google.maps.Map(this.map_element, mapOptions);
 	};
-    this._putLeafletOsmMarker=function(latlng, markerOpts){
-        
-        
-            
-            
-            
-        if(markerOpts.content != undefined){
+	this._putLeafletOsmMarker=function(latlng, markerOpts){
+
+
+
+
+
+		if(markerOpts.content != undefined){
 			var content=this.stripslashes(markerOpts.content);
 		}else{
 			var content='';
 		}
-		
+
 		if(markerOpts.icon != undefined && this.markersVariants[markerOpts.icon] != undefined){
 			var micon=this.markersVariants[markerOpts.icon].icon;
 			var marker_offset=this.markersVariants[markerOpts.icon].offset;
@@ -300,37 +300,37 @@ function RealtyMap(version){
 			var marker_offset=this.markersVariants._default.offset;
 			var marker_size=this.markersVariants._default.size;
 		}
-		
+
 		if(markerOpts.hint != undefined){
 			var hintContent=markerOpts.hint;
 		}else{
 			var hintContent='';
 		}
-		
+
 		if(markerOpts.ids != undefined){
 			var ids=markerOpts.ids;
 		}else{
 			var ids=[];
 		}
-		
-		
+
+
 		var marker = L.marker(latlng, {ids: ids}).addTo(this.map);
-        if(hintContent != ''){
-            marker.bindTooltip(hintContent);
-        }
-        if(content != ''){
+		if(hintContent != ''){
+			marker.bindTooltip(hintContent);
+		}
+		if(content != ''){
 			marker.bindPopup(content, {'maxWidth': '500', 'minWidth': '300', 'className' : 'custom'});
 		}
 
 		return marker;
-    };
+	};
 	this._putGoogleMarker=function(latlng, markerOpts/*content, hintContent, hasInfoWindow, icon*/){
 		if(markerOpts.content != undefined){
 			var content=this.stripslashes(markerOpts.content);
 		}else{
 			var content='';
 		}
-		
+
 		if(markerOpts.icon != undefined && this.markersVariants[markerOpts.icon] != undefined){
 			var micon=this.markersVariants[markerOpts.icon].icon;
 			var marker_offset=this.markersVariants[markerOpts.icon].offset;
@@ -340,36 +340,36 @@ function RealtyMap(version){
 			var marker_offset=this.markersVariants._default.offset;
 			var marker_size=this.markersVariants._default.size;
 		}
-		
+
 		/*if(markerOpts.icon != undefined){
 			var micon=markerOpts.icon;
 		}else{
 			var micon=this.options.marker_icon;
 		}*/
-		
+
 		if(markerOpts.hint != undefined){
 			var hintContent=markerOpts.hint;
 		}else{
 			var hintContent='';
 		}
-		
+
 		if(markerOpts.ids != undefined){
 			var ids=markerOpts.ids;
 		}else{
 			var ids=[];
 		}
-		
-		
-		
-		
+
+
+
+
 		var marker = new google.maps.Marker({
-            position: latlng,
-            map: this.map,
-            icon: micon,
-            title: hintContent,
-            ids: ids
-        });
-		
+			position: latlng,
+			map: this.map,
+			icon: micon,
+			title: hintContent,
+			ids: ids
+		});
+
 		if(/*markerOpts.showPopup != undefined && markerOpts.showPopup == true && */content != ''){
 			var infowindow = new google.maps.InfoWindow({  
 			  content: ''
@@ -386,15 +386,15 @@ function RealtyMap(version){
 			var micon=this.options.marker_icon;
 		}
 		var marker = new google.maps.Marker({
-            position: latlng,
-            map: this.map,
-            icon: micon,
-            title: hintContent
-        });
+			position: latlng,
+			map: this.map,
+			icon: micon,
+			title: hintContent
+		});
 		if(hasInfoWindow){
 			var content='<div class="cluster-listing scrollable">'+content+'</div>';
 			var infowindow = new google.maps.InfoWindow({  
-			  content: '' 
+			  content: ''
 			});
 			this.makeInfoWin(marker, infowindow, content);
 		}
@@ -402,16 +402,16 @@ function RealtyMap(version){
 		return marker;
 	};
 	this._createYandexMap=function(){
-		
+
 		var _this=this;
-		
+
 		var behaviors=[];
 		if(_this.options.scrollZoom){
 			behaviors.push("scrollZoom");
 		}
 		behaviors.push("drag");
 		behaviors.push("dblClickZoom");
-		
+
 		if(_this.version=='2.1'){
 			var controls=[];
 			if(_this.options.fullscreenControl){
@@ -437,28 +437,28 @@ function RealtyMap(version){
 			_this.map.controls.add('scaleLine');
 			if(_this.options.minimap){
 				_this.map.controls.add(new ymaps.control.MiniMap(
-				    { type: 'yandex#satellite' },
-				    { size: [90, 90] }
+					{ type: 'yandex#satellite' },
+					{ size: [90, 90] }
 				));
 			}
 			_this.map.controls.add('zoomControl', { top: 75, left: 5 });
 		}
-		
-		
-		
-	
-	
+
+
+
+
+
 	};
 	this._putYandexMarker=function(latlng, markerOpts){
 		var _this=this;
-		
+
 		if(markerOpts.content != undefined){
 			var content=this.stripslashes(markerOpts.content);
 		}else{
 			var content='';
 		}
-		
-		
+
+
 		if(markerOpts.icon != undefined && _this.markersVariants[markerOpts.icon] != undefined){
 			var micon=_this.markersVariants[markerOpts.icon].icon;
 			var marker_offset=_this.markersVariants[markerOpts.icon].offset;
@@ -468,18 +468,18 @@ function RealtyMap(version){
 			var marker_offset=_this.markersVariants._default.offset;
 			var marker_size=_this.markersVariants._default.size;
 		}
-		
+
 		if(markerOpts.hint != undefined){
 			var hintContent=markerOpts.hint;
 		}else{
 			var hintContent='';
 		}
-		
+
 		if(/*markerOpts.showPopup != undefined && markerOpts.showPopup == true && */content != ''){
 			var baloonContent={
 				iconContent: '',
 				balloonContentBody: content,
-	            hintContent: hintContent
+				hintContent: hintContent
 			}
 		}else{
 			var baloonContent={
@@ -487,19 +487,19 @@ function RealtyMap(version){
 				hintContent: hintContent
 			}
 		}
-		
+
 		var myPlacemark = new ymaps.Placemark(
 			latlng,
 			baloonContent,
 			{
 				draggable: false,
-	            hideIconOnBalloonOpen: true,
-	            iconLayout: 'default#image',
-	            iconImageHref: micon,
-	            iconImageSize: marker_size,
-	            iconImageOffset: marker_offset
-	        }
-	    );
+				hideIconOnBalloonOpen: true,
+				iconLayout: 'default#image',
+				iconImageHref: micon,
+				iconImageSize: marker_size,
+				iconImageOffset: marker_offset
+			}
+		);
 		this.map.geoObjects.add(myPlacemark);
 		var balloon = new ymaps.Balloon(this.map);
 		return myPlacemark;
@@ -512,7 +512,7 @@ function RealtyMap(version){
 			var baloonContent={
 				iconContent: '',
 				balloonContentBody: '<div class="cluster-listing scrollable">'+content+'</div>',
-	            hintContent: hintContent/*,
+				hintContent: hintContent/*,
 				clusterCaption: markerOpts.clusterTitle*/
 			}
 		}else{
@@ -522,18 +522,18 @@ function RealtyMap(version){
 				clusterCaption: markerOpts.clusterTitle*/
 			}
 		}
-		
+
 		var myPlacemark = new ymaps.Placemark(
 			latlng,
 			baloonContent,
 			{
 				draggable: false,
-	            hideIconOnBalloonOpen: true,
-	            iconImageHref: this.options.marker_icon,
-	            iconImageSize: [42, 57],
-	            iconImageOffset: [-21, -57]
-	        }
-	    );
+				hideIconOnBalloonOpen: true,
+				iconImageHref: this.options.marker_icon,
+				iconImageSize: [42, 57],
+				iconImageOffset: [-21, -57]
+			}
+		);
 		this.map.geoObjects.add(myPlacemark);
 		var balloon = new ymaps.Balloon(this.map);
 	};
@@ -543,7 +543,7 @@ function RealtyMap(version){
 		var max_lat=0;
 		var max_lng=0;
 		if(this.clustered_data.length==0){
-			
+
 		}else{
 			var count=0;
 			for(var i in this.clustered_data){
@@ -551,9 +551,9 @@ function RealtyMap(version){
 				var llat=Number(this.clustered_data[i].lat);
 				var llng=Number(this.clustered_data[i].lng);
 				var latlng=new Array(llat, llng);
-				
+
 				//var content=this.stripslashes(this.clustered_data[i].html);
-				
+
 				var markerOpts={};
 				//markerOpts.content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
 				if(typeof this.clustered_data[i].html!='undefined' && this.clustered_data[i].html!=''){
@@ -570,10 +570,10 @@ function RealtyMap(version){
 				/*if(markers_array[i].marker_size!=undefined){
 					markerOpts.marker_size=markers_array[i].marker_size;
 				}*/
-                if(this.clustered_data[i].ids != undefined){
+				if(this.clustered_data[i].ids != undefined){
 					markerOpts.clusterTitle='ID '+this.clustered_data[i].ids.join(',');
 				}
-				
+
 				var myPlacemark=self._putYandexMarker(latlng, markerOpts);
 				this.markers.push(myPlacemark);
 				//return;
@@ -581,52 +581,52 @@ function RealtyMap(version){
 				var marker_offset=[];
 				marker_offset[0]=-1*parseInt(this.options.marker_size[0]/2);
 				marker_offset[1]=-1*this.options.marker_size[1];
-				
+
 				if(this.clustered_data[i].marker !== undefined){
-			    	var customMarker = ymaps.templateLayoutFactory.createClass(this.clustered_data[i].marker);
-			    	var myPlacemark = new ymaps.Placemark(
+					var customMarker = ymaps.templateLayoutFactory.createClass(this.clustered_data[i].marker);
+					var myPlacemark = new ymaps.Placemark(
 							latlng,
 							{
 								iconContent: '',
 								balloonContentBody: '<div class="cluster-listing scrollable">'+content+'</div>',
-					            hintContent: 'Объектов '+this.clustered_data[i].count
+								hintContent: 'Объектов '+this.clustered_data[i].count
 							},
 							{
 								iconLayout: customMarker,
 								draggable: false,
-			    	            hideIconOnBalloonOpen: true,
-			    	        }
-			    	    );
-			    }else{
-			    	var myPlacemark = new ymaps.Placemark(
+								hideIconOnBalloonOpen: true,
+							}
+						);
+				}else{
+					var myPlacemark = new ymaps.Placemark(
 							latlng,
 							{
 								iconContent: '',
 								balloonContentBody: '<div class="cluster-listing scrollable">'+content+'</div>',
-					            hintContent: 'Объектов '+this.clustered_data[i].count
+								hintContent: 'Объектов '+this.clustered_data[i].count
 							},
 							{
 								//iconLayout: squareLayout,
 								draggable: false,
-			    	            hideIconOnBalloonOpen: true,
-			    	            iconImageHref: this.options.marker_icon,
-			    	            iconImageSize: this.options.marker_size,
-			    	            iconImageOffset: marker_offset
-			    	        }
-			    	    );
-			    }
-			    
+								hideIconOnBalloonOpen: true,
+								iconImageHref: this.options.marker_icon,
+								iconImageSize: this.options.marker_size,
+								iconImageOffset: marker_offset
+							}
+						);
+				}
+
 				this.markers.push(myPlacemark);
 				this.map.geoObjects.add(myPlacemark);*/
-				
+
 				var balloon = new ymaps.Balloon(this.map);
-		    }
+			}
 			if(this.options.use_clusters){
 				this.clusterer.add(this.markers);
 				this.map.geoObjects.add(this.clusterer);
 			}
-			
-			
+
+
 			if(count==1){
 				this.map.setCenter(latlng);
 				this.map.setZoom(this.options.defaultZoom);
@@ -652,7 +652,7 @@ function RealtyMap(version){
 			}
 			behaviors.push("drag");
 			behaviors.push("dblClickZoom");
-						
+
 			if(_this.version=='2.1'){
 				var controls=[];
 				if(_this.options.fullscreenControl){
@@ -673,156 +673,159 @@ function RealtyMap(version){
 					center: [23.937149,49.886672],
 					behaviors: behaviors,
 					type : _this.options.yandexMapType,
-					
+
 				});
 				_this.map.controls.add(new ymaps.control.TypeSelector(['yandex#map', 'yandex#publicMap', 'yandex#satellite', 'yandex#hybrid']));
 				_this.map.controls.add('scaleLine');
 				if(_this.options.minimap){
 					_this.map.controls.add(new ymaps.control.MiniMap(
-					    { type: 'yandex#satellite' },
-					    { size: [90, 90] }
+						{ type: 'yandex#satellite' },
+						{ size: [90, 90] }
 					));
 				}
 				_this.map.controls.add('zoomControl', { top: 75, left: 5 });
 			}
 			if(_this.options.use_clusters){
 				_this.clusterer = new ymaps.Clusterer({
-		            preset: 'islands#invertedVioletClusterIcons',
-		            groupByCoordinates: false,
-		            clusterDisableClickZoom: false,
-		            clusterHideIconOnBalloonOpen: false,
-		            geoObjectHideIconOnBalloonOpen: false,
+					preset: 'islands#invertedVioletClusterIcons',
+					groupByCoordinates: false,
+					clusterDisableClickZoom: false,
+					clusterHideIconOnBalloonOpen: false,
+					geoObjectHideIconOnBalloonOpen: false,
 					gridSize: _this.options.gridSize
-		        });
+				});
 			}
-			
-			
-			
+
+
+
 			_this.appendDataYandexMap();
-	    	
-	    	
+
+
 		});
 	};
-    this.appendDataLeafletOsmMap=function(){
-        var markers = [];
-        var count = 0;
-        for(var i in this.clustered_data){
-			
+	this.appendDataLeafletOsmMap=function(){
+		var markers = [];
+		var count = 0;
+		for(var i in this.clustered_data){
+
 			var llat=this.clustered_data[i].lat;
 			var llng=this.clustered_data[i].lng;
 			var lat_lng=[llat, llng];
 			last_lat_lng=lat_lng;
-			
+
 			var markerOpts={};
 			if(this.stripslashes(this.clustered_data[i].html)!=''){
 				markerOpts.content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
 			}else{
 				markerOpts.content='';
 			}
-			
+
 			if(typeof this.clustered_data[i].ids != 'undefined'){
 				markerOpts.ids=this.clustered_data[i].ids;
 			}
-			
-			markerOpts.hint='Объектов '+this.clustered_data[i].count;
-			
+			if(typeof this.clustered_data[i].count!='undefined'){
+				markerOpts.hint='Объектов '+this.clustered_data[i].count;
+			}
+
 			/*if(markers_array[0].showPopup!=undefined){
 				markerOpts.showPopup=markers_array[0].showPopup;
 			}*/
 			/*if(this.clustered_data[i].icon!=undefined){
 				markerOpts.icon=this.clustered_data[i].icon;
 			}*/
-			
+
 			var marker=self._putLeafletOsmMarker(lat_lng, markerOpts);
-            
-                           
-        		
+
+
+
 			this.markers.push(marker);
 			if(this.options.use_clusters){
 				//console.log(this.clusterer);
 				this.clusterer.addLayer(marker);
 			}
-            markers.push(lat_lng);
-	        
-	        //var content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
-	        //this.makeInfoWin(marker, infowindow, content);
-	        count++;
+			markers.push(lat_lng);
+
+			//var content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
+			//this.makeInfoWin(marker, infowindow, content);
+			count++;
 		}
-		
+
 		if(this.options.use_clusters){
 			this.map.addLayer(this.clusterer);
 		}
-		
-        
-        if(count==1){
+
+
+		if(count==1){
 			this.map.setView(last_lat_lng, this.options.defaultZoom);
 		}else if(!this.options.adopt_bounds){
 			var lat_lng=new L.LatLng(this.options.custom_center[0], this.options.custom_center[1]);
-            this.map.setView(lat_lng, this.options.defaultZoom);
+			this.map.setView(lat_lng, this.options.defaultZoom);
 		}else{
 			this.map.fitBounds(markers);
 		}
-        
-        //this.bounds=new google.maps.LatLngBounds();
-    };
+
+		//this.bounds=new google.maps.LatLngBounds();
+	};
 	this.appendDataGoogleMap=function(){
 		this.bounds=new google.maps.LatLngBounds();
-		
+
 		var infowindow = new google.maps.InfoWindow({  
-		  content: '' 
+		  content: ''
 		});
-		
+
 		var last_lat_lng;
 		var count=0;
-		
+
 		for(var i in this.clustered_data){
-			
+
 			var llat=this.clustered_data[i].lat;
 			var llng=this.clustered_data[i].lng;
 			var lat_lng=new google.maps.LatLng(llat, llng);
 			last_lat_lng=lat_lng;
-			
+
 			var markerOpts={};
 			if(this.stripslashes(this.clustered_data[i].html)!=''){
 				markerOpts.content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
 			}else{
 				markerOpts.content='';
 			}
-			
+
 			if(typeof this.clustered_data[i].ids != 'undefined'){
 				markerOpts.ids=this.clustered_data[i].ids;
 			}
-			
-			markerOpts.hint='Объектов '+this.clustered_data[i].count;
-			
+
+			if(typeof this.clustered_data[i].count!='undefined'){
+				markerOpts.hint='Объектов '+this.clustered_data[i].count;
+			}
+
 			/*if(markers_array[0].showPopup!=undefined){
 				markerOpts.showPopup=markers_array[0].showPopup;
 			}*/
 			if(this.clustered_data[i].icon!=undefined){
 				markerOpts.icon=this.clustered_data[i].icon;
 			}
-			
+
 			var marker=self._putGoogleMarker(lat_lng, markerOpts);
 			/*
 			var marker = new google.maps.Marker({
-	            position: lat_lng,
-	            map: this.map,
-	            icon: this.options.marker_icon,
-	            title: 'Объектов '+this.clustered_data[i].count
-	        });
+				position: lat_lng,
+				map: this.map,
+				icon: this.options.marker_icon,
+				title: 'Объектов '+this.clustered_data[i].count
+			});
 			*/			
 			this.markers.push(marker);
-	        this.bounds.extend(lat_lng);
-	        //var content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
-	        //this.makeInfoWin(marker, infowindow, content);
-	        count++;
+			this.bounds.extend(lat_lng);
+			//var content='<div class="cluster-listing scrollable">'+this.stripslashes(this.clustered_data[i].html)+'</div>';
+			//this.makeInfoWin(marker, infowindow, content);
+			count++;
 		}
-		
+
 		if(this.options.use_clusters){
 			this.clusterer.addMarkers(this.markers);
 		}
-		
-		
+
+
 		if(count==1){
 			this.map.setCenter(last_lat_lng);
 		}else if(!this.options.adopt_bounds){
@@ -837,98 +840,101 @@ function RealtyMap(version){
 			if(this.markers.length>0){
 				for(var i in this.markers){
 					this.markers[i].setMap(null);
-                    delete this.markers[i];
+					delete this.markers[i];
 				}
 			}
 		}else if(this.type=='leaflet_osm'){
-            if(this.markers.length>0){
+			if(this.markers.length>0){
 				for(var i in this.markers){
-                    this.map.removeLayer(this.markers[i]);
-                    delete this.markers[i];					
+					this.map.removeLayer(this.markers[i]);
+					delete this.markers[i];					
 				}
 			}
-         }else if(this.type=='yandex'){
+		 }else if(this.type=='yandex'){
 			if(this.markers.length>0){
 				for(var i in this.markers){
 					this.map.geoObjects.remove(this.markers[i]);
-                    delete this.markers[i];
+					delete this.markers[i];
 				}
 			}
 		}        
 	};
-    this.createLeafletOsmMap=function(){
-        if(this.clustered_data.length==0 && !this.options.ajax){
+	this.createLeafletOsmMap=function(){
+		if(this.clustered_data.length==0 && !this.options.ajax){
 			$(this.map_element).hide();
 			return;
 		}
-        this.map = L.map(this.map_element).setView([0, 0], this.options.defaultZoom);
-        this.map.addLayer(new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'}));
-		
+		this.map = L.map(this.map_element).setView([0, 0], this.options.defaultZoom);
+		this.map.addLayer(new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'}));
+
 		if(this.options.use_clusters){
 			this.clusterer = L.markerClusterGroup();
-			
+
 			//this.clusterer = new MarkerClusterer(this.map, [], {gridSize: 50, maxZoom: 15, imagePath: estate_folder+'/apps/third/google/markerclusterer/images/m'});
 		}
-		
-        this.appendDataLeafletOsmMap();
-    };
+
+		this.appendDataLeafletOsmMap();
+	};
 	//var_dump(this.clusterer);
-	
+
 	this.createGoogleMap=function(){
-		
+
 		if(this.clustered_data.length==0 && !this.options.ajax){
 			$(this.map_element).hide();
 			return;
 		}
 		var mapOptions = {
-		        center: new google.maps.LatLng(0, 0),
-		        zoom: this.options.defaultZoom,
-		        mapTypeId: google.maps.MapTypeId.ROADMAP,
-		        scrollwheel: this.options.scrollZoom,
-		        overviewMapControl:  this.options.minimap,
-		    };
+				center: new google.maps.LatLng(0, 0),
+				zoom: this.options.defaultZoom,
+				mapTypeId: google.maps.MapTypeId.ROADMAP,
+				scrollwheel: this.options.scrollZoom,
+				overviewMapControl:  this.options.minimap,
+			};
 		this.map = new google.maps.Map(this.map_element, mapOptions);
 		if(this.options.use_clusters){
 			this.clusterer = new MarkerClusterer(this.map, [], {gridSize: 50, maxZoom: 15, imagePath: estate_folder+'/apps/third/google/markerclusterer/images/m'});
 		}
 		this.appendDataGoogleMap();
 	};
-	
+
 	var self=this;
-    
-    return {
-        init: function(el, data, type){
+
+	return {
+		init: function(el, data, type){
 			self.map_element=document.getElementById(el);
 			self.type=type || 'google';
 			self.locations=data || [];
-			
+
 			if(undefined == self.map_element){
-		    	return false;
-		    }
-		    
-		    if(self.locations.length==0){
-		    	$(el).hide();
-		    	return false;
-		    }
-		    
-		    self.clusterizeLocations();
-		    self.createMap();
+				return false;
+			}
+
+			if(self.locations.length==0){
+				$(el).hide();
+				return false;
+			}
+
+			self.clusterizeLocations();
+			self.createMap();
 		 },
 		 reinit: function(data){
 			 self.clearMap(); 
 			 if(data.length!=0){
-			 	self.clustered_data = data;
-			 	if(self.type=='google'){
-			 		self.appendDataGoogleMap();
+				self.clustered_data = data;
+				if(self.type=='google'){
+					self.appendDataGoogleMap();
 				}else{
 					self.appendDataYandexMap();
 				}
 			}
 		 },
 		 initJSON: function(el, datalisting, type, options){
-			 
+
+
+
 			var options = options || {};
-			self.options=$.extend(true, {}, self.options, options)
+			self.options=$.extend(true, {}, self.options, options);
+
 			self.map_element=document.getElementById(el);
 			self.type=type || 'google';
 			var _this=this;
@@ -943,14 +949,15 @@ function RealtyMap(version){
 				self.setDefaultIconOffset(options.marker_offset);
 			}
 			self.clustered_data = datalisting || [];
-			
-			if(undefined == self.map_element){
+
+
+			 if(undefined == self.map_element){
 				return false;
-		    }
+			}
 			self.createMap();
 		 },
 		 initGeocoded: function(el, rname, type, options){
-		 	
+
 			var options = options || {};
 			self.options=$.extend(true, {}, self.options, options);
 			self.map_element=document.getElementById(el);
@@ -959,14 +966,14 @@ function RealtyMap(version){
 			self._geocode(rname);
 		 },
 		 initSimpleMap: function(el, type, markers_array, options){
-			 
+
 			 var options = options || {}; 
 			 self.options=$.extend(true, {}, self.options, options);
 			 self.map_element=document.getElementById(el);
 			 self.type=type || 'google';
 			 var _this=this;
 			 if(undefined == self.map_element){
-			 	return false;
+				return false;
 			 }
 			 if(options.marker_icon !== undefined){
 				self.setDefaultIconImage(options.marker_icon);
@@ -985,5 +992,5 @@ function RealtyMap(version){
 		 getMarkers: function(){
 			 return self.markers;
 		 }
-    };
+	};
 }

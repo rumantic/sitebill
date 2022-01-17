@@ -15,23 +15,38 @@ class memorylist_admin extends Object_Manager {
     function __construct($realty_type = false) {
         $this->SiteBill();
         Multilanguage::appendAppDictionary('memorylist');
-        $this->table_name = 'data';
-        $this->primary_key = 'id';
+        $this->table_name = 'memorylist';
+        $this->action = 'memorylist';
+        $this->primary_key = 'memorylist_id';
         $this->this_user = (isset($_SESSION['user_id']) ? (int) $_SESSION['user_id'] : 0);
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/memorylist_model.php');
+        $memorylist_model = new memorylist_model();
+        $this->data_model = $memorylist_model->get_model();
 
-        $data_model = new Data_Model();
-        $this->data_model = $data_model->get_kvartira_model($this->getConfigValue('ajax_form_in_admin'));
 
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
         $config_admin->addParamToConfig('apps.memorylist.public_access_enable', '0', 'Все подборки общие', 1);
         $config_admin->addParamToConfig('apps.memorylist.admingridenable', '0', 'Доступ в списке объектов в админке', 1);
+        $config_admin->addParamToConfig(
+            'apps.memorylist.link_access',
+            '0',
+            'Доступ к сохраненным спискам по ссылке (для всех) /memorylist/grid/[MEMORYLIST_ID]',
+            1,
+            array('public' => true)
+        );
 
 
     }
 
     function ajax() {
+        // Для совместимости со старыми версиями
+        // Правильные значения этих параметров в конструкторе
+        $this->table_name = 'data';
+        $this->primary_key = 'id';
+        $data_model = new Data_Model();
+        $this->data_model = $data_model->get_kvartira_model($this->getConfigValue('ajax_form_in_admin'));
+
         if ('search' == $this->getRequestValue('action')) {
             //$grid_constructor=$this->_grid_constructor;
             $grid_constructor = $this->_getGridConstructor();

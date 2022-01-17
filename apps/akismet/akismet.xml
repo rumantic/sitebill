@@ -8,9 +8,10 @@
     <copyright>Copyright (C) 2012-2017 Sitebill Team. All rights reserved.</copyright>
     <license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>true</backendMenu>
-    <version status="beta">0.0.4</version>
+    <version status="beta">0.0.5</version>
     <administration>
         <!-- Administration Menu Section -->
         <menu>Akismet-антиспам</menu>
+        <category>Системные</category>
     </administration>
 </install>

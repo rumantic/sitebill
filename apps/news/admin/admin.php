@@ -28,104 +28,51 @@ class news_admin extends Object_Manager {
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
 
-        if (!$config_admin->check_config_item('apps.news.enable')) {
-            $config_admin->addParamToConfig('apps.news.enable', '0', 'Включить News.Apps');
-        }
+        $config_admin->addParamToConfig('apps.news.enable', '1', 'Включить News.Apps', SConfig::$fieldtypeCheckbox);
 
-        if (!$config_admin->check_config_item('apps.news.use_news_topics')) {
-            $config_admin->addParamToConfig('apps.news.use_news_topics', '0', 'Использовать категории для новостей');
-        }
+        $config_admin->addParamToConfig('apps.news.front.per_page', '5', 'Количество новостей на страницу');
+
+        $config_admin->addParamToConfig('apps.news.news_line.per_page', '3', 'Количество новостей в новостном блоке на главной странице');
+
+
+        $config_admin->addParamToConfig('apps.news.use_news_topics', '0', 'Использовать категории для новостей', SConfig::$fieldtypeCheckbox);
 
         if (1 == $this->getConfigValue('apps.news.use_news_topics')) {
             $this->use_topics = true;
         }
 
-        if (!$config_admin->check_config_item('apps.news.alias')) {
-            $config_admin->addParamToConfig('apps.news.alias', 'news', 'Алиас адресов приложения');
-        }
-
-        if (!$config_admin->check_config_item('apps.news.item_alias')) {
-            $config_admin->addParamToConfig('apps.news.item_alias', 'news', 'Подстановочный алиас');
-        }
-        if (!$config_admin->check_config_item('apps.news.app_title')) {
-            $config_admin->addParamToConfig('apps.news.app_title', 'Архив новостей', 'Заголовок приложения');
-        }
-        if (!$config_admin->check_config_item('apps.news.folder_title')) {
-            $config_admin->addParamToConfig('apps.news.folder_title', 'Новости', 'Заголовок приложения в хлебных крошках');
-        }
-
-        if (!$config_admin->check_config_item('apps.news.append_more_news_view')) {
-            $config_admin->addParamToConfig('apps.news.append_more_news_view', '1', 'Выводить дополнительные новости в просмотре новости');
-        }
-
-        if (!$config_admin->check_config_item('apps.news.append_more_news_view_count')) {
-            $config_admin->addParamToConfig('apps.news.append_more_news_view_count', '2', 'Количество дополнительных новостей в просмотре новости');
-        }
-
-        if (!$config_admin->check_config_item('apps.news.meta_title')) {
-            $config_admin->addParamToConfig('apps.news.meta_title', '', 'META заголовок');
-        }
-
-        if (!$config_admin->check_config_item('apps.news.meta_desription')) {
-            $config_admin->addParamToConfig('apps.news.meta_desription', '', 'META описание');
-        }
-
-        if (!$config_admin->check_config_item('apps.news.meta_keywords')) {
-            $config_admin->addParamToConfig('apps.news.meta_keywords', '', 'META ключевые слова');
-        }
-
-        if (!$config_admin->check_config_item('apps.news.preload_column')) {
-            $config_admin->addParamToConfig('apps.news.preload_column', '1', 'Формировать колонку новостей для главной');
-        }
-
-        if (!$config_admin->check_config_item('apps.news.share_access')) {
-            $config_admin->addParamToConfig('apps.news.share_access', '0', 'Разделять доступ к записям в админке');
-        }
-
-        if (!$config_admin->check_config_item('apps.news.sitemaproot')) {
-            $config_admin->addParamToConfig('apps.news.sitemaproot', '1', 'Выдавать ссылку на раздел в карту сайта', 1);
-        }
-
-        if (!$config_admin->check_config_item('apps.news.sitemaptopics')) {
-            $config_admin->addParamToConfig('apps.news.sitemaptopics', '0', 'Выдавать ссылки на разделы новостей в карту сайта', 1);
-        }
-
-        if (!$config_admin->check_config_item('apps.news.sitemapitems')) {
-            $config_admin->addParamToConfig('apps.news.sitemapitems', '0', 'Выдавать ссылки на отдельные новости в карту сайта', 1);
-        }
-
-        if (!$config_admin->check_config_item('apps.news.sitemaproot_changefreq')) {
-            $config_admin->addParamToConfig('apps.news.sitemaproot_changefreq', '4', 'Вероятная частота изменения <b>страницы раздела новостей</b>. Одно из числовых значений (1-всегда, 2-ежечасно, 3-ежедневно, 4-еженедельно, 5-ежемесячно, 6-ежегодно, 7-никогда)');
-        }
-
-        if (!$config_admin->check_config_item('apps.news.sitemapitems_changefreq')) {
-            $config_admin->addParamToConfig('apps.news.sitemapitems_changefreq', '7', 'Вероятная частота изменения <b>страницы новости</b>. Одно из числовых значений (1-всегда, 2-ежечасно, 3-ежедневно, 4-еженедельно, 5-ежемесячно, 6-ежегодно, 7-никогда)');
-        }
-
-        if (!$config_admin->check_config_item('apps.news.sitemaptopics_changefreq')) {
-            $config_admin->addParamToConfig('apps.news.sitemaptopics_changefreq', '4', 'Вероятная частота изменения <b>страницы подразделов новостей</b>. Одно из числовых значений (1-всегда, 2-ежечасно, 3-ежедневно, 4-еженедельно, 5-ежемесячно, 6-ежегодно, 7-никогда)');
-        }
-
-        if (!$config_admin->check_config_item('apps.news.sitemaproot_priority')) {
-            $config_admin->addParamToConfig('apps.news.sitemaproot_priority', '0.5', 'Приоритетность URL <b>страницы раздела</b> относительно других URL на Вашем сайте. Диапазон от 0.0 до 1.0');
-        }
-
-        if (!$config_admin->check_config_item('apps.news.sitemapitems_priority')) {
-            $config_admin->addParamToConfig('apps.news.sitemapitems_priority', '0.5', 'Приоритетность URL <b>страницы новости</b> относительно других URL на Вашем сайте. Диапазон от 0.0 до 1.0');
-        }
-
-        if (!$config_admin->check_config_item('apps.news.sitemaptopics_priority')) {
-            $config_admin->addParamToConfig('apps.news.sitemaptopics_priority', '0.5', 'Приоритетность URL <b>страницы подраздела новостей</b> относительно других URL на Вашем сайте. Диапазон от 0.0 до 1.0');
-        }
+        $config_admin->addParamToConfig('apps.news.alias', 'news', 'Алиас адресов приложения');
+        $config_admin->addParamToConfig('apps.news.item_alias', 'news', 'Подстановочный алиас');
+        $config_admin->addParamToConfig('apps.news.app_title', 'Архив новостей', 'Заголовок приложения');
+        $config_admin->addParamToConfig('apps.news.folder_title', 'Новости', 'Заголовок приложения в хлебных крошках');
+        $config_admin->addParamToConfig('apps.news.append_more_news_view', '1', 'Выводить дополнительные новости в просмотре новости', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.news.append_more_news_view_count', '2', 'Количество дополнительных новостей в просмотре новости');
+        $config_admin->addParamToConfig('apps.news.meta_title', '', 'META заголовок');
+        $config_admin->addParamToConfig('apps.news.meta_desription', '', 'META описание');
+        $config_admin->addParamToConfig('apps.news.meta_keywords', '', 'META ключевые слова');
+        $config_admin->addParamToConfig('apps.news.preload_column', '1', 'Формировать колонку новостей для главной', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.news.share_access', '0', 'Разделять доступ к записям в админке', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.news.sitemaproot', '1', 'Выдавать ссылку на раздел в карту сайта', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.news.sitemaptopics', '0', 'Выдавать ссылки на разделы новостей в карту сайта', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.news.sitemapitems', '0', 'Выдавать ссылки на отдельные новости в карту сайта', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.news.sitemaproot_changefreq', '4', 'Вероятная частота изменения <b>страницы раздела новостей</b>. Одно из числовых значений (1-всегда, 2-ежечасно, 3-ежедневно, 4-еженедельно, 5-ежемесячно, 6-ежегодно, 7-никогда)');
+        $config_admin->addParamToConfig('apps.news.sitemapitems_changefreq', '7', 'Вероятная частота изменения <b>страницы новости</b>. Одно из числовых значений (1-всегда, 2-ежечасно, 3-ежедневно, 4-еженедельно, 5-ежемесячно, 6-ежегодно, 7-никогда)');
+        $config_admin->addParamToConfig('apps.news.sitemaptopics_changefreq', '4', 'Вероятная частота изменения <b>страницы подразделов новостей</b>. Одно из числовых значений (1-всегда, 2-ежечасно, 3-ежедневно, 4-еженедельно, 5-ежемесячно, 6-ежегодно, 7-никогда)');
+        $config_admin->addParamToConfig('apps.news.sitemaproot_priority', '0.5', 'Приоритетность URL <b>страницы раздела</b> относительно других URL на Вашем сайте. Диапазон от 0.0 до 1.0');
+        $config_admin->addParamToConfig('apps.news.sitemapitems_priority', '0.5', 'Приоритетность URL <b>страницы новости</b> относительно других URL на Вашем сайте. Диапазон от 0.0 до 1.0');
+        $config_admin->addParamToConfig('apps.news.sitemaptopics_priority', '0.5', 'Приоритетность URL <b>страницы подраздела новостей</b> относительно других URL на Вашем сайте. Диапазон от 0.0 до 1.0');
 
         /*if (!$config_admin->check_config_item('apps.news.user_enable_access_type')) {
             $config_admin->addParamToConfig('apps.news.user_enable_access_type', '0', 'Тип доступа к новостям из ЛК');
         }*/
 
-        if (!$config_admin->check_config_item('apps.news.alias_source_field')) {
-            $config_admin->addParamToConfig('apps.news.alias_source_field', 'title', 'Системное имя поля для формирования алиаса');
-        }
-        //$this->install();
+        $config_admin->addParamToConfig(
+            'apps.news.use_active_status',
+            '0',
+            'Выводить на фронте только активные новости (необходимо поле news.active)',
+            SConfig::$fieldtypeCheckbox
+        );
+
     }
 
     protected function checkOwning($id, $user_id) {
@@ -170,21 +117,17 @@ class news_admin extends Object_Manager {
         return $urls;
     }
 
-    public function sitemap($sitemap) {
-        $news = array();
+    public function sitemap_pages_count($sitemap) {
+        $cnt = 0;
         if (1 == (int) $this->getConfigValue('apps.news.enable')) {
-            if (1 == (int) $this->getConfigValue('apps.seo.no_trailing_slashes')) {
-                $trailing_slashe = '';
-            } else {
-                $trailing_slashe = '/';
-            }
             if (1 == (int) $this->getConfigValue('apps.news.sitemaproot')) {
-                if ('' != $this->getConfigValue('apps.news.alias')) {
-                    $app_alias = $this->getConfigValue('apps.news.alias');
-                } else {
-                    $app_alias = 'news';
+                $cnt += 1;
+            }
+            if (1 === intval($this->getConfigValue('apps.news.sitemaptopics')) && 1 === intval($this->getConfigValue('apps.news.use_news_topics'))) {
+                $ntl = $this->getNewsTopicsList();
+                if (!empty($ntl)) {
+                    $cnt += count($ntl);
                 }
-                $news[] = array('url' => SITEBILL_MAIN_URL . '/' . $app_alias . $trailing_slashe, 'changefreq' => $sitemap->validateFrequency($this->getConfigValue('apps.news.sitemaproot_changefreq')), 'priority' => $sitemap->validatePriority($this->getConfigValue('apps.news.sitemaproot_priority')));
             }
             if (1 == (int) $this->getConfigValue('apps.news.sitemapitems')) {
                 $DBC = DBC::getInstance();
@@ -193,18 +136,40 @@ class news_admin extends Object_Manager {
                 } else {
                     $date = time();
                 }
-                $query = 'SELECT `' . $this->primary_key . '`, `newsalias` FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE `date`<=?';
+                $query = 'SELECT COUNT(`' . $this->primary_key . '`) AS _cnt FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE `date`<=?';
                 $stmt = $DBC->query($query, array($date));
 
                 if ($stmt) {
-                    while ($ar = $DBC->fetch($stmt)) {
-                        $href = $this->getNewsRoute($ar[$this->primary_key], $ar['newsalias']);
-                        /* if(SITEBILL_MAIN_URL!=''){
-                          $href=preg_replace('/^('.SITEBILL_MAIN_URL.'\/)/', '', $href);
-                          } */
-                        $news[] = array('url' => $href, 'changefreq' => $sitemap->validateFrequency($this->getConfigValue('apps.news.sitemapitems_changefreq')), 'priority' => $sitemap->validatePriority($this->getConfigValue('apps.news.sitemapitems_priority')));
-                    }
+                    $ar = $DBC->fetch($stmt);
+                    $cnt += $ar['_cnt'];
                 }
+            }
+        }
+        if($cnt > 0){
+            $cnt = intval(ceil($cnt/$sitemap->getPerPageCount()));
+        }
+        return $cnt;
+    }
+
+    public function sitemap($sitemap, $page = 0) {
+
+        //$perpagecount = $sitemap->getPerPageCount();
+        $offset = 0;
+
+        $orderstring = '';
+        if($page == 0){
+            $orderstring = ' ORDER BY `' . $this->primary_key . '` ASC';
+        }
+
+        $news = array();
+        if (1 == (int) $this->getConfigValue('apps.news.enable')) {
+            if (1 == (int) $this->getConfigValue('apps.news.sitemaproot')) {
+                if ('' != $this->getConfigValue('apps.news.alias')) {
+                    $app_alias = $this->getConfigValue('apps.news.alias');
+                } else {
+                    $app_alias = 'news';
+                }
+                $news[] = array('url' => SITEBILL_MAIN_URL . '/' . $app_alias . self::$_trslashes, 'changefreq' => $sitemap->validateFrequency($this->getConfigValue('apps.news.sitemaproot_changefreq')), 'priority' => $sitemap->validatePriority($this->getConfigValue('apps.news.sitemaproot_priority')));
             }
             if (1 === intval($this->getConfigValue('apps.news.sitemaptopics')) && 1 === intval($this->getConfigValue('apps.news.use_news_topics'))) {
                 $ntl = $this->getNewsTopicsList();
@@ -214,6 +179,24 @@ class news_admin extends Object_Manager {
                     }
                 }
             }
+            if (1 == (int) $this->getConfigValue('apps.news.sitemapitems')) {
+                $DBC = DBC::getInstance();
+                if ($this->data_model[$this->table_name]['date']['type'] == 'dtdatetime') {
+                    $date = date('Y-m-d H:i:s', time());
+                } else {
+                    $date = time();
+                }
+                $query = 'SELECT `' . $this->primary_key . '`, `newsalias` FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE `date`<=?'.$orderstring;
+                $stmt = $DBC->query($query, array($date));
+
+                if ($stmt) {
+                    while ($ar = $DBC->fetch($stmt)) {
+                        $href = $this->getNewsRoute($ar[$this->primary_key], $ar['newsalias']);
+                        $news[] = array('url' => $href, 'changefreq' => $sitemap->validateFrequency($this->getConfigValue('apps.news.sitemapitems_changefreq')), 'priority' => $sitemap->validatePriority($this->getConfigValue('apps.news.sitemapitems_priority')));
+                    }
+                }
+            }
+
         }
         return $news;
     }
@@ -223,6 +206,8 @@ class news_admin extends Object_Manager {
             return '';
         }
         if ((1 === (int) $this->getConfigValue('check_permissions')) && (1 === (int) $this->getConfigValue('apps.news.share_access')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
+            $rs = '';
+
             $news_id = (int) $this->getRequestValue($this->primary_key);
             $user_id = (int) $_SESSION['user_id_value'];
 
@@ -479,13 +464,9 @@ class news_admin extends Object_Manager {
         $this->data_model = $form_data;
     }
 
-    function add_data($form_data, $language_id = 0) {
 
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
-        $data_model = new Data_Model();
-
-
-
+    public function _before_check_action($form_data, $type = 'new') {
+        $form_data = parent::_before_check_action($form_data, $type);
         if (isset($form_data['date'])) {
             if ($form_data['date']['type'] == 'date') {
                 if ($form_data['date']['value'] != '' && $form_data['date']['value'] != '0') {
@@ -519,111 +500,8 @@ class news_admin extends Object_Manager {
                 }
             }
         }
-
-        //$query = $data_model->get_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data);
-        $DBC = DBC::getInstance();
-        $queryp = $data_model->get_prepared_insert_query(DB_PREFIX . '_' . $this->table_name, $form_data);
-        $stmt = $DBC->query($queryp['q'], $queryp['p'], $row, $success_mark);
-        if (!$success_mark) {
-            $this->riseError($DBC->getLastError());
-            return false;
-        }
-
-        $new_record_id = $DBC->lastInsertId();
-
-        $imgs = array();
-
-        foreach ($form_data as $form_item) {
-            if ($form_item['type'] == 'uploads') {
-                $ims = $this->appendUploads($this->table_name, $form_item, $this->primary_key, $new_record_id);
-                if (is_array($ims) && count($ims) > 0) {
-                    $imgs = array_merge($imgs, $ims);
-                }
-            }
-        }
-
-        $ims = $this->editImageMulti($this->action, $this->table_name, $this->primary_key, $new_record_id);
-        if (is_array($ims) && count($ims) > 0) {
-            $imgs = array_merge($imgs, $ims);
-        }
-
-        //$imgs=$this->editImageMulti($this->action, $this->table_name, $this->primary_key, $new_record_id);
-        return true;
+        return $form_data;
     }
-
-    function edit_data($form_data, $language_id = 0, $primary_key_value = false) {
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
-        $data_model = new Data_Model();
-        if (isset($form_data['imgfile'])) {
-            $img = $form_data['imgfile'];
-            unset($form_data['imgfile']);
-        }
-
-        if (isset($form_data['date'])) {
-            if ($form_data['date']['type'] == 'date') {
-                if ($form_data['date']['value'] != '' && $form_data['date']['value'] != '0') {
-                    $time = date('H:i:s', $form_data['date']['value']);
-                    if ($time == '00:00:00') {
-                        $form_data['date']['value'] = strtotime(date('d-m-Y', $form_data['date']['value']) . ' ' . date('H:i:s', time()));
-                    }
-                } else {
-                    $form_data['date']['value'] = time();
-                }
-            } elseif ($form_data['date']['type'] == 'dtdatetime') {
-
-            }
-        }
-
-        if ($this->mod_name == 'topic') {
-            if ($form_data['url']['value'] == '') {
-                $form_data['url']['value'] = $this->transliteMe($form_data['name']['value']);
-            }
-
-            $form_data['url']['value'] = preg_replace('/[^a-zA-Z0-9-_]/', '', $form_data['url']['value']);
-        }else{
-            if (isset($form_data['newsalias']['value']) && $form_data['newsalias']['value'] != '') {
-                $form_data['newsalias']['value'] = preg_replace('/[^a-zA-Z0-9-_]/', '', $form_data['newsalias']['value']);
-            }elseif (isset($form_data['newsalias']) && $form_data['newsalias']['value'] == '') {
-                $f = trim($this->getConfigValue('apps.news.alias_source_field'));
-                if($f == ''){
-                    $f = 'title';
-                }
-                if(isset($form_data[$f]) && $form_data[$f]['value'] != ''){
-                    $form_data['newsalias']['value'] = $this->get_transliteration($form_data[$f]['value']);
-                }
-            }
-        }
-
-
-        $queryp = $data_model->get_prepared_edit_query(DB_PREFIX . '_' . $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data);
-
-        $DBC = DBC::getInstance();
-        $stmt = $DBC->query($queryp['q'], $queryp['p'], $row, $success_mark);
-
-        if (!$success_mark) {
-            $this->riseError($DBC->getLastError());
-            return false;
-        }
-
-        $imgs = array();
-
-        foreach ($form_data as $form_item) {
-            if ($form_item['type'] == 'uploads') {
-                $ims = $this->appendUploads($this->table_name, $form_item, $this->primary_key, (int) $this->getRequestValue($this->primary_key));
-                if (is_array($ims) && count($ims) > 0) {
-                    $imgs = array_merge($imgs, $ims);
-                }
-            }
-        }
-
-        $ims = $this->editImageMulti($this->action, $this->table_name, $this->primary_key, (int) $this->getRequestValue($this->primary_key));
-        if (is_array($ims) && count($ims) > 0) {
-            $imgs = array_merge($imgs, $ims);
-        }
-
-        //$imgs=$this->editImageMulti($this->action, $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key));
-    }
-
 
     function install() {
         $success_result = true;
@@ -669,14 +547,14 @@ class news_admin extends Object_Manager {
             $success = false;
             $stmt = $DBC->query($query, array(), $rows, $success);
             $success_result = $success_result && $success;
-
-            if (!$success_result) {
-                $rs = Multilanguage::_('L_APPLICATION_INSTALLED_ERROR');
-            } else {
-                $rs = Multilanguage::_('L_APPLICATION_INSTALLED');
-            }
-            return $rs;
         }
+        if (!$success_result) {
+            $rs = Multilanguage::_('L_APPLICATION_INSTALLED_ERROR');
+        } else {
+            $rs = Multilanguage::_('L_APPLICATION_INSTALLED');
+        }
+        return $rs;
+
     }
 
     function getTopMenu() {
@@ -702,64 +580,20 @@ class news_admin extends Object_Manager {
 
         $rs = '';
         $params = array();
-        $params['action'] = $this->action;
-
-
-
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/grid.php');
-        $common_grid = new Common_Grid($this);
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/page.php');
-        $common_page = new Common_Page();
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/tab.php');
-        $common_tab = new Common_Tab();
-        $url = '/admin/index.php?action=' . $this->action;
-
-        $common_grid->set_grid_table($this->table_name);
-        //print_r($_SESSION);
 
         if ((1 === (int) $this->getConfigValue('check_permissions')) && $this->mod_name === 'topic' && ($_SESSION['current_user_group_name'] !== 'admin')) {
             return '';
         } elseif ((1 === (int) $this->getConfigValue('check_permissions')) && (1 === (int) $this->getConfigValue('apps.news.share_access')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
-            $common_grid->set_conditions(array('user_id' => $_SESSION['user_id_value']));
+            $params['grid_conditions'] = array('user_id' => $_SESSION['user_id_value']);
         }
 
-
-        if ($this->mod_name == 'topic') {
-            //$params['section'] = $this->section;
-            //$common_grid->add_control_param('section', $this->section);
-            $common_grid->add_grid_item('id');
-            $common_grid->add_grid_item('name');
-            $common_grid->add_grid_item('url');
-            //$common_grid->set_grid_query("SELECT * FROM ".DB_PREFIX."_".$this->table_name." ORDER BY name DESC, id DESC");
-        } else {
-            $common_grid->add_grid_item('news_id');
-            $common_grid->add_grid_item('date');
-            $common_grid->add_grid_item('title');
-            $common_grid->add_grid_item('anons');
-            if ($this->use_topics) {
-                $common_grid->add_grid_item('news_topic_id');
-            }
-            //$common_grid->set_grid_query("SELECT * FROM ".DB_PREFIX."_".$this->table_name." ORDER BY date DESC, news_id DESC");
-        }
-
-
-
-        $common_grid->add_grid_control('edit');
-        $common_grid->add_grid_control('delete');
-        //$common_grid->set_grid_query("SELECT * FROM ".DB_PREFIX."_".$this->table_name." ORDER BY date DESC, news_id DESC");
-        $params['page'] = $this->getRequestValue('page');
-        $params['per_page'] = $this->getConfigValue('common_per_page');
-
-        $common_grid->setPagerParams($params);
-
-        $common_page->setTab($common_tab);
-        $common_page->setGrid($common_grid);
-
-        $rs .= $common_page->toString();
+        $rs .= parent::grid($params);
         return $rs;
     }
 
     function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
+
+        $rs = '';
 
         $_SESSION['allow_disable_root_structure_select'] = true;
         global $smarty;

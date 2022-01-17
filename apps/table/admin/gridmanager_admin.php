@@ -74,12 +74,27 @@ class gridmanager_admin extends table_admin {
         return $columns_ids;
     }
 
+    /*
+     * Резервируем функцию для ajax-обработки сортировки свойств
+    public function reorder_columns($ids){
+        $DBC = DBC::getInstance();
+        $stmt = $DBC->query('TRUNCATE TABLE ' . DB_PREFIX . '_' . $this->table_name);
+        $q = 'INSERT INTO ' . DB_PREFIX . '_' . $this->table_name . ' (columns_id) values(?)';
+        foreach ($ids as $id) {
+            $stmt = $DBC->query($q, array($id));
+        }
+    }
+    */
+
     function grid($params = array(), $default_params = array()) {
         $DBC = DBC::getInstance();
         $columns = $this->_getColumnsNameIds();
 
-        if (isset($_POST['submit'])) {
-            $fields = $this->getRequestValue('field');
+        $request = $this->request();
+        $requestMethod = strtolower($request->server->get('REQUEST_METHOD'));
+
+        if ($requestMethod == 'post') {
+            $fields = $request->request->get('field');
             if (!is_array($fields) || count($fields) == 0) {
                 $fields['id'] = 'id';
                 $fields['topic_id'] = 'topic_id';
@@ -93,28 +108,39 @@ class gridmanager_admin extends table_admin {
         }
         $ret = array();
 
-        $q = 'SELECT c.name FROM ' . DB_PREFIX . '_' . $this->table_name . ' g LEFT JOIN ' . DB_PREFIX . '_columns c USING(columns_id) WHERE c.table_id=(SELECT table_id FROM ' . DB_PREFIX . '_table WHERE `name`=\'data\' LIMIT 1) ORDER BY g.gridmanager_id ASC';
+        // Вариант запроса с выбором типа форматирования свойства
+        //$q = 'SELECT c.name, g.format_type, c.columns_id FROM ' . DB_PREFIX . '_' . $this->table_name . ' g LEFT JOIN ' . DB_PREFIX . '_columns c USING(columns_id) WHERE c.table_id=(SELECT table_id FROM ' . DB_PREFIX . '_table WHERE `name`=\'data\' LIMIT 1) ORDER BY g.gridmanager_id ASC';
+        $q = 'SELECT c.name, c.columns_id FROM ' . DB_PREFIX . '_' . $this->table_name . ' g LEFT JOIN ' . DB_PREFIX . '_columns c USING(columns_id) WHERE c.table_id=(SELECT table_id FROM ' . DB_PREFIX . '_table WHERE `name`=\'data\' LIMIT 1) ORDER BY g.gridmanager_id ASC';
 
         $model_data = $this->helper->load_model('data');
 
         $stmt = $DBC->query($q);
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
-                $ret[] = $ar['name'];
+                $ret[$ar['name']] = $ar;
             }
         }
+
+
         
-        foreach($ret as $nm){
+        foreach($ret as $nm => $format){
             $fields[$nm] = array('title' => $model_data['data'][$nm]['title']);
             $fields[$nm]['checked'] = 1;
+            // Добавить при включении поддержки форматов свойств
+            //$fields[$nm]['format'] = $format['format_type'];
+            $fields[$nm]['id'] = $format['columns_id'];
             unset($model_data['data'][$nm]);
         }
 
         foreach ($model_data['data'] as $k => $v) {
             $fields[$k] = array('title' => $v['title']);
+            $fields[$k]['checked'] = 0;
             if (in_array($k, $ret)) {
                 $fields[$k]['checked'] = 1;
             }
+            // Добавить при включении поддержки форматов свойств
+            //$fields[$k]['format'] = '';
+            $fields[$k]['id'] = $v['columns_id'];
         }
         
         $this->template->assert('fields', $fields);

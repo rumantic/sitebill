@@ -30,6 +30,12 @@ class News_Model extends Data_Model {
         $form_data['news']['title']['required'] = 'on';
         $form_data['news']['title']['unique'] = 'off';
 
+        $form_data['news'] =  $form_data['news'] +
+            \system\factories\model\Item::base(
+            \system\types\model\Dictionary::CHECKBOX,
+            'active',
+            'Активно'
+        );
 
 
         /*

@@ -3,12 +3,16 @@
  * Install manager
  * @author Kondin Dmitriy <kondin@etown.ru>
  */
-class Install_Manager extends SiteBill {
+class Install_Manager {
+    /**
+     * @var SiteBill
+     */
+    private $sitebill;
+
     /**
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
     }
 
     /**
@@ -27,6 +31,14 @@ class Install_Manager extends SiteBill {
         }
         */
         return true;
+    }
+
+    function initSitebill () {
+        $this->sitebill = new SiteBill();
+    }
+
+    function GetErrorMessage () {
+        return $this->sitebill->GetErrorMessage();
     }
 
     function update_1 () {
@@ -108,7 +120,8 @@ class Install_Manager extends SiteBill {
             }
         }
         if ( $error ) {
-            $this->riseError($ETOWN_LANG->folder_not_writeble.'<br>'.implode('<br>', $error_folder_stack));
+            $this->initSitebill();
+            $this->sitebill->riseError($ETOWN_LANG->folder_not_writeble.'<br>'.implode('<br>', $error_folder_stack));
             return false;
         }
         return true;
@@ -120,6 +133,8 @@ class Install_Manager extends SiteBill {
      * @return
      */
     function install_database () {
+        $this->initSitebill();
+
         if ( !$this->parse_sql_file(SITEBILL_DOCUMENT_ROOT.'/install/estate.sql') ) {
             return false;
         }
@@ -217,7 +232,7 @@ class Install_Manager extends SiteBill {
 					(60, 'Аренда', 2, 6, 10),
 					(61, 'Продажа', 2, 6, 20),
 					(6010, 'Гараж', 3, 60, 10),
-					(6020, 'Автобокс', 3, 60),
+					(6020, 'Автобокс', 3, 60, 10),
 					(6110, 'Гараж', 3, 61, 10),
 					(6120, 'Автобокс', 3, 61, 20)            
 					            ";
@@ -315,7 +330,7 @@ class Install_Manager extends SiteBill {
         $DBC=DBC::getInstance();
         $handle = fopen($filename, "r");
         if (!$handle ) {
-            $this->riseError($ETOWN_LANG->unalble_to_open_file.' '.$filename);
+            $this->sitebill->riseError($ETOWN_LANG->unalble_to_open_file.' '.$filename);
             return false;
         }
         $data = fread($handle, filesize($filename));

@@ -53,13 +53,13 @@ class banner_admin extends Object_Manager {
 
     function getInformer() {
         $client = $_GET['client'];
-        
+
         $informer_cache = SITEBILL_DOCUMENT_ROOT . '/cache/informer_cache_'.$client.'.txt';
         if(file_exists($informer_cache) && (time()-filemtime($informer_cache)) < 3600){
             return file_get_contents($informer_cache);
             exit();
         }
-        
+
         $client_info = $this->getClientInfo($client);
         if (false === $client_info) {
             return '';
@@ -69,6 +69,7 @@ class banner_admin extends Object_Manager {
         if ($client_info['informer_parameters']['domain'] != '') {
             $referer = $_SERVER['HTTP_REFERER'];
             $referer = trim($referer);
+            $referer = preg_replace('/^(https:\/\/)/', '', $referer);
             $referer = preg_replace('/^(http:\/\/)/', '', $referer);
             $referer = trim($referer, '/');
             if (0 !== strpos($referer, $client_info['informer_parameters']['domain'])) {
@@ -149,22 +150,22 @@ class banner_admin extends Object_Manager {
                     }
                 }
             }
-            
+
             $ids=array();
-            
+
             $query = 'SELECT complex_id FROM ' . DB_PREFIX . '_complex'.(!empty($search_params) ? ' WHERE '.implode(' AND ', $search_params) : '').' ORDER BY name DESC LIMIT ' . $num;
-            
+
             $stmt = $DBC->query($query);
             if ($stmt) {
                 while ($ar = $DBC->fetch($stmt)) {
                     $ids[] = $ar['complex_id'];
                 }
             }
-            
+
             if(empty($ids)){
                 return '';
             }
-               
+
             /*$form_data = array();
 
             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/columns/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php')) {
@@ -278,11 +279,11 @@ class banner_admin extends Object_Manager {
         //$stpl=SITEBILL_DOCUMENT_ROOT.'/apps/banner/site/template/slider_vert.js';
         $smarty->assign('data', json_encode($result));
         $text = $smarty->fetch($stpl);
-        
+
         $f = fopen($informer_cache, 'w');
         fwrite($f, $text);
         fclose($f);
-        
+
         return $text;
         /* if($client==1){
           $text='(function(g) {document.getElementById("sInformer").innerHTML=g.data})('.json_encode($result).')';
@@ -320,6 +321,8 @@ class banner_admin extends Object_Manager {
         $banners = array();
         $banners = $this->get_banners_list();
         if (count($banners) > 0) {
+            $this->template->assert('random_banner', $banners[array_rand($banners, 1)]['body']);
+
             foreach ($banners as $v) {
                 $banner_str = '';
                 $active_url = false;
@@ -379,71 +382,28 @@ class banner_admin extends Object_Manager {
                 }
 
             case 'edit_done' : {
-                    $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
-
-                    if (!$this->check_data($form_data[$this->table_name])) {
-                        $rs = $this->get_form($form_data[$this->table_name], 'edit');
-                    } else {
-                        $this->edit_data($form_data[$this->table_name]);
-                        if ($this->getError()) {
-                            $rs = $this->get_form($form_data[$this->table_name], 'edit');
-                        } else {
-                            $rs .= $this->grid();
-                        }
-                    }
+                    $rs .= $this->_edit_doneAction();
                     break;
                 }
 
             case 'edit' : {
-
-                    if ($this->getRequestValue('language_id') > 0 and ! $this->language->get_version($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $this->getRequestValue('language_id'))) {
-                        $rs = $this->get_form($form_data[$this->table_name], 'new', $this->getRequestValue('language_id'));
-                    } else {
-                        if ($this->getRequestValue('language_id') > 0) {
-                            $form_data[$this->table_name] = $data_model->init_model_data_from_db_language($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name], false, $this->getRequestValue('language_id'));
-                        } else {
-                            $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
-                        }
-                        $rs = $this->get_form($form_data[$this->table_name], 'edit');
-                    }
-
+                    $rs .= $this->_editAction();
                     break;
                 }
             case 'delete' : {
-
-                    $this->delete_data($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key));
-                    if ($this->getError()) {
-                        $rs .= '<div align="center">' . Multilanguage::_('L_ERROR_ON_DELETE') . ': ' . $this->GetErrorMessage() . '<br>';
-                        $rs .= '<a href="?action=' . $this->action . '">ОК</a>';
-                        $rs .= '</div>';
-                    } else {
-                        $rs .= $this->grid();
-                    }
-
-
-                    break;
-                }
+                $rs .= $this->_deleteAction();
+                break;
+            }
 
             case 'new_done' : {
-                    $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
-                    $data_model->forse_auto_add_values($form_data[$this->table_name]);
-                    if (!$this->check_data($form_data[$this->table_name]) || (1 == $this->getConfigValue('filter_double_data') && !$this->checkUniquety($form_data[$this->table_name]))) {
-                        $rs = $this->get_form($form_data[$this->table_name], 'new');
-                    } else {
-                        $new_record_id = $this->add_data($form_data[$this->table_name], $this->getRequestValue('language_id'));
-                        if ($this->getError()) {
-                            $rs = $this->get_form($form_data[$this->table_name], 'new');
-                        } else {
-                            $rs .= $this->grid();
-                        }
-                    }
-                    break;
-                }
+                $rs .= $this->_new_doneAction();
+                break;
+            }
 
             case 'new' : {
-                    $rs = $this->get_form($form_data[$this->table_name]);
-                    break;
-                }
+                $rs .= $this->_newAction();
+                break;
+            }
             case 'informers' : {
                     $rs .= $this->Informer();
 
@@ -482,34 +442,6 @@ class banner_admin extends Object_Manager {
         return $rs_new;
     }
 
-    function add_data($form_data, $language_id = 0) {
-
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
-        $data_model = new Data_Model();
-
-        //$query = $this->get_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data);
-        $queryp = $data_model->get_prepared_insert_query(DB_PREFIX . '_' . $this->table_name, $form_data);
-        $DBC = DBC::getInstance();
-
-        $stmt = $DBC->query($queryp['q'], $queryp['p'], $row, $success);
-        if (!$success) {
-            $this->riseError($DBC->getLastError());
-            return false;
-        } else {
-            return true;
-        }
-    }
-
-    function edit_data($form_data, $language_id = 0, $primary_key_value = false) {
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
-        $data_model = new Data_Model();
-        $queryp = $data_model->get_prepared_edit_query(DB_PREFIX . '_' . $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data);
-        $DBC = DBC::getInstance();
-        $stmt = $DBC->query($queryp['q'], $queryp['p'], $row, $success);
-        if (!$success) {
-            $this->riseError($DBC->getLastError());
-        }
-    }
 
     protected function Informer_CreateCode() {
         //$codes=array();
@@ -647,6 +579,7 @@ CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_banner` (
   `banner_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `title` varchar(255) NOT NULL DEFAULT '',
   `body` text,
+  `image` text,
   `catalog_id` int(11) NOT NULL DEFAULT '0',
   `published` tinyint(1) NOT NULL DEFAULT '0',
   `url` text NOT NULL,
@@ -763,15 +696,29 @@ CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_banner` (
         $form_banner['banner']['published']['type'] = 'checkbox';
         $form_banner['banner']['published']['required'] = 'off';
         $form_banner['banner']['published']['unique'] = 'off';
+
+        $form_banner['banner']['url']['name'] = 'url';
+        $form_banner['banner']['url']['title'] = Multilanguage::_('L_LINK');
+        $form_banner['banner']['url']['value'] = '';
+        $form_banner['banner']['url']['length'] = 40;
+        $form_banner['banner']['url']['type'] = 'safe_string';
+        $form_banner['banner']['url']['required'] = 'off';
+        $form_banner['banner']['url']['unique'] = 'off';
+
+        $form_banner['banner']['image']['name'] = 'image';
+        $form_banner['banner']['image']['title'] = _e('Фото');
+        $form_banner['banner']['image']['value'] = '';
+        $form_banner['banner']['image']['length'] = 40;
+        $form_banner['banner']['image']['type'] = 'uploads';
+        $form_banner['banner']['image']['required'] = 'off';
+        $form_banner['banner']['image']['unique'] = 'off';
+        $form_banner['banner']['image']['parameters'] = array (
+            'norm_width' => 1920,
+            'norm_height' => 1080,
+        );
+
         /*
 
-          $form_banner['banner']['url']['name'] = 'url';
-          $form_banner['banner']['url']['title'] = Multilanguage::_('L_LINK');
-          $form_banner['banner']['url']['value'] = '';
-          $form_banner['banner']['url']['length'] = 40;
-          $form_banner['banner']['url']['type'] = 'safe_string';
-          $form_banner['banner']['url']['required'] = 'off';
-          $form_banner['banner']['url']['unique'] = 'off';
 
           $form_banner['banner']['image']['name'] = 'image';
           $form_banner['banner']['image']['table_name'] = 'banner';

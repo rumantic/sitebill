@@ -782,12 +782,12 @@ div#mapviewer_edit_window div label {
 }
 
 .column .field_tab {
-	background-color: #eee;
+	/*background-color: #eee;*/
 	min-width: 100px;
 }
 
 .column .field_tab span.undefined {
-	color: silver;
+	color: Gray;
 	font-style: italic;
 }
 
@@ -817,3 +817,6 @@ div#mapviewer_edit_window div label {
 .ranged-tags-params input.tagged_input {
     width: 140px;
 }
+.dd-item .dd-move{left:0;top:0;width:36px;margin:0 5px 0 0;border-width:1px 1px 0 0;text-align:center;padding:0!important;line-height:38px;height:38px;background:#ebedf2;cursor:pointer;overflow:hidden;float:left;z-index:1}
+.columns_list .dd-move{width:38px;text-align:center;line-height:38px;height:38px;cursor:pointer;overflow:hidden}
+.columnslist_accordion_group{margin-bottom:12px}

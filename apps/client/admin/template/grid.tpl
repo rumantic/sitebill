@@ -1,61 +1,50 @@
 <form class="form-inline" method="get" action="{$estate_folder}/admin/">
-<input type="hidden" name="action" value="client">
-<div class="row-fluid">
-	<div class="span6">
-		<div class="control-group">
-			<h3 class="row-fluid header smaller lighter blue">
-				<span class="span7"> Тип </span>
-			</h3>
-			
-			
+	<input type="hidden" name="action" value="client">
+	<div class="row-fluid">
+		<div class="span6">
+			<div class="control-group">
+				<h3 class="row-fluid header smaller lighter blue">
+					<span class="span7"> Тип </span>
+				</h3>
 				{foreach from=$order_types key=key item=order_type}
-				<div class="controls span4">
-				<label>
-					<input type="checkbox" name="type_id[]" class="ace" value="{$key}"{if $order_type.s==1} checked="checked"{/if}>
-					<span class="lbl"></span>{$order_type.n}
-				</label>
-				</div>
+					<div class="controls span4">
+						<label>
+							<input type="checkbox" name="type_id[]" class="ace" value="{$key}"{if $order_type.s==1} checked="checked"{/if}>
+							<span class="lbl"></span>{$order_type.n}
+						</label>
+					</div>
 				{/foreach}
-			
+			</div>
 		</div>
-	</div>
-	<div class="span6">
-		<div class="control-group">
-			<h3 class="row-fluid header smaller lighter blue">
-				<span class="span7"> Статус </span>
-			</h3>
+		<div class="span6">
+			<div class="control-group">
+				<h3 class="row-fluid header smaller lighter blue">
+					<span class="span7"> Статус </span>
+				</h3>
 				{foreach from=$order_statuses key=key item=order_status}
-				<div class="controls span4">
-				<label>
-					<input type="checkbox" name="status_id[]" class="ace" value="{$key}"{if $order_status.s==1} checked="checked"{/if}>
-					<span class="lbl"></span>{$order_status.n}
-				</label>
-				</div>
+					<div class="controls span4">
+						<label>
+							<input type="checkbox" name="status_id[]" class="ace" value="{$key}"{if $order_status.s==1} checked="checked"{/if}>
+							<span class="lbl"></span>{$order_status.n}
+						</label>
+					</div>
 				{/foreach}
-			
+			</div>
 		</div>
 	</div>
-</div>
-
-
-<input type="submit" class="btn btn-inverse btn-mini" value="Фильтровать">
+	<input type="submit" class="btn btn-inverse btn-mini" value="Фильтровать">
 </form>
 
 <div class="widget-box">
 	<div class="widget-header header-color-blue">
 		<h5 class="bigger lighter">
-			<i class="icon-table"></i>
-			Заявки
+			<i class="icon-table"></i> Заявки
 		</h5>
-	
-	
 	</div>
-
+	{if isset($orders) && is_array($orders) && !empty($orders)}
 	<div class="widget-body">
 		<div class="widget-main no-padding">
 			<table class="table table-striped table-bordered table-hover" id="ordertable">
-				
-
 				<tbody>
 				{foreach from=$orders item=order}
 				<tr class="order_line">
@@ -75,7 +64,6 @@
 					<small>{$order.src_page}</small>
 					{/if}
 					</td>
-
 					<td class="">
 					<strong>{$orders_m.type_id.select_data[$order.type_id]}</strong><br>
 					{if $order.status_id=='new'}
@@ -117,19 +105,15 @@
 						<a href="#" class="btn btn-mini btn-danger delete" data-id="{$order.client_id}">Удалить</a>
 						<div class="subcontrols"></div>
 					</td>
-					
 				</tr>
-				
-				
 				{/foreach}
-
-														
 				</tbody>
 			</table>
 		</div>
 	</div>
+	{/if}
 </div>
-
+{if isset($orders) && is_array($orders) && !empty($orders)}
 <div id="hold" style="display: none">
 {foreach from=$orders item=order}
 	<div class="hold_{$order.client_id}">
@@ -152,16 +136,14 @@
 	</div>
 {/foreach}
 </div>
-
+{/if}
 <div class="modal hide fade" id="myOrderModal">
-<div class="modal-header">
-	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-	<h3>Просмотр заявки</h3>
-</div>
-<div class="modal-body">
-	<p>One fine body…</p>
-</div>
-<div class="modal-footer"></div>
+	<div class="modal-header">
+		<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+		<h3>Просмотр заявки</h3>
+	</div>
+	<div class="modal-body"></div>
+	<div class="modal-footer"></div>
 </div>
 
 {literal}
@@ -173,10 +155,8 @@ $(document).ready(function(){
 	$('#ordertable .delete').click(function(e){
 		e.preventDefault();
 		if(confirm('Вы действительно хотите удалить эту заявку?')){
-			
 			var _this=$(this);
 			var id=_this.data('id');
-			
 			$.ajax({
 				url: estate_folder+'/js/ajax.php',
 				dataType: 'json',
@@ -189,13 +169,10 @@ $(document).ready(function(){
 				}
 			});
 		}
-		
-		
 	});
 	$('#ordertable .show_order').click(function(e){
 		e.preventDefault();
 		var id=$(this).data('id');
-		
 		$('#myOrderModal .modal-body').html($('#hold .hold_'+id).html());
 		$('#myOrderModal').modal('show');
 	});
@@ -205,7 +182,6 @@ $(document).ready(function(){
 		var new_win=$('<div class="send_by_email" alt="'+id+'"><p><small>Введите email или несколько вписывая каждый с новой строки</small></p><textarea name="emails"></textarea><p><small>Возможно Вы захотите добавить сопроводительное сообщение</small></p><textarea name="message"></textarea><p><small>и тему письма</small></p><input type="text" name="theme"><p><button class="btn btn-mini ok">Отправить</button> <button class="btn btn-mini not">Я передумал</button></p></div>');
 		$(this).parents('.controlsblock').eq(0).find('.subcontrols').append(new_win);
 	});
-	
 	$(document).on('click', '.send_by_email button.ok', function(){
 		var p=$(this).parents('.send_by_email').eq(0);
 		var emails=p.find('textarea[name=emails]').val();
@@ -232,7 +208,6 @@ $(document).ready(function(){
 		var p=$(this).parents('.send_by_email').eq(0);
 		p.remove();
 	});
-	
 	$('#ordertable .set_status a').on('click', function (e) {
 		e.preventDefault();
 		var new_status=$(this).data('status');
@@ -263,9 +238,6 @@ $(document).ready(function(){
 					}
 					sl.text(json.txt);
 				}
-				
-				//sl.toggleClass(new_class);
-				
 			}
 		});
 	});
@@ -277,49 +249,50 @@ function setOrderStatus(id, new_status){
 </script>
 {/literal}
 
-
-{foreach from=$pager_array.pages item=pager_page}
-	{if $pager_page.current==1}
-		{assign var=__curpagenr value=$pager_page.text}
-	{/if}
-{/foreach}
-
-{if $__curpagenr-5<1}
-	{assign var=__startnr value=1}
-	{assign var=__leftsep value=0}
-{else}
-	{assign var=__startnr value=$__curpagenr-3}
-	{assign var=__leftsep value=1}
-{/if}
-
-{if $__curpagenr+5>$pager_array.pages|count}
-	{assign var=__endnr value=$pager_array.pages|count}
-	{assign var=__rightsep value=0}
-{else}
-	{assign var=__endnr value=$__curpagenr+3}
-	{assign var=__rightsep value=1}
-{/if}
-
-{if $pager_array.pages|count>1}
-<div class="paging_bootstrap pagination">
-<ul>
-	<li><a href="{$pager_array.fpn.href}"><i class="icon-double-angle-left"></i></a></li>
-	<li><a href="{$pager_array.ppn.href}"><i class="icon-angle-left"></i></a></li>
-	{if $__leftsep==1}
-	<li><a href="{$pager_array.pages[1].href}">{$pager_array.pages[1].text}</a></li>
-	<li class="disabled"><a href="javascript:void(0);">...</a></li>
-	{/if}
+{if isset($pager_array)}
 	{foreach from=$pager_array.pages item=pager_page}
-	{if $pager_page.text>=$__startnr && $pager_page.text<=$__endnr}
-	<li{if $pager_page.current==1} class="active"{/if}><a href="{$pager_page.href}">{$pager_page.text}</a></li>
-	{/if}
+		{if $pager_page.current==1}
+			{assign var=__curpagenr value=$pager_page.text}
+		{/if}
 	{/foreach}
-	{if $__rightsep==1}
-	<li class="disabled"><a href="javascript:void(0);">...</a></li>
-	<li><a href="{$pager_array.pages[$pager_array.pages|count].href}">{$pager_array.pages[$pager_array.pages|count].text}</a></li>
+
+	{if $__curpagenr-5<1}
+		{assign var=__startnr value=1}
+		{assign var=__leftsep value=0}
+	{else}
+		{assign var=__startnr value=$__curpagenr-3}
+		{assign var=__leftsep value=1}
 	{/if}
-	<li><a href="{$pager_array.npn.href}"><i class="icon-angle-right"></i></a></li>
-	<li><a href="{$pager_array.lpn.href}"><i class="icon-double-angle-right"></i></a></li>
-</ul>
-</div>
+
+	{if $__curpagenr+5>$pager_array.pages|count}
+		{assign var=__endnr value=$pager_array.pages|count}
+		{assign var=__rightsep value=0}
+	{else}
+		{assign var=__endnr value=$__curpagenr+3}
+		{assign var=__rightsep value=1}
+	{/if}
+
+	{if $pager_array.pages|count>1}
+		<div class="paging_bootstrap pagination">
+			<ul>
+				<li><a href="{$pager_array.fpn.href}"><i class="icon-double-angle-left"></i></a></li>
+				<li><a href="{$pager_array.ppn.href}"><i class="icon-angle-left"></i></a></li>
+				{if $__leftsep==1}
+				<li><a href="{$pager_array.pages[1].href}">{$pager_array.pages[1].text}</a></li>
+				<li class="disabled"><a href="javascript:void(0);">...</a></li>
+				{/if}
+				{foreach from=$pager_array.pages item=pager_page}
+				{if $pager_page.text>=$__startnr && $pager_page.text<=$__endnr}
+				<li{if $pager_page.current==1} class="active"{/if}><a href="{$pager_page.href}">{$pager_page.text}</a></li>
+				{/if}
+				{/foreach}
+				{if $__rightsep==1}
+				<li class="disabled"><a href="javascript:void(0);">...</a></li>
+				<li><a href="{$pager_array.pages[$pager_array.pages|count].href}">{$pager_array.pages[$pager_array.pages|count].text}</a></li>
+				{/if}
+				<li><a href="{$pager_array.npn.href}"><i class="icon-angle-right"></i></a></li>
+				<li><a href="{$pager_array.lpn.href}"><i class="icon-double-angle-right"></i></a></li>
+			</ul>
+		</div>
+	{/if}
 {/if}

@@ -346,7 +346,6 @@ $(document).ready(function(){
 	<div class="form_element control-group" alt="{$current_el.name}">
 		<label class="control-label">{$current_el.title}{if $current_el.required eq 1}<span style="color: red;">*</span>{/if} <a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-info btn-mini" data-content="Набор параметров точной настройки элемента."> <i class="icon-question-sign icon-white"></i></a></label>
 		<div class="form_element_html controls">{$current_el.html}
-			{if 1==1}
 			<div id="params_setter">
 				<ul>
 					<li><a href="" data-task="uploads_full">Полный набор для uploads</a></li>
@@ -365,9 +364,7 @@ $(document).ready(function(){
 				</ul>
 				
 			</div>
-			{/if}
 		</div>
-		
 	</div>
 	{literal}
     <style>

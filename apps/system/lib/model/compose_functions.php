@@ -4,6 +4,9 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
 
 class compose_functions {
     function def_link($model, $key){
+        if ( $_REQUEST['do'] ) {
+            return $model[$key]['value'];
+        }
         if(preg_match('/^http(s?):/', $model[$key]['value_string'])){
             $url = $model[$key]['value_string'];
             $maxlen = 25;

@@ -60,17 +60,58 @@
         }
     </script>
     {/literal}
+{elseif $editor_code=='codemirror'}
+    {if !$NO_DYNAMIC_INCS}
+        <link rel="stylesheet" href="{$estate_folder}/apps/third/codemirror/lib/codemirror.css">
+        <link rel="stylesheet" href="{$estate_folder}/apps/third/codemirror/addon/fold/foldgutter.css" />
+        <link rel="stylesheet" href="{$estate_folder}/apps/third/codemirror/addon/display/fullscreen.css">
+
+        <script src="{$estate_folder}/apps/third/codemirror/lib/codemirror.js"></script>
+        <script src="{$estate_folder}/apps/third/codemirror/addon/fold/foldcode.js"></script>
+        <script src="{$estate_folder}/apps/third/codemirror/addon/fold/foldgutter.js"></script>
+        <script src="{$estate_folder}/apps/third/codemirror/addon/fold/brace-fold.js"></script>
+        <script src="{$estate_folder}/apps/third/codemirror/addon/fold/xml-fold.js"></script>
+        <script src="{$estate_folder}/apps/third/codemirror/addon/fold/comment-fold.js"></script>
+
+        <script src="{$estate_folder}/apps/third/codemirror/mode/xml/xml.js"></script>
+        <script src="{$estate_folder}/apps/third/codemirror/mode/css/css.js"></script>
+        <script src="{$estate_folder}/apps/third/codemirror/mode/javascript/javascript.js"></script>
+        <script src="{$estate_folder}/apps/third/codemirror/mode/htmlmixed/htmlmixed.js"></script>
+        <script src="{$estate_folder}/apps/third/codemirror/addon/display/fullscreen.js"></script>
+    {/if}
+    {literal}
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var editor = CodeMirror.fromTextArea(document.getElementById("{/literal}{$id}{literal}"),{
+                mode: "htmlmixed",
+                lineNumbers: true,
+                viewportMargin: Infinity,
+                lineWrapping: true,
+                foldGutter: true,
+                gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+                extraKeys: {
+                    "F11": function(cm) {
+                        cm.setOption("fullScreen", !cm.getOption("fullScreen"));
+                    },
+                    "Esc": function(cm) {
+                        if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
+                    }
+                }
+            });
+        });
+    </script>
+    {/literal}
 {else}
     {if !$NO_DYNAMIC_INCS}
         <link rel="stylesheet" type="text/css" href="{$estate_folder}/js/cleditor/jquery.cleditor.css" />
         <script type="text/javascript" src="{$estate_folder}/js/cleditor/jquery.cleditor.min.js"></script>
     {/if}
-{literal}
-    <script type="text/javascript">
-	$(document).ready(function(){
-        $("textarea#{/literal}{$id}{literal}").cleditor({width:{/literal}{if $item_array.parameters.width > 0}{$item_array.parameters.width}{else}350{/if}{literal}});
-    });
-    </script>
+    {literal}
+        <script type="text/javascript">
+        $(document).ready(function(){
+            $("textarea#{/literal}{$id}{literal}").cleditor({width:{/literal}{if $item_array.parameters.width > 0}{$item_array.parameters.width}{else}350{/if}{literal}});
+        });
+        </script>
     {/literal}
 {/if}
 <textarea id="{$id}" class="input" name="{$item_array.name}" rows="{$item_array.rows}" cols="{$item_array.cols}">{$item_array.value}</textarea>

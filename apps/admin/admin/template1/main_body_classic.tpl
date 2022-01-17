@@ -20,6 +20,11 @@
                 <div class="ttl">CMS Sitebill</div>
             </div>
 
+            {assign var="local_top" value=$SITEBILL_DOCUMENT_ROOT|cat:'/template/frontend/local/admin/data/top_nav_notify.tpl'}
+            {if file_exists($local_top)}
+                {include file="$local_top"}
+            {/if}
+
             {include file='top_nav_notify.tpl'}
 
 
@@ -117,6 +122,13 @@
                         <li>
                             <a href="{$MAIN_URL}/admin/?_lang=en"><img src="{$MAIN_URL}/apps/admin/admin/template/img/flag_en.png" alt="English" title="English"/> English</a>
                         </li>
+
+                        {foreach item=ln from=$available_langs key=k}
+                            {if ($k != 'ru' and $k != 'en') }
+                                <li><a href="{$MAIN_URL}/admin/?_lang={$k}">{$ln}</a></li>
+                            {/if}
+                        {/foreach}
+
 
                     </ul>
                 </div>

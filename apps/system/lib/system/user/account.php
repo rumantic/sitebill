@@ -165,7 +165,7 @@ class Account extends Login {
                 if ($this->getError()) {
                     return $this->getBillForm();
                 }
-                $rs .= $this->get_pay_buttons_list($bill_id, $bill_sum, $bill_payment_sum);
+                $rs .= $this->get_pay_buttons_list($bill_id, $bill_sum, $bill_payment_sum, true);
 
                 return $rs;
                 break;
@@ -174,15 +174,39 @@ class Account extends Login {
                 return $rs;
                 break;
             case 'add_bill':
+                $this->template->assert('title', 'Пополнение баланса');
                 $rs .= $this->getBillForm();
                 return $rs;
                 break;
 
-            default:
-        }
+            default: {
+                $resp = array();
+        
+                $resp['value'] = floatval($this->getAccountValue($this->getSessionUserId()));
+                $resp['currency'] = $this->getConfigValue('ue_name');
+                $resp['msg'] = sprintf(Multilanguage::_('ACCOUNT_STATE', 'system'), floatval($this->getAccountValue($this->getSessionUserId()))) . ' ' . $this->getConfigValue('ue_name');
+                $resp['recharge_href'] = SITEBILL_MAIN_URL . '/account/balance/?do=add_bill';
+                $resp['recharge_link'] = '<a href="' . SITEBILL_MAIN_URL . '/account/balance/?do=add_bill">Пополнить счет</a>';
 
-        $rs .= sprintf(Multilanguage::_('ACCOUNT_STATE', 'system'), $this->getAccountValue($this->getSessionUserId())) . ' ' . $this->getConfigValue('ue_name');
-        $rs .= $this->getTopMenu();
+
+                $tpl = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'. $this->getConfigValue('theme').'/account_balance_info.tpl';
+                //var_dump(file_exists($tpl));
+                if(file_exists($tpl)){
+                    global $smarty;
+                    $smarty->assign('account_balance_data', $resp);
+                    $rs = $smarty->fetch($tpl);
+                }else{
+                    $rs .= sprintf(Multilanguage::_('ACCOUNT_STATE', 'system'), $this->getAccountValue($this->getSessionUserId())) . ' ' . $this->getConfigValue('ue_name');
+                    $rs .= $this->getTopMenu();
+                }
+
+                //$this->template->assert
+                $this->template->assert('title', 'Баланс');
+            }
+        }
+        
+        
+        
         return $rs;
     }
 
@@ -214,7 +238,7 @@ class Account extends Login {
         return _e('Оплата со счета успешна');
     }
 
-    function get_pay_buttons_list($bill_id, $bill_sum, $bill_payment_sum) {
+    function get_pay_buttons_list($bill_id, $bill_sum, $bill_payment_sum, $is_recharge = false) {
         $rs = _e('К оплате: ').$this->get_bill_sum($bill_id).' '.$this->getConfigValue('ue_name');
         if ($this->getConfigValue('apps.cryptonator.enable')) {
             require_once (SITEBILL_DOCUMENT_ROOT . '/apps/cryptonator/admin/admin.php');
@@ -266,7 +290,7 @@ class Account extends Login {
         if ($this->getConfigValue('robokassa_pay_enable')) {
             $rs .= $this->get_robokassa_button($bill_id);
         }
-        if ( $bill_sum <= $this->getAccountValue($this->getSessionUserId()) ) {
+        if ( !$is_recharge && $bill_sum <= $this->getAccountValue($this->getSessionUserId()) ) {
             $rs .= $this->get_account_balance_buy_button($bill_id);
         }
         return $rs;
@@ -487,17 +511,42 @@ class Account extends Login {
      * @return string
      */
     function getBillForm() {
-
-        $rs = '';
-        $rs .= '<form action="' . SITEBILL_MAIN_URL . '/account/balance/?do=add_bill_done" method="post">';
-        $rs .= '<p>' . sprintf(Multilanguage::_('INPUT_PAYMENT_SUM', 'system'), $this->getConfigValue('ue_name')) . '</p>';
+        
+        $resp = array();
+        
+        $resp['action'] = SITEBILL_MAIN_URL . '/account/balance/?do=add_bill_done';
+        $resp['method'] = 'post';
+        $resp['msg'] = sprintf(Multilanguage::_('INPUT_PAYMENT_SUM', 'system'), $this->getConfigValue('ue_name'));
+        $resp['error'] = '';
         if ($this->getError()) {
-            $rs .= '<p><span class="error">' . $this->GetErrorMessage() . '</span></p>';
+            $resp['error'] = $this->GetErrorMessage();
         }
-        $rs .= Multilanguage::_('PAYMENT_SUM', 'system') . ': <input type="text" name="bill" value="' . $this->getRequestValue('bill') . '">';
-        $rs .= '<input type="hidden" name="do" value="add_bill_done">';
-        $rs .= '<input type="submit" value="' . Multilanguage::_('L_TEXT_NEXT') . '">';
-        $rs .= '</form>';
+        $resp['pretext'] = Multilanguage::_('PAYMENT_SUM', 'system');
+        $resp['field_name'] = 'bill';
+        $resp['field_value'] = $this->getRequestValue('bill');
+        $resp['hidden_fileds'][] = '<input type="hidden" name="do" value="add_bill_done">';
+        $resp['submit_name'] = Multilanguage::_('L_TEXT_NEXT');
+        
+        $tpl = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'. $this->getConfigValue('theme').'/account_balance_add.tpl';
+        //var_dump(file_exists($tpl));
+        if(file_exists($tpl)){
+            global $smarty;
+            $smarty->assign('account_balance_add_data', $resp);
+            $rs = $smarty->fetch($tpl);
+        }else{
+            $rs = '';
+            $rs .= '<form action="'.$resp['action'].'" method="'.$resp['method'].'">';
+            $rs .= '<p>' . $resp['msg'] . '</p>';
+            if ($this->getError()) {
+                $rs .= '<p><span class="error">' . $resp['error'] . '</span></p>';
+            }
+            $rs .= $resp['pretext'] . ': <input type="text" name="'.$resp['field_name'].'" value="'.$resp['field_value'].'">';
+            $rs .= '<input type="hidden" name="do" value="add_bill_done">';
+            $rs .= '<input type="submit" value="' . Multilanguage::_('L_TEXT_NEXT') . '">';
+            $rs .= '</form>';
+        }
+        
+        
 
         return $rs;
     }
@@ -536,7 +585,10 @@ class Account extends Login {
      */
     function getTopMenu() {
         $rs = '<br><a href="' . SITEBILL_MAIN_URL . '/account/balance/?do=add_bill">'._e('Пополнить счет').'</a><br>';
-        $rs .= '<br><i>* ' . sprintf(Multilanguage::_('AD_PLACEMENT_COST', 'system'), $this->getConfigValue('advert_cost'), $this->getConfigValue('ue_name')) . '</i>';
+        if($this->getConfigValue('advert_cost') > 0){
+            $rs .= '<br><i>* ' . sprintf(Multilanguage::_('AD_PLACEMENT_COST', 'system'), $this->getConfigValue('advert_cost'), $this->getConfigValue('ue_name')) . '</i>';
+        }
+        
         return $rs;
     }
 

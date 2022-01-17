@@ -8,9 +8,10 @@
 	<copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
 	<license>http://www.sitebill.ru/licenses/sitebill.html</license>
     <backendMenu>true</backendMenu>
-	<version status="beta">1.5.4</version>
+	<version status="beta">1.5.6</version>
 	<administration>
 		<!-- Administration Menu Section -->
 		<menu>Редактор шаблонов</menu>
-	</administration>	
+		<category>Контент</category>
+	</administration>
 </install>

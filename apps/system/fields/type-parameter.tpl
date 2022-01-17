@@ -11,7 +11,7 @@
 </script>
 <div id="paramsblock">
 {/literal}
-	{if $item_array['value']|count>0}
+	{if $item_array['value']|is_array and $item_array['value']|@count>0}
 	    {foreach from=$item_array['value'] key=pk item=pv}
 		{if $pk>'' &&  $pk!='0'}
                 <div class="paramsrow">

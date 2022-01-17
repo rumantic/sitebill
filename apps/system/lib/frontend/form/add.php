@@ -87,7 +87,7 @@ class User_Add extends Object_Manager {
 
         $user_id = intval($_SESSION['user_id']);
         if ($user_id > 0) {
-            header('location: ' . SITEBILL_MAIN_URL . '/account/data/?do=new');
+            header('location: ' . $this->createUrlTpl('account/data/?do=new'));
             exit();
         }
 
@@ -643,7 +643,7 @@ class User_Add extends Object_Manager {
 
         $form_data_adv = $this->data_model;
         // echo '---';
-        $form_data_adv = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $new_record_id, $form_data_adv[$this->table_name]);
+        $form_data_adv = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $new_record_id, $form_data_adv[$this->table_name], true);
         // var_dump($form_data_adv);
 
         $table_view = new Table_View();

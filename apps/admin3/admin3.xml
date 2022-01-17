@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<install>
+    <name>admin3</name>
+    <creationDate>August 2021</creationDate>
+    <author>The Sitebill Development Team</author>
+    <authorEmail>kondin@etown.ru</authorEmail>
+    <authorUrl>http://www.sitebill.ru</authorUrl>
+    <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
+    <license>http://www.sitebill.ru/licenses/sitebill.html</license>
+    <version status="beta">0.1.1</version>
+    <backendMenu>true</backendMenu>
+    <administration>
+        <!-- Administration Menu Section -->
+        <menu>Admin3</menu>
+        <category>Системные</category>
+    </administration>
+</install>

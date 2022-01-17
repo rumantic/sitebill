@@ -151,6 +151,7 @@
                     {iconContent: ''},
                     {draggable: false}
                 );
+                this.map.geoObjects.removeAll();
                 this.map.geoObjects.add(myPlacemark);
 
 
@@ -281,8 +282,6 @@
                     var map=initializeYandexLocationsMap(map_id);
                     var PE=PositionEditorYandex.init(map);
                     map.events.add('click', function (e) {
-                        //console.log(e);
-                        //var geo_c=PositionEditorYandex.createPositionMarker(e.get('coordPosition'), 0);
                         var geo_c=PositionEditorYandex.createPositionMarker(e.get('coords'), 0);
                         late.val(geo_c[0]);
                         lnge.val(geo_c[1]);
@@ -341,7 +340,9 @@
                 behaviors.push("scrollZoom");
             }
 
-            var controls=['smallMapDefaultSet'];
+            var controls = [];
+            controls.push('smallMapDefaultSet');
+            controls.push('searchControl');
 
             var latlng=new Array(Number(c[0]), Number(c[1]));
             var m=$('<div id="'+map_id+'" style="width:'+options.width+'; height:'+options.height+'"></div>')
@@ -376,15 +377,46 @@
                     type : map_view_type,
                     controls: controls
                 },{suppressMapOpenBlock: true});
-                map.controls.remove('searchControl');
+                map.controls.remove('searchControl'); // сделать условным
                 map.controls.remove('geolocationControl');
                 map.controls.remove('fullscreenControl');
+
+                var searchControl = new ymaps.control.SearchControl({
+                    options: {
+                        provider: 'yandex#map',
+                        noPlacemark: true
+                    }
+                });
+
+                map.controls.add(searchControl);
+
+                searchControl.events.add('resultselect', function(e) {
+                    var index = e.get('index');
+                    searchControl.getResult(index).then(function(res) {
+                        // Получаем метаданные
+                        var GeocoderMetaData = res.properties.get('metaDataProperty').GeocoderMetaData;
+
+                        // Выводим название локации???
+                        //GDC.find('.geodata_form_name').text(GeocoderMetaData.text); // вывод локации
+
+                        // Сохраняем меьтаданные в какое-то поле для отправки???
+                        // Или отправляем в фоне???
+                        // Или подобно dadata расставляем по форме???
+                        //GDC.find('[name=geodata]').val(JSON.stringify(res.properties._data.metaDataProperty)); // отправка расширенных данных
+
+                        //Ставим маркер
+                        var geo_c=PositionEditorYandex.createPositionMarker(res.geometry.getCoordinates(), 0);
+                        late.val(geo_c[0]);
+                        lnge.val(geo_c[1]);
+
+                    });
+                })
             }
             //m.css({'position':'relative','left':'0'}).appendTo(GDC.find('.geodata_map_holder'));
             var w=GDC.find('.geodata_map_holder').width();
             var h=GDC.find('.geodata_map_holder').height();
-            m.css({'position':'relative','left':'0', 'width':w, 'height':options.height}).appendTo(GDC.find('.geodata_map_holder'));
-            map.container.fitToViewport();
+            
+            
             /*if(options.yandex_map_version=='2.1'){
                 map.events.add('tilesLoaded', function () {
                     map.container.fitToViewport();
@@ -392,6 +424,8 @@
             }else{
                 map.container.fitToViewport();
             }*/
+            
+            let timerId = setInterval(function(){if(GDC.find('.geodata_map_holder').is(':visible')){clearInterval(timerId);m.css({'position':'relative','left':'0', 'width':w, 'height':options.height}).appendTo(GDC.find('.geodata_map_holder'));map.container.fitToViewport();}else{}}, 1000);
             return map;	
         }
         

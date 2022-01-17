@@ -4,7 +4,7 @@
  * @author Kondin Dmitriy <kondin@etown.ru>
  */
 class Data_Manager_Export extends Object_Manager {
-    private $category_not_defined_title = 'Категория не указана';
+    protected $category_not_defined_title = 'Категория не указана';
     /**
      * Constructor
      */
@@ -274,7 +274,7 @@ class Data_Manager_Export extends Object_Manager {
      * @return string
      */
     function get_search_form ( $form_data=array(), $do = 'new', $language_id = 0, $button_title = '' ) {
-
+        $rs = '';
     	if($button_title==''){
     		$button_title = Multilanguage::_('L_TEXT_SAVE');
     	}
@@ -400,6 +400,10 @@ class Data_Manager_Export extends Object_Manager {
     			continue;
     		}
 
+            if ( $item_array['type'] == 'select_by_query_multi' ) {
+                continue;
+            }
+
     		if ( $item_array['type'] == 'photo' ) {
     			continue;
     		}
@@ -441,7 +445,7 @@ class Data_Manager_Export extends Object_Manager {
     		$qparts[] = "`language_id`";
     		$qvals[] = $language_id;
     		$qparts[] = "`link_id`";
-    		$qvals[] = $this->getRequestValue($primary_key);
+    		$qvals[] = 0;
     	}
     	$query = 'INSERT INTO '.$table_name.' ('.implode(' , ', $qparts).') VALUES ('.implode(', ', array_fill(0, count($qvals), '?')).')';
 
@@ -482,21 +486,26 @@ class Data_Manager_Export extends Object_Manager {
     }
 
     function edit() {
+        $rs = '';
         $form_data[$this->table_name] = $this->get_model(true);
         $form_data[$this->table_name] = $this->model->init_model_data_from_request($form_data[$this->table_name]);
         $this->model->forse_auto_add_values($form_data[$this->table_name]);
         $this->edit_data($form_data[$this->table_name]);
+
         if ($this->getError()) {
             $rs .= '<div style="color: red">Ошибка: ' . $this->GetErrorMessage() . '</div><br>';
         } else {
             $image_processor_message = $this->init_uploads_cache($form_data[$this->table_name][$this->primary_key]['value'], $this->table_name, $this->primary_key, $form_data);
+
+            $this->update_multi_items($form_data[$this->table_name][$this->primary_key]['value'], $form_data[$this->table_name]);
+
             $rs .= 'Запись обновлена успешно. ID = ' . $form_data[$this->table_name][$this->primary_key]['value'] .' '.$image_processor_message. '<br>';
         }
         return $rs;
     }
 
     function insert () {
-
+        $rs = '';
         $form_data[$this->table_name] = $this->get_model(true);
         $form_data[$this->table_name] = $this->model->init_model_data_from_request($form_data[$this->table_name]);
         $new_record_id=$this->add_data($form_data[$this->table_name]);
@@ -504,6 +513,9 @@ class Data_Manager_Export extends Object_Manager {
             $rs .= '<div style="color: red">'.Multilanguage::_('L_ERROR').': '.$this->GetErrorMessage().'</div><br>';
         } else {
             $image_processor_message = $this->init_uploads_cache($new_record_id, $this->table_name, $this->primary_key, $form_data);
+
+            $this->update_multi_items($new_record_id, $form_data[$this->table_name]);
+
             $rs .= Multilanguage::_('L_MESSAGE_ADD_SUCCESS').' '.$image_processor_message.'<br>';
         }
         return $rs;
@@ -516,7 +528,7 @@ class Data_Manager_Export extends Object_Manager {
             $DBC = DBC::getInstance();
             $query = 'UPDATE ' . DB_PREFIX . '_' . $table_name . ' SET `' . $cache_name . '`=? WHERE `' . $primary_key . '`=?';
             $this->writeLog($query);
-            echo $query;
+            //echo $query;
             $DBC->query($query, array(serialize($imgs), $record_id), $success);
             if (!$success) {
                 //$this->writeLog($DBC->getLastError());
@@ -572,6 +584,10 @@ class Data_Manager_Export extends Object_Manager {
 
     function is_record_exist ( $data, $assoc_array ) {
         $primary_key_value = $data[$assoc_array[$this->primary_key]];
+        if ( $primary_key_value == '' ) {
+            $primary_key_value = $data[$this->primary_key];
+        }
+
     	$query = 'SELECT `'.$this->primary_key.'` FROM '.DB_PREFIX.'_'.$this->table_name.' WHERE `'.$this->primary_key.'`=?';
     	$DBC=DBC::getInstance();
     	$stmt=$DBC->query($query, array($primary_key_value));
@@ -591,6 +607,9 @@ class Data_Manager_Export extends Object_Manager {
     function get_search_query ( $params, $get_total_counter = false ) {
     	$this->grid_total = 0;
     	$where_array = false;
+
+        $add_from_table = '';
+        $add_select_value = '';
 
     	if ( $params['order'] == 'city' ) {
     		$where_array[] = 're_city.city_id=re_data.city_id';
@@ -913,7 +932,7 @@ class Data_Manager_Export extends Object_Manager {
 		$points=array();
 		$query='SELECT id, parent_id, LOWER(name) AS name FROM '.DB_PREFIX.'_topic';
     	$DBC=DBC::getInstance();
-    	$stmt=$DBC->query($query, array($primary_key_value));
+    	$stmt=$DBC->query($query);
     	if($stmt){
     		while($ar=$DBC->fetch($stmt)){
     			$categories[$ar['id']]=$ar['name'];
@@ -942,7 +961,7 @@ class Data_Manager_Export extends Object_Manager {
 		}
 	}
 
-	private function createTopicPoints($chain){
+	protected function createTopicPoints($chain){
 
     	$x=$this->getCatalogChains();
     	$categoryChainTXT=$x['txt'];

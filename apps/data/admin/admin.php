@@ -9,6 +9,10 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
 class data_admin extends Object_Manager {
 
     public $save_url = 'empty';
+    /**
+     * @var Permission
+     */
+    protected $permission;
 
     /**
      * Constructor
@@ -19,15 +23,20 @@ class data_admin extends Object_Manager {
         $this->table_name = 'data';
         $this->action = 'data';
         $this->primary_key = 'id';
+        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
+        $this->permission = new Permission();
+
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         $this->data_model_object = $data_model;
         $this->data_model = $data_model->get_kvartira_model($this->getConfigValue('ajax_form_in_admin'));
-        $this->data_model[$this->table_name]['user_id']['type'] = 'hidden';
-        $this->data_model[$this->table_name]['user_id']['name'] = 'user_id';
-        $this->data_model[$this->table_name]['user_id']['value'] = $this->getSessionUserId();
-        
+        if ( !$this->allowChangeUserId() ) {
+            $this->data_model[$this->table_name]['user_id']['type'] = 'hidden';
+            $this->data_model[$this->table_name]['user_id']['name'] = 'user_id';
+            $this->data_model[$this->table_name]['user_id']['value'] = $this->getSessionUserId();
+        }
+
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
 
@@ -50,9 +59,43 @@ class data_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.data.disable_add_button')) {
             $config_admin->addParamToConfig('apps.data.disable_add_button', '0', 'Выключить кнопку добавления объявлений в ЛК', 1);
         }
-        if (!$config_admin->check_config_item('apps.data.disable_all_button')) {
-            $config_admin->addParamToConfig('apps.data.disable_all_button', '0', 'Выключить кнопку ВСЕ в ЛК', 1);
+
+        if (!$config_admin->check_config_item('apps.data.allow_add_button_group_list')) {
+            $config_admin->addParamToConfig(
+                'apps.data.allow_add_button_group_list',
+                '',
+                'Список групп, которым разрешено добавлять объявления. Пример <strong>1,2,3,4</strong>',
+                0);
         }
+
+        if (!$config_admin->check_config_item('apps.data.allow_user_id_change_group_list')) {
+            $config_admin->addParamToConfig(
+                'apps.data.allow_user_id_change_group_list',
+                '',
+                'Список групп, которым разрешено редактировать user_id. Пример <strong>1,2,3,4</strong>',
+                0);
+        }
+
+
+        if (!$config_admin->check_config_item('apps.data.enable_city_coworker')) {
+            $config_admin->addParamToConfig(
+                'apps.data.enable_city_coworker',
+                '0',
+                'Включить режим коворкеров по городам (назначение доступа к объявлениям по целому городу)',
+                1);
+        }
+
+
+
+
+        if (!$config_admin->check_config_item('apps.data.disable_all_button')) {
+            $config_admin->addParamToConfig(
+                'apps.data.disable_all_button',
+                '0',
+                'Выключить кнопку ВСЕ в ЛК',
+                1);
+        }
+
         if (!$config_admin->check_config_item('apps.data.disable_memory_button')) {
             $config_admin->addParamToConfig('apps.data.disable_memory_button', '0', 'Выключить кнопку Сохраненные списки в ЛК', 1);
         }
@@ -62,9 +105,9 @@ class data_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.data.disable_edit_button')) {
             $config_admin->addParamToConfig('apps.data.disable_edit_button', '0', 'Выключить кнопку Редактирования в ЛК', 1);
         }
-        
+
         $config_admin->addParamToConfig('apps.data.excel_limit', '500', 'Максимальное количество записей выгружаемых через Excel');
-        
+
         if (!$config_admin->check_config_item('apps.data.check_unique_enable')) {
             $config_admin->addParamToConfig('apps.data.check_unique_enable', '0', 'Включить проверку уникальности текста', 1);
         }
@@ -77,14 +120,29 @@ class data_admin extends Object_Manager {
         if ( $this->getConfigValue('dadata_autocomplete_force') ) {
             $this->data_model['data'] = $this->prepare_model_for_dadata($this->data_model['data']);
         }
-        
+
         if (!$config_admin->check_config_item('apps.data.default_sort')) {
             $config_admin->addParamToConfig('apps.data.default_sort', '', 'Сортировка по-умолчанию. Указывается в виде системное имя поля|направление сортировки');
         }
     }
 
     public function _preload() {
-        
+
+    }
+
+    function set_tags_from_request () {
+        if ( $this->getRequestValue('subdo') == 'set_tags' ) {
+            require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/components/model_tags/model_tags.php');
+            $model_tags = new model_tags();
+            $tag_name = $this->getRequestValue('tag_name');
+            $tag_value = $this->getRequestValue('tag_value');
+            $tags_array = [
+                $tag_name => [$tag_value]
+            ];
+            $model_tags->set_model_tags('data', $tags_array);
+            header('Location: '.$this->request()->url());
+        }
+        return false;
     }
 
     function grid($params = array(), $default_params = array()) {
@@ -92,19 +150,19 @@ class data_admin extends Object_Manager {
         if ($this->getConfigValue('apps.pdfreport.enabled')) {
             $this->template->assign('pdf_enable', 1);
         }
-        //Устанавливаем параметр USER_ID для функции импорта XLS файла. 
+        //Устанавливаем параметр USER_ID для функции импорта XLS файла.
         //Чтобы при загрузке из XLS пользоатель не смог получить доступ к чужим записям
         $_SESSION['politics']['data']['check_access'] = true;
         $_SESSION['politics']['data']['user_id'] = $this->getSessionUserId();
 
         $default_params['grid_item'] = array('id', 'topic_id', 'city_id', 'district_id', 'street_id', 'price', 'image');
-        $default_params['render_user_id'] = $this->getSessionUserId();
+        //$default_params['render_user_id'] = $this->getSessionUserId();
         if (!preg_match('/all[\/]?$/', $REQUESTURIPATH)) {
-            $params['grid_conditions']['user_id'] = $this->getSessionUserId();
+            //$params['grid_conditions']['user_id'] = $this->getSessionUserId();
         }
 
         $params['grid_controls'] = array('edit', 'delete', 'memorylist');
-        
+
         $params['url'] = '/' . $REQUESTURIPATH;
         //$params['pager_url']='account/data';
 
@@ -132,7 +190,7 @@ class data_admin extends Object_Manager {
             $used_fields = json_decode($ar['grid_fields']);
             $params['grid_item'] = $used_fields;
         }
-        
+
         $rs .= parent::grid($params, $default_params);
         if ( $this->getConfigValue('apps.billing.enable') ) {
             $rs .= $this->template->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/billing/site/template/billing_panel.tpl');
@@ -152,7 +210,7 @@ class data_admin extends Object_Manager {
             $this->riseError(_e('Функция удаления отключена'));
             return false;
         }
-        
+
         if ($this->need_check_access($table_name)) {
             if (!$this->check_access($table_name, $this->get_check_access_user_id($table_name), 'delete', $primary_key, $primary_key_value)) {
                 $this->riseError('ID = ' . $primary_key_value . ', ' . Multilanguage::_('L_ACCESS_DENIED'));
@@ -175,7 +233,7 @@ class data_admin extends Object_Manager {
 
         return false;
     }
-    
+
     /**
      * Edit data
      * @param array $form_data form data
@@ -186,17 +244,17 @@ class data_admin extends Object_Manager {
             $this->riseError(_e('Функция редактирования отключена'));
             return false;
         }
-        
+
         $id = intval($this->getRequestValue('id'));
         if($id==0){
             $id = intval($form_data[$this->primary_key]['value']);
         }
-        
+
         if ($id == 0) {
             return false;
         }
         $status_changed = false;
-        
+
         $moderate_first = false;
         if (1 == $this->getConfigValue('moderate_first')) {
             $moderate_first = true;
@@ -212,7 +270,7 @@ class data_admin extends Object_Manager {
         if(isset($form_data['price'])){
             $form_data['price']['value'] = str_replace(' ', '', $form_data['price']['value']);
         }
-        
+
 
         $form_data_tmp = $form_data;
 
@@ -227,7 +285,7 @@ class data_admin extends Object_Manager {
                 $account->minusMoney($this->getSessionUserId(), $this->getConfigValue('special_advert_cost'));
             }
         }
-        
+
         if(!$moderate_first){
             //проверяем возможность установки активного статуса в зависимости от наличия услуги списания за размещения
             if(isset($form_data['active']) && ($form_data_tmp['active']['value'] == 0 and $form_data['active']['value'] == 1)){
@@ -244,11 +302,11 @@ class data_admin extends Object_Manager {
                         }
                     }
                 }
-        
-                
+
+
             }
         }
-        
+
         if ($moderate_first) {
             $form_data['active']['value'] = 0;
         }
@@ -314,13 +372,13 @@ class data_admin extends Object_Manager {
         if (is_array($ims) && count($ims) > 0) {
             $imgs = array_merge($imgs, $ims);
         }
-        
+
         foreach ($form_data as $form_item) {
             if ($form_item['type'] == 'docuploads') {
                 $imgs_uploads = $this->appendDocUploads('data', $form_item, 'id', $id);
             }
         }
-        
+
         $mutiitems = array();
         foreach ($form_data as $k => $form_item) {
             if ($form_item['type'] == 'select_by_query_multi') {
@@ -411,7 +469,7 @@ class data_admin extends Object_Manager {
             }
         }
     }
-    
+
     public function setStatusDate($id, $date = '') {
         $DBC = DBC::getInstance();
         if ($date == '') {
@@ -449,13 +507,13 @@ class data_admin extends Object_Manager {
         }
         return false;
     }
-    
+
     protected function _editAction() {
         if ( $this->getConfigValue('apps.data.disable_edit_button') ) {
             $this->riseError(_e('Функция редактирования отключена'));
             return false;
         }
-        
+
         $id = intval($this->getRequestValue('id'));
         $user_id = $this->getSessionUserId();
 
@@ -495,6 +553,9 @@ class data_admin extends Object_Manager {
 
         $_form_data = $form_data;
         $form_data['data'] = $data_model->init_model_data_from_db('data', 'id', $this->getRequestValue('id'), $form_data['data']);
+        if (1 == $this->getConfigValue('apps.language.autotrans_enable')) {
+            $form_data['data'] = $data_model->init_model_data_auto_translate($form_data['data']);
+        }
 
         if (1 == $this->getConfigValue('divide_step_form') && isset($_POST['submit'])) {
             $_form_data['data'] = $data_model->init_model_data_from_request($_form_data['data']);
@@ -506,7 +567,9 @@ class data_admin extends Object_Manager {
             $form_data['data'] = array_merge($form_data['data'], $_form_data['data']);
         }
 
-        $form_data['data']['user_id']['type'] = 'hidden';
+        if ( !$this->allowChangeUserId() ) {
+            $form_data['data']['user_id']['type'] = 'hidden';
+        }
         unset($form_data['data']['view_count']);
         if ($this->getConfigValue('enable_special_in_account') != 1) {
             unset($form_data['data']['hot']);
@@ -521,13 +584,13 @@ class data_admin extends Object_Manager {
         }
         return $rs;
     }
-    
+
     protected function _edit_doneAction() {
         if ( $this->getConfigValue('apps.data.disable_edit_button') ) {
             $this->riseError(_e('Функция редактирования отключена'));
             return false;
         }
-        
+
         $user_id = $this->getSessionUserId();
         $id = intval($this->getRequestValue('id'));
 
@@ -599,10 +662,12 @@ class data_admin extends Object_Manager {
             if(1==$this->getConfigValue('enable_curator_mode')){
                 unset($form_data['data']['user_id']);
             }else{
-                $form_data['data']['user_id']['value'] = $user_id;
+                if ( !$this->allowChangeUserId() ) {
+                    $form_data['data']['user_id']['value'] = $user_id;
+                }
             }
         }
-        
+
 
         $y_id = '';
         if (strpos($form_data['data']['youtube']['value'], 'youtube.com') !== FALSE) {
@@ -658,7 +723,7 @@ class data_admin extends Object_Manager {
         }
         return $rs;
     }
-    
+
     function checkUniquety($form_data) {
         $unque_fields = trim($this->getConfigValue('apps.realty.uniq_params'));
         //$unque_fields='city_id,topic_id,price';
@@ -705,12 +770,12 @@ class data_admin extends Object_Manager {
             }
         }
         if (count($uns) > 0) {
-            $this->riseError('Такое объявление уже существует (' . implode(',', $uns) . ')');
+            $this->riseError(Multilanguage::_('ADVUNIQUETY_ERROR', 'system').' ('.implode(',', $uns).')');
             return FALSE;
         }
         return TRUE;
     }
-    
+
     protected function _new_doneAction() {
         /* $rtoken=$_POST['csrftoken'];
           $rhash=$_POST['csrfhash'];
@@ -778,9 +843,11 @@ class data_admin extends Object_Manager {
             }
         }
 
-       
-        $form_data['data']['user_id']['value'] = $user_id;
-        $form_data['data']['user_id']['type'] = 'hidden';
+
+        if ( !$this->allowChangeUserId() ) {
+            $form_data['data']['user_id']['value'] = $user_id;
+            $form_data['data']['user_id']['type'] = 'hidden';
+        }
         $form_data['data']['date_added']['value'] = date('Y-m-d H:i:s', time());
 
 
@@ -843,11 +910,11 @@ class data_admin extends Object_Manager {
         $user_id = $this->getSessionUserId();
         $id = intval($this->getRequestValue('id'));
         $rs = '';
-        
+
         if ( $this->getConfigValue('apps.data.disable_delete_button') ) {
             return _e('Функция удаления отключена');
         }
-        
+
         if (!$this->check_access_to_data($user_id, $id)) {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
@@ -877,7 +944,7 @@ class data_admin extends Object_Manager {
         exit();
         $rs .= $this->grid($user_id, $this->getRequestValue('topic_id'));
         return $rs;
-    }  
+    }
 
     protected function _newAction() {
 
@@ -957,8 +1024,10 @@ class data_admin extends Object_Manager {
             }
         }
         //$form_data['data'] = $data_model->init_model_data_from_request($form_data['data']);
-        $form_data['data']['user_id']['value'] = $user_id;
-        $form_data['data']['user_id']['type'] = 'hidden';
+        if ( !$this->allowChangeUserId() ) {
+            $form_data['data']['user_id']['value'] = $user_id;
+            $form_data['data']['user_id']['type'] = 'hidden';
+        }
         $form_data['data']['active']['value'] = 1;
         if ($this->getConfigValue('enable_special_in_account') != 1) {
             unset($form_data['data']['hot']);
@@ -967,21 +1036,21 @@ class data_admin extends Object_Manager {
         $rs = $this->get_form($form_data['data']);
         return $rs;
     }
-    
+
     function mass_delete_data($table_name, $primary_key, $ids) {
-        
+
         if ( $this->getConfigValue('apps.data.disable_delete_button') ) {
             return _e('Функция удаления отключена');
         }
-        
-        
+
+
         $cuser_id = (int) $_SESSION['user_id'];
-        
+
         if($cuser_id==0){
             return '';
         }
         $errors = '';
-        
+
         if (count($ids) > 0) {
             foreach ($ids as $k => $id) {
                 if (!$this->check_access_to_data($cuser_id, $id)) {
@@ -989,7 +1058,7 @@ class data_admin extends Object_Manager {
                 }
             }
         }
-        
+
         if(count($ids)==0){
             header('location: '.SITEBILL_MAIN_URL.'/account/data/');
             exit();
@@ -1047,12 +1116,16 @@ class data_admin extends Object_Manager {
     function check_access_to_data($user_id, $data_id) {
         $DBC = DBC::getInstance();
         $enable_curator_mode=false;
-        if (1 == $this->getConfigValue('enable_curator_mode')) {
+        if (
+            1 == $this->getConfigValue('enable_curator_mode')
+            or
+            1 == $this->getConfigValue('enable_coworker_mode')
+        ) {
             $enable_curator_mode = true;
             $has_access = 0;
-            
-            if(1 === intval($this->getConfigValue('curator_mode_fullaccess'))){
-                
+
+            if( 1 === intval($this->getConfigValue('curator_mode_fullaccess'))){
+
                 $query = 'SELECT COUNT(d.id) AS _cnt FROM ' . DB_PREFIX . '_data d LEFT JOIN ' . DB_PREFIX . '_user u USING(user_id) WHERE d.id=? AND u.parent_user_id=?';
                 $stmt = $DBC->query($query, array($data_id, $user_id));
                 if ($stmt) {
@@ -1061,7 +1134,15 @@ class data_admin extends Object_Manager {
                         $has_access = 1;
                     }
                 }
-            }else{
+            } elseif ( $this->getConfigValue('apps.data.enable_city_coworker') ) {
+                $has_access = $this->check_coworker_access_by_foreign_key(
+                    'data',
+                    $user_id,
+                    'update',
+                    'id',
+                    $data_id,
+                    'city');
+            } else{
                 $query = 'SELECT COUNT(id) AS _cnt FROM ' . DB_PREFIX . '_cowork WHERE coworker_id=? AND object_type=? AND id=?';
                 $stmt = $DBC->query($query, array($user_id, 'data', $data_id));
                 if ($stmt) {
@@ -1072,18 +1153,18 @@ class data_admin extends Object_Manager {
                 }
             }
 
-            
+
         }
-        
+
         $where=array();
         $where_val=array();
-        
+
         $where[]='`id`=?';
         $where_val[]=$data_id;
         if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
             $where[]='`archived`=0';
         }
-        
+
         if($enable_curator_mode){
             $where[]='(`user_id`=? OR (`user_id`!=? AND 1='.$has_access.'))';
             $where_val[]=$user_id;
@@ -1092,10 +1173,10 @@ class data_admin extends Object_Manager {
             $where[]='`user_id`=?';
             $where_val[]=$user_id;
         }
-        
+
         $query = 'SELECT id FROM ' . DB_PREFIX . '_data WHERE '.implode(' AND ', $where);
         $stmt = $DBC->query($query, $where_val);
-        
+
         if ($stmt) {
             $ar = $DBC->fetch($stmt);
             if ($ar['id'] > 0) {
@@ -1103,7 +1184,7 @@ class data_admin extends Object_Manager {
             }
         }
         return false;
-        
+
         /*$DBC = DBC::getInstance();
         if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
             $query = "SELECT id FROM " . DB_PREFIX . "_data WHERE user_id=? AND id=? AND archived=0";
@@ -1148,20 +1229,20 @@ class data_admin extends Object_Manager {
         }
         return false;
     }
-    
+
     /**
      * Add data
      * @param array $form_data form data
      * @return boolean
      */
     function add_data($form_data, $language_id = 0) {
-        
+
         $moderate_first = false;
-        
+
         if (1 == $this->getConfigValue('moderate_first')) {
             $moderate_first = true;
         }
-        
+
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
 
@@ -1179,13 +1260,13 @@ class data_admin extends Object_Manager {
         if ($this->getConfigValue('special_advert_cost') > 0 and $form_data['hot']['value'] == 1) {
             $need_money += $this->getConfigValue('special_advert_cost');
         }
-        
-        
+
+
         if ($this->getConfigValue('apps.billing.enable')) {
             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/tariff/tariff.xml') and $this->getConfigValue('apps.tariff.enable') and file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/billing/billing.xml')) {
                 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/billing/lib/billing.php');
                 $billing = new Billing();
-                
+
                 $need_money += $billing->getAdvAbonentPayment($_SESSION['user_id']);
 
                 /*if(!$billing->getAdvAbonent($_SESSION['user_id'])){
@@ -1194,7 +1275,7 @@ class data_admin extends Object_Manager {
                 }*/
             }
         }
-        
+
         if ($user_balance < $need_money) {
             $this->riseError('Недостаточно средств на счете для операции. <a href="' . SITEBILL_MAIN_URL . '/account/balance/?do=add_bill_done&bill=' . $need_money . '">Пополнить баланс на ' . $need_money . ' ' . $this->getConfigValue('ue_name') . '</a>');
             return false;
@@ -1233,7 +1314,7 @@ class data_admin extends Object_Manager {
         if ($new_record_id > 0) {
             $this->setUpdatedAtDate($new_record_id);
         }
-        
+
         //если отключено модерирование и у пользователя есть доступ к установке активности
         //и объект подается как активный, тогда производим списание за первый период размещения
         if(!$moderate_first && isset($form_data['active']) && $form_data['active']['value'] == 1){
@@ -1257,13 +1338,13 @@ class data_admin extends Object_Manager {
         if (is_array($ims) && count($ims) > 0) {
             $imgs = array_merge($imgs, $ims);
         }
-        
+
         foreach ($form_data as $form_item) {
             if ($form_item['type'] == 'docuploads') {
                 $imgs_uploads = $this->appendDocUploads('data', $form_item, 'id', $new_record_id);
             }
         }
-        
+
         $mutiitems = array();
         foreach ($form_data as $k => $form_item) {
             if ($form_item['type'] == 'select_by_query_multi') {
@@ -1278,8 +1359,8 @@ class data_admin extends Object_Manager {
                 }
             }
         }
-        
-        
+
+
 
         if (!empty($mutiitems)) {
             $keys = array_keys($mutiitems);
@@ -1375,8 +1456,8 @@ class data_admin extends Object_Manager {
         //echo "new_record_id = $new_record_id<br>";
         //echo $query;
     }
-    
-    
+
+
     private function notifyAboutModerationNeed($id, $action = 'new') {
 
         /* require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
@@ -1530,4 +1611,16 @@ class data_admin extends Object_Manager {
         $this->sendFirmMail($useremail, $from, $subject, $body);
         return;
     }
+
+    function allowChangeUserId() {
+        if ( $this->getConfigValue('apps.data.allow_user_id_change_group_list') != '' ) {
+            $user_group_id = $this->permission->get_user_group_id($this->getSessionUserId());
+            $allow_groups = explode(',', $this->getConfigValue('apps.data.allow_user_id_change_group_list'));
+            if ( in_array($user_group_id, $allow_groups) ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

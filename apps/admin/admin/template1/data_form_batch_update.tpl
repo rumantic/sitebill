@@ -28,7 +28,7 @@ $(document).ready(function(){
 		{$form_element_script}
 	{/foreach}
 {/if}
-<script type="text/javascript" src="{$estate_folder}/apps/system/js/form_tabs.js?v=1"></script>
+<script type="text/javascript" src="{$estate_folder}/apps/system/js/form_tabs.js?v=2"></script>
 {if $form_elements.public|count eq 1}
     <div class="tab-content tab-margin-top">
     {foreach from=$form_elements.public key=tab item=tab_elements}
@@ -41,7 +41,7 @@ $(document).ready(function(){
 						{$element.title}{if $element.required eq 1}<span style="color: red;">*</span>{/if}{if $element.hint!=''} <a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-xs" data-content="{$element.hint}"> <i class="fa fa-question"></i></a>{/if}
 						{if $element.html_array.src ne ''}<img id="capcha_img" class="capcha_img" src="{$element.html_array.src}" width="180" height="80" /><br/>{/if}
 						{$element.html_array.refresh}
-						
+
 						{$element.html_array.input}
 						{$element.html_array.hidden}
 						{$element.html_array.js_string}
@@ -91,7 +91,7 @@ $(document).ready(function(){
 					</div>
 					{/foreach}
 					</div>
-					
+
 				{elseif $bootstrap_version=='4md' && $smarty.const.ADMIN_MODE!=1}
 					{foreach from=$tab_elements item=element}
 					<div class="form_element form-group" alt="{$element.name}">
@@ -115,9 +115,9 @@ $(document).ready(function(){
 					</div>
 					{/foreach}
 				{/if}
-	{/foreach}    
+	{/foreach}
 	</div>
-	
+
 {else}
 
 	<!-- USUAL FORM WITH TABS -->
@@ -127,26 +127,26 @@ $(document).ready(function(){
 			<li role="presentation" {if $smarty.foreach.tbf.iteration==1}class="active"{/if}><a href="#t{$tab_id}" aria-controls="{$tab_id}" role="tab" data-toggle="tab">{$tab}</a></li>
 		{/foreach}
 		</ul>
-		
+
 		<div class="tab-content">
 		{foreach name=tbf from=$form_elements.public key=tab item=tab_elements}
-		
+
 			{assign var=tab_id value=md5($tab)}
 			<div role="tabpanel" class="tab-pane fade in{if $smarty.foreach.tbf.iteration==1} active{/if}" id="t{$tab_id}">
 				{if $bootstrap_version=='3' && $smarty.const.ADMIN_MODE!=1}
                    <div style="overflow: hidden;">
-					
+
 					{foreach from=$tab_elements item=element}
-                        
-                       
+
+
 					<div class="{if $element.type=='textarea' or $element.type=='textarea_editor' or $element.type=='uploads' or $element.type=='docuploads' or $element.type=='geodata'}col-md-12{else}col-md-12{/if}" alt="{$element.name}">
-                        
+
                     {if $element.type=='captcha'}
                         <div class="form-group">
                             <div class="col-sm-1 control-label">
                                 <input type="checkbox" name="batch_update[{$element.name}]" value="1"{if isset($selected_fields[$element.name])} checked="checked"{/if} />
                             </div>
-							<label for="{$element.id}" class="col-sm-2 control-label">                                
+							<label for="{$element.id}" class="col-sm-2 control-label">
                                 {$element.title}
                                 {if $element.required eq 1}<span style="color: red;">*</span>{/if}
                                 {if $element.hint!=''} <a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-xs" data-content="{$element.hint}"> <i class="fa fa-question"></i></a>{/if}
@@ -160,13 +160,13 @@ $(document).ready(function(){
                                 {$element.html_array.js_string}
                             </div>
 						</div>
-				
+
 					{else if  $element.type=='geodata'}
 						<div class="form-group">
                             <div class="col-sm-1 control-label">
                                 <input type="checkbox" name="batch_update[{$element.name}]" value="1"{if isset($selected_fields[$element.name])} checked="checked"{/if} />
                             </div>
-							<label for="{$element.id}" class="col-sm-2 control-label">                                
+							<label for="{$element.id}" class="col-sm-2 control-label">
                                 {$element.title}
                                 {if $element.required eq 1}<span style="color: red;">*</span>{/if}
                                 {if $element.hint!=''} <a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-xs" data-content="{$element.hint}"> <i class="fa fa-question"></i></a>{/if}
@@ -175,12 +175,12 @@ $(document).ready(function(){
                                 {$element.html}
                             </div>
 						</div>
-						
+
 					{else if  $element.type=='checkbox'}
                         <div class="form-group">
                             <div class="col-sm-1 control-label"><input type="checkbox" name="batch_update[{$element.name}]" value="1"{if isset($selected_fields[$element.name])} checked="checked"{/if} /></div>
 							<label for="{$element.id}" class="col-sm-2 control-label">
-                                
+
                                 {$element.title}{if $element.required eq 1}<span style="color: red;">*</span>{/if}{if $element.hint!=''} <a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-xs" data-content="{$element.hint}"> <i class="fa fa-question"></i></a>{/if}</label>
 							<div class="col-sm-9">
                                 <div class="checkbox">
@@ -190,14 +190,14 @@ $(document).ready(function(){
                                 </div>
                             </div>
 						</div>
-						
+
 					{else}
 						<div class="form-group">
                             <div class="col-sm-1 control-label">
                                 <input type="checkbox" name="batch_update[{$element.name}]" value="1"{if isset($selected_fields[$element.name])} checked="checked"{/if} />
                             </div>
 							<label for="{$element.id}" class="col-sm-2 control-label">
-                                
+
                                 {$element.title}{if $element.required eq 1}<span style="color: red;">*</span>{/if}{if $element.hint!=''} <a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-xs" data-content="{$element.hint}"> <i class="fa fa-question"></i></a>{/if}</label>
 							<div class="col-sm-9">
                                 {$element.html}
@@ -209,9 +209,9 @@ $(document).ready(function(){
 						</div>
 					{/if}
 					</div>
-                    
+
 					{/foreach}
-					
+
 					</div>
 				{elseif $bootstrap_version=='4md'}
 					{foreach from=$tab_elements item=element}
@@ -243,7 +243,7 @@ $(document).ready(function(){
 			</div>
 		{/foreach}
 		</div>
-		
+
 		{literal}
 		<script>
 		 $(document).ready(function(){$('#form_tab a:first').tab('show');});

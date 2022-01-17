@@ -1,4 +1,8 @@
 <?php
+if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/local/apps/system/lib/sitebill_krascap.php') ) {
+    require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/local/apps/system/lib/sitebill_krascap.php';
+    return;
+}
 
 /**
  * SiteBill sitebill.ru interface class
@@ -11,6 +15,21 @@ class SiteBill_Krascap extends SiteBill {
     protected $_grid_constructor;
 
     //protected $currentCommand='';
+
+    function isKernelEnable() {
+        return false;
+    }
+
+    function getBestAgent ( $best_checkbox_name ) {
+        require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/users/user_object_manager.php';
+        $user_object_manager = new User_Object_Manager();
+        $user_id = $user_object_manager->get_id_by_filter($best_checkbox_name, 1);
+        $best_agent = $user_object_manager->load_by_id($user_id);
+        if ( $best_agent ) {
+            $this->template->assign('best_agent', $best_agent);
+        }
+    }
+
 
     /**
      * Constructor
@@ -208,7 +227,22 @@ class SiteBill_Krascap extends SiteBill {
             require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/apps/apps_processor_local.php');
             require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $theme . '/main/main.php');
             $frontend_main = new frontend_main();
-
+            if ( file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/bridge/bridge.xml') ) {
+                $kernel = new \bridge\Http\Kernel();
+                $run_kernel = false;
+                if (
+                    $frontend_main->isKernelEnable() ||
+                    (
+                        preg_match('/^'.$this->getConfigValue('apps.admin3.alias').'/', $REQUESTURIPATH)
+                    )
+                ) {
+                    $run_kernel = true;
+                }
+                $kernel->handle(!$run_kernel);
+                if ( $run_kernel ) {
+                    exit;
+                }
+            }
             return $frontend_main->main();
 
         } else {
@@ -3114,27 +3148,27 @@ class SiteBill_Krascap extends SiteBill {
 
 
         if (NULL !== $this->getRequestValue('square_min')) {
-            $params['square_min'] = (int) $this->getRequestValue('square_min');
+            $params['square_min'] = (int) str_replace(' ', '', $this->getRequestValue('square_min'));
         }
 
         if (NULL !== $this->getRequestValue('square_max')) {
-            $params['square_max'] = (int) $this->getRequestValue('square_max');
+            $params['square_max'] = (int) str_replace(' ', '', $this->getRequestValue('square_max'));
         }
 
         if (NULL !== $this->getRequestValue('live_square_min')) {
-            $params['live_square_min'] = (int) $this->getRequestValue('live_square_min');
+            $params['live_square_min'] = (int) str_replace(' ', '', $this->getRequestValue('live_square_min'));
         }
 
         if (NULL !== $this->getRequestValue('kitchen_square_min')) {
-            $params['kitchen_square_min'] = (int) $this->getRequestValue('kitchen_square_min');
+            $params['kitchen_square_min'] = (int) str_replace(' ', '', $this->getRequestValue('kitchen_square_min'));
         }
 
         if (NULL !== $this->getRequestValue('kitchen_square_max')) {
-            $params['kitchen_square_max'] = (int) $this->getRequestValue('kitchen_square_max');
+            $params['kitchen_square_max'] = (int) str_replace(' ', '', $this->getRequestValue('kitchen_square_max'));
         }
 
         if (NULL !== $this->getRequestValue('live_square_max')) {
-            $params['live_square_max'] = (int) $this->getRequestValue('live_square_max');
+            $params['live_square_max'] = (int) str_replace(' ', '', $this->getRequestValue('live_square_max'));
         }
 
         if (NULL !== $this->getRequestValue('is_phone')) {
@@ -3272,6 +3306,7 @@ class SiteBill_Krascap extends SiteBill {
 
     function map($only_data = false) {
         $data = array();
+
         if ($this->getConfigValue('apps.geodata.enable') != 1) {
             $this->template->assign('_geo_data_hide', 1);
             return json_encode($data);
@@ -3360,6 +3395,7 @@ class SiteBill_Krascap extends SiteBill {
             $data[$k]['parent_category_url'] = $d['parent_category_url'];
             $data[$k]['id'] = $d['id'];
         }
+
         if ($only_data) {
             return json_encode($data);
         }

@@ -46,6 +46,7 @@
 
         <script type="text/javascript" src="{$MAIN_URL}/apps/system/js/jquery/jquery.3.3.1.js"></script>
         <script type="text/javascript" src="{$MAIN_URL}/apps/system/js/jquery/jquery-migrate.min.js"></script>
+        <script src="{$MAIN_URL}/apps/system/js/jquery.ui.touch-punch.min.js"></script>
 
         <script src="{$MAIN_URL}/apps/system/js/bootstrap/js/bootstrap.min.js"></script>
 
@@ -67,18 +68,25 @@
         <script type="text/javascript" src="{$MAIN_URL}/apps/system/js/jquery.cookie.js"></script>
         <link rel="stylesheet" href="{$MAIN_URL}/apps/system/css/jquery-ui.custom.css" />
         <link rel="stylesheet" href="{$MAIN_URL}/apps/system/css/mycombobox.css" />
+        <link rel="stylesheet" href="{$MAIN_URL}/apps/admin/admin/template1/assets/css/jquery.gritter.css" />
+
+        <script>
+            var yandex_map_version = '2.1';
+        </script>
+
+
 
 <!-- <script type="text/javascript" src="{$MAIN_URL}/js/jquery.ui.datepicker.js"></script> -->
         {if $ADMIN_NO_MAP_PROVIDERS==1}
         {else}
             {if $map_type=='yandex'}
-                <script type="text/javascript" src="https://api-maps.yandex.ru/2.0-stable/?load=package.standard&lang=ru-RU"></script>
+                <script type="text/javascript" src="https://api-maps.yandex.ru/2.1/?lang=ru-RU{if $y_api_key!=''}&apikey={$y_api_key}{/if}"></script>
             {elseif $map_type=='google'}
                 <script type="text/javascript" src="https://maps.google.com/maps/api/js{if $g_api_key!=''}?key={$g_api_key}{/if}"></script>
             {elseif $map_type=='leaflet_osm'}
                 <link rel="stylesheet" type="text/css" href="{$estate_folder}/apps/system/js/leaflet/leaflet.css" />
                 <script type="text/javascript" src="{$estate_folder}/apps/system/js/leaflet/leaflet.js"></script>
-                
+
             {/if}
         {/if}
         <script src="{$assets_folder}/assets/js/ace-extra.min.js"></script>
@@ -93,6 +101,9 @@
         <script src="{$assets_folder}/assets/js/flot/jquery.flot.pie.min.js"></script>
         <script src="{$assets_folder}/assets/js/flot/jquery.flot.resize.min.js"></script>
         <script src="{$assets_folder}/assets/js/bootstrap-tag.min.js"></script>
+        <script src="{$assets_folder}/assets/js/jquery.gritter.min.js"></script>
+        <script src="{$assets_folder}/assets/js/bootbox.min.js"></script>
+
 
         <!-- ace scripts -->
 
@@ -127,13 +138,26 @@
         <script>
             var estate_folder = '{$estate_folder}';
         </script>
+        {if isset($debugbarRenderer)}
+            {$debugbarRenderer->renderHead()}
+        {/if}
 
     </head>
     <body onload="runDialog('homescript_etown_ru'); {$onload}" class="">
+    {if $enable_vue}<app id="vueapp">{/if}
     {if $iframe_mode}
         {include file='main_body_object_only.tpl'}
     {else}
         {include file='main_body_classic.tpl'}
     {/if}
+    {if isset($debugbarRenderer)}
+        {$debugbarRenderer->render()}
+    {/if}
+        <notifications/>
+        {if $enable_vue}
+        <script src="{$MAIN_URL}/apps/vue/dist/js/main.js"></script>
+    </app>
+    {/if}
+
     </body>
 </html>

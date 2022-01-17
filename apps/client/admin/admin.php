@@ -6,13 +6,20 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
 class client_admin extends Object_Manager {
+    use \system\traits\blade\BladeTrait;
 
     public $client_topic_id = null;
+
+    /**
+     * @var Permission
+     */
+    protected $permission;
 
     /**
      * Constructor
      */
     function __construct() {
+        $this->enable_angular();
         $this->SiteBill();
         Multilanguage::appendAppDictionary('client');
 
@@ -20,6 +27,10 @@ class client_admin extends Object_Manager {
         $this->action = 'client';
         $this->primary_key = 'client_id';
         $this->app_title = Multilanguage::_('APP_TITLE', 'client');
+
+        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
+        $this->permission = new Permission();
+
 
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
@@ -35,6 +46,27 @@ class client_admin extends Object_Manager {
         $config_admin->addParamToConfig('apps.client.create_client_on_user_register', '0', 'Создавать запись в таблице client с данными пользователя при регистрации', 1);
         $config_admin->addParamToConfig('apps.client.antispam_disable', '0', 'Отключить проверку на спам-сообщения в заявках (не рекомендуется)', 1);
         $config_admin->addParamToConfig('apps.client.hide_user_id_on_frontend', '0', 'apps.client.hide_user_id_on_frontend (dev param)', 1);
+
+        $config_admin->addParamToConfig(
+            'apps.client.front_manager_alias',
+            'clientmanager',
+            'Алиас для менеджера клиентов на фронте',
+            0);
+        $config_admin->addParamToConfig(
+            'apps.client.front_manager.event.enable',
+            '0',
+            'Уведомлять админа о событии VISIT',
+            1);
+        $config_admin->addParamToConfig(
+            'apps.client.thankyou_url',
+            '',
+            'Адрес страницы, куда отправлять пользователя после успешной заявки (например, thankyou). Если пусто, то редиректа не будет.');
+
+        $config_admin->addParamToConfig(
+            'apps.client.default_grid_item',
+            'client_id,fio,phone,user_id',
+            'Список колонок в таблице клиентов по-умолчанию (для личного кабинета)');
+
 
 
         //$this->install();
@@ -66,12 +98,48 @@ class client_admin extends Object_Manager {
 
 
         $this->data_model = $form_data;
-        if ( isset($this->data_model[$this->table_name]['user_id']) and $this->getConfigValue('apps.client.hide_user_id_on_frontend') ) {
+        if (
+            isset($this->data_model[$this->table_name]['user_id']) and
+            $this->getConfigValue('apps.client.hide_user_id_on_frontend') and
+            !$this->permission->is_admin($this->getSessionUserId())
+        ) {
             $this->data_model[$this->table_name]['user_id']['type'] = 'hidden';
             $this->data_model[$this->table_name]['user_id']['name'] = 'user_id';
             $this->data_model[$this->table_name]['user_id']['value'] = $this->getSessionUserId();
         }
 
+        $this->add_apps_local_and_root_resource_paths('client');
+
+
+    }
+
+    /**
+     * Метод для использования встраивания форм через хелпер
+     * @param $params
+     * @return string
+     */
+    function imbuildform($params){
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/client/site/site.php';
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/client/admin/client_order.php';
+        $Client_Order = new Client_Order();
+        $model = $params['form'];
+        $view = $params['view'];
+
+
+        $form_data = $Client_Order->loadOrderModel($model);
+
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
+        $data_model = new Data_Model();
+
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/form/form_generator.php');
+        $form_generator = new Form_Generator();
+
+        $el = $form_generator->compile_form_elements($form_data);
+        if ($this->getConfigValue('post_form_agreement_enable') == 1) {
+            $el['agreement_block'] = $form_generator->getAgreementFormBlock();
+        }
+
+        return $this->view($view, ['form_data' => $el]);
 
     }
 
@@ -220,6 +288,7 @@ class client_admin extends Object_Manager {
             $rs = $this->get_form($form_data[$this->table_name], 'new');
         } else {
             $new_record_id = $this->add_data($form_data[$this->table_name], $this->getRequestValue('language_id'));
+            $this->set_new_record_id($new_record_id);
             if ($this->getError()) {
                 $form_data['data'] = $this->removeTemporaryFields($form_data['data'], $remove_this_names);
                 $rs = $this->get_form($form_data[$this->table_name], 'new');
@@ -266,6 +335,17 @@ class client_admin extends Object_Manager {
         $form_data = $this->data_model;
 
         $default_request_items['client_id'] = $this->getRequestValue($this->primary_key);
+
+        if ( $this->getConfigValue('apps.comment.enable') ) {
+            $this->template->assert('apps_comment_on', 1);
+
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/comment/admin/admin.php';
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/comment/site/site.php';
+            $comment_site = new comment_site();
+            $comment_site->generateCommentPanel($this->getSessionUserId(), 'client', $this->getRequestValue($this->primary_key));
+        }
+
+
         $default_request_string = array();
         foreach ( $default_request_items as $key => $value ) {
             $default_request_string[] = "default_request[$key]=$value";
@@ -353,9 +433,15 @@ class client_admin extends Object_Manager {
     }
 
     function grid($params = array(), $default_params = array()) {
+        if ( self::$replace_grid_with_angular ) {
+            return $this->angular_grid();
+        }
+
         if (1 == intval($this->getConfigValue('apps.client.order_mode'))) {
             return $this->grid_order_mode();
         }
+
+
 
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/grid.php');
@@ -521,7 +607,7 @@ class client_admin extends Object_Manager {
         if (1 == $this->getConfigValue('apps.geodata.enable')) {
             $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/geodata/js/geodata.js"></script>';
         }
-        $rs .= '<form method="post" class="form-horizontal" action="index.php" enctype="multipart/form-data" id="client_form">';
+        $rs .= '<form method="post" class="form-horizontal" action="'.$action.'" enctype="multipart/form-data" id="client_form">';
 
         if ($this->getError()) {
             $smarty->assign('form_error', $form_generator->get_error_message_row($this->GetErrorMessage()));

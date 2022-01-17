@@ -53,25 +53,15 @@ class page_admin extends Object_Manager {
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
 
-        if (!$config_admin->check_config_item('apps.page.per_page')) {
-            $config_admin->addParamToConfig('apps.page.per_page', '3', 'Количество объектов на страницу');
-        }
-
-        if (!$config_admin->check_config_item('apps.page.count_on_main')) {
-            $config_admin->addParamToConfig('apps.page.count_on_main', '3', 'Количество объектов на главной');
-        }
-        
-        if (!$config_admin->check_config_item('apps.page.blog_enable')) {
-            $config_admin->addParamToConfig('apps.page.blog_enable', '1', 'Включить вывод /blog/', 1);
-        }
-        if (!$config_admin->check_config_item('apps.page.recommendations_enable')) {
-            $config_admin->addParamToConfig('apps.page.recommendations_enable', '1', 'Включить вывод /recommendations/', 1);
-        }
-        
+        $config_admin->addParamToConfig('apps.page.enable', '1', 'Включить Apps.Page', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.page.per_page', '3', 'Количество объектов на страницу');
+        $config_admin->addParamToConfig('apps.page.count_on_main', '3', 'Количество объектов на главной');
+        $config_admin->addParamToConfig('apps.page.blog_enable', '1', 'Включить вывод /blog/', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.page.recommendations_enable', '1', 'Включить вывод /recommendations/', SConfig::$fieldtypeCheckbox);
         
     }
     
-    public function _sitemap_pages_count($sitemap) {
+    public function sitemap_pages_count($sitemap) {
         $cnt = 0;
         $DBC = DBC::getInstance();
         $query = 'SELECT is_service FROM ' . DB_PREFIX . '_page LIMIT 1';
@@ -182,87 +172,18 @@ class page_admin extends Object_Manager {
         return false;
     }
 
-    function add_data($form_data, $language_id = 0) {
-        if (isset($form_data['uri']) && $form_data['uri']['value'] == '') {
+    public function _before_check_action($form_data, $type = 'new'){
+        $form_data = parent::_before_check_action($form_data, $type);
+        if (isset($form_data['uri']) && $form_data['uri']['value'] == '' && isset($form_data['title']) && $form_data['title']['value'] != '') {
             $form_data['uri']['value'] = $this->transliteMe($form_data['title']['value']);
-        }
-
-        if (isset($form_data['uri']['value'])) {
             $form_data['uri']['value'] = preg_replace('/[^a-zA-Z0-9_\/.-]/', '', $form_data['uri']['value']);
         }
-        
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
-        $data_model = new Data_Model();
-        //$query = $data_model->get_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data, $language_id);
-        $DBC = DBC::getInstance();
-        $queryp = $data_model->get_prepared_insert_query(DB_PREFIX . '_' . $this->table_name, $form_data, $language_id);
-        $stmt = $DBC->query($queryp['q'], $queryp['p'], $row, $success_mark);
-        if (!$success_mark) {
-            $this->riseError($DBC->getLastError());
-            return false;
-        }
-
-        $new_record_id = $DBC->lastInsertId();
-        $imgs = $this->editImageMulti($this->action, $this->table_name, $this->primary_key, $new_record_id);
-        
-        foreach ($form_data as $form_item) {
-            if ($form_item['type'] == 'uploads') {
-                $imgs_uploads = $this->appendUploads($this->table_name, $form_item, $this->primary_key, $new_record_id);
-            }
-        }
-        foreach ($form_data as $form_item) {
-            if ($form_item['type'] == 'docuploads') {
-                $imgs_uploads = $this->appendDocUploads($this->table_name, $form_item, $this->primary_key, $new_record_id);
-            }
-        }
-        
-        return $new_record_id;
-    }
-
-    function edit_data($form_data, $language_id = 0, $primary_key_value = false) {
-        
-        $id = $this->getRequestValue($this->primary_key);
-        
-        if (isset($form_data['uri']) && $form_data['uri']['value'] == '') {
-            $form_data['uri']['value'] = $this->transliteMe($form_data['title']['value']);
-        }
-
-        if (isset($form_data['uri']['value'])) {
-            $form_data['uri']['value'] = preg_replace('/[^a-zA-Z0-9_\/.-]/', '', $form_data['uri']['value']);
-        }
-        
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
-        $data_model = new Data_Model();
-        if ($primary_key_value) {
-            $queryp = $data_model->get_prepared_edit_query(DB_PREFIX . '_' . $this->table_name, $this->primary_key, $primary_key_value, $form_data, $language_id);
-        } else {
-            $queryp = $data_model->get_prepared_edit_query(DB_PREFIX . '_' . $this->table_name, $this->primary_key, $id, $form_data, $language_id);
-        }
-        $DBC = DBC::getInstance();
-        $stmt = $DBC->query($queryp['q'], $queryp['p'], $row, $success);
-        if (!$success) {
-            $this->riseError($DBC->getLastError());
-            return false;
-        }
-
-        $imgs = $this->editImageMulti($this->action, $this->table_name, $this->primary_key, $id);
-        
-        foreach ($form_data as $form_item) {
-            if ($form_item['type'] == 'uploads') {
-                $imgs_uploads = $this->appendUploads($this->table_name, $form_item, $this->primary_key, $id);
-                //$this->set_imgs($imgs_uploads);
-            }
-        }
-        foreach ($form_data as $form_item) {
-            if ($form_item['type'] == 'docuploads') {
-                $imgs_uploads = $this->appendDocUploads($this->table_name, $form_item, $this->primary_key, $id);
-            }
-        }
-        
-        return $id;
+        return $form_data;
     }
 
     function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
+
+        $rs = '';
 
         $_SESSION['allow_disable_root_structure_select'] = true;
         global $smarty;

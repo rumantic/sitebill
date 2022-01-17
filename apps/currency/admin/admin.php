@@ -472,7 +472,7 @@ class currency_admin extends Object_Manager {
 
         $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $this->table_name . ' ORDER BY `sort_order`';
 
-        $stmt = $DBC->query($query, $where_p);
+        $stmt = $DBC->query($query);
 
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {

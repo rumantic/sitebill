@@ -1,9 +1,12 @@
+<?php
+require_once('../system/bootstrap.php');
+?>
 <!doctype html>
 <html lang="ru">
 
     <head>
 
-        <title>Sitebill</title>
+        <title><?=$sitebill->getConfigValue('site_title')?></title>
 
         <meta charset="utf-8">
         <meta name="description" content="">
@@ -198,9 +201,6 @@
     <body>
     <fuse-splash-screen id="fuse-splash-screen">
         <div class="center">
-            <div class="logo">
-                    <img width="43" src="https://www.sitebill.ru/storage/icons/dragon.png"> Sitebill
-            </div>
             <!-- Material Design Spinner -->
             <div class="spinner-wrapper">
                 <div class="spinner">

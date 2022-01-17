@@ -1,12 +1,13 @@
 ClientOrder={
 	init_form: function(container_id, model, options, custom_template, callback){
 		var options = options || {/*horizontal: false*/};
-        
+
         custom_template = custom_template || false;
         callback = callback || false;
-		
+
 		var container=$('#'+container_id);
 		if(container.length==0){
+			console.error('container #'+container_id+' not found');
 			return;
 		}
 		var model=model;
@@ -16,7 +17,7 @@ ClientOrder={
         data.options=options;
         data._app='client';
         if(custom_template){
-           data.custom_template=custom_template; 
+           data.custom_template=custom_template;
         }
 		$.ajax({
 			url: estate_folder+'/js/ajax.php',
@@ -25,7 +26,7 @@ ClientOrder={
 			type: 'post',
 			success: function(html){
 				container.html(html);
-				
+
 				var form=container.find('form');
                 //form.find('.g-recaptcha');
                 form.find('.g-recaptcha').each(function(index, el) {
@@ -36,7 +37,7 @@ ClientOrder={
                 }
 				/*if(options.horizontal){
 					form.removeClass('form-inline').addClass('form-horizontal');
-				}*/								
+				}*/
 				var errorb=$('<p class="error"></p>');
 				errorb.hide();
 				form.prepend(errorb);
@@ -57,7 +58,8 @@ ClientOrder={
 		var data=SitebillCore.serializeFormJSON(form);
 		data.action='save_order_form';
 		data.model=model;
-		data._app='client';			
+		data._app='client';
+		data._owner_user_id = $('#_owner_user_id').val();
 		$.ajax({
 			url: estate_folder+'/js/ajax.php',
 			data: data,
@@ -66,7 +68,7 @@ ClientOrder={
 			success: function(json){
 				if(json.status=='ok'){
 					form.replaceWith($('<div>'+json.message+'</div>'));
-                    
+
 					if(typeof redirect_after !== 'undefined'){
 						window.location.replace(redirect_after);
 					}
@@ -107,7 +109,7 @@ ClientOrder={
 			});
 		}
 		errorb.hide();
-		
+
 		form.submit(function(e){
 			ClientOrder.save_form($(this), model, options.redirect_after);
 			e.preventDefault();

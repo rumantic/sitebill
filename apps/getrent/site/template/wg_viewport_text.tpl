@@ -1,1 +1,0 @@
-<tr><td><b>{$wg_item.title}</b></td><td>{$wg_item.value|nl2br}</td></tr>

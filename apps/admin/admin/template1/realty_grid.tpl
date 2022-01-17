@@ -200,12 +200,30 @@ $(document).ready(function(){
 		tag_input.on('added', function (e, value) {
 			tag_array.push(value);
 	   		datastr[$(this).attr('name')] = tag_array;
-	        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)}).done(function(result_items){location.reload();});
+			var body = {tags_array:datastr};
+	        $.ajax(
+	        		{
+						type: 'POST',
+						url: estate_folder+'/js/ajax.php?action=get_tags&do=set',
+						data: body
+	        		}
+			).done(
+					function(result_items){location.reload();}
+			);
 		})
 		tag_input.on('removed', function (e, value) {
 	   		var item_index = datastr[$(this).attr('name')].indexOf(value);
 	   		datastr[$(this).attr('name')].splice(item_index, 1);
-	        $.ajax({url: estate_folder+'/js/ajax.php?action=get_tags&do=set&tags_array='+JSON.stringify(datastr)}).done(function(result_items){location.reload();});
+			var body = {tags_array:datastr};
+	        $.ajax(
+	        		{
+						type: 'POST',
+						url: estate_folder+'/js/ajax.php?action=get_tags&do=set',
+						data: body
+	        		}
+			).done(
+					function(result_items){location.reload();}
+			);
 		})
 	});
 	$('.ranged-tags').each(function(e){

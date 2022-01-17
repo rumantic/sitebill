@@ -76,7 +76,20 @@ $(document).ready(function () {
         dataType: 'json',
         success: function (json) {
             form_field_view_topic = json;
-            checkFormFieldsVisibility($('#topic_id').val(), form_field_view_topic, $('#topic_id').parents('form').eq(0));
+            let form = $('#topic_id').parents('form').eq(0);
+            let disable_checkFormFieldsVisibility = false;
+            let form_model_name = form.find('[name=action]').val();
+
+            // Защита от обновления видимости элементов формы, в зависимости от названия модели
+            if ( form_field_view_topic._meta_model_info ) {
+                if ( form_field_view_topic._meta_model_info.model_name != form_model_name ) {
+                    disable_checkFormFieldsVisibility = true;
+                }
+            }
+
+            if ( !disable_checkFormFieldsVisibility ) {
+                checkFormFieldsVisibility($('#topic_id').val(), form_field_view_topic, $('#topic_id').parents('form').eq(0));
+            }
         }
     });
 
@@ -166,7 +179,7 @@ $(document).ready(function () {
                        setVal(parseInt(prev_el.data('id'), 10));
                     }
 				}
-				
+
 			};
 			function setVal(val){
 				inp.val(val);
@@ -197,22 +210,24 @@ function checkFormFieldsVisibility(current_topic_id, topic_array, context) {
     if (typeof topic_array != 'undefined') {
         for (var key in topic_array) {
             var vis = true;
-            if (topic_array[key].topic_id[0] == 'all') {
-                vis = vis && true;
-            } else if ($.inArray(current_topic_id, topic_array[key].topic_id) === -1) {
-                vis = vis && false;
-            }
-            if (typeof topic_array[key].optype != 'undefined') {
-                if (topic_array[key].optype[0] == 'all') {
+            if ( key != '_meta_model_info' ) {
+                if (topic_array[key].topic_id[0] == 'all') {
                     vis = vis && true;
-                } else if ($.inArray(current_optype_id, topic_array[key].optype) === -1) {
+                } else if ($.inArray(current_topic_id, topic_array[key].topic_id) === -1) {
                     vis = vis && false;
                 }
-            }
-            if (!vis) {
-                context.find('[alt=' + key + ']').hide();
-            } else {
-                context.find('[alt=' + key + ']').show();
+                if (typeof topic_array[key].optype != 'undefined') {
+                    if (topic_array[key].optype[0] == 'all') {
+                        vis = vis && true;
+                    } else if ($.inArray(current_optype_id, topic_array[key].optype) === -1) {
+                        vis = vis && false;
+                    }
+                }
+                if (!vis) {
+                    context.find('[alt=' + key + ']').hide();
+                } else {
+                    context.find('[alt=' + key + ']').show();
+                }
             }
         }
     }

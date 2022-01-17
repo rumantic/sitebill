@@ -27,9 +27,9 @@ class sitebill_admin extends Object_Manager {
         $this->apps_dir = SITEBILL_DOCUMENT_ROOT.'/apps';
         $this->SiteBill();
         $this->filesystem = new Sitebill_Filesystem($arg);
-        
+
     }
-    
+
     function ajax(){
     	if ( $this->getRequestValue('action') == 'ajax_update_app' ) {
     		$app_name = $this->getRequestValue('app_name');
@@ -43,14 +43,30 @@ class sitebill_admin extends Object_Manager {
     		return json_encode($apps);
     	}
     }
-    
+
+    function post_update ( $app_name ) {
+        if ( is_file(SITEBILL_DOCUMENT_ROOT.'/apps/'.$app_name.'/update.php') ) {
+            require_once (SITEBILL_DOCUMENT_ROOT.'/apps/'.$app_name.'/update.php');
+            $update_class_name = $app_name.'_update';
+            $update_app_class = new $update_class_name;
+            $secret_key = '';
+            $rs = $update_app_class->main($secret_key);
+        } else {
+            $rs = 'update for '.$app_name.' not defined';
+        }
+        return $rs;
+
+    }
+
     function main(){
         if ( $this->getRequestValue('do') == 'update' ) {
             $rs = $this->update_app( $this->getRequestValue('app') );
+        } elseif ( $this->getRequestValue('do') == 'post_update' ) {
+            $rs = $this->post_update($this->getRequestValue('app'));
         } elseif ( $this->getRequestValue('do') == 'update_all' ) {
         	$apps = $this->load_apps();
         	$license_key = $this->getConfigValue('license_key');
-        	 
+
         	//$update_info['apps'] = $apps;
         	$update_info['license_key'] = $license_key;
         	$update_info['encoding'] = SITE_ENCODING;
@@ -62,21 +78,21 @@ class sitebill_admin extends Object_Manager {
         	$rs .= '<script type="text/javascript">
         var update_info_json_string = \''.$json_string.'\';
 </script>';
-        	 
+
             $rs .= $this->update_all( $this->getRequestValue('secret_key') );
         } elseif ( $this->getRequestValue('do') == 'install' ) {
             $rs = $this->install_app( $this->getRequestValue('app') );
         } else {
             $apps = $this->load_apps();
             $license_key = $this->getConfigValue('license_key');
-           
+
             //$update_info['apps'] = $apps;
             $update_info['license_key'] = $license_key;
             $update_info['encoding'] = SITE_ENCODING;
             $update_info['host'] = 'http://'.$_SERVER['HTTP_HOST'].SITEBILL_MAIN_URL;
             $update_info['apps'] = $this->load_apps();
             $json_string = json_encode($update_info);
-            
+
             //echo 'license key = '.$license_key.'<br>';
             //echo $json_string.'<br>';
             /*
@@ -85,13 +101,13 @@ class sitebill_admin extends Object_Manager {
             echo '</pre>';
             */
            /* $rs .= '<script type="text/javascript">
-        var apps_status = \''.json_encode($apps).'\'; 
+        var apps_status = \''.json_encode($apps).'\';
 </script>';*/
             $rs .= '<div id="admin_area">';
             $rs .= Multilanguage::_('REGISTER_FOR_ACCESS','sitebill').' <a href="http://www.sitebill.ru/">sitebill.ru</a>';
             $rs .= '</div>';
             $rs .= $this->get_js_update_function($json_string);
-            
+
             $check_rs = $this->check_system_requirements_failed();
             if ( $check_rs ) {
                 $rs .= $check_rs;
@@ -104,7 +120,7 @@ class sitebill_admin extends Object_Manager {
         $this->clear_apps_cache();
         return $rs_new;
     }
-    
+
     function check_system_requirements_failed () {
         $rs = false;
         $rs_new = false;
@@ -113,10 +129,10 @@ class sitebill_admin extends Object_Manager {
         }
         if ( !function_exists('curl_version') ) {
             $rs .= Multilanguage::_('NEED_SUPPORT','sitebill').' <a href="http://php.net/manual/ru/book.curl.php" target="_blank">CURL-extension</a><br>';
-        }     
+        }
         if ( !is_writable(SITEBILL_DOCUMENT_ROOT.'/apps') ) {
             $rs .= Multilanguage::_('NO_WRITING_ACCESS','sitebill').' '.SITEBILL_DOCUMENT_ROOT.'/apps'.'<br>';
-        }   
+        }
         if ( $rs ) {
             $rs_new = '<p class="error"><br>'.Multilanguage::_('FOR_AUTOUPDATE','sitebill').':<br>';
             $rs_new .= $rs;
@@ -124,13 +140,14 @@ class sitebill_admin extends Object_Manager {
         }
         return $rs_new;
     }
-    
+
     function update_all () {
     	$rs = $this->template->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/sitebill/admin/template/update_wizard.tpl');
     	return $rs;
     }
-    
+
     function update_app_js ( $app_name, $secret_key ) {
+        $this->pre_update($app_name);
     	$this->download($app_name, $secret_key);
     	if ( $this->getError() ) {
     		$ra['error'] = $this->GetErrorMessage();
@@ -146,16 +163,17 @@ class sitebill_admin extends Object_Manager {
     	}
     	return $ra;
     }
-    
+
     function update_app ( $app_name, $secret_key = '' ) {
     	if ( $secret_key == '' ) {
     		$secret_key = $this->getRequestValue('secret_key');
     	}
-        $rs .= sprintf(Multilanguage::_('APP_UPDATE','sitebill'), $app_name).'<br>';
-        $rs .= sprintf(Multilanguage::_('UPADTES_LOAD','sitebill'), $app_name).'<br>';
+        $rs = $this->pre_update($app_name);
+        $rs .= sprintf(Multilanguage::_('APP_UPDATE','sitebill'), $app_name).'<br>'."\n";
+        $rs .= sprintf(Multilanguage::_('UPADTES_LOAD','sitebill'), $app_name).'<br>'."\n";
         $this->download($app_name, $secret_key);
         if ( $this->getError() ) {
-        	$rs .= sprintf(Multilanguage::_('ERROR_ON_UPDATE','sitebill'), $this->GetErrorMessage()).'<br>';
+        	$rs .= sprintf(Multilanguage::_('ERROR_ON_UPDATE','sitebill'), $this->GetErrorMessage()).'<br>'."\n";
         	return $rs;
         } else {
             //run update procedure
@@ -163,19 +181,33 @@ class sitebill_admin extends Object_Manager {
                 require_once (SITEBILL_DOCUMENT_ROOT.'/apps/'.$app_name.'/update.php');
                 $update_class_name = $app_name.'_update';
                 $update_app_class = new $update_class_name;
-                $rs .= $update_app_class->main($secret_key);
+                $rs .= $update_app_class->main($secret_key)."\n";
             }
-        	$rs .= sprintf(Multilanguage::_('SUCCESS_UPDATE','sitebill'), $app_name).'<br>';
+        	$rs .= sprintf(Multilanguage::_('SUCCESS_UPDATE','sitebill'), $app_name).'<br>'."\n";
         }
         return $rs;
     }
-    
+
+    function pre_update ( $app_name ) {
+        if ( is_file(SITEBILL_DOCUMENT_ROOT.'/apps/'.$app_name.'/update.php') ) {
+            require_once (SITEBILL_DOCUMENT_ROOT.'/apps/'.$app_name.'/update.php');
+            $update_class_name = $app_name.'_update';
+            $update_app_class = new $update_class_name;
+            if ( method_exists($update_app_class, 'pre_update') ) {
+                $rs = _e('Подготовка к обновлению').' '.$app_name.'<br>'."\n";
+                $rs .= $update_app_class->pre_update()."\n";
+                return $rs;
+            }
+        }
+        return '';
+    }
+
     function install_app ( $app_name ) {
-    	$rs .= sprintf(Multilanguage::_('APP_INSTALL','sitebill'), $app_name).'<br>';
-    	$rs .= sprintf(Multilanguage::_('INSTALL_LOAD','sitebill'), $app_name).'<br>';
+    	$rs = sprintf(Multilanguage::_('APP_INSTALL','sitebill'), $app_name).'<br>'."\n";
+    	$rs .= sprintf(Multilanguage::_('INSTALL_LOAD','sitebill'), $app_name).'<br>'."\n";
     	$this->download($app_name, $this->getRequestValue('secret_key'));
     	if ( $this->getError() ) {
-    		$rs .= sprintf(Multilanguage::_('ERROR_ON_INSTALL','sitebill'), $this->GetErrorMessage()).'<br>';
+    		$rs .= sprintf(Multilanguage::_('ERROR_ON_INSTALL','sitebill'), $this->GetErrorMessage()).'<br>'."\n";
     		return $rs;
     	} else {
     		//run update procedure
@@ -187,14 +219,14 @@ class sitebill_admin extends Object_Manager {
     			    $rs .= $update_app_class->install();
     			}
     		}
-    		$rs .= sprintf(Multilanguage::_('SUCCESS_INSTALL','sitebill'), $app_name).'<br>';
+    		$rs .= sprintf(Multilanguage::_('SUCCESS_INSTALL','sitebill'), $app_name).'<br>'."\n";
     	}
     	return $rs;
     }
-    
-    
+
+
     function download ( $app_name, $secret_key ) {
-        
+
         $to_file_name = SITEBILL_DOCUMENT_ROOT.'/cache/upl/'.$app_name.'.zip';
         $unzip_dest = SITEBILL_DOCUMENT_ROOT.'/apps/';
 
@@ -216,13 +248,13 @@ class sitebill_admin extends Object_Manager {
                 return false;
             }
         }
-        
+
         //unzip file
         $this->_unzip_file_ziparchive($to_file_name, $unzip_dest);
         if ( $this->getError() ) {
             return false;
         }
-        
+
         //install apps
         $this->filesystem->chmod($unzip_dest, 0755, true);
         if ( $this->getError() ) {
@@ -231,7 +263,7 @@ class sitebill_admin extends Object_Manager {
         $this->filesystem->delete($to_file_name);
         return true;
     }
-    
+
     function getCurlContent($url,$to_file=''){
     	$ch = curl_init();
     	curl_setopt($ch, CURLOPT_URL, $url);
@@ -239,7 +271,7 @@ class sitebill_admin extends Object_Manager {
     	curl_setopt ($ch, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)");
     	curl_setopt ($ch, CURLOPT_FAILONERROR,true);
     	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-    	 
+
     	if (!empty($to_file)){
     		curl_setopt($ch,CURLOPT_BINARYTRANSFER,true);
     		curl_setopt($ch, CURLOPT_FILE,$to_file);
@@ -255,7 +287,7 @@ class sitebill_admin extends Object_Manager {
     	curl_close($ch);
     	return $res;
     }
-    
+
     /**
      * This function should not be called directly, use unzip_file instead. Attempts to unzip an archive using the ZipArchive class.
      * Assumes that Sitebill_Filesystem() has already been called and set up.
@@ -271,31 +303,31 @@ class sitebill_admin extends Object_Manager {
      */
     function _unzip_file_ziparchive($file, $to, $needed_dirs = array() ) {
     	global $wp_filesystem;
-    
+
     	$z = new ZipArchive();
-    
+
     	// PHP4-compat - php4 classes can't contain constants
     	$zopen = $z->open($file, /* ZIPARCHIVE::CHECKCONS */ 4);
     	if ( true !== $zopen ) {
     	    $this->riseError('incompatible_archive');
     	    return false;
     	}
-    
+
     	for ( $i = 0; $i < $z->numFiles; $i++ ) {
     		if ( ! $info = $z->statIndex($i) ) {
     		    $this->riseError('stat_failed: Could not retrieve file from archive.');
     		    return false;
     		}
-    
+
     		if ( '__MACOSX/' === substr($info['name'], 0, 9) ) // Skip the OS X-created __MACOSX directory
     			continue;
-    
+
     		if ( '/' == substr($info['name'], -1) ) // directory
     			$needed_dirs[] = $to . $this->untrailingslashit($info['name']);
     		else
     			$needed_dirs[] = $to . $this->untrailingslashit(dirname($info['name']));
     	}
-    
+
     	$needed_dirs = array_unique($needed_dirs);
     	foreach ( $needed_dirs as $dir ) {
     		// Check the parent folders of the folders all exist within the creation array.
@@ -303,7 +335,7 @@ class sitebill_admin extends Object_Manager {
     			continue;
     		if ( strpos($dir, $to) === false ) // If the directory is not within the working directory, Skip it
     			continue;
-    
+
     		$parent_folder = dirname($dir);
     		while ( !empty($parent_folder) && $this->untrailingslashit($to) != $parent_folder && !in_array($parent_folder, $needed_dirs) ) {
     			$needed_dirs[] = $parent_folder;
@@ -311,60 +343,60 @@ class sitebill_admin extends Object_Manager {
     		}
     	}
     	asort($needed_dirs);
-    
+
     	// Create those directories if need be:
     	foreach ( $needed_dirs as $_dir ) {
     		if ( ! $this->filesystem->mkdir($_dir, 0755) && ! $this->filesystem->is_dir($_dir) ) { // Only check to see if the Dir exists upon creation failure. Less I/O this way.
     		    $this->riseError('mkdir_failed: Could not create directory '. $_dir);
     		    return false;
-    		} 
+    		}
     	}
     	unset($needed_dirs);
-    
+
     	for ( $i = 0; $i < $z->numFiles; $i++ ) {
     		if ( ! $info = $z->statIndex($i) ) {
     		    $this->riseError('stat_failed: Could not retrieve file from archive.');
     		    return false;
     		}
-    
+
     		if ( '/' == substr($info['name'], -1) ) // directory
     			continue;
-    
+
     		if ( '__MACOSX/' === substr($info['name'], 0, 9) ) // Don't extract the OS X-created __MACOSX directory files
     			continue;
-    
+
     		$contents = $z->getFromIndex($i);
     		if ( false === $contents ) {
     		    $this->riseError('extract_failed: Could not extract file from archive.'.$info['name']);
     		    return false;
     		}
-    
+
     		if ( ! $this->filesystem->put_contents( $to . $info['name'], $contents, 0755) ) {
     		    $this->riseError('copy_failed: Could not copy file. '.$to . $info['name']);
     		    return false;
     		}
     	}
-    
+
     	$z->close();
-    
+
     	return true;
     }
-    
+
     function untrailingslashit($string) {
     	return rtrim($string, '/');
     }
-    
-    
-    
+
+
+
     function get_js_update_function ( $json_string ) {
-        
+
         $rs .= '<script type="text/javascript">
         var update_info_json_string = \''.$json_string.'\'; 
 </script>';
         $rs .= '<script type="text/javascript" src="'.SITEBILL_MAIN_URL.'/apps/sitebill/js/updater.js"></script> ';
-        return $rs;        
+        return $rs;
     }
-    
+
     /**
      * Load installed apps and generate menu items from XML-files
      * @param void
@@ -378,15 +410,15 @@ class sitebill_admin extends Object_Manager {
 		require_once SITEBILL_DOCUMENT_ROOT . '/third/simple_html_dom/simple_html_dom.php';
 	    }
 	}
-	
+
     	$menu=array();
-    
+
     	if (is_dir($this->apps_dir)) {
     		if ($dh = opendir($this->apps_dir)) {
     			while (($app_dir = readdir($dh)) !== false) {
     				if ( is_dir($this->apps_dir.'/'.$app_dir) and !preg_match('/\./', $app_dir) ) {
     					if ( is_file($this->apps_dir.'/'.$app_dir.'/'.$app_dir.'.xml') ) {
-    						 
+
     						//Parsing by simple_xml_dom
     						$xml = @file_get_html($this->apps_dir.'/'.$app_dir.'/'.$app_dir.'.xml');
     						if($xml && is_object($xml)){
@@ -402,7 +434,7 @@ class sitebill_admin extends Object_Manager {
     							}
     						}
     					}
-    
+
     				}
     			}
     			closedir($dh);

@@ -10,42 +10,48 @@ DataImagelist={
 					if(json=='ok'){
 						//parentel.fadeOut(function(){parentel.remove();});
 					}
-					
 				}
 			});
 		}
-		
 		return false;
 	},
 	deleteImage: function(el,img_id, data_id, table, key){
 		if(confirm('Действительно хотите удалить изображение?')){
 			var parentel=$(el).parents('.preview_admin');
 			$.ajax({
-				url: estate_folder + "/js/ajax.php?action=delete_image",
+                url: estate_folder + "/js/ajax.php?action=delete_image",
 				data: 'table_name='+table+'&image_id='+img_id+'&data_id='+data_id+'&key='+key,
 				dataType: 'text',
 				success: function(json){
 					if(json=='ok'){
 						parentel.fadeOut(function(){parentel.remove();});
 					}
-					
 				}
 			});
 		}
-		
 		return false;
 	},
 	dz_clearImages: function(el, pk_value, table, pk_name, field_name){
-		if(confirm('Действительно хотите удалить все изображения?')){
+        if(confirm('Действительно хотите удалить все изображения?')){
 			var parentel=$(el).parents('.dz-preview-uploaded').eq(0);
+            var data = {};
+            data.action = 'dz_imagework';
+            data.what = 'delete_all';
+            data.model_name = table;
+            data.key = pk_name;
+            data.key_value = pk_value;
+            data.field_name = field_name;
 			$.ajax({
-				url: estate_folder + "/js/ajax.php?action=dz_imagework",
-				data: 'what=delete_all&model_name='+table+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name,
-				dataType: 'text',
+				type: 'post',
+				url: estate_folder + "/js/ajax.php",
+				data: data,
+				dataType: 'json',
 				success: function(json){
-					if(json=='ok'){
+					if(json.status == 1){
 						parentel.find('.dz-preview-uploaded-list').remove();
-					}
+					}else{
+                        console.log('error');
+                    }
 				}
 			});
 		}
@@ -54,13 +60,23 @@ DataImagelist={
 	dz_clearDocs: function(el, pk_value, table, pk_name, field_name){
 		if(confirm('Действительно хотите удалить все документы?')){
 			var parentel=$(el).parents('.dz-preview-uploaded').eq(0);
+			var data = {};
+			data.action = 'dz_imagework';
+			data.what = 'delete_all';
+			data.model_name = table;
+			data.key = pk_name;
+			data.key_value = pk_value;
+			data.field_name = field_name;
+			data.doc_mode = 1;
 			$.ajax({
-				url: estate_folder + "/js/ajax.php?action=dz_imagework",
-				data: 'what=delete_all&model_name='+table+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name+'&doc_mode=1',
-				dataType: 'text',
+				url: estate_folder + "/js/ajax.php",
+				data: data,
+				dataType: 'json',
 				success: function(json){
-					if(json=='ok'){
+					if(json.status == 1){
 						parentel.find('.dz-preview-uploaded-list').remove();
+					}else{
+						console.log('error');
 					}
 				}
 			});
@@ -74,21 +90,28 @@ DataImagelist={
 			var all_els=parent_el.find('.dz-preview-uploaded-item');
 			var current_element_index=all_els.index(parentel);
 			if(current_element_index!==-1){
+                var data = {};
+                data.action = 'dz_imagework';
+                data.what = 'delete';
+                data.model_name = table;
+                data.key = pk_name;
+                data.key_value = pk_value;
+                data.field_name = field_name;
+                data.current_position = current_element_index;
 				$.ajax({
-					url: estate_folder + "/js/ajax.php?action=dz_imagework",
-					data: 'what=delete&model_name='+table+'&current_position='+current_element_index+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name,
-					dataType: 'text',
+					type: 'post',
+                    url: estate_folder + "/js/ajax.php",
+					data: data,
+					dataType: 'json',
 					success: function(json){
-						if(json=='ok'){
-							parentel.fadeOut(function(){parentel.remove();});
-						}
-						
+						if(json.status == 1){
+							parentel.fadeOut(function(){parentel.remove(); DataImagelist.dz_resort(parent_el);});
+                        }
 					}
 				});
 			}
 			
 		}
-		
 		return false;
 	},
 	dz_deleteDoc: function(el, pk_value, table, pk_name, field_name){
@@ -98,21 +121,27 @@ DataImagelist={
 			var all_els=parent_el.find('.dz-preview-uploaded-item');
 			var current_element_index=all_els.index(parentel);
 			if(current_element_index!==-1){
+				var data = {};
+				data.action = 'dz_imagework';
+				data.what = 'delete';
+				data.model_name = table;
+				data.key = pk_name;
+				data.key_value = pk_value;
+				data.field_name = field_name;
+				data.current_position = current_element_index;
+				data.doc_mode = 1;
 				$.ajax({
-					url: estate_folder + "/js/ajax.php?action=dz_imagework",
-					data: 'what=delete&model_name='+table+'&current_position='+current_element_index+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name+'&doc_mode=1',
-					dataType: 'text',
+					url: estate_folder + "/js/ajax.php",
+					data: data,
+					dataType: 'json',
 					success: function(json){
-						if(json=='ok'){
-							parentel.fadeOut(function(){parentel.remove();});
+						if(json.status == 1){
+							parentel.fadeOut(function(){parentel.remove(); DataImagelist.dz_resort(parent_el);});
 						}
-						
 					}
 				});
 			}
-			
 		}
-		
 		return false;
 	},
 	dz_upImage: function(el, pk_value, table, pk_name, field_name){
@@ -122,14 +151,26 @@ DataImagelist={
 		var current_element_index=1+all_els.index(parentel);
 		if(current_element_index>1){
 			var prev=parentel.prev('.dz-preview-uploaded-item');
+            var data = {};
+            data.action = 'dz_imagework';
+            data.what = 'reorder';
+            data.model_name = table;
+            data.key = pk_name;
+            data.key_value = pk_value;
+            data.field_name = field_name;
+            data.reorder = 'up';
+            data.current_position = (current_element_index-1);
 			$.ajax({
-				url: estate_folder + "/js/ajax.php?action=dz_imagework",
-				data: 'what=reorder&model_name='+table+'&current_position='+(current_element_index-1)+'&key='+pk_name+'&reorder=up&key_value='+pk_value+'&field_name='+field_name,
-				dataType: 'text',
+				type: 'post',
+                url: estate_folder + "/js/ajax.php",
+				data: data,
+				dataType: 'json',
 				success: function(json){
-					if(json=='ok'){
+					if(json.status == 1){
 						parentel.fadeOut('slow',function(){
-							parentel.insertBefore(prev).fadeIn('slow');
+							parentel.insertBefore(prev).fadeIn('slow', function(){
+                                DataImagelist.dz_resort(parent_el);
+                            });
 						});
 					}
 				}
@@ -137,22 +178,42 @@ DataImagelist={
 		}
 		return false;
 	},
+    dz_resort: function(list){
+        var order = 0;
+        list.find('.dz-preview-uploaded-item').each(function(index, item){
+            $(item).attr('data-order', order);
+            order += 1;
+        });
+    },
 	dz_downImage: function(el, pk_value, table, pk_name, field_name){
 		var parent_el=$(el).parents('.dz-preview-uploaded-list').eq(0);
 		var parentel=$(el).parents('.dz-preview-uploaded-item').eq(0);
 		var all_els=parent_el.find('.dz-preview-uploaded-item');
 		var total_count=all_els.length;
 		var current_element_index=1+all_els.index(parentel);
+        var data = {};
+        data.action = 'dz_imagework';
+        data.what = 'reorder';
+        data.model_name = table;
+        data.key = pk_name;
+        data.key_value = pk_value;
+        data.field_name = field_name;
+        data.reorder = 'down';
+        data.current_position = (current_element_index-1);
 		if(current_element_index<total_count){
 			var next=parentel.next('.dz-preview-uploaded-item');
 			$.ajax({
-				url: estate_folder + "/js/ajax.php?action=dz_imagework",
-				data: 'what=reorder&model_name='+table+'&current_position='+(current_element_index-1)+'&key='+pk_name+'&reorder=down&key_value='+pk_value+'&field_name='+field_name,
-				dataType: 'text',
+				type: 'post',
+                url: estate_folder + "/js/ajax.php",
+				data: data,
+				dataType: 'json',
 				success: function(json){
-					if(json=='ok'){
+					if(json.status == 1){
 						parentel.fadeOut('slow',function(){
-							parentel.insertAfter(next).fadeIn('slow');
+							parentel.insertAfter(next).fadeIn('slow', function(){
+                                DataImagelist.dz_resort(parent_el);
+                            });
+                            
 						});
 					}
 				}
@@ -164,27 +225,34 @@ DataImagelist={
 		var parent_el=$(el).parents('.dz-preview-uploaded-list').eq(0);
 		var parentel=$(el).parents('.dz-preview-uploaded-item').eq(0);
 		var all_els=parent_el.find('.dz-preview-uploaded-item');
-		var total_count=all_els.length;
 		var current_element_index=1+all_els.index(parentel);
 		
+        var data = {};
+        data.action = 'dz_imagework';
+        data.what = 'rotate';
+        data.model_name = table;
+        data.key = pk_name;
+        data.key_value = pk_value;
+        data.field_name = field_name;
+        data.rot_dir = rot_dir;
+        data.current_position = (current_element_index-1);
 		
 		//var gross_parent=parentel.parents().eq(0);
 		$.ajax({
-			url: estate_folder + "/js/ajax.php?action=dz_imagework",
-			dataType: 'text',
-			data: 'what=rotate&model_name='+table+'&current_position='+(current_element_index-1)+'&key='+pk_name+'&key_value='+pk_value+'&field_name='+field_name+'&rot_dir='+rot_dir,
-			success: function(text){
-				if(text=='ok'){
-					var im=parentel.find('img').eq(0);
-					im.attr('src', im.attr('src')+'?'+(new Date()).getTime());
+			type: 'post',
+            url: estate_folder + "/js/ajax.php",
+			dataType: 'json',
+			data: data,
+			success: function(json){
+				if(json.status == 1){
+					var im = parentel.find('img').eq(0);
+					var newsrc = im.attr('src');
+					if(typeof json.imgsrc != 'undefined' && json.imgsrc != ''){
+						im.attr('src', json.imgsrc);
+					}else{
+						im.attr('src', newsrc+'?'+(new Date()).getTime());
+					}
 				}
-				//var im=parentel.find('img').eq(0);
-				//var news=
-				//im.attr('src', im.attr('src')+'?'+(new Date()).getTime());
-				/*parentel.fadeOut('slow',function(){
-					//parentel.prependTo(gross_parent).fadeIn('slow');
-					//DataImagelist.markMainImage();
-				});*/
 			}
 		});
 		return false;
@@ -194,18 +262,27 @@ DataImagelist={
 		var parentel=$(el).parents('.dz-preview-uploaded-item').eq(0);
 		var all_els=parent_el.find('.dz-preview-uploaded-item');
 		var current_element_index=1+all_els.index(parentel);
-		
-		
-		
 		var gross_parent=parentel.parents().eq(0);
+        var data = {};
+        data.action = 'dz_imagework';
+        data.what = 'make_main';
+        data.model_name = table;
+        data.key = pk_name;
+        data.key_value = pk_value;
+        data.field_name = field_name;
+        data.current_position = (current_element_index-1);
+            
 		$.ajax({
-			url: estate_folder + "/js/ajax.php?action=dz_imagework",
-			data: 'what=make_main&model_name='+table+'&current_position='+(current_element_index-1)+'&key='+pk_name+'&reorder=down&key_value='+pk_value+'&field_name='+field_name,
-			dataType: 'text',
+			type: 'post',
+            url: estate_folder + "/js/ajax.php",
+			data: data,
+			dataType: 'json',
 			success: function(json){
-				if(json=='ok'){
+				if(json.status == 1){
 					parentel.fadeOut('slow',function(){
-						parentel.prependTo(parent_el).fadeIn('slow');
+						parentel.prependTo(parent_el).fadeIn('slow', function(){
+                            DataImagelist.dz_resort(parent_el);
+                        });
 					});
 				}
 			}
@@ -214,7 +291,7 @@ DataImagelist={
 		
 		return false;
 	},
-    dz_changeTags: function(el, pk_value, table, pk_name, field_name){
+	dz_changeTags: function(el, pk_value, table, pk_name, field_name){
         var tagblock=$(el);
         
         var parent=tagblock.parents('.dz-preview-uploaded-list').eq(0);
@@ -350,7 +427,6 @@ DataImagelist={
 		
 		
 	},
-	
 	rotateImage: function(el, img_id, data_id, table, key, rot_dir){
 		var parentel=$(el).parents('.preview_admin').eq(0);
 		var gross_parent=parentel.parents().eq(0);
@@ -416,8 +492,6 @@ DataImagelist={
 				});
 			}
 		});
-		
-		
 		return false;
 	},
 	attachDblclick: function(){
@@ -444,7 +518,6 @@ DataImagelist={
 							_this.html(content);
 						}
 					});
-					//_this.html(c);
 				});
 				_this.append(new_content);
 				new_content.focus();
@@ -492,6 +565,41 @@ DataImagelist={
 	markMainImage: function(){
 		$('.preview_admin').find('td > img').css({'width':'100px'});
 		$('.preview_admin:first').find('td > img').css({'width':'200px'});
+	},
+	dz_addSortable: function(elid, pk_value, table, pk_name, field_name){
+		var elt = elid;
+		$( '#' + elid + ' ul' ).sortable({
+			stop: function( event, ui ) {
+				var itm = ui.item;
+				var p = $(itm).parents('ul').eq(0);
+				var sort = [];
+				p.find('li').each(function(i, n){
+					sort.push($(n).attr('data-order'));
+				});
+				var data = {};
+				data.action = 'dz_imagework';
+				data.what = 'resort';
+				data.model_name = table;
+				data.key = pk_name;
+				data.key_value = pk_value;
+				data.field_name = field_name;
+				data.sortorder = sort;
+
+				$.ajax({
+					type: 'post',
+					url: estate_folder + "/js/ajax.php",
+					data: data,
+					dataType: 'json',
+					success: function(json){
+						if(json.status == 1){
+							DataImagelist.dz_resort(p);
+						}else{
+							$( '#' + elid + ' ul' ).sortable( "cancel" );
+						}
+					}
+				});
+			}
+		});
 	}
 }
 

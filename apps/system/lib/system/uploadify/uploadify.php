@@ -1,9 +1,9 @@
 <?php
 /**
- * Uploadify class 
+ * Uploadify class
  * Store data into UPLOADIFY table
  */
-if (  !defined('UPLOADIFY_TABLE')  ) 
+if (  !defined('UPLOADIFY_TABLE')  )
 {
     define('UPLOADIFY_TABLE', DB_PREFIX.'_uploadify');
 }
@@ -52,14 +52,14 @@ class Sitebill_Uploadify extends Sitebill {
 
             $tempFile = $_FILES[$file_container_name]['tmp_name'];
             $targetPath = SITEBILL_DOCUMENT_ROOT.'/cache/upl/';
-            
+
             if($_FILES[$file_container_name]['error'] > 0){
 				header('HTTP/1.1 200 OK');
 				header('Content-Type: application/json');
 				echo json_encode(array('status'=>'error', 'msg'=>'Ошибка загрузки '.$_FILES[$file_container_name]['error']));
 				return;
 			}
-			
+
 			if(!is_uploaded_file ( $tempFile ) ){
 				header('HTTP/1.1 200 OK');
 				header('Content-Type: application/json');
@@ -110,6 +110,17 @@ class Sitebill_Uploadify extends Sitebill {
                 }else{
                     $parameters=array();
                 }
+                
+                
+                
+                if(isset($parameters['max_file_size']) && '' != $parameters['max_file_size']){
+                    $maxsize = (floatval(str_replace('M', '', $parameters['max_file_size']))*1024*1024);
+                    if($_FILES[$file_container_name]['size'] > $maxsize){
+                        header('HTTP/1.1 200 OK');
+                        header('Content-Type: application/json');
+                        echo json_encode(array('status'=>'error', 'msg'=>'Недопустимый размер файла'));
+                    }
+                }
 
                 if($ar['type']=='docuploads'){
                     $allowed_exts = $this->get_docuploads_extensions();
@@ -132,54 +143,163 @@ class Sitebill_Uploadify extends Sitebill {
                     }
                 }else{
 
-                    if(isset($parameters['max_img_count']) && $parameters['max_img_count']!=''){
+                    $needcontrolminsize = false;
+                    if(isset($parameters['minsizepx'])){
+                        $size = strtolower($parameters['minsizepx']);
+                        if(preg_match('/^(\d+)x(\d+)$/', $size, $matches)){
+                            $min_w = $matches[1];
+                            $min_h = $matches[2];
+                            $needcontrolminsize = true;
+                        }elseif(preg_match('/^(\d+)$/', $size, $matches)){
+                            $min_w = $min_h = $matches[1];
+                            $needcontrolminsize = true;
+                        }
+                    }
 
+                    if($needcontrolminsize){
+                        $imdata = getimagesize($tempFile);
+                        if(false !== $imdata){
+                            if($imdata[0] < $min_w || $imdata[1] < $min_h){
+                                header('HTTP/1.1 200 OK');
+                                header('Content-Type: application/json');
+                                echo json_encode(array('status'=>'error', 'msg'=>'Минимальный размер изображения '.$min_w.' х '.$min_h));
+                                return;
+                            }
+                        }
+                    }
+
+                    if(isset($parameters['max_img_count']) && $parameters['max_img_count']!=''){
                         $max_img_count=intval($parameters['max_img_count']);
                     }else{
                         $max_img_count=-1;
                     }
 
+                    //Проверяем наличие расширяющих правил для max_img_count
+                    if(isset($parameters['max_img_count_ext']) && '' != $parameters['max_img_count_ext']){
+                        $maximgcountextendrules = $parameters['max_img_count_ext'];
+                    }else{
+                        $maximgcountextendrules = '';
+                    }
+                    $controlledfields = array();
+                    $maxsizerules = array();
+                    if($maximgcountextendrules != ''){
+                        $rulesparts = explode(':', $maximgcountextendrules);
+                        $size = intval($rulesparts[0]);
+                        if($size > 0 && count($rulesparts) > 1){
+                            unset($rulesparts[0]);
+                            $conditions = array();
+                            foreach($rulesparts as $rule){
+                                $oneruleparts = explode(',', $rule);
+                                if(count($oneruleparts) == 3){
+                                    $controlledfields[$oneruleparts[0]] = 0;
+                                    $conditions[] = $oneruleparts;
+                                }
+                            }
+                            $maxsizerules[] = array(
+                                'size' => $size,
+                                'conditions' => $conditions
+                            );
+                        }
+                    }
+
                     if($max_img_count>-1){
+
+                        $checkmaxsizebyvalue = $max_img_count;
 
                         $element=$this->getRequestValue('element');
                         $model=$this->getRequestValue('model');
                         $primary_key=$this->getRequestValue('primary_key');
                         $primary_key_value=intval($this->getRequestValue('primary_key_value'));
-                        $DBC=DBC::getInstance();
-                        $query='SELECT `'.$element.'` FROM '.DB_PREFIX.'_'.$model.' WHERE `'.$primary_key.'`=? LIMIT 1';
 
-                        $stmt=$DBC->query($query, array($primary_key_value));
+                        if(!empty($controlledfields)){
+                            foreach($controlledfields as $fk => $fv){
+                                $controlledfields[$fk] = intval($this->getRequestValue($fk));
+                            }
+                        }
+
+                        if(!empty($maxsizerules)){
+                            foreach($maxsizerules as $maxsizerule){
+                                $condsok = true;
+                                foreach ($maxsizerule['conditions'] as $condition){
+                                    $operand = $condition[1];
+                                    $field = $condition[0];
+                                    $value = $condition[2];
+                                    switch($operand){
+                                        case 'eq' : {
+                                            if($controlledfields[$field] != $value){
+                                                $condsok = false;
+                                            }
+                                            break;
+                                        }
+                                        case 'neq' : {
+                                            if($controlledfields[$field] == $value){
+                                                $condsok = false;
+                                            }
+                                            break;
+                                        }
+                                        case 'gt' : {
+                                            if($controlledfields[$field] <= $value){
+                                                $condsok = false;
+                                            }
+                                            break;
+                                        }
+                                        case 'lt' : {
+                                            if($controlledfields[$field] >= $value){
+                                                $condsok = false;
+                                            }
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if($condsok){
+                                    $checkmaxsizebyvalue = $maxsizerule['size'];
+                                    break;
+                                }
+
+                            }
+                        }
 
                         $attached_yet=array();
 
-                        if($stmt){
-                            $ar=$DBC->fetch($stmt);
-                            if($ar[$element]!=''){
-                                $attached_yet=unserialize($ar[$element]);
+                        $DBC=DBC::getInstance();
+
+                        if($primary_key_value > 0){
+                            $query='SELECT `'.$element.'` FROM '.DB_PREFIX.'_'.$model.' WHERE `'.$primary_key.'`=? LIMIT 1';
+                            $stmt=$DBC->query($query, array($primary_key_value));
+                            if($stmt){
+                                $ar=$DBC->fetch($stmt);
+                                if($ar[$element]!=''){
+                                    $attached_yet=unserialize($ar[$element]);
+                                }
                             }
                         }
+
+
 
                         $quenue=0;
 
                         $query = 'SELECT COUNT(*) AS _cnt FROM '.UPLOADIFY_TABLE.' WHERE `session_code`=? AND `element`=?';
-                        $stmt=$DBC->query($query, array($_REQUEST['session'], $element));
+                        //$stmt=$DBC->query($query, array($_REQUEST['session'], $element));
+                        $stmt=$DBC->query($query, array($this->get_session_key(), $element));
+
                         if($stmt){
                             $ar=$DBC->fetch($stmt);
                             $quenue=$ar['_cnt'];
                         }
 
-                        $last_count=$max_img_count-count($attached_yet)-$quenue;
+                        $last_count = $checkmaxsizebyvalue - count($attached_yet) - $quenue;
 
                         if($last_count<1){
                             header('HTTP/1.1 200 OK');
                             header('Content-Type: application/json');
-                            echo json_encode(array('status'=>'error', 'msg'=>'Максимальное количество файлов '.$max_img_count));
+                            echo json_encode(array('status'=>'error', 'msg'=>'Максимальное количество файлов '.$checkmaxsizebyvalue));
                             return;
                         }
 
                     }
 
-                    $allowed_exts=array('jpg','png','gif','jpeg','webp');
+                    $allowed_exts=array('jpg','png','gif','jpeg','webp', 'svg');
                 }
 
                 if(!in_array($ext, $allowed_exts)){
@@ -236,7 +356,7 @@ class Sitebill_Uploadify extends Sitebill {
                     }
                     return;
                 }
-            } elseif ( !in_array(strtolower($ext),array('jpg','png','gif','jpeg'))) {
+            } elseif ( !in_array(strtolower($ext),array('jpg','png','gif','jpeg', 'svg'))) {
                 if($uploader_type=='dropzone'){
                     header('HTTP/1.1 200 OK');
                     header('Content-Type: application/json');
@@ -353,8 +473,8 @@ class Sitebill_Uploadify extends Sitebill {
 
         if(function_exists( 'finfo_open' ) && function_exists( 'finfo_file' ) && function_exists( 'finfo_close' ) ) {
             $fileinfo = finfo_open( FILEINFO_MIME );
-            $output = finfo_file( $fileinfo, $tempFile );    		
-            finfo_close( $fileinfo );  
+            $output = finfo_file( $fileinfo, $tempFile );
+            finfo_close( $fileinfo );
             if($output!=''){
                 list($mct)=explode("; ",$output);
             }
@@ -420,6 +540,8 @@ class Sitebill_Uploadify extends Sitebill {
         if($ext=='png' && $mct=='image/png'){
             return true;
         }elseif($ext=='webp' && $mct=='image/webp'){
+            return true;
+        }elseif($ext=='svg' && $mct=='image/svg+xml'){
             return true;
         }elseif($ext=='jpg' && $mct=='image/jpeg'){
             return true;

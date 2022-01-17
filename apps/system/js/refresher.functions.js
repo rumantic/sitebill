@@ -2,49 +2,80 @@ var LinkedElements={
 	refresh: function(el, linked_el_id, linked_field, model_name){
 		var _this=$(el);
 		var holded_form=_this.parents('form').eq(0);
+        
+        var is_connected_element_select = false;
+        
+        
 		var connected_element=holded_form.find('select#'+linked_el_id).eq(0);
-		LinkedElements.setEmpty(connected_element);
-		connected_element.trigger('change');
-		if('function' == typeof refresher_linked_global_callback){
-			refresher_linked_global_callback(connected_element);
-		}
+        if(connected_element.length == 0){
+            connected_element=holded_form.find('#'+linked_el_id).eq(0);
+        }
+        if(connected_element.length == 0){
+            return;
+        }
+        
+        if(connected_element.prop("tagName").toLowerCase() == 'select'){
+            is_connected_element_select = true;
+        }
+        
+        if(is_connected_element_select){
+            LinkedElements.setEmpty(connected_element);
+            connected_element.trigger('change');
+            if('function' == typeof refresher_linked_global_callback){
+                refresher_linked_global_callback(connected_element);
+            }
+        }else{
+            LinkedElements.setEmptyMultiselectCheckboxes(connected_element);
+        }		
 		
-		/*connected_element.find('option').remove();
-		var opt=$('<option>', {'value': ''});
-		opt.text('--');
-		connected_element.append(opt);*/
-		var value=_this.val();
-		
+		var value=_this.val();		
 		
 		if(value!=''){
+            var data = {action: 'get_options', frommodelfield: linked_el_id, byfield: linked_field, value: value, model: model_name};
+            if(!is_connected_element_select){
+                data.formatted = 1;
+            }
 			$.ajax({
 				type: 'post',
 				url: estate_folder+'/js/ajax.php',
-				data: {action: 'get_options', frommodelfield: linked_el_id, byfield: linked_field, value: value, model: model_name},
+				data: data,
 				dataType: 'json',
 				success: function(json){
-					if(json.length>0){
-						for(var i in json){
-							var opt=$('<option>', {'value': json[i].id});
-							opt.text(json[i].name);
-							connected_element.append(opt);
-						}
-					}
-					connected_element.trigger('change');
-					if('function' == typeof refresher_linked_global_callback){
-						refresher_linked_global_callback(connected_element);
-					}
+                    if(typeof json.html != 'undefined'){
+                       connected_element.html(json.html); 
+                    }else{
+                        if(json.length>0){
+                            for(var i in json){
+                                var opt=$('<option>', {'value': json[i].id});
+                                opt.text(json[i].name);
+                                connected_element.append(opt);
+                            }
+                        }
+                    }
+                    if(is_connected_element_select && !connected_element.prop('multiple')){
+                        connected_element.trigger('change');
+                        if('function' == typeof refresher_linked_global_callback){
+                            refresher_linked_global_callback(connected_element);
+                        }
+                    }
+					
 				}
 			});
-			//connected_element.css({'border': '1px solid Green'});
 		}
 		
 	},
+    setEmptyMultiselectCheckboxes: function(el){
+        el.html('');
+	},
 	setEmpty: function(el){
-		el.find('option').remove();
-		var opt=$('<option>', {'value': ''});
-		opt.text('--');
-		el.append(opt);
+        
+        var ismulti = (el.prop('multiple') ? true : false);
+        el.find('option').remove();
+        if(!ismulti){
+            var opt=$('<option>', {'value': ''});
+            opt.text('--');
+            el.append(opt);
+        }
 	},
 	setHandler: function(el_class, connected_el_class, linked_field){
 		var _this=$('.'+el_class);
@@ -435,11 +466,11 @@ $(document).ready(function(){
 			select: function( event, ui ) {
 				event.stopPropagation();
 				_hidden.val(ui.item.id);
-				
+				_hidden.trigger('change');
 				//_hidden.trigger('change');
 			},
 			change: function( event, ui ) {
-				_hidden.trigger('change');
+				
 				
 				if(ui.item===null){
 					_hidden.val('');
@@ -447,6 +478,7 @@ $(document).ready(function(){
 						_this.val('');
 					}
 				}
+                _hidden.trigger('change');
 			}
 		});
 		

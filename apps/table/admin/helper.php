@@ -6,11 +6,15 @@
  */
 class Admin_Table_Helper extends SiteBill {
 
-    private static $model_storage = array();
+    private static $model_storage;
 
     function create_int($item) {
         $rs = "`{$item['name']}` int(10) unsigned NOT NULL DEFAULT '0'";
         return $rs;
+    }
+
+    function reset_model_storage () {
+        self::$model_storage = array();
     }
 
     function create_datetime($item) {
@@ -39,17 +43,17 @@ class Admin_Table_Helper extends SiteBill {
     }
 
     function create_varchar($item) {
-        $rs = "`{$item['name']}` varchar(255) NOT NULL DEFAULT '{$item['value']}'";
+        $rs = "`{$item['name']}` varchar(255) NULL DEFAULT '{$item['value']}'";
         return $rs;
     }
 
     function create_uploads($item) {
-        $rs = "`{$item['name']}` LONGTEXT NOT NULL DEFAULT ''";
+        $rs = "`{$item['name']}` LONGTEXT NULL DEFAULT ''";
         return $rs;
     }
 
     function create_docuploads($item) {
-        $rs = "`{$item['name']}` LONGTEXT NOT NULL DEFAULT ''";
+        $rs = "`{$item['name']}` LONGTEXT NULL DEFAULT ''";
         return $rs;
     }
 
@@ -261,7 +265,7 @@ class Admin_Table_Helper extends SiteBill {
             if (intval($this->getRequestValue('city_id')) != 0/* && $this->getRequestValue('city_id') != '' */ && intval($this->getRequestValue('district_id')) != 0/* && $this->getRequestValue('district_id') != '' */ && 1 == $this->getConfigValue('link_metro_to_district')) {
                 $form_data[$table_key]['metro_id']['query'] = 'select * from ' . DB_PREFIX . '_metro where city_id=' . intval($this->getRequestValue('city_id')) . ' AND district_id=' . intval($this->getRequestValue('district_id')) . ' order by name';
             } elseif (1 != $this->getConfigValue('apps.realty.ajax_metro_refresh')) {
-                
+
             } elseif (intval($this->getRequestValue('city_id')) != 0/* and $this->getRequestValue('city_id') != '' */) {
                 $form_data[$table_key]['metro_id']['query'] = 'select * from ' . DB_PREFIX . '_metro where city_id=' . intval($this->getRequestValue('city_id')) . ' order by name';
             }
@@ -298,7 +302,7 @@ class Admin_Table_Helper extends SiteBill {
 
             if ($this->getConfigValue('apps.realty.ajax_street_refresh')) {
                 if ($this->getConfigValue('link_street_to_city')) {
-                    
+
                 } else {
                     $form_data[$table_key]['district_id']['onchange'] .= ' update_child_list(\'street_id\',this); ';
                     $form_data[$table_key]['district_id']['ajax_options']['update_child_list'][] = 'street_id';
@@ -380,9 +384,9 @@ class Admin_Table_Helper extends SiteBill {
         if ($group_id != 0) {
             $model_name .= '_' . $group_id;
         }
-        
+
         $current_lang = $this->getCurrentLang();
-        
+
         /**
          * TODO
          * Возможное дополнение метки модели в кеше признаком языка
@@ -391,12 +395,16 @@ class Admin_Table_Helper extends SiteBill {
 
         $input_model_name = $model_name;
 
+        /*if($table_name == 'complex'){
+            echo '<!--'.$current_lang.'-->';
+        }*/
+
         if (!isset(self::$model_storage[$model_name]) || empty(self::$model_storage[$model_name])) {
             $model_data = array();
             $DBC = DBC::getInstance();
-      
+
             $query = "SELECT c.*, t.table_id, t.name as table_name FROM " . DB_PREFIX . "_columns c, " . DB_PREFIX . "_table t  WHERE t.table_id=c.table_id " . ($ignore_activity ? '' : ' AND active=1') . " ORDER BY c.table_id, c.sort_order";
-            
+
             $stmt = $DBC->query($query);
 
             if (!$stmt) {
@@ -409,7 +417,7 @@ class Admin_Table_Helper extends SiteBill {
                 if ($group_id != 0) {
                     $model_name .= '_' . $group_id;
                 }
-                
+
                 /**
                 * TODO
                 * Возможное дополнение метки модели в кеше признаком языка
@@ -483,10 +491,13 @@ class Admin_Table_Helper extends SiteBill {
                         self::$model_storage[$model_name][$table_name][$ar['name']]['select_data'] = $this->unserializeSelectData($ar['select_data' . $lang_prefix]);
                     }
                     $select_data_indexed = array();
+                    $select_data_reverse = array();
                     foreach ( self::$model_storage[$model_name][$table_name][$ar['name']]['select_data'] as $key_s => $value_s ) {
                         array_push($select_data_indexed, array('id'=>$key_s, 'value' => $value_s));
+                        $select_data_reverse[$value_s] = $key_s;
                     }
                     self::$model_storage[$model_name][$table_name][$ar['name']]['select_data_indexed'] = $select_data_indexed;
+                    self::$model_storage[$model_name][$table_name][$ar['name']]['select_data_reverse'] = $select_data_reverse;
                 }
                 self::$model_storage[$model_name][$table_name][$ar['name']]['table_name'] = $ar['table_name'];
                 if ((self::$model_storage[$model_name][$table_name][$ar['name']]['type'] == 'uploads' || self::$model_storage[$model_name][$table_name][$ar['name']]['type'] == 'docuploads') && self::$model_storage[$model_name][$table_name][$ar['name']]['table_name'] == '') {
@@ -511,6 +522,11 @@ class Admin_Table_Helper extends SiteBill {
                 }
 
                 self::$model_storage[$model_name][$table_name][$ar['name']]['group_id'] = $ar['group_id'];
+                if ( $ar['group_id'] ) {
+                    self::$model_storage[$model_name][$table_name][$ar['name']]['group_id_array'] = explode(',', $ar['group_id']);
+                } else {
+                    self::$model_storage[$model_name][$table_name][$ar['name']]['group_id_array'] = [];
+                }
                 self::$model_storage[$model_name][$table_name][$ar['name']]['entity'] = $ar['entity'];
                 self::$model_storage[$model_name][$table_name][$ar['name']]['combo'] = $ar['combo'];
                 if ($ar['parameters'] != '' && $ar['parameters'] != '0') {
@@ -523,6 +539,7 @@ class Admin_Table_Helper extends SiteBill {
                     $required = 'off';
                 }
                 self::$model_storage[$model_name][$table_name][$ar['name']]['required'] = $required;
+                self::$model_storage[$model_name][$table_name][$ar['name']]['required_boolean'] = $ar['required'];
 
                 if ($ar['unique']) {
                     $unique = 'on';
@@ -530,6 +547,9 @@ class Admin_Table_Helper extends SiteBill {
                     $unique = 'off';
                 }
                 self::$model_storage[$model_name][$table_name][$ar['name']]['unique'] = $unique;
+                self::$model_storage[$model_name][$table_name][$ar['name']]['columns_id'] = $ar['columns_id'];
+                self::$model_storage[$model_name][$table_name][$ar['name']]['table_id'] = $ar['table_id'];
+                self::$model_storage[$model_name][$table_name][$ar['name']]['active'] = $ar['active'];
 
                 //$model_data[$table_name][$ar['name']]['is_ml'] = $ar['is_ml'];
             }
@@ -554,15 +574,30 @@ class Admin_Table_Helper extends SiteBill {
             foreach ($matches[0] as $v) {
                 $v = str_replace(array('{', '}'), '', $v);
                 $d = explode('~~', $v);
-                $ret[$d[0]] = $d[1];
+                $ret[trim($d[0])] = trim($d[1]);
             }
         }
         return $ret;
     }
+    function serializeSelectData($select_data_array) {
+        if ( !is_array($select_data_array) ) {
+            return '';
+        }
+        $rs = '';
+        foreach ( $select_data_array as $key => $value) {
+            $rs .= '{'.$key.'~~'.$value.'}';
+        }
+        return $rs;
+    }
 
     function update_table($table_name) {
         $table_model = $this->load_model($table_name, false, true);
-        $ra = $this->columns_define_generator($table_model[$table_name]);
+        return $this->alter_table($table_name, $table_model[$table_name]);
+    }
+
+    function alter_table ( $table_name, $model ) {
+        $ra = $this->columns_define_generator($model);
+
         $DBC = DBC::getInstance();
         $rs = '';
         foreach ($ra as $item_id => $item) {
@@ -570,6 +605,7 @@ class Admin_Table_Helper extends SiteBill {
             $DBC->query($query);
             $last_error = $DBC->getLastError();
             if (!preg_match('/already/', $last_error) and ! preg_match('/PRIMARY/', $last_error)) {
+                $rs .= $query.'<br>';
                 $rs .= $last_error . '<br>';
             }
         }
@@ -778,7 +814,9 @@ class Admin_Table_Helper extends SiteBill {
                 case 'values_list':
                     $ra[] = $this->create_varchar($item_array);
                     break;
-
+                case 'youtube':
+                    $ra[] = $this->create_varchar($item_array);
+                    break;
                 case 'tlocation':
                     $tlocation_columns = $this->create_tlocation($item_array);
                     if (!empty($tlocation_columns)) {
@@ -799,9 +837,12 @@ class Admin_Table_Helper extends SiteBill {
 
     function create_table($table_name) {
         $table_model = $this->load_model($table_name);
+        return $this->create_table_from_model($table_name, $table_model);
+    }
+
+    function create_table_from_model ( $table_name, $table_model ) {
         $ra = $this->columns_define_generator($table_model[$table_name]);
         $create_table_query = 'CREATE TABLE IF NOT EXISTS `' . DB_PREFIX . '_' . $table_name . '` (' . implode(' , ', $ra) . ') ENGINE=MyISAM DEFAULT CHARSET=' . DB_ENCODING . ' ;';
-        //echo $create_table_query;
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($create_table_query);
         if ($this->check_table_exist($table_name)) {
@@ -817,7 +858,7 @@ class Admin_Table_Helper extends SiteBill {
         if (in_array($table_name, $exists_table)) {
             return true;
         }
-        
+
         $query = 'SHOW TABLES LIKE ?';
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query, array(DB_PREFIX . '_' . $table_name));

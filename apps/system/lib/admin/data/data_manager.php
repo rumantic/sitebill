@@ -619,7 +619,7 @@ class Data_Manager extends Object_Manager {
             $api_cart = new API_cart();
             $user_limit = (int)$api_cart->get_user_limit($user_id, 'exclusive');
             if ( $user_limit < 1 ) {
-                $this->riseError('user limit exceed');
+                $this->riseError('Превышен лимит эксклюзивов');
                 return false;
             }
         }
@@ -713,7 +713,7 @@ class Data_Manager extends Object_Manager {
         }
         return '';
     }
-    
+
     /** TODO
     * Субобъекты
     * заметки
@@ -724,14 +724,14 @@ class Data_Manager extends Object_Manager {
 
 
         $ret = '';
-        
+
         $user_id = intval($_SESSION['user_id']);
         $id = intval($this->getRequestValue('id'));
-        
+
         if (!$this->checkOwning($id, $user_id)) {
             return 'Access denied';
         }
-        
+
         return '_subobjAction';
 
         $complex_list = '';
@@ -746,7 +746,7 @@ class Data_Manager extends Object_Manager {
         global $smarty;
         $smarty->assign('complex_list', $complex_list);
         if ($id === 0) {
-            
+
         } else {
 
             $subobjs = array();
@@ -1104,7 +1104,7 @@ class Data_Manager extends Object_Manager {
             $this->template->assign('data_adv_share_access_user_id', $params['user_id']);
             unset($params['user_id']);
         }
-        
+
         if(0 != intval($this->getRequestValue('memorylist_id'))){
             $params['memorylist_id'] = intval($this->getRequestValue('memorylist_id'));
         }
@@ -1212,7 +1212,14 @@ class Data_Manager extends Object_Manager {
             }
             $_model[$k]['_rules'] = $rules;
         }
-        
+
+
+        foreach ($res as $k => $v) {
+            $res[$k] = $data_model->applyGCompose($res[$k]);
+            $res[$k] = SiteBill::modelSimplification($res[$k]);
+            $res[$k]['_href'] = $this->getRealtyHREF($res[$k]['id']['value']);
+        }
+
         if(isset($_model['topic_id'])){
             require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
             $Structure_Manager = new Structure_Manager();
@@ -1233,10 +1240,10 @@ class Data_Manager extends Object_Manager {
 
             }
         }
-        
-            
+
+
         //print_r($category_structure['catalog']);
-        
+
         $this->template->assign('core_model', $_model);
 
         if (1 == intval($this->getConfigValue('use_topic_actual_days'))) {
@@ -1261,23 +1268,23 @@ class Data_Manager extends Object_Manager {
                 $res[$k]['_memo'] = '<div>'.$this->compile_memory_control($v['id']['value']).'</div>';
             }
         }
-        
+
 
 
         $grid_constructor->get_sales_grid($res);
     }
-    
-    
-    
+
+
+
     private function compile_memory_control($id) {
         $this->template->assign('id', $id);
         return $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/template/memorylist_item_control.tpl');
     }
-    
+
     private function get_memory_header() {
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/memory_list.php';
         $ML = new Memory_List();
-        
+
         $memory_lists = $ML->getUserMemoryLists($_SESSION['user_id']);
         foreach ($memory_lists as $ml) {
             if (isset($ml['items']) && count($ml['items']) > 0) {
@@ -1286,7 +1293,7 @@ class Data_Manager extends Object_Manager {
                 }
             }
         }
-        
+
         $this->template->assign('items_in_memory', $items_in_memory);
         return $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/template/memorylist_header.tpl');
     }
@@ -1325,7 +1332,17 @@ class Data_Manager extends Object_Manager {
     function parse_id_values_from_model($column_name, $column_values, $data_model) {
         if ($data_model[$this->table_name][$column_name]['type'] == 'select_by_query') {
             foreach ($column_values as $idx => $value) {
-                $val = $this->data_model_object->get_value_id_by_name($data_model[$this->table_name][$column_name]['primary_key_table'], $data_model[$this->table_name][$column_name]['value_name'], $data_model[$this->table_name][$column_name]['primary_key_name'], $value);
+
+                $namefield = $data_model[$this->table_name][$column_name]['value_name'];
+                $langpostfix = $this->getLangPostfix($this->getCurrentLang());
+
+                if(isset($data_model[$this->table_name][$column_name]['parameters']['no_ml']) && $data_model[$this->table_name][$column_name]['parameters']['no_ml'] == 1){
+
+                }else{
+                    $namefield = $namefield.$langpostfix;
+                }
+
+                $val = $this->data_model_object->get_value_id_by_name($data_model[$this->table_name][$column_name]['primary_key_table'], $namefield, $data_model[$this->table_name][$column_name]['primary_key_name'], $value);
 
                 if (0 != (int) $val) {
                     $column_values[$idx] = $val;
@@ -1359,7 +1376,7 @@ class Data_Manager extends Object_Manager {
                 }else{
                     $column_values = array(-1);
                 }
-                
+
                 //print_r($ids);
             }
         } elseif ($data_model[$this->table_name][$column_name]['type'] == 'select_box' and count($column_values) > 0) {
@@ -1423,8 +1440,9 @@ class Data_Manager extends Object_Manager {
 
             $i = 0;
             foreach ($rets as $k => $r) {
-                $ret[$i] = SiteBill::modelSimplification($r);
-                $ret[$i]['_href'] = $this->getRealtyHREF($r['id']['value']);
+                //$ret[$i] = SiteBill::modelSimplification($r);
+                $ret[$i] = $r;
+                //$ret[$i]['_href'] = $this->getRealtyHREF($r['id']['value']);
                 $i++;
             }
         }
@@ -1467,7 +1485,7 @@ class Data_Manager extends Object_Manager {
                         }
                         if (isset($column_values['max'])) {
                             $where_array[] = "(re_data.`" . $column_name . "`*1 <= '" . $column_values['max'] . "')";
-                        }                        
+                        }
                     } elseif ($type == 'client_id') {
                         $where_fio_phone_array = array();
                         foreach ($column_values as $fio_phone) {
@@ -1590,9 +1608,15 @@ class Data_Manager extends Object_Manager {
         }
     }
 
-    function checkUniquety($form_data) {
-
+    function getNonUniqIds($form_data){
+        $ids = array();
         $unque_fields = trim($this->getConfigValue('apps.realty.uniq_params'));
+
+        $id = 0;
+        if(intval($form_data['id']['value']) != 0){
+            $id = intval($form_data['id']['value']);
+        }
+
         $fields = array();
         if ('' !== $unque_fields) {
             $matches = array();
@@ -1602,8 +1626,10 @@ class Data_Manager extends Object_Manager {
             }
         }
 
+        $where = array();
+        $where_val = array();
+
         if (!empty($fields)) {
-            $where = array();
             foreach ($fields as $f) {
                 if (isset($form_data[$f])) {
                     if ($form_data[$f]['dbtype'] == 1 || ($form_data[$f]['dbtype'] != 'notable' && $form_data[$f]['dbtype'] != '0')) {
@@ -1612,6 +1638,10 @@ class Data_Manager extends Object_Manager {
                     }
                 }
             }
+            if($id > 0){
+                $where[] = '`id`<>?';
+                $where_val[] = $id;
+            }
         } elseif (isset($form_data['city_id']) && isset($form_data['street_id']) && isset($form_data['number'])) {
             $where[] = '`city_id`=?';
             $where_val[] = (int) $form_data['city_id']['value'];
@@ -1619,21 +1649,30 @@ class Data_Manager extends Object_Manager {
             $where_val[] = (int) $form_data['street_id']['value'];
             $where[] = '`number`=?';
             $where_val[] = $form_data['number']['value'];
+            if($id > 0){
+                $where[] = '`id`<>?';
+                $where_val[] = $id;
+            }
         } else {
-            return TRUE;
+            return $ids;
         }
 
         $DBC = DBC::getInstance();
 
-        $uns = array();
         $query = 'SELECT id FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE ' . implode(' AND ', $where);
 
         $stmt = $DBC->query($query, $where_val);
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
-                $uns[] = $ar['id'];
+                $ids[] = $ar['id'];
             }
         }
+
+        return $ids;
+    }
+
+    function checkUniquety($form_data) {
+        $uns = $this->getNonUniqIds($form_data);
         if (count($uns) > 0) {
             $this->riseError(Multilanguage::_('ADVUNIQUETY_ERROR', 'system').' ('.implode(',', $uns).')');
             return FALSE;
@@ -1939,6 +1978,10 @@ class Data_Manager extends Object_Manager {
         if ($this->getConfigValue('is_watermark')) {
             $this->do_watermark($imgs);
         }
+
+        // Обработка handler
+        $this->tryHandlers('data', 'edit_data', $form_data, $id);
+
         $page = $this->getRequestValue('page');
         $_POST = array();
         $_POST['page'] = $page;
@@ -2312,6 +2355,10 @@ class Data_Manager extends Object_Manager {
      * Return grid
      */
     function grid($params = array(), $default_params = array()) {
+        if ( self::$replace_grid_with_angular ) {
+            return $this->angular_grid();
+        }
+
         global $smarty;
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
@@ -2329,12 +2376,12 @@ class Data_Manager extends Object_Manager {
         }
         $current_category_id = $this->getRequestValue('topic_id');
         $smarty->assign('data_category_tree', $Structure_Manager->get_category_tree_control($current_category_id, 0, false, $params));
-        
+
         $rs = '';
         if(1 == $this->getConfigValue('apps.memorylist.admingridenable')){
             $rs .= $this->get_memory_header();
         }
-        
+
         $rs .= '<table border="0" width="100%">';
         $rs .= '<tr>';
 
@@ -2396,6 +2443,23 @@ class Data_Manager extends Object_Manager {
             }
             $ret .= '</select>';
         }
+
+        /*$query = 'select * from re_user order by fio';
+        $DBC = DBC::getInstance();
+        $stmt = $DBC->query($query);
+        $ret = '';
+        if ($stmt) {
+            $ret .= '<div class="nav-search" id="nav-search">';
+			$ret .= '<form class="form-search">';
+			$ret .= '<span class="input-icon">';
+			$ret .= '<input type="text" placeholder="Search ..." class="input-small nav-search-input-users" id="nav-search-input" autocomplete="off" />';
+			$ret .= '<i class="icon-search nav-search-icon"></i>';
+			$ret .= '</span>';
+			$ret .= '</form>';
+			$ret .= '</div>';
+
+        }*/
+
         return $ret;
     }
 
@@ -2501,7 +2565,7 @@ class Data_Manager extends Object_Manager {
             }
             $query = 'DELETE FROM ' . DB_PREFIX . '_memorylist_item WHERE `id` = ?';
             $stmt = $DBC->query($query, array($primary_key_value));
-            
+
             $query = 'DELETE FROM ' . DB_PREFIX . '_userlists WHERE `id` = ? AND `lcode` = ?';
             $stmt = $DBC->query($query, array($primary_key_value, 'fav'));
         }
@@ -2569,12 +2633,12 @@ class Data_Manager extends Object_Manager {
         $rs = $this->_mass_deleteAction();
         return $rs;
     }
-    
+
     protected function _memorylistAction() {
         $rs = '';
         require_once SITEBILL_DOCUMENT_ROOT.'/apps/memorylist/admin/memory_list.php';
         $ML=new Memory_List();
-        
+
         if ( $this->getRequestValue('subdo') == 'getpdf' ) {
             $memorylist_id = intval($this->getRequestValue('filter_id'));
             $domain = false;
@@ -2582,12 +2646,12 @@ class Data_Manager extends Object_Manager {
             if($this->getRequestValue('report_type') == 'staff'){
                 $stuff = true;
             }
-            
+
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/data/admin/admin.php');
-            
+
             $ids = $ML->select_data_ids_by_memorylist_id($_SESSION['user_id'], $memorylist_id);
             $ML->compile_rich_pdf($ids, $stuff);
-            
+
             $rs .= $ML->grid(array('admin_zone_url' => 1));
         } elseif ($this->getRequestValue('subdo') == 'showfilter') {
             $rs .= $ML->showfilter();
@@ -2598,9 +2662,9 @@ class Data_Manager extends Object_Manager {
         }else {
             $rs .= $ML->grid(array('admin_zone_url' => 1));
         }
-		    
-        
-            
+
+
+
         return $rs;
     }
 
@@ -2655,6 +2719,7 @@ class Data_Manager extends Object_Manager {
         $data_model = new Data_Model();
         $form_data_shared = $data_model->get_kvartira_model(false, true);
         $form_data_shared = $data_model->init_model_data_from_db('data', 'id', $id, $form_data_shared['data'], true);
+        $form_data_shared = $data_model->applyGCompose($form_data_shared);
 
         if (!$form_data_shared) {
             return '';
@@ -2798,7 +2863,7 @@ class Data_Manager extends Object_Manager {
                 unset($form_data[$this->table_name][$key]);
             }
         }
-        if (isset($_POST['submit'])) {
+        if (isset($_REQUEST['submit'])) {
             $need_to_update = $this->getRequestValue('batch_update');
             $ids = $this->getRequestValue('batch_ids');
             if ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && (1 === (int) $this->getConfigValue('data_adv_share_access'))) {

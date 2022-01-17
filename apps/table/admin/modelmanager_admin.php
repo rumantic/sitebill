@@ -1,36 +1,36 @@
 <?php
 class modelmanager_admin extends table_admin {
 	private $ignoredTables=array('table', 'columns', 'entity');
-	
+
 	public function __construct(){
 		parent::__construct();
 	}
-	
-	
-	
+
+
+
 	function main () {
 		$rs = $this->getTopMenu();
-		
+
 		$do=$this->getRequestValue('do');
 		$t=$this->getRequestValue('t');
-		
+
 		if($do=='createmodel' && $t!=''){
 			$this->createModel($t);
 		}
-		
+
 		$rs .= $this->getList();
-		
-		
+
+
 		$rs_new = $this->get_app_title_bar();
 		$rs_new .= $rs;
 		return $rs_new;
 	}
-	
+
 	private function getList(){
-		
+
 		$tables=$this->loadAllTables();
 		$models=$this->loadAllModels();
-		
+
 		$model_columns=array();
 		foreach($models as $model_name=>$model_column){
 			$model_columns[$model_name]['table']=$model_name;
@@ -57,24 +57,24 @@ class modelmanager_admin extends table_admin {
 		$smarty->assign('models_list', $model_columns);
 		$smarty->assign('model_tables_list', $tables);
 		$rs=$smarty->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/entity/admin/template/entities_list.tpl');
-		 
+
 		return $rs;
 	}
-	
-	
+
+
 	private function loadTables($table=''){
-		
+
 		$DBC=DBC::getInstance();
 		$query='SHOW FULL TABLES';
 		$stmt=$DBC->query($query);
 		while($ar=$DBC->fetch($stmt)){
 			$ret[]=$ar;
 		}
-		
+
 		foreach($ret as $r){
 			$z=array_values($r);
 			$table_name=preg_replace('/^'.DB_PREFIX.'_/', '', $z[0]);
-			
+
 			if(!in_array($table_name, $this->ignoredTables)){
 				if($table!=''){
 					if($table==$table_name){
@@ -83,23 +83,23 @@ class modelmanager_admin extends table_admin {
 				}else{
 					$entity_names[]=$table_name;
 				}
-				
+
 			}
-				
+
 		}
 		$columns=array();
 		foreach($entity_names as $en){
 			$query='SHOW COLUMNS FROM `'.DB_PREFIX.'_'.$en.'`';
-				
-				
+
+
 			$stmt=$DBC->query($query);
 			while($ar=$DBC->fetch($stmt)){
 				$columns[$en][]=$ar;
 			}
 		}
-		
-		
-		
+
+
+
 		$entity_columns=array();
 		foreach($columns as $entity_name=>$entity_column){
 			$entity_columns[$entity_name]['table']=$entity_name;
@@ -116,30 +116,30 @@ class modelmanager_admin extends table_admin {
 		return $entity_columns;
 		//print_r($entity_columns);
 	}
-	
+
 	private function createModel($table){
 		$a=$this->loadTables($table);
 		//print_r($a);
-		
+
 		$model[$table][$a[$table]['id']['c']]['name'] = $a[$table]['id']['c'];
 		$model[$table][$a[$table]['id']['c']]['title'] = $a[$table]['id']['c'];
 		$model[$table][$a[$table]['id']['c']]['active'] = 1;
 		$model[$table][$a[$table]['id']['c']]['type'] = 'primary_key';
-		
+
 		foreach($a[$table]['fields'] as $field){
 			$model[$table][$field['c']]['name'] = $field['c'];
 			$model[$table][$field['c']]['title'] = $field['c'];
 			$model[$table][$field['c']]['active'] = 1;
 			$model[$table][$field['c']]['type'] = 'safe_string';
 		}
-		
-		
+
+
 		$this->create_table_and_columns($model, $table);
 		//print_r($model);
-		
+
 	}
-	
-	private function loadAllModels(){
+
+	public function loadAllModels(){
 		$models=array();
 		require_once SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/helper.php';
 		$Helper=new Admin_Table_Helper();
@@ -150,11 +150,11 @@ class modelmanager_admin extends table_admin {
 		}
 		return $models;
 	}
-	
+
 	private function loadAllTables(){
 		$tables=array();
 		$DBC=DBC::getInstance();
-		$query = "SELECT * FROM ".DB_PREFIX."_table ORDER BY table_id DESC";
+		$query = "SELECT * FROM ".DB_PREFIX."_table ORDER BY name ASC";
 		$stmt=$DBC->query($query);
 		while($ar=$DBC->fetch($stmt)){
 			$tables[$ar['name']]=$ar;

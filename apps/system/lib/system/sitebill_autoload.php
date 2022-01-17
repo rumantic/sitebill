@@ -1,10 +1,10 @@
 <?php
 spl_autoload_register(function ($className) {
-    $className = strtolower($className);
+    //$className = strtolower($className);
+    //@todo: Нужно четко определить как не использовать strtolower
     $className = str_replace("\\", DIRECTORY_SEPARATOR, $className);
     $document_root = $_SERVER['DOCUMENT_ROOT'];
 
-    //echo $className.'<br>'."\n";
     $file_name = $document_root . '/apps/' . $className . '.php';
 
     if ( $className == 'system\lib\model\data_model' ) {
@@ -13,6 +13,8 @@ spl_autoload_register(function ($className) {
     }
     if ( @file_exists($file_name) ) {
         include_once $file_name;
+    } elseif ( @file_exists(strtolower($file_name)) ) {
+        include_once strtolower($file_name);
     } else {
         $file_name = $document_root . '/apps/' . $className . '.class.php';
         if ( @file_exists($file_name) ) {

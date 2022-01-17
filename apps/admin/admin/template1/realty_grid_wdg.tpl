@@ -78,6 +78,54 @@
             });
 
 
+            $('.gridpropertytoggler').click(function (e) {
+                e.preventDefault();
+                var thistoggler = $(this);
+                var id = thistoggler.data('id');
+                var fieldname = thistoggler.data('field');
+                var state;
+                if (thistoggler.prop('checked')) {
+                    state = 1;
+                } else {
+                    state = 0;
+                }
+                let data = {
+                    action: 'model',
+                    do: 'graphql_update',
+                    model_name: 'data',
+                    only_ql: true,
+                    key_value: id
+                };
+                data.ql_items = {};
+                data.ql_items[fieldname] = state;
+
+                $.ajax({
+                    url: estate_folder+'/apps/api/rest.php',
+                    data: data,
+                    type: 'post',
+                    dataType: 'json',
+                    success: function(json){
+                        if(json.state == 'success'){
+                            if(state == 1){
+                                thistoggler.prop('checked', true);
+                                if(fieldname == 'active'){
+                                    thistoggler.parents('tr').eq(0).removeClass('notactive');
+                                }else if(fieldname == 'archived'){
+                                    thistoggler.parents('tr').eq(0).addClass('archived');
+                                }
+                            }else{
+                                thistoggler.prop('checked', false);
+                                if(fieldname == 'active'){
+                                    thistoggler.parents('tr').eq(0).addClass('notactive');
+                                }else if(fieldname == 'archived'){
+                                    thistoggler.parents('tr').eq(0).removeClass('archived');
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+
             $('#grid_control_panel select[name=cp_optype]').change(function () {
 
                 var operation = $(this).val();
@@ -94,40 +142,6 @@
                 }
             });
 
-
-            /*
-             $('#grid_control_panel button#run').click(function(){
-
-             var cp=$('#grid_control_panel');
-             var action=$(this).attr('alt');
-             var operation=cp.find('select[name=cp_optype]').val();
-
-             if(operation!=''){
-             var field=null;
-             if(cp.find('#grid_control_panel_content select').length!=0){
-             var field=cp.find('#grid_control_panel_content select');
-             }else if(cp.find('#grid_control_panel_content input').length!=0){
-             var field=cp.find('#grid_control_panel_content input');
-             if(field.attr('type')=='checkbox' && field.is(':checked')){
-             field.val('1');
-             }
-
-             }
-             if(field!==null){
-             var cat_id=field.val();
-             }
-             var checked=[];
-             $('.grid_check_one:checked').each(function(){
-             checked.push(this.value);
-             });
-             if(checked.length>0){
-             window.location.replace(estate_folder+'/admin/index.php?action='+action+'&do=change_param&new_param_value='+cat_id+'&param_name='+operation+'&ids='+checked.join(','));
-             }
-
-             }
-             return false;
-             });
-             */
             $('.batch_update').click(function () {
                 var ids = [];
                 var action = $(this).attr('alt');
@@ -149,7 +163,6 @@
                     return;
                 }
                 var url=estate_folder + '/admin/?action='+action+'&do=batch_field_edit&' + ids.join('&')+'&field='+field;
-                //console.log(url);
                 window.location.replace(url);
             });
 
@@ -166,7 +179,6 @@
                         window.location.replace(estate_folder + '/admin/?action=' + action + '&do=duplicate&ids=' + ids.join(','));
                     }
                 }
-                //window.location.replace(estate_folder+'/admin/index.php?action='+action+'&do=duplicate&ids='+ids.join(','));
             });
             $('.tooltipe_block').popover({trigger: 'hover'});
             $("#cboxLoadingGraphic").append("<i class='ace-icon fa fa-spinner orange'></i>");//let's add a custom loading icon
@@ -207,6 +219,16 @@
                  $('#fast_preview_modal').modal('show');
                  }*/
             });
+
+
+            $('.tags-clear').click(function(e){
+                e.preventDefault();
+                $.ajax({url: estate_folder + '/js/ajax.php?action=get_tags&do=clear'}).done(function () {
+                    location.reload();
+                });
+            });
+
+
             $('.tagged').each(function () {
                 var tag_input = $(this);
                 var tag_array = [];
@@ -236,7 +258,14 @@
                 tag_input.on('added', function (e, value) {
                     tag_array.push(value);
                     datastr[$(this).attr('name')] = tag_array;
-                    $.ajax({url: estate_folder + '/js/ajax.php?action=get_tags&do=set&tags_array=' + JSON.stringify(datastr)}).done(function (result_items) {
+                    var body = {tags_array:datastr};
+                    $.ajax(
+                        {
+                            type: 'POST',
+                            url: estate_folder + '/js/ajax.php?action=get_tags&do=set',
+                            data: body
+                        }
+                    ).done(function (result_items) {
                         window.location.href = window.location.href;
                     });
                 })
@@ -244,7 +273,14 @@
                     var val = (Array.isArray(value) ? value[0] : value);
                     var item_index = datastr[$(this).attr('name')].indexOf(val);
                     datastr[$(this).attr('name')].splice(item_index, 1);
-                    $.ajax({url: estate_folder + '/js/ajax.php?action=get_tags&do=set&tags_array=' + JSON.stringify(datastr)}).done(function (result_items) {
+                    var body = {tags_array:datastr};
+                    $.ajax(
+                        {
+                            type: 'POST',
+                            url: estate_folder + '/js/ajax.php?action=get_tags&do=set',
+                            data: body
+                        }
+                    ).done(function (result_items) {
                         window.location.href = window.location.href;
                     });
                 })
@@ -253,6 +289,10 @@
             $('.date-tags').each(function (e) {
                 var datetag = $(this);
                 var fieldname = datetag.data('field');
+
+
+                var tag_array = {};
+
                 var txt = 'не задано';
 
                 var min = null;
@@ -267,11 +307,17 @@
 
                 if (min !== null && max !== null) {
                     var txt = min + ' - ' + max;
+                    tag_array.min = min;
+                    tag_array.max = max;
                 } else if (min !== null) {
                     var txt = 'от ' + min;
+                    tag_array.min = min;
                 } else if (max !== null) {
                     var txt = 'до ' + max;
+                    tag_array.max = max;
                 }
+
+                datastr[fieldname] = tag_array;
 
                 datetag.find('.date-tags-title').html(txt);
 
@@ -382,7 +428,7 @@
 
                         datastr[name] = tag_array;
                     });
-                    $.ajax({url: estate_folder + '/js/ajax.php?action=get_tags&do=set&tags_array=' + JSON.stringify(datastr)}).done(function (result_items) {
+                    $.ajax({type: 'post', url: estate_folder + '/js/ajax.php?action=get_tags&do=set' , data: {tags_array:datastr}}).done(function (result_items) {
                         location.reload();
                     });
                 });
@@ -392,7 +438,7 @@
                         tag_array = datastr[name];
                         delete datastr[name];
                     }
-                    $.ajax({url: estate_folder + '/js/ajax.php?action=get_tags&do=set&tags_array=' + JSON.stringify(datastr)}).done(function (result_items) {
+                    $.ajax({type: 'post', url: estate_folder + '/js/ajax.php?action=get_tags&do=set', data: {tags_array:datastr}}).done(function (result_items) {
                         location.reload();
                     });
                 });
@@ -473,7 +519,7 @@
 
                         datastr[name] = tag_array;
                     });
-                    $.ajax({url: estate_folder + '/js/ajax.php?action=get_tags&do=set&tags_array=' + JSON.stringify(datastr)}).done(function (result_items) {
+                    $.ajax({type: 'post', data: {tags_array: datastr}, url: estate_folder + '/js/ajax.php?action=get_tags&do=set'}).done(function (result_items) {
                         location.reload();
                     });
                 });
@@ -484,7 +530,8 @@
                         tag_array = datastr[name];
                         delete datastr[name];
                     }
-                    $.ajax({url: estate_folder + '/js/ajax.php?action=get_tags&do=set&tags_array=' + JSON.stringify(datastr)}).done(function (result_items) {
+
+                    $.ajax({type: 'post', data: {tags_array: datastr}, url: estate_folder + '/js/ajax.php?action=get_tags&do=set'}).done(function (result_items) {
                         location.reload();
                     });
                 });
@@ -499,7 +546,7 @@
 <div class="modal hide fade" id="fast_preview_modal">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h3>Быстрый просмотр <a target="_blank" class="btn btn-success newwin" href="#">открыть в новом окне</a></h3>
+        <h3>{_e t="Быстрый просмотр"} <a target="_blank" class="btn btn-success newwin" href="#">{_e t="открыть в новом окне"}</a></h3>
     </div>
     <div class="modal-body"></div>
     <div class="modal-footer"></div>
@@ -508,7 +555,7 @@
 <div class="modal hide fade" id="fast_comment_modal">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h3>Быстрый просмотр</h3>
+        <h3>{_e t="Быстрый просмотр"}</h3>
     </div>
     <div class="modal-body"></div>
     <div class="modal-footer"></div>
@@ -517,7 +564,7 @@
 <div class="navbar">
     <div class="navbar-inner">
         <div class="container">
-            <div class="nav total_find" style="color: #fff; font-size: 24px; padding: 10px 20px 10px 5px; font-size: 20px; font-weight: 200;">Найдено: {$_total_records}</div>
+            <div class="nav total_find" style="color: #fff; font-size: 24px; padding: 10px 20px 10px 5px; font-size: 20px; font-weight: 200;">{_e t="Найдено"}: {$_total_records}</div>
 
             <div class="nav pull-right">
                 <div align="right"><a href="?action=data&do=import" title="Загрузить записи в формате Excel" class="btn btn-info btn-xs "><i class="icon-white icon-upload"></i> </a> <a href="#search" id="search_toggle" class="btn btn-info"><i class="icon-white icon-search"></i> {$L_ADVSEARCH}</a></div>
@@ -551,7 +598,7 @@
             <th><input type="checkbox" class="grid_check_all ace" /><label for="grid_check_all" class="lbl"></label></th>
             <!-- th class="row_title"></th-->
             {if $admin_grid_leftbuttons==1}
-                <th class="row_title"></th>
+                <th class="row_title"><a class="tags-clear" href="">Очистить</a></th>
                 {/if}
                 {foreach from=$grid_data_columns item=grid_data_column}
                 <th {if $smarty.request.order eq $grid_data_column}class="sorting_{if $smarty.request.asc eq 'desc'}desc{else}asc{/if}"{else}class="sorting"{/if}  >
@@ -627,7 +674,7 @@
                     </th>
                     {/foreach}
                         {if $admin_grid_leftbuttons==0}
-                            <th class="row_title"></th>
+                            <th class="row_title"><a class="tags-clear" href="">Очистить</a></th>
                             {/if}
                     </tr>
                     <tr>
@@ -652,8 +699,8 @@
                                 <td>
                                     <ul class="ace-thumbnails clearfix">
                                         <li>
-                                            <a href="{$estate_folder}/img/data/{$grid_items[i][$grid_data_column].image_array[0].normal}">
-                                                <img src="{$estate_folder}/img/data/{$grid_items[i][$grid_data_column].image_array[0].preview}" style="width: 40px; height: 40px;" />
+                                            <a href="{mediaincpath data=$grid_items[i][$grid_data_column].image_array[0]}">
+                                                <img src="{mediaincpath data=$grid_items[i][$grid_data_column].image_array[0] type='preview'}" style="width: 40px; height: 40px;" />
                                             </a>
                                             <div class="tags">
                                                 <span class="label-holder">
@@ -661,7 +708,7 @@
                                                 </span>
                                             </div>
                                             <div class="tools tools-top">
-                                                <a href="{$estate_folder}/img/data/{$grid_items[i][$grid_data_column].image_array[0].normal}"  data-rel="colorbox{$grid_items[i].id.value}" class="colorboxed" data-cbxid="{$grid_items[i].id.value}">
+                                                <a href="{mediaincpath data=$grid_items[i][$grid_data_column].image_array[0]}"  data-rel="colorbox{$grid_items[i].id.value}" class="colorboxed" data-cbxid="{$grid_items[i].id.value}">
                                                     <i class="ace-icon fa fa-search-plus"></i>
                                                 </a>
                                             </div>
@@ -669,7 +716,7 @@
                                         {foreach from=$grid_items[i][$grid_data_column].image_array item=image key=k}
                                             {if $k != 0}
                                                 <li style="display: none;">
-                                                    <a href="{$estate_folder}/img/data/{$image.normal}"  data-rel="colorbox{$grid_items[i].id.value}"><img src="" data-src="{$estate_folder}/img/data/{$image.preview}" width="50" /></a>
+                                                    <a href="{mediaincpath data=$image}"  data-rel="colorbox{$grid_items[i].id.value}"><img src="" data-src="{mediaincpath data=$image type='preview'}" width="50" /></a>
                                                 </li>
                                             {/if}
                                         {/foreach}
@@ -707,9 +754,10 @@
                             {elseif $grid_items[i][$grid_data_column].type=='geodata' && is_array($grid_items[i][$grid_data_column].value)}
                                 <td>{$grid_items[i][$grid_data_column].value_string.lat}, {$grid_items[i][$grid_data_column].value_string.lng}</td>
                             {elseif $grid_items[i][$grid_data_column].type=='checkbox'}
-                                <td><input type="radio" disabled="disabled" {if $grid_items[i][$grid_data_column].value==1}checked="checked"{/if}></td>
+                                <!--td><input type="radio" disabled="disabled" {if $grid_items[i][$grid_data_column].value==1}checked="checked"{/if}></td-->
+                                <td><input type="checkbox" class="ace gridpropertytoggler" id="toggler_{$grid_data_column}_{$grid_items[i].id.value}" {if $grid_items[i][$grid_data_column].value==1}checked="checked"{/if} data-field="{$grid_data_column}" data-id="{$grid_items[i].id.value}"><label for="toggler_{$grid_data_column}_{$grid_items[i].id.value}" class="lbl"></label></td>
                             {elseif $grid_items[i][$grid_data_column].type=='primary_key'}
-                                <td><a href="{$grid_items[i]._href}" target="_blank">{$grid_items[i][$grid_data_column].value_string}</a></td>
+                                <td><a href="{$grid_items[i]._href}" target="_blank" id="grid_placer_{$grid_items[i][$grid_data_column].value_string}">{$grid_items[i][$grid_data_column].value_string}</a></td>
                             {elseif $grid_items[i][$grid_data_column].type=='select_by_query_multi'}
                                 <td>{$grid_items[i][$grid_data_column].value_string|implode:', '}</td>
                             {else}

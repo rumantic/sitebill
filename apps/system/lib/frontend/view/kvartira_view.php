@@ -121,6 +121,7 @@ class Kvartira_View extends SiteBill {
 
         $result = false;
 
+
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/users/user_object_manager.php');
@@ -138,8 +139,6 @@ class Kvartira_View extends SiteBill {
         //load Data model full without rules
         $form_data_shared = $data_model->get_kvartira_model(false, true);
 
-        
-
         //load User model with rules
         $form_user = $user_object_manager->get_user_model(true);
 
@@ -150,20 +149,13 @@ class Kvartira_View extends SiteBill {
 
         $topic_id = 0;
         if (isset($form_data['topic_id'])) {
-            $topic_id = (int) $form_data['topic_id']['value'];
-            $this->topic_id = (int) $form_data['topic_id']['value'];
+            $topic_id = intval($form_data['topic_id']['value']);
+            $this->topic_id = $topic_id;
         }
 
-        if ((int) $form_data['city_id']['value'] > 0) {
+        if (isset($form_data['city_id']) && intval($form_data['city_id']['value']) > 0) {
             $this->city_id = $form_data['city_id']['value'];
         }
-
-
-
-
-
-
-
 
         //init Data model full without rules
         $form_data_shared = $data_model->init_model_data_from_db('data', 'id', $realty_id, $form_data_shared['data'], true);
@@ -183,14 +175,18 @@ class Kvartira_View extends SiteBill {
             $show_not_active = true;
         }
 
+        $ownermode = false;
+        if (1 == intval($this->getConfigValue('apps.realty.allow_notactive_owner')) && 0 < intval($_SESSION['user_id']) && intval($_SESSION['user_id']) == $form_data_shared['user_id']['value']) {
+            $ownermode = true;
+        }
 
-        if (isset($form_data_shared['active']) && $form_data_shared['active']['value'] == 0 && !$show_not_active) {
+        if (isset($form_data_shared['active']) && $form_data_shared['active']['value'] == 0 && !$show_not_active && !$ownermode) {
             header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
             $this->template->assign('main_file_tpl', 'error_message.tpl');
             return false;
         }
 
-        if (isset($form_data_shared['active']) && $form_data_shared['active']['value'] == 0 && $show_not_active) {
+        if (isset($form_data_shared['active']) && $form_data_shared['active']['value'] == 0 && ($show_not_active || $ownermode)) {
             $this->template->assign('notactive_item_showed', 1);
         }
 
@@ -263,6 +259,7 @@ class Kvartira_View extends SiteBill {
         } else {
             $form_user = $data_model->init_model_data_from_db('user', 'user_id', $form_data_shared['user_id']['value'], $form_user['user'], true);
         }
+        $form_user = $data_model->init_language_values($form_user, $form_user);
         /*
           if($this->getConfigValue('apps.realtypro.show_contact.enable')){
           $form_user = $data_model->init_model_data_from_db ( 'user', 'user_id', $form_data['user_id']['value'], $form_user['user'], true);
@@ -447,11 +444,11 @@ class Kvartira_View extends SiteBill {
 
         $this->template->assert('geoobjects_collection_clustered', json_encode($this->getRealtyOnMap($form_data)));
 
-        if ($this->getConfigValue('theme') != 'estate' and ! file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/realty_view.tpl')) {
+        /*if ($this->getConfigValue('theme') != 'estate' and ! file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/realty_view.tpl')) {
             $this->template->assign('main_file_tpl', '../estate/realty_view.tpl');
-        } else {
+        } else {*/
             $this->template->assign('main_file_tpl', 'realty_view.tpl');
-        }
+        /*}*/
 
         if (1 == $this->getConfigValue('apps.billing.enable')) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/billing/admin/admin.php';
@@ -483,7 +480,15 @@ class Kvartira_View extends SiteBill {
             }
         }
 
-        $this->makePDF($realty_id, $meta_data['title']);
+        $pdffilename = $this->getPDFFileName($form_data_shared);
+        if($pdffilename == ''){
+            $pdffilename = $this->transliteMe($meta_data['title']);
+        }
+
+
+
+
+        $this->makePDF($realty_id, $pdffilename);
 
 
         return $result;
@@ -544,6 +549,10 @@ class Kvartira_View extends SiteBill {
           }
           }
           $this->template->assign('likevoter', $likevoter); */
+    }
+
+    protected function getPDFFileName($form_data_shared){
+        return '';
     }
 
     protected function makePDF($realty_id, $title) {
@@ -619,15 +628,15 @@ class Kvartira_View extends SiteBill {
             if (0 == (int) $this->getConfigValue('apps.pdfreport.use_cache') || $hasAccessor) {
                 global $smarty;
                 if ($_tpl != '' && file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/' . $_tpl)) {
-                    $html = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/' . $_tpl);
+                    $html = $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/' . $_tpl);
                 } elseif ($_tpl != '' && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/pdfreport/admin/template/' . $_tpl)) {
-                    $html = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/pdfreport/admin/template/' . $_tpl);
+                    $html = $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/pdfreport/admin/template/' . $_tpl);
                 } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/realty_view.tpl')) {
-                    $html = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/realty_view.tpl');
+                    $html = $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/realty_view.tpl');
                 } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/site/template/realty_view.tpl')) {
-                    $html = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/site/template/realty_view.tpl');
+                    $html = $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/site/template/realty_view.tpl');
                 } else {
-                    $html = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/pdfreport/admin/template/realty_view.tpl');
+                    $html = $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/pdfreport/admin/template/realty_view.tpl');
                 }
 
                 $dompdfoptions = new \Dompdf\Options();
@@ -651,13 +660,13 @@ class Kvartira_View extends SiteBill {
                     require_once(SITEBILL_DOCUMENT_ROOT . "/apps/pdfreport/lib/dompdf/dompdf_config.inc.php");
                     global $smarty;
                     if ($_tpl != '' && file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/' . $_tpl)) {
-                        $html = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/' . $_tpl);
+                        $html = $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/' . $_tpl);
                     } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/realty_view.tpl')) {
-                        $html = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/realty_view.tpl');
+                        $html = $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/realty_view.tpl');
                     } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/site/template/realty_view.tpl')) {
-                        $html = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/site/template/realty_view.tpl');
+                        $html = $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/site/template/realty_view.tpl');
                     } else {
-                        $html = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/pdfreport/admin/template/realty_view.tpl');
+                        $html = $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/pdfreport/admin/template/realty_view.tpl');
                     }
                     $dompdfoptions = new \Dompdf\Options();
                     $dompdfoptions->set('isRemoteEnabled', TRUE);
@@ -673,7 +682,7 @@ class Kvartira_View extends SiteBill {
             }
             header("Content-type: application/pdf");
             //echo $output;
-            header('Content-Disposition: attachment; filename="' . $this->transliteMe($title) . '.pdf"');
+            header('Content-Disposition: attachment; filename="' . $title . '.pdf"');
 
             echo $output;
             exit();

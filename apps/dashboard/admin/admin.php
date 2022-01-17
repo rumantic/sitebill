@@ -28,6 +28,9 @@ class dashboard_admin extends Object_Manager {
     public function _preload() {
         if ($this->getConfigValue('apps.dashboard.enable')) {
             $this->template->assert('dashboard', $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/dashboard/admin/template/start_dashboard_js_code.tpl'));
+            if ( $this->getSessionUserId() > 0 ) {
+                \SConfig::setConfigValueStatic('editor_mode', true);
+            }
         }
     }
 

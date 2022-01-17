@@ -10,6 +10,7 @@ class User_Data_Manager extends Object_Manager {
 
     public $table_name = 'data';
     public $primary_key = 'id';
+    private $nowatermark_folder_with_id = false;
 
     //public $_grid_constructor;
     /**
@@ -48,6 +49,90 @@ class User_Data_Manager extends Object_Manager {
     function init_more_fields($form_data) {
         return $form_data;
     }
+    
+    
+    function get_photos($id, $clearprotect = false){
+		
+		$DBC = DBC::getInstance();
+		//$isprotected = false;
+		
+		$query = 'SELECT image FROM '.DB_PREFIX.'_data WHERE id = ? AND user_id = ? AND image <> ?';
+		$stmt = $DBC->query($query, array($id, $_SESSION['user_id'], ''));
+		if(!$stmt){
+			exit();
+		}
+		$ar = $DBC->fetch($stmt);
+		$images = unserialize($ar['image']);
+		
+		if(empty($images)){
+            return false;
+        }
+		
+		
+        $zip = new ZipArchive();
+        $zip_name = "photos_".$id.'_'.time().".zip";
+        $zip->open($zip_name, ZIPARCHIVE::CREATE);
+		
+		$exported = array();
+		
+		if($clearprotect && 1 == intval($this->getConfigValue('watermark_user_control'))){
+            $fold = $this->notwatermarked_folder;
+			if($this->nowatermark_folder_with_id){
+				$fold = $fold.$id.'/';
+			}
+			foreach($images as $photo){
+				if(file_exists($fold.$photo['normal'])){
+					$exported[] = array($fold.$photo['normal'], $photo['normal']);
+				}else{
+					$exported[] = array(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$photo['normal'], $photo['normal']);
+				}
+			}
+		}elseif($clearprotect && 0 == intval($this->getConfigValue('watermark_user_control'))){
+            $fold = SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/';
+			
+			foreach($images as $photo){
+				if(file_exists($fold.$photo['normal'])){
+					$exported[] = array($fold.$photo['normal'], $photo['normal']);
+				}else{
+					$exported[] = array(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$photo['normal'], $photo['normal']);
+				}
+			}
+		}else{
+            $j = 0;
+            foreach($images as $photo){
+                $j++;
+                if ( $photo['remote'] === 'true' ) {
+                    $pathinfo = pathinfo($photo['normal']);
+                    $file_name = $j.'.'.$pathinfo['extension'];
+                    $exported[] = array($fold.$photo['normal'], $photo['normal'], 1);
+                } else {
+                    $exported[] = array(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$photo['normal'], $photo['normal']);
+                }
+            }
+		}
+		
+		foreach($exported as $exp){
+            if(isset($exp[2]) && $exp[2] == 1){
+                $zip->addFromString($exp[0], file_get_contents($exp[1]));
+            }else{
+                $zip->addFile($exp[0], $exp[1]);
+            }
+			
+		}
+		
+        $zip->close();
+        if(file_exists($zip_name)){
+            header("Pragma: public");
+            header("Expires: 0");
+            header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+            header("Cache-Control: private", false);
+            header('Content-type: application/zip');
+            header('Content-Disposition: attachment; filename="'.$zip_name.'"');
+            readfile($zip_name);
+            unlink($zip_name);
+        }
+        exit();
+	}
 
     protected function _upAction() {
         $user_id = $this->getSessionUserId();
@@ -293,6 +378,8 @@ class User_Data_Manager extends Object_Manager {
                 }
             }
         }
+        
+        $donecount = 0;
 
         if(!empty($images)){
 
@@ -304,6 +391,10 @@ class User_Data_Manager extends Object_Manager {
             }
 
             foreach ($images as $image){
+                if(file_exists($copy_path.$image)){
+                    continue;
+                }
+                
                 copy(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$image, $copy_path.$image);
 
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/watermark/watermark.php';
@@ -316,10 +407,12 @@ class User_Data_Manager extends Object_Manager {
                     $this->getConfigValue('apps.watermark.offset_bottom')
                 ));
                 $Watermark->printWatermark(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$image);
+                
+                $donecount += 1;
             }
         }
 
-        return count($images);
+        return $donecount;
     }
 
     protected function _protect_imagesAction(){
@@ -374,7 +467,7 @@ class User_Data_Manager extends Object_Manager {
 
         $resp = $this->protectImagesByWatermark($id);
 
-        return $this->formatAnswer_protect_images(1, 'done', count($resp));
+        return $this->formatAnswer_protect_images(1, 'done', $resp);
 
 
     }
@@ -769,6 +862,48 @@ class User_Data_Manager extends Object_Manager {
         return $rs;
     }
 
+    /**
+     * Выдача фотографий объекта с вотермарком в zip
+     */
+    protected function _exportPhotoAction() {
+        $id = intval($this->getRequestValue('id'));
+        $user_id = $this->getSessionUserId();
+
+        $aggregroup = -1;
+        $cgroup_id = intval($_SESSION['current_user_group_id']);
+
+        $rs = '';
+        if ($cgroup_id == $aggregroup) {
+            if (!$this->check_access_to_aggregated_data($user_id, $id)) {
+                return Multilanguage::_('L_ACCESS_DENIED');
+            }
+        } elseif (!$this->check_access_to_data($user_id, $id)) {
+            return Multilanguage::_('L_ACCESS_DENIED');
+        }
+        $this->get_photos($id);
+    }
+
+    /**
+     * Выдача фотографий объекта без вотермарка в zip, если таковые есть
+     */
+    protected function _exportPhotoClearAction() {
+        $id = intval($this->getRequestValue('id'));
+        $user_id = $this->getSessionUserId();
+
+        $aggregroup = -1;
+        $cgroup_id = intval($_SESSION['current_user_group_id']);
+
+        $rs = '';
+        if ($cgroup_id == $aggregroup) {
+            if (!$this->check_access_to_aggregated_data($user_id, $id)) {
+                return Multilanguage::_('L_ACCESS_DENIED');
+            }
+        } elseif (!$this->check_access_to_data($user_id, $id)) {
+            return Multilanguage::_('L_ACCESS_DENIED');
+        }
+        $this->get_photos($id, true);
+    }
+
 
     protected function _newAction() {
 
@@ -888,14 +1023,14 @@ class User_Data_Manager extends Object_Manager {
         return $rs;
     }
 
-    function checkUniquety($form_data) {
+    function getNonUniqIds($form_data){
+        $ids = array();
         $unque_fields = trim($this->getConfigValue('apps.realty.uniq_params'));
-        //$unque_fields='city_id,topic_id,price';
 
         $id = 0;
-		if(intval($form_data['id']) != 0){
-			$id = intval($form_data['id']);
-		}
+        if(intval($form_data['id']['value']) != 0){
+            $id = intval($form_data['id']['value']);
+        }
 
         $fields = array();
         if ('' !== $unque_fields) {
@@ -919,9 +1054,9 @@ class User_Data_Manager extends Object_Manager {
                 }
             }
             if($id > 0){
-				$where[] = '`id`<>?';
-				$where_val[] = $id;
-			}
+                $where[] = '`id`<>?';
+                $where_val[] = $id;
+            }
         } elseif (isset($form_data['city_id']) && isset($form_data['street_id']) && isset($form_data['number'])) {
             $where[] = '`city_id`=?';
             $where_val[] = (int) $form_data['city_id']['value'];
@@ -930,26 +1065,31 @@ class User_Data_Manager extends Object_Manager {
             $where[] = '`number`=?';
             $where_val[] = $form_data['number']['value'];
             if($id > 0){
-				$where[] = '`id`<>?';
-				$where_val[] = $id;
-			}
+                $where[] = '`id`<>?';
+                $where_val[] = $id;
+            }
         } else {
-            return TRUE;
+            return $ids;
         }
 
         $DBC = DBC::getInstance();
 
-        $uns = array();
         $query = 'SELECT id FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE ' . implode(' AND ', $where);
 
         $stmt = $DBC->query($query, $where_val);
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
-                $uns[] = $ar['id'];
+                $ids[] = $ar['id'];
             }
         }
+
+        return $ids;
+    }
+
+    function checkUniquety($form_data) {
+        $uns = $this->getNonUniqIds($form_data);
         if (count($uns) > 0) {
-            $this->riseError('Такое объявление уже существует (' . implode(',', $uns) . ')');
+            $this->riseError(Multilanguage::_('ADVUNIQUETY_ERROR', 'system').' ('.implode(',', $uns).')');
             return FALSE;
         }
         return TRUE;

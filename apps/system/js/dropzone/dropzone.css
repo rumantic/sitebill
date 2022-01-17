@@ -228,7 +228,7 @@
   -ms-filter: none;
   filter: none;
 }
-.dropzone .dz-preview.dz-error .dz-error-mark,
+.dropzone_inner .dz-preview.dz-error .dz-error-mark,
 .dropzone-previews .dz-preview.dz-error .dz-error-mark {
   opacity: 1;
   -ms-filter: none;

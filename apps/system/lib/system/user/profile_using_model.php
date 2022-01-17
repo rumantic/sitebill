@@ -91,61 +91,61 @@ class User_Profile_Model extends User_Profile {
                     }
 
                 case 'pass_edit' : {
-                        $ret = '';
-                        $error = '';
-                        $success = '';
-                        if (strtolower($_SERVER['REQUEST_METHOD']) == 'post') {
-                            $pass = trim($this->getRequestValue('pass'));
-                            $pass2 = trim($this->getRequestValue('pass2'));
-                            $pass_old = trim($this->getRequestValue('pass_old'));
-                            if ($pass == '' || $pass2 == '' || $pass_old == '') {
-                                $error = 'Необходимо заполнить все поля';
-                            } elseif ($pass != $pass2) {
-                                $error = 'Пароли не совпадают';
+                    $ret = '';
+                    $error = '';
+                    $success = '';
+                    if (strtolower($_SERVER['REQUEST_METHOD']) == 'post') {
+                        $pass = trim($this->getRequestValue('pass'));
+                        $pass2 = trim($this->getRequestValue('pass2'));
+                        $pass_old = trim($this->getRequestValue('pass_old'));
+                        if ($pass == '' || $pass2 == '' || $pass_old == '') {
+                            $error = 'Необходимо заполнить все поля';
+                        } elseif ($pass != $pass2) {
+                            $error = 'Пароли не совпадают';
+                        } else {
+                            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/register_using_model.php');
+                            $RUM = new Register_Using_Model();
+                            if (!$RUM->checkPasswordQuality($pass, $msg)) {
+                                $error = $msg;
                             } else {
-                                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/register_using_model.php');
-                                $RUM = new Register_Using_Model();
-                                if (!$RUM->checkPasswordQuality($pass, $msg)) {
-                                    $error = $msg;
+                                $DBC = DBC::getInstance();
+                                $query = 'UPDATE ' . DB_PREFIX . '_user SET `password`=? WHERE `password`=? AND `user_id`=?';
+                                $stmt = $DBC->query($query, array(md5($pass), md5($pass_old), $user_id));
+                                if (!$stmt) {
+                                    $error = 'Вы указали неправильный старый пароль';
                                 } else {
-                                    $DBC = DBC::getInstance();
-                                    $query = 'UPDATE ' . DB_PREFIX . '_user SET `password`=? WHERE `password`=? AND `user_id`=?';
-                                    $stmt = $DBC->query($query, array(md5($pass), md5($pass_old), $user_id));
-                                    if (!$stmt) {
-                                        $error = 'Вы указали неправильный старый пароль';
-                                    } else {
-                                        $success = 'Пароль изменен';
-                                    }
+                                    $success = 'Пароль изменен';
                                 }
                             }
                         }
-
-                        if ($error != '') {
-                            $ret .= '<div class="alert alert-error">' . $error . '</div>';
-                        }
-                        if ($success != '') {
-                            $ret .= '<div class="alert alert-success">' . $success . '</div>';
-                        }
-
-                        $ret .= '<div class="profile_change_password">';
-                        $ret .= '<div class="tabbed_form_block"><form class="form-horizontal" action="' . SITEBILL_MAIN_URL . '/account/profile/" method="post">
-					  <fieldset>
-							<div class="form-group"><label>' . Multilanguage::_('L_REGISTER_OLD_PASSWORD') . '</label>
-						<input type="password" name="pass_old"></div>
-						<div class="form-group"><label>' . Multilanguage::_('L_REGISTER_NEW_PASSWORD') . '</label>
-						<input type="password" name="pass"></div>
-						<div class="form-group"><label>' . Multilanguage::_('L_REGISTER_RETYPE_PASSWORD') . '</label>
-						<input type="password" name="pass2"></div>
-				
-						<input type="hidden" name="do" value="pass_edit">
-						<div class="form_element_control"><input type="submit" class="btn btn-primary" value="' . Multilanguage::_('L_CHANGE') . '"></div>
-				
-					  </fieldset>
-					</form></div>';
-                        $ret .= '</div>';
-                        $rs .= $ret;
-                        break;
                     }
+
+                    if ($error != '') {
+                        $ret .= '<div class="alert alert-error">' . $error . '</div>';
+                    }
+                    if ($success != '') {
+                        $ret .= '<div class="alert alert-success">' . $success . '</div>';
+                    }
+
+                    $ret .= '<div class="profile_change_password">';
+                    $ret .= '<div class="tabbed_form_block"><form class="form-horizontal" action="' . SITEBILL_MAIN_URL . '/account/profile/" method="post">
+                        <fieldset>
+                        <div class="form-group"><label>' . Multilanguage::_('L_REGISTER_OLD_PASSWORD') . '</label>
+                        <input type="password" name="pass_old"></div>
+                        <div class="form-group"><label>' . Multilanguage::_('L_REGISTER_NEW_PASSWORD') . '</label>
+                        <input type="password" name="pass"></div>
+                        <div class="form-group"><label>' . Multilanguage::_('L_REGISTER_RETYPE_PASSWORD') . '</label>
+                        <input type="password" name="pass2"></div>
+
+                        <input type="hidden" name="do" value="pass_edit">
+                        <div class="form_element_control"><input type="submit" class="btn btn-primary" value="' . Multilanguage::_('L_CHANGE') . '"></div>
+
+                        </fieldset>
+                        </form></div>';
+                    $ret .= '</div>';
+                    $rs .= $ret;
+                    break;
+                }
 
                 case 'edit_done' : {
 
@@ -240,6 +240,7 @@ class User_Profile_Model extends User_Profile {
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/form/form_generator.php');
         $form_generator = new Form_Generator();
+        $form_generator->set_context($this);
 
 
         $rs .= $this->get_ajax_functions();

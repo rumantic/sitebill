@@ -29,7 +29,7 @@ require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill.php');
 Sitebill::setLangSession();
 Multilanguage::start('backend', $_SESSION['_lang']);
 
-if ( $_SESSION['need_reload_words'] ) {
+if ( isset($_SESSION['need_reload_words']) && $_SESSION['need_reload_words'] ) {
     if ( method_exists('Multilanguage', 'reLoadWords') ) {
         Multilanguage::reLoadWords();
         $_SESSION['need_reload_words'] = false;
@@ -52,6 +52,10 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_regist
 }
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php');
 $sitebill = new SiteBill();
+if ( $sitebill->getConfigValue('apps.admin3.redirect_from_old_admin') and $sitebill->getConfigValue('apps.admin3.alias') != 'admin' ) {
+    header('Location: '.$sitebill->createUrlTpl($sitebill->getConfigValue('apps.admin3.alias')));
+    exit;
+}
 
 
 
@@ -92,6 +96,9 @@ function appendAppToRecently(){
 
 $smarty->assign('show_admin_helper', $sitebill->getConfigValue('show_admin_helper'));
 $smarty->assign('g_api_key', trim($sitebill->getConfigValue('google_api_key')));
+$smarty->assign('y_api_key', trim($sitebill->getConfigValue('yandex_map_key')));
+$sitebill->template->assert('available_langs', Multilanguage::availableLanguages());
+
 appendAppToRecently();
 
 
@@ -131,6 +138,23 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
 
     }
 
+    $sitebill_rent_editor = new SiteBill_Rent_Editor();
+    $admin_menu = $sitebill_rent_editor->getAdminMenu();
+    $smarty->assign('admin_menu', $admin_menu);
+
+    $user_object_manager = new User_Object_Manager();
+    $current_user_info = $user_object_manager->load_by_id($_SESSION['user_id_value']);
+    $smarty->assign('current_user_info', $current_user_info);
+
+    $am_array=$sitebill_rent_editor->getAdminMenuArray();
+    if ( $sitebill->getConfigValue('check_permissions') ) {
+        $am_array = $permission->clear_menu_array($am_array, $_SESSION['user_id_value']);
+    }
+
+
+    $smarty->assign('admin_menua', $am_array);
+
+
     if($access_allow){
         if ( $_REQUEST['action'] != ''  ) {
             if ( $_REQUEST['action'] == 'street' ) {
@@ -140,7 +164,16 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
             } elseif( $_REQUEST['action'] == 'apps' ) {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/apps/apps_processor.php');
                 $Apps_Processor = new Apps_Processor();
-                $rs = $Apps_Processor->getAppsList();
+                /*$do = trim($_GET['do']);
+                $app = trim($_GET['app']);
+                if($do == 'install' && $app != ''){
+                    $rs = $Apps_Processor->installApp($app);
+                }if($do == 'uninstall' && $app != ''){
+
+                }else{
+                    $rs = $Apps_Processor->getAppsList();
+                }*/
+
                 //$rs = $Apps_Processor->load_apps_list_from_location();
             } elseif( $_REQUEST['action'] == 'menu' ) {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/menu/menu_manager.php');
@@ -303,31 +336,12 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
                         if(customentity_admin::checkEntity($_REQUEST['action'])){
                             $CE=new customentity_admin();
                             $rs = $CE->main();
-                        }else{
-                            require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/data/data_manager.php');
-                            if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php') ) {
-                                require_once (SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php');
-                                $data_manager_local = new Data_Manager_Local();
-                                $rs = $data_manager_local->main();
-                            } else {
-                                $Data_Manager = new Data_Manager();
-                                $rs = $Data_Manager->main();
-                            }
-                        }
-                    }else{
-                        require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/data/data_manager.php');
-                        if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php') ) {
-                            require_once (SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php');
-                            $data_manager_local = new Data_Manager_Local();
-                            $rs = $data_manager_local->main();
                         } else {
-                            $Data_Manager = new Data_Manager();
-                            $rs = $Data_Manager->main();
+                            $rs = $e->getMessage();
                         }
+                    } else {
+                        $rs = $e->getMessage();
                     }
-
-
-
                 }
 
             }
@@ -346,21 +360,6 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
 
 
 
-    $sitebill_rent_editor = new SiteBill_Rent_Editor();
-    $admin_menu = $sitebill_rent_editor->getAdminMenu();
-    $smarty->assign('admin_menu', $admin_menu);
-
-    $user_object_manager = new User_Object_Manager();
-    $current_user_info = $user_object_manager->load_by_id($_SESSION['user_id_value']);
-    $smarty->assign('current_user_info', $current_user_info);
-
-    $am_array=$sitebill_rent_editor->getAdminMenuArray();
-    if ( $sitebill->getConfigValue('check_permissions') ) {
-        $am_array = $permission->clear_menu_array($am_array, $_SESSION['user_id_value']);
-    }
-
-
-    $smarty->assign('admin_menua', $am_array);
 
     if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/customentity/admin/admin.php')){
         require_once(SITEBILL_DOCUMENT_ROOT.'/apps/customentity/admin/admin.php');
@@ -378,11 +377,6 @@ if ( defined('IFRAME_MODE') ) {
 }
 $smarty->assign('content', $rs);
 
-if ( $sitebill->getConfigValue('apps.messenger.backend_enable') == 1 ) {
-    require_once(SITEBILL_DOCUMENT_ROOT.'/apps/messenger/admin/admin.php');
-    $messenger_admin_generator = new messenger_admin();
-    $messenger_admin_generator->backend_preload();
-}
 
 //print_r($admin_menu);
 if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/template/main.tpl') ) {

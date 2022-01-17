@@ -90,7 +90,11 @@ var SitebillCore={
                     $('html, body').animate({
                         scrollTop: $('#' + vm[i].id).offset().top
                     }, 2000);
-                    alertwin.find('.modal-body').text('Согласно правилам сайта, необходимо добавить не менее ' + vm[i].count + ' фотографий!!!!');
+                    alertwin.find('.modal-body').text(
+                        'Согласно правилам сайта, необходимо добавить не менее ' + vm[i].count + ' фотографий!!!!' +
+                        '\n' +
+                        'Minimum photo count: ' + vm[i].count + ' image'
+                    );
                     alertwin.appendTo($('body'));
                     alertwin.modal('show');
                     //alert('Необходимо указать минимум '+vm[i].count+' изображений');
@@ -101,7 +105,7 @@ var SitebillCore={
 
 
         _this.hide();
-        $('<p class="loading">Сохраняю данные ...</p>').insertAfter(_this).slideDown("fast");
+        $('<p class="loading"><img src="https://sitebill.ru/storage/spinner.gif"> ...</p>').insertAfter(_this).slideDown("fast");
         return true;
     },
     number_format: function (number, decimals, dec_point, thousands_sep) {

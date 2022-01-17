@@ -58,6 +58,7 @@ class yandexrealty_admin extends Object_Manager {
     protected $realty_types;
     protected $realty_categories;
     protected $op_type_field;
+    protected $contracts = array();
     protected $comm_building_types;
     protected $commTypesConditions;
     protected $renovationTypesConditions;
@@ -481,6 +482,10 @@ class yandexrealty_admin extends Object_Manager {
             $config_admin->addParamToConfig('apps.yandexrealty.yandex_building_id', 'yandex_building_id', 'Системное имя поля для yandex-building-id. Если брать данные из таблицы complex, тогда нужно прописать complex.yandex_building_id');
         }
 
+        if (!$config_admin->check_config_item('apps.yandexrealty.yandex_house_id')) {
+            $config_admin->addParamToConfig('apps.yandexrealty.yandex_house_id', '', 'Системное имя поля для yandex-house-id. Если брать данные из таблицы complex, тогда нужно прописать complex.yandex_house_id. Если брать данные из таблицы complex_building, тогда нужно прописать complex_building.имя_свойства');
+        }
+
 
         if (!$config_admin->check_config_item('apps.yandexrealty.comm_office_cond')) {
             $config_admin->addParamToConfig('apps.yandexrealty.comm_office_cond', '', 'Условия соответствия коммерческому типу "офисные помещения"', 3);
@@ -659,7 +664,9 @@ class yandexrealty_admin extends Object_Manager {
             $config_admin->addParamToConfig('apps.yandexrealty.garage_bx', '', 'Сопоставление типа гаража (бокс)', 3);
         }
         if (!$config_admin->check_config_item('apps.yandexrealty.newflat')) {
-            $config_admin->addParamToConfig('apps.yandexrealty.newflat', '0', 'Определять принадлежность к новостройкам по');
+            $config_admin->addParamToConfig('apps.yandexrealty.newflat', '0', 'Определять принадлежность к новостройкам по', SConfig::$fieldtypeSelectbox, array(
+                'select_data' => array('0'=>'полю new_flat', '1'=>'из приложения ЖК', '2'=>'другому полю')
+            ));
         }
         if (!$config_admin->check_config_item('apps.yandexrealty.newflat_cond')) {
             $config_admin->addParamToConfig('apps.yandexrealty.newflat_cond', '', 'Условия соответствия новостройке', 3);
@@ -733,7 +740,7 @@ class yandexrealty_admin extends Object_Manager {
             $config_admin->addParamToConfig('apps.yandexrealty.lottype_izhs', '', 'Условия соотвествующие типу участка ИЖС', 3);
         }
         if (!$config_admin->check_config_item('apps.yandexrealty.lottype_farm')) {
-            $config_admin->addParamToConfig('apps.yandexrealty.lottype_farm', '', 'Системное имя поля содержащее тип участка (если не указано, используется lot_type)', 3);
+            $config_admin->addParamToConfig('apps.yandexrealty.lottype_farm', '', 'Условия соотвествующие типу участка садоводство', 3);
         }
         
     
@@ -808,6 +815,23 @@ class yandexrealty_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.yandexrealty.areakitchen_field')) {
             $config_admin->addParamToConfig('apps.yandexrealty.areakitchen_field', '', 'Системное имя поля с площадью кухни объекта');
         }
+        
+        if (!$config_admin->check_config_item('apps.yandexrealty.area_field_houses')) {
+            $config_admin->addParamToConfig('apps.yandexrealty.area_field_houses', '', 'Системное имя поля с площадью дома');
+        }
+        
+        if (!$config_admin->check_config_item('apps.yandexrealty.area_field_garage')) {
+            $config_admin->addParamToConfig('apps.yandexrealty.area_field_garage', '', 'Системное имя поля с площадью гаража');
+        }
+        
+        if (!$config_admin->check_config_item('apps.yandexrealty.area_field_comm')) {
+            $config_admin->addParamToConfig('apps.yandexrealty.area_field_comm', '', 'Системное имя поля с площадью коммерческого объекта');
+        }
+
+        if (!$config_admin->check_config_item('apps.yandexrealty.objphotolimit')) {
+            $config_admin->addParamToConfig('apps.yandexrealty.objphotolimit', '', 'Кол-во выгружаемых фото');
+        }
+        
                 
         /*if (!$config_admin->check_config_item('apps.yandexrealty.defaultphones')) {
             $config_admin->addParamToConfig('apps.yandexrealty.defaultphones', '', 'Набор номеров для замены телефонов', 3);
@@ -1122,7 +1146,8 @@ class yandexrealty_admin extends Object_Manager {
 
     protected function _assoc_table_show_saveAction() {
         $rs = '';
-        $this->saveChanges($_POST['data']);
+        $request = $this->request();
+        $this->saveChanges($request->request->get('data'));
         $rs .= $this->_assoc_table_showAction();
         return $rs;
     }
@@ -1325,6 +1350,38 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
         //$string = preg_replace('/\\\u([0-9a-z]{4})/', '&#x$1;', $string );
         return json_decode($string);
+    }
+
+    protected function mappingContract(){
+        $contracts = array();
+
+        if ('' != trim($this->getConfigValue('apps.yandexrealty.sell'))) {
+            $st = explode(':', $this->getConfigValue('apps.yandexrealty.sell'));
+            if (count($st) > 1) {
+                $stv = explode(',', $st[1]);
+                if (count($stv) > 0) {
+                    $contracts['sale']['f'] = trim($st[0]);
+                    foreach ($stv as $_stv) {
+                        $contracts['sale']['v'][] = $_stv;
+                    }
+                }
+            }
+        }
+
+        if ('' != trim($this->getConfigValue('apps.yandexrealty.rent'))) {
+            $st = explode(':', $this->getConfigValue('apps.yandexrealty.rent'));
+            if (count($st) > 1) {
+                $stv = explode(',', $st[1]);
+                if (count($stv) > 0) {
+                    $contracts['rent']['f'] = trim($st[0]);
+                    foreach ($stv as $_stv) {
+                        $contracts['rent']['v'][] = $_stv;
+                    }
+                }
+            }
+        }
+
+        $this->contracts = $contracts;
     }
 
     protected function mappingCommBldTypes() {
@@ -1818,6 +1875,99 @@ class yandexrealty_admin extends Object_Manager {
         return $text;
     }
 
+    protected function mapContactsMode(){
+        /*
+         * 0 Standart mode
+         * 1 Group based
+         * 2 1st fro
+         * 2
+         * Контакты
+         * 1 - все из дата
+         * 2 - все из профиля
+         * 3 - из дата, но если не хватает, то из профиля
+         * 4 - из профиля, но если не хватает, то из дата
+         *
+         *
+         * группа 1 - 1 (все из дата)
+         * группа 2 - 1 (все из дата)
+         * группа 3 - 2 (все из профиля)
+         *
+         * а) из дата
+         * б) из профиля
+         *
+         * Тип владельца
+         * а) группы Владелец, Агент, Агентство
+         * 1 - все Владелец
+         * 2 - все Агент
+         * 3 - все Агентство
+         * 4 - по группам (настройки какая группа кому соотв.)
+         */
+
+        //$contacts_str='1:1;3:2';
+        //$contacts_str='*:3';
+        $contacts_str = $this->getConfigValue('apps.yandexrealty.contacts_assoc_str');
+        $groups_assoc_str = $this->getConfigValue('apps.yandexrealty.groups_assoc_str');
+        $this->contacts_export_mode = intval($this->getConfigValue('apps.yandexrealty.contacts_export_mode'));
+        //$this->contacts_export_mode=1;
+        //$groups_assoc_str='1:o;3:a;2:d';
+
+        if ($this->contacts_export_mode == 1) {
+
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/users/users_manager.php';
+            $UM = new Users_Manager();
+
+            //$contacts_mode=array();
+            //$group_assoc=array();
+
+            $contacts_str = trim($contacts_str);
+
+            if ($contacts_str == '') {
+                $this->contacts_mode['*'] = 2;
+            } else {
+                $matches = array();
+                if (preg_match('/^\*:([1-4])$/', $contacts_str, $matches)) {
+                    $this->contacts_mode['*'] = $matches[1];
+                } else {
+                    $matches_all = array();
+                    if (preg_match_all('/((\*|[\d]+):([1-4]))/', $contacts_str, $matches_all)) {
+                        foreach ($matches_all[2] as $k => $g) {
+                            if ($g == '*') {
+                                $this->contacts_mode['*'] = $matches_all[3][$k];
+                            } else {
+                                $this->contacts_mode[intval($g)] = $matches_all[3][$k];
+                            }
+                        }
+                    } else {
+                        $this->contacts_mode['*'] = 2;
+                    }
+                }
+            }
+
+            $groups_assoc_str = trim($groups_assoc_str);
+
+            if ($groups_assoc_str == '') {
+                $this->group_assoc['*'] = 'o';
+            } else {
+                $matches = array();
+                if (preg_match('/^\*:([oad])$/', $groups_assoc_str, $matches)) {
+                    $this->group_assoc['*'] = $matches[1];
+                } else {
+                    if (preg_match_all('/((\*|[\d]+):([oad]))/', $groups_assoc_str, $matches_all)) {
+                        foreach ($matches_all[2] as $k => $g) {
+                            if ($g == '*') {
+                                $this->group_assoc['*'] = trim($matches_all[3][$k]);
+                            } else {
+                                $this->group_assoc[intval($g)] = trim($matches_all[3][$k]);
+                            }
+                        }
+                    } else {
+                        $this->group_assoc['*'] = 'o';
+                    }
+                }
+            }
+        }
+    }
+
     public function export() {
 
 
@@ -1909,113 +2059,40 @@ class yandexrealty_admin extends Object_Manager {
             }
         }
 
+        $this->mappingContract();
 
         $this->mappingCommBldTypes();
-        $this->mappingGarageTypes();
-
         $this->mappingCommTypesConditions();
 
         $this->mappingRenovationTypesConditions();
+        $this->mappingESTUARenovationTypesConditions();
         $this->mappingQualityTypesConditions();
 
         $this->mappingStudioConditions();
+        $this->mappingOpenPlanConditions();
         $this->mappingApartmentConditions();
-
+        $this->mappingGarageTypes();
         $this->mappingNewflatConditions();
-
         $this->mappingTaxationTypesConditions();
-
+        //var_dump($this->commTypesConditions);
         $this->mappingSpecialCommercialOptionsConditions();
-        /*
-         * 0 Standart mode
-         * 1 Group based
-         * 2 1st fro
-         * 2
-         * Контакты
-         * 1 - все из дата
-         * 2 - все из профиля
-         * 3 - из дата, но если не хватает, то из профиля
-         * 4 - из профиля, но если не хватает, то из дата
-         *
-         *
-         * группа 1 - 1 (все из дата)
-         * группа 2 - 1 (все из дата)
-         * группа 3 - 2 (все из профиля)
-         *
-         * а) из дата
-         * б) из профиля
-         *
-         * Тип владельца
-         * а) группы Владелец, Агент, Агентство
-         * 1 - все Владелец
-         * 2 - все Агент
-         * 3 - все Агентство
-         * 4 - по группам (настройки какая группа кому соотв.)
-         */
 
-        //$contacts_str='1:1;3:2';
-        //$contacts_str='*:3';
-        $contacts_str = $this->getConfigValue('apps.yandexrealty.contacts_assoc_str');
-        $groups_assoc_str = $this->getConfigValue('apps.yandexrealty.groups_assoc_str');
-        $this->contacts_export_mode = intval($this->getConfigValue('apps.yandexrealty.contacts_export_mode'));
-        //$this->contacts_export_mode=1;
-        //$groups_assoc_str='1:o;3:a;2:d';
+        $this->mappingDealStatusConditions();
+
+
+        $this->mappingLotType();
+
+
+
+        $this->mapContactsMode();
 
         if ($this->contacts_export_mode == 1) {
 
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/users/users_manager.php';
             $UM = new Users_Manager();
 
-            //$contacts_mode=array();
-            //$group_assoc=array();
-
-            $contacts_str = trim($contacts_str);
-
-            if ($contacts_str == '') {
-                $this->contacts_mode['*'] = 2;
-            } else {
-                $matches = array();
-                if (preg_match('/^\*:([1-4])$/', $contacts_str, $matches)) {
-                    $this->contacts_mode['*'] = $matches[1];
-                } else {
-                    $matches_all = array();
-                    if (preg_match_all('/((\*|[\d]+):([1-4]))/', $contacts_str, $matches_all)) {
-                        foreach ($matches_all[2] as $k => $g) {
-                            if ($g == '*') {
-                                $this->contacts_mode['*'] = $matches_all[3][$k];
-                            } else {
-                                $this->contacts_mode[intval($g)] = $matches_all[3][$k];
-                            }
-                        }
-                    } else {
-                        $this->contacts_mode['*'] = 2;
-                    }
-                }
-            }
-
-            $groups_assoc_str = trim($groups_assoc_str);
-
-            if ($groups_assoc_str == '') {
-                $this->group_assoc['*'] = 'o';
-            } else {
-                $matches = array();
-                if (preg_match('/^\*:([oad])$/', $groups_assoc_str, $matches)) {
-                    $this->group_assoc['*'] = $matches[1];
-                } else {
-                    if (preg_match_all('/((\*|[\d]+):([oad]))/', $groups_assoc_str, $matches_all)) {
-                        foreach ($matches_all[2] as $k => $g) {
-                            if ($g == '*') {
-                                $this->group_assoc['*'] = trim($matches_all[3][$k]);
-                            } else {
-                                $this->group_assoc[intval($g)] = trim($matches_all[3][$k]);
-                            }
-                        }
-                    } else {
-                        $this->group_assoc['*'] = 'o';
-                    }
-                }
-            }
         }
+
 
         $optypes = array();
 
@@ -2634,10 +2711,9 @@ class yandexrealty_admin extends Object_Manager {
 
                 if ($this->contacts_export_mode == 1) {
                     $uid = intval($data_item['user_id']);
-                    if (!isset($this->users_cache[$uid])) {
-                        $this->users_cache[$uid] = $UM->getUserProfileData($uid);
-                    }
-                    $user = $this->users_cache[$uid];
+
+                    $user = $this->getUserData($uid);
+
                     $gid = intval($user['group_id']);
 
                     $contact_export_variant = 0;
@@ -4978,12 +5054,11 @@ class yandexrealty_admin extends Object_Manager {
 
         $subdo=$this->getRequestValue('subdo');
 
+        $request = $this->request();
+
         if($subdo=='new'){
-
-            if('post' == strtolower($_SERVER['REQUEST_METHOD'])){
-                $task_data = $_POST;
-
-                //print_r($task_data);
+            if('post' == strtolower($request->server->get('REQUEST_METHOD'))){
+                $task_data = $request->request->get('taskdata');
 
                 $prep_data = array();
 
@@ -4998,42 +5073,20 @@ class yandexrealty_admin extends Object_Manager {
 
                 //$prep_data['xmltype'] = intval($task_data['xmltype']);
 
-
                 $prep_data['ignoreactivity'] = intval($task_data['ignoreactivity']);
 
                 $prep_data['created_at'] = date('Y-m-d H:i:s');
 
-                $data = $task_data['field']['filter'];
-
-                foreach($data as $k=>$el){
-                    if(is_array($el)){
-                        foreach($el as $kl=>$vl){
-                            foreach($vl as $kc=>$vc){
-                                if($vc[0]==''){
-                                    unset($el[$kl][$kc]);
-                                }
-                            }
-                            if(empty($el[$kl])){
-                                unset($el[$kl]);
-                            }
-                        }
-                        if(empty($el)){
-                            $data[$k]=array();
-                        }else{
-                            $data[$k]=$el;
-                        }
-                    }
-                }
-
-                $prep_data['filter'] = json_encode($data);
-
-
+                $prep_data['filter'] = json_encode($this->getTaskFilterParamsFromRequest());
 
                 $DBC = DBC::getInstance();
                 $query = 'INSERT INTO '.DB_PREFIX.'_yandexrealty_task (`'.implode('`,`', array_keys($prep_data)).'`) VALUES ('.implode(',', array_fill(0, count($prep_data), '?')).')';
                 $stmt = $DBC->query($query, array_values($prep_data));
-
-                header('location: '.SITEBILL_MAIN_URL.'/admin/?action=yandexrealty&do=task');
+                if($stmt){
+                    header('location: '.SITEBILL_MAIN_URL.'/admin/?action=yandexrealty&do=task');
+                }else{
+                    echo $DBC->getLastError();
+                }
                 exit();
             }else{
                 $smarty->assign('subdo', 'new');
@@ -5043,7 +5096,8 @@ class yandexrealty_admin extends Object_Manager {
             $yandexrealty_task_id = intval($this->getRequestValue('yandexrealty_task_id'));
 
             if('post' == strtolower($_SERVER['REQUEST_METHOD'])){
-                $task_data = $_POST;
+                //$task_data = $request->request->all();
+                $task_data = $request->request->get('taskdata');
 
                 $prep_data = array();
 
@@ -5059,39 +5113,20 @@ class yandexrealty_admin extends Object_Manager {
                 $prep_data['ignoreactivity'] = intval($task_data['ignoreactivity']);
 
 
-
-                $data = $task_data['field']['filter'];
-
-                foreach($data as $k=>$el){
-                    if(is_array($el)){
-                        foreach($el as $kl=>$vl){
-                            foreach($vl as $kc=>$vc){
-                                if($vc[0]==''){
-                                    unset($el[$kl][$kc]);
-                                }
-                            }
-                            if(empty($el[$kl])){
-                                unset($el[$kl]);
-                            }
-                        }
-                        if(empty($el)){
-                            $data[$k]=array();
-                        }else{
-                            $data[$k]=$el;
-                        }
-                    }
-                }
-
-                $prep_data['filter'] = json_encode($data);
+                $prep_data['filter'] = json_encode($this->getTaskFilterParamsFromRequest());
 
                 $DBC = DBC::getInstance();
                 $query = 'UPDATE '.DB_PREFIX.'_yandexrealty_task SET `'.implode('` = ?, `', array_keys($prep_data)).'` = ? WHERE `yandexrealty_task_id` = ?';
-                //echo $query;
+
                 $p = array_values($prep_data);
                 $p[] = $yandexrealty_task_id;
                 $stmt = $DBC->query($query, $p);
 
-                header('location: '.SITEBILL_MAIN_URL.'/admin/?action=yandexrealty&do=task');
+                if($stmt){
+                    header('location: '.SITEBILL_MAIN_URL.'/admin/?action=yandexrealty&do=task');
+                }else{
+                    echo $DBC->getLastError();
+                }
                 exit();
             }else{
                 $DBC = DBC::getInstance();
@@ -5140,8 +5175,47 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
+    private function getTaskFilterParamsFromRequest(){
+        $request = $this->request();
+        $data = array();
+        if($request->request->has('field')){
+            $fieds = $request->request->get('field');
+            if(is_array($fieds) && isset($fieds['filter'])){
+                $data = $fieds['filter'];
+            }
+
+        }
+
+        if(!empty($data)){
+            foreach($data as $k=>$el){
+                if(is_array($el)){
+                    foreach($el as $kl=>$vl){
+                        foreach($vl as $kc=>$vc){
+                            if($vc[0]==''){
+                                unset($el[$kl][$kc]);
+                            }
+                        }
+                        if(empty($el[$kl])){
+                            unset($el[$kl]);
+                        }
+                    }
+                    if(empty($el)){
+                        $data[$k]=array();
+                    }else{
+                        $data[$k]=$el;
+                    }
+                }
+            }
+        }
+
+        return $data;
+    }
+
     protected function _mapperAction() {
-        if (isset($_POST['submit'])) {
+
+        $req = $this->request();
+
+        if('post' == strtolower($req->server->get('REQUEST_METHOD'))){
 
             $checkable_fields = array(
                 't_carwash',
@@ -5225,8 +5299,8 @@ class yandexrealty_admin extends Object_Manager {
                 'm_maf'
             );
 
-            $data = $_POST['field'];
-            //print_r($data);
+            $data = $req->request->get('field');
+
             foreach ($checkable_fields as $cf) {
                 $parts = explode('.', $cf);
                 if (count($parts) == 1 && isset($data[$parts[0]])) {
@@ -5250,9 +5324,6 @@ class yandexrealty_admin extends Object_Manager {
                                 unset($el[$kl]);
                             }
                         }
-                        /* if(empty($el)){
-
-                          } */
                     }
                     if (count($parts) == 1) {
                         $data[$parts[0]] = $el;
@@ -5260,8 +5331,6 @@ class yandexrealty_admin extends Object_Manager {
                         $data[$parts[0]][$parts[1]] = $el;
                     }
                 }
-
-                //unset($el);
             }
 
             //print_r($data);
@@ -5538,8 +5607,9 @@ class yandexrealty_admin extends Object_Manager {
             return json_encode(array('status'=>0));
         }
     	if($this->getRequestValue('action') == 'set_activity'){
-    		$status = intval($_POST['status']);
-    		$yandexrealty_task_id = intval($_POST['yandexrealty_task_id']);
+            $req = $this->request();
+    		$status = $req->request->getInt('status');
+            $yandexrealty_task_id = $req->request->getInt('yandexrealty_task_id');
     		$DBC=DBC::getInstance();
 
             $query='UPDATE '.DB_PREFIX.'_yandexrealty_task SET `active`=? WHERE `yandexrealty_task_id`=?';

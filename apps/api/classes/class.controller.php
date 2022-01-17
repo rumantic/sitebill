@@ -23,12 +23,17 @@ class API_Controller extends API_Common {
             $native_ajax->main();
             exit;
         }
-        
+
         //$this->writeLog('<h1>action = </h1>'.$action);
         //$this->writeLog('do = '.$this->getRequestValue('do'));
 
         //first we need check session key for action other then oauth
-        if ($action != 'oauth' and $action != 'server' and $anonymous == '') {
+        if (
+            $action != 'oauth' and
+            $action != 'server' and
+            $action != 'standalone_runner' and
+            $anonymous == ''
+        ) {
             require_once (SITEBILL_DOCUMENT_ROOT . '/apps/api/classes/class.oauth.php');
             $oauth = new API_oauth();
             $result = $oauth->_check_session_key();
@@ -49,7 +54,7 @@ class API_Controller extends API_Common {
             require_once (SITEBILL_DOCUMENT_ROOT . '/apps/api/classes/class.' . $action . '.php');
             $class_name = 'API_' . $action;
             //$this->writeLog('$class_name = '.$class_name);
-            
+
             $run_class_action = new $class_name;
             echo $run_class_action->main();
             exit;
@@ -58,6 +63,11 @@ class API_Controller extends API_Common {
             $class_name = 'API_' . $action;
             //$this->writeLog('$class_name = '.$class_name);
 
+            $run_class_action = new $class_name;
+            echo $run_class_action->main();
+            exit;
+        } elseif ( class_exists('\\'.$action.'\api\\'.$action) ) {
+            $class_name = '\\'.$action.'\api\\'.$action;
             $run_class_action = new $class_name;
             echo $run_class_action->main();
             exit;

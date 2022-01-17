@@ -2,6 +2,8 @@
 
 defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
 
+use Illuminate\Database\Capsule\Manager as Capsule;
+
 /**
  * Object manager
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
@@ -46,6 +48,25 @@ class Object_Manager extends SiteBill {
     private $shard_queue = false;
 
     /**
+     * @var array
+     */
+    private $breadcrumbs_title;
+
+    /**
+     * @var Data_Model
+     */
+    private $data_model_object;
+
+    /**
+     * @var \system\lib\model\ColumnItem[]
+     */
+    private $columnItems;
+
+    protected $enable_angular = false;
+
+    private static $tables_list = false;
+
+    /**
      * Constructor
      */
     function __construct() {
@@ -57,13 +78,21 @@ class Object_Manager extends SiteBill {
     }
 
     function check_table_exist($table_name) {
-        $query = 'SHOW TABLES LIKE ?';
-        $DBC = DBC::getInstance();
-        $stmt = $DBC->query($query, array(DB_PREFIX . '_' . $table_name));
-        if (!$stmt) {
-            return false;
+        if ( !self::$tables_list ) {
+            $this->load_table_list();
         }
-        return true;
+        if (is_array(self::$tables_list) && self::$tables_list[$table_name] ) {
+            return true;
+        }
+        return false;
+    }
+
+    function load_table_list () {
+        $tables = Capsule::select('SHOW TABLES');
+        $var = 'Tables_in_'.DB_BASE;
+        foreach ( $tables as $item ) {
+            self::$tables_list[$item->$var] = true;
+        }
     }
 
     protected function disable_redirect() {
@@ -217,6 +246,7 @@ class Object_Manager extends SiteBill {
                 $rs .= $this->grid();
             }
         }
+        $form_data = $this->_after_edit_done_action($form_data);
         return $rs;
     }
 
@@ -487,6 +517,8 @@ class Object_Manager extends SiteBill {
                 //header('location: ?action='.$this->action);
                 //exit();
                 $rs .= $this->grid();
+                $form_data[$this->table_name][$this->primary_key]['value'] = $new_record_id;
+                $this->_after_add_done_action($form_data);
             }
         }
         return $rs;
@@ -494,6 +526,10 @@ class Object_Manager extends SiteBill {
 
     public function get_new_record_id() {
         return $this->new_record_id;
+    }
+
+    public function set_new_record_id($record_id) {
+        $this->new_record_id = $record_id;
     }
 
     protected function _newAction() {
@@ -556,8 +592,30 @@ class Object_Manager extends SiteBill {
 
     protected function _defaultAction() {
         //$rs = $this->getTopMenu();
-        $rs = $this->grid();
+        $rs = $this->grid(/*array('url' => 'account/data')*/);
         return $rs;
+    }
+
+    protected function insert_table_grids ($table, $fields) {
+        $DBC = DBC::getInstance();
+        $query = 'INSERT INTO ' . DB_PREFIX . '_table_grids (`action_code`, `grid_fields`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `grid_fields`=?';
+        $stmt = $DBC->query($query, array($table, json_encode($fields), json_encode($fields)));
+        if ( $DBC->getLastError() ) {
+            $this->writeLog($DBC->getLastError());
+            return false;
+        }
+        return true;
+    }
+
+    function create_unique_index ( $table_name, $column_name ) {
+        $DBC = DBC::getInstance();
+        $query = 'ALTER TABLE `'.DB_PREFIX.'_'.$table_name.'` ADD UNIQUE(`'.$column_name.'` )';
+        $stmt = $DBC->query($query, array());
+        if ( $DBC->getLastError() ) {
+            $this->writeLog($DBC->getLastError());
+            return false;
+        }
+        return true;
     }
 
     protected function _formatgridAction() {
@@ -565,8 +623,8 @@ class Object_Manager extends SiteBill {
         global $smarty;
         $DBC = DBC::getInstance();
         $action = $this->action;
-        if (post === strtolower($_SERVER['REQUEST_METHOD'])) {
-            $fields = $_POST['field'];
+        if ('post' === strtolower($_SERVER['REQUEST_METHOD'])) {
+            $fields = $this->getRequestValue('field');
             if (@count($fields) > 0) {
                 $query = 'INSERT INTO ' . DB_PREFIX . '_table_grids (`action_code`, `grid_fields`) VALUES (?, ?) ON DUPLICATE KEY UPDATE `grid_fields`=?';
                 $stmt = $DBC->query($query, array($action, json_encode($fields), json_encode($fields)));
@@ -632,6 +690,10 @@ class Object_Manager extends SiteBill {
         return $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/system/template/object/import_form.tpl');
     }
 
+    public function public_export ($input_params = array()) {
+        return $this->_exportAction($input_params);
+    }
+
     protected function _exportAction($input_params = array()) {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/grid.php');
         $common_grid = new Common_Grid($this);
@@ -639,7 +701,9 @@ class Object_Manager extends SiteBill {
         $common_grid->set_grid_table($this->table_name);
 
         $_model = $this->data_model[$this->table_name];
-        $params['grid_item'] = array_keys($_model);
+        if (is_array($_model)) {
+            $params['grid_item'] = array_keys($_model);
+        }
 
         if (isset($params['grid_item']) && @count($params['grid_item']) > 0) {
             foreach ($params['grid_item'] as $grid_item) {
@@ -673,17 +737,19 @@ class Object_Manager extends SiteBill {
         }
         $common_grid->setPagerParams(array('action' => $this->action, 'page' => 1, 'per_page' => $per_page));
 
-        $common_grid->construct_query();
-
+        //$common_grid->construct_query();
+        $common_grid->construct_grid();
 
         $exported_template_fields = $this->getRequestValue('template_fields');
         //$exported_fields = array(0=>'country_id', 1=>'name');
         if (is_array($exported_template_fields) && @count($exported_template_fields) > 0) {
             $exported_fields = array_keys($exported_template_fields);
         } else {
-            $exported_fields = array_keys($_model);
+            if ( is_array($_model) ) {
+                $exported_fields = array_keys($_model);
+            }
         }
-        if (in_array('tlocation', $exported_fields)) {
+        if (is_array($exported_fields) and in_array('tlocation', $exported_fields)) {
             foreach ($exported_fields as $k => $ef) {
                 if ($ef == 'tlocation') {
                     unset($exported_fields[$k]);
@@ -752,7 +818,13 @@ class Object_Manager extends SiteBill {
 
             $last_letter = $this->num2alpha(@count($exported_fields) - 1);
 
-            $objPHPExcel->getActiveSheet()->getStyle('A1:' . $last_letter . '1')->applyFromArray($styleArray);
+            try {
+                $objPHPExcel->getActiveSheet()->getStyle('A1:' . $last_letter . '1')->applyFromArray($styleArray);
+            } catch (Exception $e) {
+                echo $e->getMessage();
+                exit;
+            }
+
 
             $column = 1;
 
@@ -770,7 +842,14 @@ class Object_Manager extends SiteBill {
                 $column = 1;
                 foreach ($data_item_a as $key => $value) {
                     if (is_array($value)) {
-                        $value = $value['value_string'];
+                        if ( $data_item_a[$key]['type'] == 'select_by_query_multi' && is_array($value['value_string']) ) {
+                            $value = implode(',',$value['value_string']);
+                        } else {
+                            $value = $value['value_string'];
+                        }
+                    }
+                    if ( !empty($value) and !is_scalar($value) ) {
+                        $value = 'array!';
                     }
                     $objPHPExcel->getActiveSheet()->setCellValueByColumnAndRow($column, $row, SiteBill::iconv(SITE_ENCODING, 'utf-8', $value));
                     $column++;
@@ -827,7 +906,9 @@ class Object_Manager extends SiteBill {
         $rs = $this->$action();
 
         $rs_new = $this->get_app_title_bar();
-        $rs_new .= $this->getTopMenu();
+        if ( !self::admin3_compatible() ) {
+            $rs_new .= $this->getTopMenu();
+        }
         $rs_new .= $rs;
 
         return $rs_new;
@@ -836,6 +917,18 @@ class Object_Manager extends SiteBill {
     function checkUniquety($form_data) {
         return TRUE;
     }
+
+    function add_breadcrumbs_title_item ( $title, $href ) {
+        $this->breadcrumbs_title[] =  array('href' => $href . '', 'title' => $title);
+    }
+
+    function get_breadcrumbs_title_array () {
+        if ( is_array($this->breadcrumbs_title) and count($this->breadcrumbs_title) > 0) {
+            return $this->breadcrumbs_title;
+        }
+        return false;
+    }
+
 
     function get_app_title_bar() {
         $breadcrumbs = array();
@@ -846,9 +939,13 @@ class Object_Manager extends SiteBill {
         } else {
             $breadcrumbs[] = array('href' => '?action=' . $this->action . '', 'title' => $this->action);
         }
+        if ($this->get_breadcrumbs_title_array()) {
+            $breadcrumbs = array_merge($breadcrumbs, $this->get_breadcrumbs_title_array());
+        }
         $help_link = '<a href="' . SITEBILL_MAIN_URL . '?action=' . $this->action . '&do=help">Help</a>';
         $this->template->assign('help_link', $help_link);
         $this->template->assign('breadcrumbs_array', $breadcrumbs);
+        $this->template->assign('app_title', $this->app_title);
         return '';
 
         /*
@@ -891,6 +988,7 @@ class Object_Manager extends SiteBill {
 
     function mass_change_param($table_name, $primary_key, $ids, $param_name, $param_value) {
         $errors = '';
+        $rs = '';
         if (@count($ids) > 0) {
             $data_model = new Data_Model();
             $form_data = $this->data_model;
@@ -919,6 +1017,21 @@ class Object_Manager extends SiteBill {
     }
 
     /**
+     * Применение декорирования данных к массиву модели
+     * прокладочная функция вызова метода Data_Model
+     * @param $row_datas массив модели
+     * @return mixed декорированный массив модели
+     */
+    function applyGCompose($row_datas){
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
+        $data_model_object = new Data_Model();
+        foreach ($row_datas as $k => $item) {
+            $row_datas[$k] = $data_model_object->applyGCompose($item);
+        }
+        return $row_datas;
+    }
+
+    /**
      * Load record by id
      * @param int $record_id
      * @return array
@@ -933,6 +1046,9 @@ class Object_Manager extends SiteBill {
 
         if (is_array($record_id) && !empty($record_id)) {
             $form_data[$this->table_name] = $this->data_model_object->init_model_data_from_db_multi($this->table_name, $this->primary_key, $record_id, $form_data[$this->table_name], TRUE);
+            /*foreach ($form_data[$this->table_name] as $k => $v){
+                $form_data[$this->table_name][$k] = $this->data_model_object->init_language_values($v);
+            }*/
         } elseif ($record_id > 0) {
             $form_data[$this->table_name] = $this->data_model_object->init_model_data_from_db($this->table_name, $this->primary_key, $record_id, $form_data[$this->table_name], TRUE);
         }
@@ -1006,7 +1122,7 @@ class Object_Manager extends SiteBill {
                     @unlink($this->notwatermarked_folder . $upload);
                 }
             }
-            if ( $this->getConfigValue('apps.sharder.enable') ) {
+            if ( $this->getConfigValue('apps.sharder.api_key') ) {
                 if ( !is_object($this->sharder) ) {
                     $this->sharder = new \sharder\lib\sharder();
                 }
@@ -1070,6 +1186,34 @@ class Object_Manager extends SiteBill {
         exit();
     }
 
+    function get_table_grids_fields ($table_name) {
+        $DBC = DBC::getInstance();
+        $used_fields = array();
+        $query = 'SELECT `grid_fields` FROM ' . DB_PREFIX . '_table_grids WHERE `action_code`=?';
+        $stmt = $DBC->query($query, array($table_name));
+        if ($stmt) {
+            $ar = $DBC->fetch($stmt);
+            $used_fields = json_decode($ar['grid_fields']);
+            if (!empty($used_fields)) {
+                return $used_fields;
+            }
+        }
+        return false;
+    }
+
+    protected function angular_grid ( $action = null ) {
+        if ( !$action ) {
+            $action = $this->action;
+        }
+        $table_composer = new \table\Http\ViewComposers\TableComposer();
+        self::$grid_replaced_with_angular = true;
+        return $table_composer->render(array(
+            'component' => $action,
+            'table_name' => $this->table_name,
+            'primary_key' => $this->primary_key,
+        ));
+    }
+
 
     /**
      * Grid
@@ -1081,6 +1225,11 @@ class Object_Manager extends SiteBill {
         if (!isset($this->table_name)) {
             return '';
         }
+
+        if ( self::$replace_grid_with_angular ) {
+            return $this->angular_grid();
+        }
+
         if ( @count($params) == 0 and $this->get_grid_params() != null) {
             $params = $this->get_grid_params();
         }
@@ -1165,6 +1314,9 @@ class Object_Manager extends SiteBill {
             $pager_params = array();
         }
 
+        /*if(isset($params['page_url'])){
+            $pager_params['page_url'] = $params['page_url'];
+        }*/
         $pager_params['action'] = $this->action;
         $pager_params['page'] = $this->getRequestValue('page');
         $pager_params['per_page'] = $this->getConfigValue('common_per_page');
@@ -1305,44 +1457,52 @@ class Object_Manager extends SiteBill {
 
             $this->set_imgs($imgs);
 
-            $mutiitems = array();
-            foreach ($form_data as $k => $form_item) {
-                if ($form_item['type'] == 'select_by_query_multi') {
-                    $vals = $form_item['value'];
-                    if (!is_array($vals)) {
-                        $vals = (array) $mutiitems[$k];
-                    }
-                    if (!empty($vals)) {
-                        $mutiitems[$k] = $vals;
-                    } else {
-                        $mutiitems[$k] = array();
-                    }
+            $this->update_multi_items($new_record_id, $form_data);
+        }
+
+        return $new_record_id;
+    }
+
+    function update_multi_items ($record_id, $form_data) {
+        $DBC = DBC::getInstance();
+
+        $mutiitems = array();
+        foreach ($form_data as $k => $form_item) {
+            if ($form_item['type'] == 'select_by_query_multi') {
+                $vals = $form_item['value'];
+                if (!is_array($vals)) {
+                    $vals = (array) $mutiitems[$k];
                 }
-            }
-
-            if (!empty($mutiitems)) {
-                $keys = array_keys($mutiitems);
-
-                $params = array();
-                $params[] = $this->table_name;
-                $params = array_merge($params, $keys);
-                $params[] = $new_record_id;
-                $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name` IN (' . implode(', ', array_fill(0, @count($keys), '?')) . ') AND `primary_id`=?';
-                $stmt = $DBC->query($query, $params);
-
-                $query = 'INSERT INTO ' . DB_PREFIX . '_multiple_field (`table_name`, `field_name`, `primary_id`, `field_value`) VALUES (?,?,?,?)';
-                foreach ($mutiitems as $key => $vals) {
-                    if (!empty($vals)) {
-                        foreach ($vals as $val) {
-                            $stmt = $DBC->query($query, array($this->table_name, $key, $new_record_id, $val));
-                            //echo $DBC->getLastError();
-                        }
-                    }
+                if (!empty($vals)) {
+                    $mutiitems[$k] = $vals;
+                } else {
+                    $mutiitems[$k] = array();
                 }
             }
         }
 
-        return $new_record_id;
+        if (!empty($mutiitems)) {
+            $keys = array_keys($mutiitems);
+
+            $params = array();
+            $params[] = $this->table_name;
+            $params = array_merge($params, $keys);
+            $params[] = $record_id;
+            $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name` IN (' . implode(', ', array_fill(0, @count($keys), '?')) . ') AND `primary_id`=?';
+            $stmt = $DBC->query($query, $params);
+
+            $query = 'INSERT INTO ' . DB_PREFIX . '_multiple_field (`table_name`, `field_name`, `primary_id`, `field_value`) VALUES (?,?,?,?)';
+            foreach ($mutiitems as $key => $vals) {
+                if (!empty($vals)) {
+                    foreach ($vals as $val) {
+                        $stmt = $DBC->query($query, array($this->table_name, $key, $record_id, $val));
+                        //echo $DBC->getLastError();
+                    }
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     function set_imgs($imgs = false) {
@@ -1416,45 +1576,8 @@ class Object_Manager extends SiteBill {
             }
         }
 
-        $mutiitems = array();
-        foreach ($form_data as $k => $form_item) {
-            if ($form_item['type'] == 'select_by_query_multi') {
-                $vals = $form_item['value'];
-                if (!is_array($vals)) {
-                    $vals = (array) $mutiitems[$k];
-                }
-                if (!empty($vals)) {
-                    $mutiitems[$k] = $vals;
-                } else {
-                    $mutiitems[$k] = array();
-                }
-            }
-        }
+        $this->update_multi_items($id, $form_data);
 
-        if (!empty($mutiitems)) {
-            $keys = array_keys($mutiitems);
-
-            $params = array();
-            $params[] = $this->table_name;
-            $params = array_merge($params, $keys);
-            $params[] = $id;
-            $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name` IN (' . implode(', ', array_fill(0, @count($keys), '?')) . ') AND `primary_id`=?';
-            $stmt = $DBC->query($query, $params);
-
-            $query = 'INSERT INTO ' . DB_PREFIX . '_multiple_field (`table_name`, `field_name`, `primary_id`, `field_value`) VALUES (?,?,?,?)';
-            foreach ($mutiitems as $key => $vals) {
-                if (!empty($vals)) {
-                    foreach ($vals as $val) {
-                        $stmt = $DBC->query($query, array($this->table_name, $key, $id, $val));
-                        //echo $DBC->getLastError();
-                    }
-                }
-            }
-        }
-        /*
-          if(!$success){
-          return false;
-          } */
         return $id;
     }
 
@@ -1511,6 +1634,7 @@ class Object_Manager extends SiteBill {
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/form/form_generator.php');
         $form_generator = new Form_Generator();
+        $form_generator->set_context($this);
 
 
         $rs .= $this->get_ajax_functions();
@@ -1546,7 +1670,12 @@ class Object_Manager extends SiteBill {
           } */
         $el['controls']['submit'] = array('html' => '<button id="formsubmit" onClick="return SitebillCore.formsubmit(this);" name="submit" class="btn btn-primary">' . $button_title . '</button>');
 
-        if ($this->getConfigValue('post_form_agreement_enable') == 1 && ADMIN_MODE != 1) {
+        $admin_mode = false;
+        if ( defined('ADMIN_MODE') and ADMIN_MODE == 1 ) {
+            $admin_mode = true;
+        }
+
+        if ($this->getConfigValue('post_form_agreement_enable') == 1 && !$admin_mode) {
             $el['agreement_block'] = $form_generator->getAgreementFormBlock();
         }
 
@@ -1767,8 +1896,9 @@ class Object_Manager extends SiteBill {
         return $form_data;
     }
 
-    function init_db_model ($table_name, $default_object_model, $params = false) {
+    function init_db_model ($table_name, $default_object_model, $params = false, $create_custom_entity = false, $custom_entity_title = '') {
         $form_data = array();
+        $result['status'] = 'first_run';
 
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/columns/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php')) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
@@ -1783,13 +1913,25 @@ class Object_Manager extends SiteBill {
                 $TA->create_table_and_columns($form_data, $table_name);
                 $form_data = array();
                 $form_data = $ATH->load_model($table_name, false);
+                if ( !$ATH->check_table_exist($table_name) ) {
+                    $ATH->create_table($table_name);
+                }
+                if (  $create_custom_entity ) {
+                    if ( !$TA->check_entity_exist($table_name) ) {
+                        $TA->create_customentity_record($table_name, $custom_entity_title);
+                    }
+                }
+            } else {
+                $result['status'] = 'second_run';
             }
+
         } else {
             $form_data = $default_object_model->get_model($params);
         }
 
         $this->model = $default_object_model;
         $this->data_model = $form_data;
+        return $result;
     }
 
     function set_grid_params ( $params ) {
@@ -1819,7 +1961,7 @@ class Object_Manager extends SiteBill {
     }
 
     function run_shard_task () {
-        if ( $this->getConfigValue('apps.sharder.enable') and $this->is_shard_queue_enable() ) {
+        if ( $this->getConfigValue('apps.sharder.api_key') and $this->is_shard_queue_enable() ) {
             if ( !is_object($this->sharder) ) {
                 $this->sharder = new \sharder\lib\sharder();
             }
@@ -1827,6 +1969,80 @@ class Object_Manager extends SiteBill {
             $this->disable_shard_queue();
         }
         return false;
+    }
+
+    function tryHandlers ($model, $do, $form_data, $id) {
+        $handlers_register = Sitebill_Registry::get_handlers();
+        if ( is_array($handlers_register) and count($handlers_register) > 0 ) {
+            foreach ($handlers_register as $handler) {
+                if ( class_exists($handler) ) {
+                    $new_handler = new $handler();
+                    if ( method_exists($new_handler, 'set_context') ) {
+                        $new_handler->set_context($this);
+                    }
+                    $method_name = $model.'__'.$do;
+                    if ( method_exists($new_handler, $model.'__'.$do) ) {
+                        $new_handler->$method_name($model, $do, $form_data, $id);
+                    }
+                }
+            }
+        }
+    }
+
+    public function get_data_model_object ():Data_Model {
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
+        if (!isset($this->data_model_object) || !is_object($this->data_model_object)) {
+            $this->data_model_object = new Data_Model();
+        }
+        return $this->data_model_object;
+    }
+
+    public function getColumnItem ( $name ): \system\lib\model\ColumnItem {
+        if ( !isset($this->columnItems[$name]) ) {
+            if ( !isset($this->data_model[$this->table_name][$name]) ) {
+                throw new \Exception("Unknown column $name in table ".$this->table_name);
+            }
+            $this->columnItems[$name] = new \system\lib\model\ColumnItem($this->data_model[$this->table_name][$name]);
+        }
+        return $this->columnItems[$name];
+    }
+
+    public function change_data_id($id) {
+        try {
+            $AUTO_INCREMENT = $this->get_next_autoincrement_value();
+            $DBC = DBC::getInstance();
+            $query = 'UPDATE '.DB_PREFIX.'_'.$this->table_name.' SET id=? WHERE id=?';
+            $stmt = $DBC->query($query, array($AUTO_INCREMENT, $id));
+            if ( $stmt ) {
+                return $AUTO_INCREMENT;
+            } else {
+                throw new \Exception("SQL error: ".$DBC->getLastError());
+            }
+        } catch (Exception $e) {
+            $this->riseError($e->getMessage());
+            return false;
+        }
+    }
+    private function get_next_autoincrement_value () {
+        $DBC = DBC::getInstance();
+        $query = "SELECT AUTO_INCREMENT
+                    FROM information_schema.tables
+                    WHERE table_name = '".DB_PREFIX."_".$this->table_name."'
+                    AND table_schema = DATABASE()";
+        $stmt = $DBC->query($query, array());
+        if ( $stmt ) {
+            $ar = $DBC->fetch($stmt);
+            return $ar['AUTO_INCREMENT'];
+        }
+        throw new \Exception("Cant get AUTO_INCREMENT table ".$this->table_name);
+    }
+
+    public function enable_angular () {
+        $this->enable_angular = true;
+    }
+
+    public function is_angular_enabled () {
+        return $this->enable_angular;
     }
 
 }

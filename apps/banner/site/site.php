@@ -25,4 +25,40 @@ class banner_site extends banner_admin {
     	}
     	
     }
+
+    function banner_group ($params) {
+
+        $items = array();
+        $query_params = array();
+        $query_values = array();
+
+        $DBC = DBC::getInstance();
+
+        if (!empty($params)) {
+            foreach ($params as $k => $op) {
+                $query_params[] = '`' . $k . '`=?';
+                $query_values[] = $op;
+            }
+        }
+
+        $query = 'SELECT '.$this->primary_key.' FROM '.DB_PREFIX.'_'.$this->table_name.' WHERE ' . implode(' AND ', $query_params);
+        $stmt = $DBC->query($query, $query_values);
+        if ($stmt) {
+            while($ar = $DBC->fetch($stmt)){
+                $items[] = $ar[$this->primary_key];
+            }
+        }
+
+        if(!empty($items)){
+            $Object = new Data_Model();
+            $items = $Object->init_model_data_from_db_multi($this->table_name, $this->primary_key, $items, $this->data_model[$this->table_name], true);
+
+            foreach ($items as $k => $v){
+                $items[$k] = $Object->init_language_values($v);
+            }
+        }
+
+        return $items;
+
+    }
 }

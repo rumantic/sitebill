@@ -9,20 +9,42 @@ require_once(SITEBILL_DOCUMENT_ROOT.'/apps/api/classes/class.request.php');
  */
 class API_Common extends SiteBill {
     protected $request; // API_Request
+    /**
+     * @var Permission
+     */
+    protected $permission;
+
+    /**
+     * @var bool
+     */
+    private $check_permission_mode = false;
 
     /**
      * Constructor
      */
     function __construct() {
         $this->Sitebill();
-        $this->request = new API_Request;
+        $this->request = new API_Request($this->request());
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/login.php');
         $Login = new Login();
         $Login->checkLogin('', '', true, $this->getRequestValue('session_key'));
-        $_POST = $this->request->dump();
+        //$_POST = $this->request->dump();
+        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
+        $this->permission = new Permission();
 
         //$this->writeLog(__METHOD__.', request = <pre>'. var_export($this->request->dump(), true).'</pre>');
+    }
 
+    function enable_permission_mode () {
+        $this->check_permission_mode = true;
+    }
+
+    function disable_permission_mode () {
+        $this->check_permission_mode = false;
+    }
+
+    function get_permission_mode () {
+        return $this->check_permission_mode;
     }
 
     function getRequestValue($key, $type = '', $from = '') {
@@ -33,6 +55,14 @@ class API_Common extends SiteBill {
     }
 
     function main() {
+        if ( $this->get_permission_mode() ) {
+            $user_id = $this->get_my_user_id();
+
+            if (!$this->permission->get_access($user_id, $this->request->get('action'), 'access')) {
+                return $this->request_failed('access denied to '.$component);
+            }
+        }
+
         $do = $this->getRequestValue('do');
         $action = '_' . $do;
         if (!method_exists($this, $action)) {
@@ -84,7 +114,7 @@ class API_Common extends SiteBill {
     }
 
     function request_failed($message) {
-        $response = array('state'=>'error','error' => $message);
+        $response = array('state'=>'error','message' => $message,'error' => $message);
         return $this->json_string($response);
     }
 
@@ -180,10 +210,66 @@ class API_Common extends SiteBill {
                 return $user_object_manager;
             break;
 
+            case 'memorylist':
+                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/admin.php');
+                $memorylist_admin = new memorylist_admin();
+                return $memorylist_admin;
+                break;
+
+            case 'memorylist_user':
+                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/memorylist_user.php');
+                $memorylist_user = new memorylist_user();
+                return $memorylist_user;
+                break;
+
             case 'client':
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/client/admin/admin.php');
                 $client_admin = new client_admin();
                 return $client_admin;
+                break;
+
+            case 'gallery':
+                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/gallery/admin/admin.php');
+                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/gallery/site/site.php');
+                $gallery_site = new gallery_site();
+                return $gallery_site;
+                break;
+
+            case 'banner':
+                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/banner/admin/admin.php');
+                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/banner/site/site.php');
+                $gallery_site = new banner_site();
+                return $gallery_site;
+                break;
+
+            case 'cowork':
+                require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/components/cowork/cowork_object.php';
+                $cowork_object = new Cowork_Object();
+                return $cowork_object;
+                break;
+            case 'building_blocks':
+                $building_blocks = new \complex\Objects\BuildingBlocksObject();
+                return $building_blocks;
+                break;
+
+            case 'subscribers':
+                $subscribers_object = new \subscribers\Objects\SubscribersObject();
+                return $subscribers_object;
+                break;
+
+            case 'columns':
+                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php');
+                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/columns/admin/admin.php');
+                return new columns_admin();
+                break;
+
+            case 'table':
+                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php');
+                return new table_admin();
+                break;
+
+            case 'files_queue':
+                return new \api\entities\files_queue();
                 break;
 
         }

@@ -34,7 +34,7 @@
         {/foreach}
     {/if}
 
-    <script type="text/javascript" src="{$estate_folder}/apps/system/js/form_tabs.js?v=1"></script>
+    <script type="text/javascript" src="{$estate_folder}/apps/system/js/form_tabs.js?v=2"></script>
     {if $form_elements.public|count eq 1}
         <div class="tab-content-single tab-margin-top">
             {foreach from=$form_elements.public key=tab item=tab_elements}

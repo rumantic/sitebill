@@ -63,6 +63,108 @@ class lang_words_admin extends Object_Manager {
         return $rs;
     }
 
+    private function update_lang_item (  ) {
+
+    }
+
+    private function update_lang_record ( $language, $key, $value ) {
+        $id = $this->get_id_by_filter('word_key', $key, array('lang_key' => $language));
+        $record = $this->load_by_id($id);
+        $rs = "id = $id, update language = $language, key = $key, value = $value<br>";
+        $record['word_default']['value'] = $value;
+        $this->edit_data($record, 0, $id);
+        return $rs;
+    }
+
+    private function insert_lang_record ( $language, $key, $value, $source_language ) {
+        $source_id = $this->get_id_by_filter('word_key', $key, array('lang_key' => $source_language));
+        $record = $this->load_by_id($source_id);
+        $rs = "new record = $language, key = $key, value = $value<br>";
+        $record['word_default']['value'] = $value;
+        $record['lang_key']['value'] = $language;
+        $this->add_data($record);
+        if ( $this->getError() ) {
+            $rs .= '<span class="alert-danger">'.$this->getError().'</span><br>';
+        }
+        return $rs;
+    }
+
+    protected function _force_autotranslateAction() {
+        $source_language = 'ru';
+        $target_language = $this->getRequestValue('target_language');
+        $rs = '';
+        if ( $target_language == '' ) {
+            $rs .= '<p>Не указан язык для перевода. ?action=lang_words&do=force_autotranslate&target_language=TARGET</p>';
+            return $rs;
+        }
+
+        $records = \lang_words\model\LangWords::where('lang_key', '=', $source_language)->get();
+
+        foreach ( $records as $item ) {
+
+            $rs .= $this->insert_lang_record(
+                $target_language, $item->word_key,
+                $this->api_translate($item->word_default, $target_language),
+                $source_language
+            );
+        }
+        return $rs;
+    }
+
+
+
+    protected function _autotranslateAction() {
+        $source_language = 'ru';
+        $target_language = $this->getRequestValue('target_language');
+        if ( $target_language == '' ) {
+            $rs = '<p>Не указан язык для перевода. ?action=lang_words&do=autotranslate&target_language=TARGET</p>';
+            return $rs;
+        }
+
+
+        Multilanguage::set_current_lang($source_language);
+        Multilanguage::set_empty_words_array();
+        Multilanguage::loadWords();
+        Multilanguage::load_db_lang_words();
+        $source_array = Multilanguage::get_words();
+
+        Multilanguage::set_current_lang($target_language);
+        Multilanguage::set_empty_words_array();
+        Multilanguage::loadWords();
+        Multilanguage::load_db_lang_words();
+        $target_array = Multilanguage::get_words();
+        $count = 0;
+        $rs = '<p></p>';
+        foreach ( $source_array as $key => $value ) {
+            //echo $key.'<br>';
+            if ( $target_array[$key] == $source_array[$key] ) {
+                // Обновляем
+                $count++;
+                if ( $value != '' and $key != $value and $value != 'ID') {
+                    $rs .= $this->update_lang_record($target_language, $key, $this->api_translate($value, $target_language));
+                } else {
+                    $rs .= "missed key = $key, value = $value<br>";
+                }
+            }
+            if (  !isset($target_array[$key]) ) {
+                // Создаем новую запись
+                $count++;
+                if ( $value != '' and $key != $value and $value != 'ID'  ) {
+                    $rs .= $this->insert_lang_record(
+                        $target_language, $key,
+                        $this->api_translate($value, $target_language),
+                        $source_language
+                    );
+                } else {
+                    $rs .= "missed key = $key, value = $value<br>";
+                }
+            }
+        }
+        $rs .= 'need translate count = '.$count.'<br>';
+        return $rs;
+    }
+
+
     private function create_lang_words_table () {
         $DBC = DBC::getInstance();
 
@@ -105,6 +207,8 @@ class lang_words_admin extends Object_Manager {
     function getTopMenu() {
         $rs = parent::getTopMenu();
         $rs .= '<a href="?action=' . $this->action . '&do=reload" class="btn btn-primary">' . _e('Перегрузить базу переводов') . '</a> ';
+        $rs .= '<a href="?action=' . $this->action . '&do=autotranslate" class="btn btn-primary">' . _e('Автоперевод') . '</a> ';
+        $rs .= '<a href="?action=' . $this->action . '&do=force_autotranslate" class="btn btn-primary">' . _e('Форсированное создание нового языка из RU') . '</a> ';
         return $rs;
     }
 

@@ -32,7 +32,9 @@ class API_oauth extends API_Common {
             if ($ar['user_id'] > 0) {
 
                 //$this->writeLog(array('apps_name' => 'apps.api', 'method' => __METHOD__, 'message' => 'login success ' . var_export($ar, true), 'type' => NOTICE));
-                $ar['session_key'] = $this->init_session_key($ar['user_id']);
+                $ar['session_key'] = $this->init_session_key($ar['user_id'], ' login');
+                $this->setSessionUserId($ar['user_id']);
+                $Login->makeUserLogged($ar['user_id'], 0, $ar['session_key']);
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
                 $permission = new Permission();
                 if ($permission->get_access($ar['user_id'], 'admin_panel', 'login')) {
@@ -121,6 +123,7 @@ class API_oauth extends API_Common {
 
     public function _check_session_key() {
         $session_key = $this->request->get('session_key');
+        $start_session_key = $this->request->get('session_key');
         //В последнюю очередь попробуем получить ключ сессии из SESSION
         //В случае если к API обращается локальный сайт (сам к себе)
         if ($session_key == '') {
@@ -133,7 +136,7 @@ class API_oauth extends API_Common {
         //echo $session_key;
         $DBC = DBC::getInstance();
         $need_init_oauth = false;
-        if ($session_key_local) {
+        if (isset($session_key_local)) {
             $query = 'SELECT user_id FROM ' . DB_PREFIX . '_session WHERE session_key=?';
             $need_init_oauth = true;
         } else {
@@ -146,39 +149,73 @@ class API_oauth extends API_Common {
         if ($stmt) {
             $ar = $DBC->fetch($stmt);
             if ($ar['user_id'] > 0) {
-                //$this->writeLog(array('apps_name' => 'apps.api', 'method' => __METHOD__, 'message' => 'check session_key success ' . var_export($ar, true), 'type' => NOTICE));
-                $ar['config']['per_page'] = $this->getConfigValue('per_page');
-
-                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
-                $permission = new Permission();
-                if ($permission->get_access($ar['user_id'], 'admin_panel', 'login')) {
-                    $ar['admin_panel_login'] = 1;
-                } else {
-                    $ar['admin_panel_login'] = 0;
-                }
-                if ( !isset($_SESSION['current_user_group_id']) ) {
-                    require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/login.php');
-                    $Login = new Login();
-                    $Login->loadUserInfo($ar['user_id']);
-                }
-
-                $structure = $permission->get_structure();
-                $ar['structure'] = $structure[$_SESSION['current_user_group_id']];
-
-                $ar['success'] = 1;
-                $ar['api_url'] = $this->get_domain_https();
-
-                if ($need_init_oauth) {
-                    $ar['session_key'] = $this->init_session_key($ar['user_id']);
-                } else {
-                    $ar['session_key'] = $session_key;
-                }
-
+                $ar = $this->init_success_response($ar['user_id'], $session_key, $need_init_oauth);
+                $ar['step'] = 'first';
+                $ar['session_key_local'] = $this->get_session_key();
+                $ar['start_session_key'] = $start_session_key;
+                $ar['need_init_oauth'] = $need_init_oauth;
                 return $this->json_string($ar);
             }
         }
+        // Теперь попробуем восстановить oauth
+        $session_key_local = $this->get_session_key();
+        if ( $session_key_local != '' and $session_key != '' ) {
+            $query = 'SELECT user_id FROM ' . DB_PREFIX . '_session WHERE session_key=?';
+            $stmt = $DBC->query($query, array($session_key_local));
+
+            if ($stmt) {
+                $ar = $DBC->fetch($stmt);
+                if ($ar['user_id'] > 0) {
+                    $query = 'insert into ' . DB_PREFIX . '_oauth (user_id, ip, session_key) values (?, ?, ?)';
+                    $user_ip = $_SERVER['REMOTE_ADDR'];
+                    $stmt = $DBC->query($query, array($ar['user_id'], $user_ip, $session_key));
+                    $ar = $this->init_success_response($ar['user_id'], $session_key, false);
+                    $ar['step'] = 'second';
+                    $ar['session_key_local'] = $session_key_local;
+                    $ar['start_session_key'] = $start_session_key;
+                    $ar['need_init_oauth'] = false;
+                    return $this->json_string($ar);
+                }
+            }
+
+        }
+
+
         $this->riseError('check_session_key_failed');
         return $this->request_failed('check_session_key_failed');
+    }
+
+    private function init_success_response ($user_id, $session_key, $need_init_oauth) {
+        $ar = array();
+        $ar['user_id'] = $user_id;
+        $ar['config']['per_page'] = $this->getConfigValue('per_page');
+
+        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
+        $permission = new Permission();
+        if ($permission->get_access($ar['user_id'], 'admin_panel', 'login')) {
+            $ar['admin_panel_login'] = 1;
+        } else {
+            $ar['admin_panel_login'] = 0;
+        }
+        if ( !isset($_SESSION['current_user_group_id']) ) {
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/login.php');
+            $Login = new Login();
+            $Login->loadUserInfo($ar['user_id']);
+        }
+
+        $structure = $permission->get_structure();
+        $ar['structure'] = $structure[$_SESSION['current_user_group_id']];
+
+        $ar['success'] = 1;
+        $ar['api_url'] = $this->get_domain_https();
+
+        if ($need_init_oauth) {
+            $ar['session_key'] = $this->init_session_key($ar['user_id'], ' response');
+            $ar['new_session_key'] = true;
+        } else {
+            $ar['session_key'] = $session_key;
+        }
+        return $ar;
     }
 
     public function _get_access () {
@@ -213,7 +250,7 @@ class API_oauth extends API_Common {
         return $this->request_failed('load_profile_failed');
     }
 
-    private function init_session_key($user_id) {
+    private function init_session_key($user_id, $place = ' ?') {
         $user_ip = $_SERVER['REMOTE_ADDR'];
         $session_key = md5(rand() . time() . $user_ip);
 

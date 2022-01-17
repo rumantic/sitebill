@@ -36,15 +36,24 @@ body {
 {/literal}
 </head>
 <body>
-    
+{if $user_data}
+<table class="data_grid_item">
+  <tr>
+    <th style="background-color: #eee;">Ваш менеджер: {$user_data.fio.value}</th>
+    <th>Телефон: <a href="tel:{$user_data.phone.value}">{$user_data.phone.value}</a></th>
+  </tr>
+</table>
+{/if}
+
 {foreach $grid_items item=item key=key}
+  {if $item.id.value != ''}
 <table class="data_grid_item">
     <tr>
         <th style="background-color: #eee;">{$item.id.value}</th>
         <th>{$item.topic_id.value_string}</th>
         <th>{if floatval($item.price.value) != 0}{floatval($item.price.value)|number_format:0:".":" "}{if isset($item.currency_id) && $item.currency_id.value != 0}{$item.currency_id.value_string}{/if}{/if}</th>
       </tr>
-  
+
   <tr>
     <td>Адрес</td>
     <td colspan="2">
@@ -100,8 +109,9 @@ body {
       </td>
   </tr>
   {/if}
-  
+
 </table>
+  {/if}
 {/foreach}
 
 </body>

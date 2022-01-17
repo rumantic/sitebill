@@ -1,0 +1,18 @@
+.firstletters {
+    margin: 5px 0 15px 0;
+}
+.firstletters .firstletter {
+    display: inline-block;
+    color: gray;
+    font-size: 18px;
+    text-transform: uppercase;
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    text-align: center;
+    cursor: pointer;
+}
+.firstletters .firstletter.active {
+    background: #ffffff;
+    color: black;
+}

@@ -29,6 +29,10 @@ class User_Profile extends User_Object_Manager {
         //$this->Account();
     }
 
+    function get_avatar_dir_full_path () {
+        return SITEBILL_DOCUMENT_ROOT.'/'.$this->user_image_dir;
+    }
+
 
 	function main () {
 		$user_id=$this->getSessionUserId();

@@ -28,30 +28,93 @@ function showPostalCode(address) {
 }
 
 function showRegion(address) {
-    $("input[name='geoautocomplete[region_id]']").val(address.region_with_type);
+    var el = $("input[name='geoautocomplete[region_id]']");
+    if(el.length > 0){
+        el.each(function(){
+            $(this).val(
+                join([address.region_with_type], " ")
+            );
+            $(this).parents('.geoautocomplete_block').eq(0).find("input[name='region_id']").val('');
+        });
+    }
 }
 
 function showCity(address) {
-    //console.log(address);
+    var cname = '';
     if (address.settlement_with_type !== null) {
-        $("input[name='geoautocomplete[city_id]']").val(address.settlement_with_type);
+        cname = address.settlement_with_type;
     } else {
-        $("input[name='geoautocomplete[city_id]']").val(join([
-            join([address.city], " ")
-        ]));
+        cname = join([address.city], " ");
+    }
+    var el = $("input[name='geoautocomplete[city_id]']");
+    if(el.length > 0){
+        el.each(function(){
+            $(this).val(cname);
+            $(this).parents('.geoautocomplete_block').eq(0).find("input[name='city_id']").val('');
+        });
+    }else{
+        var el = $("select[name='city_id']");
+        if(el.length > 0){
+            el.each(function(){
 
+                var sel = $(this);
+                sel.find('option').each(function(){
+                    if(cname == $(this).text()){
+                        sel.val($(this).attr('value'));
+                    }
+                });
+            });
+        }
     }
 }
 
 function showDistrict(address) {
-    $("input[name='geoautocomplete[district_id]']").val(
-            join([address.city_district], " ")
-            );
+    var cname = join([address.city_district], " ");
+    var el = $("input[name='geoautocomplete[district_id]']");
+    if(el.length > 0){
+        el.each(function(){
+            $(this).val(cname);
+            $(this).parents('.geoautocomplete_block').eq(0).find("input[name='district_id']").val('');
+        });
+    }else{
+        var el = $("select[name='district_id']");
+        if(el.length > 0){
+            el.each(function(){
+                var sel = $(this);
+                sel.find('option').each(function(){
+                    if(cname == $(this).text()){
+                        sel.val($(this).attr('value'));
+                    }
+                });
+            });
+        }
+    }
 }
 function showStreet(address) {
-    $("input[name='geoautocomplete[street_id]']").val(
+    var cname = join([address.street], " ");
+    var el = $("input[name='geoautocomplete[street_id]']");
+    if(el.length > 0){
+        el.each(function(){
+            $(this).val(cname);
+            $(this).parents('.geoautocomplete_block').eq(0).find("input[name='street_id']").val('');
+        });
+    }else{
+        var el = $("select[name='street_id']");
+        if(el.length > 0){
+            el.each(function(){
+                var sel = $(this);
+                sel.val(0);
+                sel.find('option').each(function(){
+                    if(cname == $(this).text()){
+                        sel.val($(this).attr('value'));
+                    }
+                });
+            });
+        }
+    }
+    /*$("input[name='geoautocomplete[street_id]']").val(
             join([address.street], " ")
-            );
+            );*/
 }
 
 
@@ -67,6 +130,15 @@ function showFlat(address) {
     $("#flat").val(
             join([address.flat_type, address.flat], " ")
             );
+
+    $("input[name='kvartira']").val(
+        address.flat
+    );
+
+    $("input[name='flat']").val(
+        address.flat
+    );
+
 }
 
 function showGeo(address) {

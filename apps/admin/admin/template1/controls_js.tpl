@@ -80,6 +80,50 @@ $(document).ready(function () {
         });
     });
 
+    $(document).on('click', '.change_data_id', function(e){
+        e.preventDefault();
+        var _this=$(this);
+        var id=_this.data('id');
+
+        const body = {
+            action: 'model',
+            do: 'change_data_id',
+            model_name: 'data',
+            id: id,
+        };
+
+        $.ajax({
+            url: estate_folder+'/apps/api/rest.php',
+            data: body,
+            type: 'post',
+            dataType: 'text',
+            success: function(text){
+                const result = $.parseJSON(text);
+                console.log(result);
+                if(result.state == 'success'){
+                    $.gritter.add({
+                        title: 'Операция успешна',
+                        text: 'ID Объекта обновлен: ' + result.message,
+                        sticky: false,
+                        time: '5000',
+                        class_name: 'gritter-success'
+                    });
+                    $('#grid_placer_' + id).html(result.message);
+
+                } else {
+                    $.gritter.add({
+                        title: 'Ошибка',
+                        text: 'ID Объекта не обновлен: ' + result.message,
+                        sticky: false,
+                        time: '5000',
+                        class_name: 'gritter-error'
+                    });
+                }
+            }
+        });
+    });
+
+
     $(document).on('click', '.active_toggle_any', function(e){
         e.preventDefault();
         var _this=$(this);
@@ -116,12 +160,10 @@ $(document).ready(function () {
                         _this.attr('data-active', 0);
                         _this.attr('title', 'включить');
                         _this.removeClass('btn-success').addClass('btn-danger');
-                        _this.parents('tr').eq(0).addClass('notactive');
                     } else {
                         _this.attr('title', 'выключить');
                         _this.attr('data-active', 1);
                         _this.removeClass('btn-danger').addClass('btn-success');
-                        _this.parents('tr').eq(0).removeClass('notactive');
                     }
                 }
             }

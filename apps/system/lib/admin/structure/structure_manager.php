@@ -176,6 +176,10 @@ class Structure_Manager extends SiteBill_Krascap {
                     } else {
                         $model_itited = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
                         if ($model_itited) {
+                            if (1 == $this->getConfigValue('apps.language.autotrans_enable')) {
+                                $model_itited = $data_model->init_model_data_auto_translate($model_itited);
+                            }
+
                             $rs = $this->get_form($model_itited, 'edit');
                         } else {
                             $rs = '';
@@ -1196,17 +1200,17 @@ class Structure_Manager extends SiteBill_Krascap {
         }
         return $nested;
     }
-    
-    
+
+
     /*function getCategoryTreeArray($first_run = true, $load_published = false, $id = 0, &$el = null, $structure = null){
-        
+
         if($first_run){
-            
+
             echo 'first run';
             $ret = array();
-        
+
             $structure = $this->loadCategoryStructure($load_published);
-            
+
             if(!empty($structure['childs'][0])){
                 foreach($structure['childs'][0] as $cid){
                     $x = array(
@@ -1220,14 +1224,14 @@ class Structure_Manager extends SiteBill_Krascap {
                     }
                     $ret[] = $x;
                 }
-                
-                
+
+
             }
             print_r($ret);
         }else{
-            
+
             echo 'inside '.$id;
-            
+
             foreach($structure['childs'][$id] as $cid){
                 //print_r($x);
                 $x = array(
@@ -1239,18 +1243,18 @@ class Structure_Manager extends SiteBill_Krascap {
                 if(isset($structure['childs'][$cid]) && is_array($structure['childs'][$cid]) && !empty($structure['childs'][$cid])){
                     $this->getCategoryTreeArray(false, $load_published, $cid, $x, $structure);
                 }
-                
+
                 $el['childs'][] = $x;
             }
         }
-        
-        
-        
-        
-        
-        
-        
-        
+
+
+
+
+
+
+
+
     }*/
 
     /**
@@ -1300,7 +1304,7 @@ class Structure_Manager extends SiteBill_Krascap {
         }
 
         if (1 == $this->getConfigValue('allow_topic_images')) {
-            if (is_array($ret['catalog']) && count($ret['catalog'] > 0)) {
+            if (is_array($ret['catalog']) && count($ret['catalog']) > 0) {
                 foreach ($ret['catalog'] as $k => $v) {
                     $query = "select i.* from " . DB_PREFIX . "_topic_image as li, " . DB_PREFIX . "_image as i where li.id=$k and li.image_id=i.image_id order by li.sort_order";
                     $stmt = $DBC->query($query);
@@ -1621,14 +1625,14 @@ class Structure_Manager extends SiteBill_Krascap {
             foreach ($it as $pid => $pvals) {
                 $rt .= '<div data-id="' . $pid . '" class="levelitem levelitem_' . $pid . '" style="display: none;">';
                 $rt .= '<select'.($classes!='' ? ' class="'.$classes.'"' : '').'>';
-                
+
                 $tname = '';
 				if($lev == 1){
 					$tname = (isset($options['zerotitle']) && $options['zerotitle'] != '' ? $options['zerotitle'] : '--');
 				}else{
 					$tname = (isset($options['nonzerotitle']) && $options['nonzerotitle'] != '' ? $options['nonzerotitle'] : '--');
 				}
-                
+
                 $rt .= '<option value="0">'.$tname.'</option>';
                 foreach ($pvals as $pval) {
                     $rt .= '<option value="' . $pval[0] . '"' . ($pval[2] == 1 ? ' selected="selected"' : '') . '>' . $pval[1] . '</option>';
@@ -1656,16 +1660,24 @@ class Structure_Manager extends SiteBill_Krascap {
         $core_level_symbol = str_replace('#', ' ', $core_level_symbol);
 
         if (!defined('ADMIN_MODE')) {
-            $bootstrap_version = trim($this->getConfigValue('bootstrap_version'));
-            if ($bootstrap_version == '3') {
-                $classes = 'form-control';
-            } elseif ($bootstrap_version == '4') {
-                $classes = 'mdb-select';
-            } elseif ($bootstrap_version == '4md') {
-                $classes = 'mdb-select';
-            } else {
-                $classes = '';
+
+            if(isset($parameters['classes'])){
+                $classes = $parameters['classes'];
+            }else{
+                $bootstrap_version = trim($this->getConfigValue('bootstrap_version'));
+                if ($bootstrap_version == '3') {
+                    $classes = 'form-control';
+                } elseif ($bootstrap_version == '4') {
+                    $classes = 'mdb-select';
+                } elseif ($bootstrap_version == '4md') {
+                    $classes = 'mdb-select';
+                } else {
+                    $classes = '';
+                }
             }
+
+
+
         } else {
             $classes = '';
         }
@@ -1677,6 +1689,11 @@ class Structure_Manager extends SiteBill_Krascap {
             $category_structure = $this->loadCategoryStructure();
         } else {
             $category_structure = $this->loadCategoryStructure($this->getConfigValue('use_topic_publish_status'));
+        }
+        if ( isset($parameters['only_top_level']) && $parameters['only_top_level'] ) {
+            $tmp = $category_structure['childs'][0];
+            unset($category_structure['childs']);
+            $category_structure['childs'][0] = $tmp;
         }
 
         if (isset($parameters['enabled_ids']) && '' != trim($parameters['enabled_ids'])) {
@@ -1711,7 +1728,7 @@ class Structure_Manager extends SiteBill_Krascap {
         }
 
         if (!$multiple) {
-            $rs .= '<option value="' . ($start != 0 ? $start : '0') . '">' . $title_default . '</option>';
+            $rs .= '<option class="rootlevel rootlevel_0" value="' . ($start != 0 ? $start : '0') . '">' . $title_default . '</option>';
         }
         if (isset($category_structure['childs'][$start]) && count($category_structure['childs'][$start]) > 0) {
             foreach ($category_structure['childs'][$start] as $item_id => $categoryID) {
@@ -1744,7 +1761,7 @@ class Structure_Manager extends SiteBill_Krascap {
                 } else {
                     $option_title = $category_structure['catalog'][$categoryID]['name'];
                 }
-                $rs .= '<option data-superparent="' . $superparent . '" value="' . $categoryID . '" ' . $selected . $disabled . '>' . str_repeat($core_level_symbol, $level) . $option_title . '</option>';
+                $rs .= '<option class="rootlevel rootlevel_'.$level.'" data-superparent="' . $superparent . '" value="' . $categoryID . '" ' . $selected . $disabled . '>' . str_repeat($core_level_symbol, $level) . $option_title . '</option>';
                 $rs .= $this->getChildNodes($categoryID, $category_structure, $level + 1, $current_category_id, $superparent);
             }
         }
@@ -1777,7 +1794,7 @@ class Structure_Manager extends SiteBill_Krascap {
         $rs = '';
         if (isset($category_structure['childs'][$categoryID]) && count($category_structure['childs'][$categoryID]) > 0) {
             foreach ($category_structure['childs'][$categoryID] as $child_id) {
-                $rs .= '<div class="ait_bc"">';
+                $rs .= '<div class="ait_bc">';
                 $rs .= '<div class="ait_bc_h"><input name="' . $name . '[]" value="' . $category_structure['catalog'][$child_id]['id'] . '" type="checkbox"' . (in_array($child_id, $current_category_id) ? ' checked="checked"' : '') . ' /> ' . $category_structure['catalog'][$child_id]['name'] . '</div>';
 
                 if (isset($category_structure['childs'][$child_id])) {
@@ -2153,6 +2170,7 @@ class Structure_Manager extends SiteBill_Krascap {
     function getCategoryTreeModern($current_category_id) {
         global $smarty;
         $smarty->assign('structure_grid_allow_drag', 1);
+        $smarty->assign('use_topic_publish_status', intval($this->getConfigValue('use_topic_publish_status')));
         $ret = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/system/template/structure_grid.tpl');
         return $ret;
     }
@@ -2615,7 +2633,7 @@ class Structure_Manager extends SiteBill_Krascap {
             } else {
                 $offset_level = $level;
             }
-            $rs .= '<option data-superparent="' . $superparent . '" data-parent="' . $categoryID . '" data-level="' . $level . '" value="' . $child_id . '" data-value="' . $category_structure['catalog'][$child_id]['name'] . '" ' . $selected . $disabled . '>' . str_repeat($level_symbol, $offset_level) . $category_structure['catalog'][$child_id]['name'] . '</option>';
+            $rs .= '<option class="rootlevel rootlevel_'.$level.'" data-superparent="' . $superparent . '" data-parent="' . $categoryID . '" data-level="' . $level . '" value="' . $child_id . '" data-value="' . $category_structure['catalog'][$child_id]['name'] . '" ' . $selected . $disabled . '>' . str_repeat($level_symbol, $offset_level) . $category_structure['catalog'][$child_id]['name'] . '</option>';
             if (isset($category_structure['childs'][$child_id])) {
                 if (count($category_structure['childs'][$child_id]) > 0) {
                     $rs .= $this->getChildNodes($child_id, $category_structure, $level + 1, $current_category_id, $superparent);
@@ -2770,8 +2788,7 @@ class Structure_Manager extends SiteBill_Krascap {
      * @return string
      */
     function grid() {
-        $rs .= $this->getCategoryTreeModern(0);
-        return $rs;
+        return $this->getCategoryTreeModern(0);
     }
 
     function findCurrent(&$structure, $active) {
@@ -2990,26 +3007,11 @@ class Structure_Manager extends SiteBill_Krascap {
         }
         $params['ignore_published_status'] = 1;
         foreach ($category_structure['childs'][$categoryID] as $child_id) {
-            if ($current_category_id == $child_id) {
-                $selected = " selected ";
-            } else {
-                $selected = "";
+            if ( $category_structure['catalog'][$child_id]['published'] == 1 ) {
+                // Чтобы проще видеть, в линкере отображаем только не опубликованные ветки
+                // В рабочей версии закоменчено, пока включать через код, потом выключать
+                //continue;
             }
-            $this->j++;
-            if (ceil($this->j / 2) > floor($this->j / 2)) {
-                $row_class = "row1";
-            } else {
-                $this->j = 0;
-                $row_class = "row2";
-            }
-            if ( isset($data_structure['data'][0][$child_id])) {
-                $has_data = ' warning ';
-            } else {
-                $has_data = '';
-            }
-
-            $rs .= '<tr class="'.$has_data.'">';
-            $rs .= '<td class="' . $row_class . '">' . str_repeat('&nbsp;.&nbsp;', $level) . $category_structure['catalog'][$child_id]['name'] . ' <strong>[' . $child_id . ']</strong>' . ' d = '.$data_structure['data'][0][$child_id].'</td>';
             if ($topic_links_hash[$child_id]['link_topic_id'] != '') {
                 $tmp_child_id = $topic_links_hash[$child_id]['link_topic_id'];
             } else {
@@ -3023,12 +3025,42 @@ class Structure_Manager extends SiteBill_Krascap {
             }
 
 
+            if ($current_category_id == $child_id) {
+                $selected = " selected ";
+            } else {
+                $selected = "";
+            }
+            $this->j++;
+            if (ceil($this->j / 2) > floor($this->j / 2)) {
+                $row_class = "row1";
+            } else {
+                $this->j = 0;
+                $row_class = "row2";
+            }
+            if ($category_structure['catalog'][$child_id]['published'] == 0 and isset($data_structure['data'][0][$child_id]) and $data_structure['data'][0][$child_id] > 100 ) {
+                $has_data = ' error ';
+            } elseif ($category_structure['catalog'][$child_id]['published'] == 0 and isset($data_structure['data'][0][$child_id])) {
+                $has_data = ' warning ';
+            } else {
+                $has_data = '';
+            }
+
+            $rs .= '<tr class="'.$has_data.'">';
+            $rs .= '<td class="' . $row_class . '">' .
+                str_repeat('&nbsp;.&nbsp;', $level) . $category_structure['catalog'][$child_id]['name'] .
+                ' <strong>[' . $child_id . ']</strong>' .
+                ' d = '.$data_structure['data'][0][$child_id].
+                ' p = '.$category_structure['catalog'][$child_id]['published'].'</td>'
+            ;
+
+
+
             $rs .= '<td class="' . $row_class . '" '.$changed_style.'>' . $this->getCategorySelectBoxWithName('topic[' . $child_id . ']', $tmp_child_id, false, $params) . '</td>';
             $rs .= '<td class="' . $row_class . '"><textarea type="text" name="params_topic[' . $child_id . ']">' . $topic_links_hash[$child_id]['params'] . '</textarea></td>';
 
 
             $rs .= '</tr>';
-            if (count($category_structure['childs'][$child_id]) > 0) {
+            if (is_array($category_structure['childs'][$child_id]) and count($category_structure['childs'][$child_id]) > 0) {
                 $rs .= $this->getChildNodesRowLinker($child_id, $category_structure, $level + 1, $current_category_id, $topic_links_hash, $data_structure);
             }
         }
