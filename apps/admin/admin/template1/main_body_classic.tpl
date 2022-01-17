@@ -69,7 +69,8 @@
                 {/if}
             {/if}
             <div class="pull-right">
-                <a href="{$MAIN_URL}/apps/admin/" target="_blank" class="btn btn-small btn-warning"><i class="icon-dashboard"></i> Новая админка</a>
+                {assign var=admin3_alias value="{getConfig key='apps.admin3.alias'}"}
+                <a href="{$MAIN_URL}/{if $admin3_alias}{$admin3_alias}{else}apps/admin{/if}/" target="_blank" class="btn btn-small btn-warning"><i class="icon-dashboard"></i> Новая админка</a>
                 <a href="{$MAIN_URL}/" target="_blank" class="btn btn-small btn-primary"><i class="icon-eye-open"></i> {$L_SITE}</a>
 
 
