@@ -8,6 +8,13 @@ class Install_Manager {
      * @var SiteBill
      */
     private $sitebill;
+	
+	protected $login_field = 'Имя пользователя';
+	protected $password_field = 'Пароль';
+	protected $login_button = 'Войти';
+	protected $add_service_link = 'Включить услугу';
+	protected $folder_not_writeble = 'Нет прав на запись для каталога(ов).<br> Установите права на запись (0777) для: ';
+	protected $unalble_to_open_file = 'Не могу открыть файл';
 
     /**
      * Constructor
@@ -108,7 +115,6 @@ class Install_Manager {
      * @return boolean
      */
     function check_catalogs_and_permissions () {
-        global $ETOWN_LANG;
         $error_folder_stack = array();
         $error = false;
         $check_folders = array('/cache/compile', '/cache/upl', '/img/data', '/img/data/user');
@@ -121,7 +127,7 @@ class Install_Manager {
         }
         if ( $error ) {
             $this->initSitebill();
-            $this->sitebill->riseError($ETOWN_LANG->folder_not_writeble.'<br>'.implode('<br>', $error_folder_stack));
+            $this->sitebill->riseError($this->folder_not_writeble.'<br>'.implode('<br>', $error_folder_stack));
             return false;
         }
         return true;
@@ -326,11 +332,10 @@ class Install_Manager {
      * @return
      */
     function parse_sql_file ( $filename ) {
-        global $ETOWN_LANG;
         $DBC=DBC::getInstance();
         $handle = fopen($filename, "r");
         if (!$handle ) {
-            $this->sitebill->riseError($ETOWN_LANG->unalble_to_open_file.' '.$filename);
+            $this->sitebill->riseError($this->unalble_to_open_file.' '.$filename);
             return false;
         }
         $data = fread($handle, filesize($filename));

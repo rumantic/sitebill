@@ -6,7 +6,9 @@ require_once("../../starter.php");
 
 define('UPLOADIFY', true);
 
-ini_set("include_path", $include_path );
+if(isset($include_path)){
+    ini_set("include_path", $include_path );
+}
 require_once(SITEBILL_DOCUMENT_ROOT.'/third/smarty/Smarty.class.php');
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/db/MySQL.php');
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill.php');
@@ -15,4 +17,4 @@ $smarty = new Smarty;
 $sitebill = new SiteBill();
 $sitebill->writeLog('uploadify module');
 $uploadify = new Sitebill_Uploadify();
-echo $uploadify->main( $_REQUEST['file'] );
+echo $uploadify->main( @$_REQUEST['file'] );

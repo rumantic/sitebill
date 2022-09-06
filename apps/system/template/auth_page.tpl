@@ -41,7 +41,7 @@
 <div class="row-fluid">
 	<div id="adminloginform">
 		<div class="well">
-	        <legend>{$L_AUTHORIZATION}{if $ntext!=''}<br />{$ntext}{/if}</legend>
+	        <legend>{$L_AUTHORIZATION}{if isset($ntext) && $ntext!=''}<br />{$ntext}{/if}</legend>
 	        {$formbody}
 	        {if 1==0}<form method="POST" action="">
 	        	<div class="alert alert-error">

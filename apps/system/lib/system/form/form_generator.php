@@ -404,7 +404,7 @@ class Form_Generator extends SiteBill
               });
               </script>';
             }
-            $str2 = '<textarea id="' . $id . '" class="' . $this->classes['textarea'] . '" name="' . $item_array['name'] . '" rows="' . $item_array['rows'] . '" cols="' . $item_array['cols'] . '"' . ((isset($parameters['styles']) && $parameters['styles'] != '') ? ' style="' . $parameters['styles'] . '"' : '') . '>' . htmlspecialchars($item_array['value']) . '</textarea>';
+            $str2 = '<textarea id="' . $id . '" class="' . $this->classes['textarea'] . '" name="' . $item_array['name'] . '" rows="' . $item_array['rows'] . '" cols="' . $item_array['cols'] . '"' . ((isset($parameters['styles']) && $parameters['styles'] != '') ? ' style="' . $parameters['styles'] . '"' : '') . ' placeholder="' . $item_array['title'] . '">' . htmlspecialchars($item_array['value']) . '</textarea>';
         }
         if (isset($parameters['modal_input']) && $parameters['modal_input'] == 'search_params') {
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/mysearch/admin/modal_input.php');
