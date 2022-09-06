@@ -14,6 +14,6 @@ if ( !defined('SITEBILL_DOCUMENT_ROOT') ) {
     define('SITEBILL_DOCUMENT_ROOT', $sitebill_document_root);
 }
 define('SITEBILL_MAIN_URL', $folder);
-if ( isset($__db_prefix) ) {
+if ( isset($__db_prefix) and !defined('DB_PREFIX') ) {
     define('DB_PREFIX', $__db_prefix);
 }
