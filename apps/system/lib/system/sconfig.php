@@ -196,7 +196,7 @@ class SConfig
                 self::$config_array_types_by_id[$ar['id']] = $ar['vtype'];
                 self::$check_config_array[$ar['config_key']] = '1';
 
-                if ($ar['public'] == 1) {
+                if (@$ar['public'] == 1) {
                     self::$public_config_array[$ar['config_key']] = $ar['value'];
                 }
             }
@@ -218,7 +218,7 @@ class SConfig
         }
 
         if (!self::loadDomainConfig()) {
-            $core_domain = trim(self::$config_array['core_domain']);
+            $core_domain = trim(@self::$config_array['core_domain']);
             if ($core_domain != '') {
                 self::loadSubdomenalConfig($core_domain);
             }

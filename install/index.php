@@ -482,7 +482,7 @@ class wizard {
 
                 <div class="widget-box">
                     <div class="widget-header widget-header-blue widget-header-flat">
-                        <h4 class="widget-title lighter"><?php echo $sidebar_menu[$step]['title']; ?></h4>
+                        <h4 class="widget-title lighter"><?php echo @$sidebar_menu[$step]['title']; ?></h4>
                     </div>
                     <div class="widget-body">
                         <div class="widget-main">
@@ -590,6 +590,7 @@ function installTables() {
 }
 
 function fillIncFile($inc_file) {
+    $text = '';
     $text .= '<?php' . "\r\n";
     $text .= 'if(!defined(\'DB_HOST\')){' . "\r\n";
     $text .= '	define(\'DB_HOST\',\'' . $_SESSION['db']['db_host'] . '\');' . "\r\n";

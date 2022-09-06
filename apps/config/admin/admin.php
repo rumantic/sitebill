@@ -673,7 +673,7 @@ class config_admin extends Object_Manager
      */
     function check_config_item($key)
     {
-        if (self::$check_config_array[$key] == 1) {
+        if (@self::$check_config_array[$key] == 1) {
             return true;
         }
         return false;
@@ -713,7 +713,7 @@ class config_admin extends Object_Manager
         $config_id = $DBC->lastInsertId();
         $query = "UPDATE `" . DB_PREFIX . "_" . $this->table_name . "` SET `sort_order`=? WHERE `id`=?";
         $stmt = $DBC->query($query, array($config_id, $config_id));
-        if ($params['public'] == true) {
+        if (@$params['public'] == true) {
             $this->set_public_access($conf_new_param_name);
         }
         $this->reloadCheckConfigStructure();

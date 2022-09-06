@@ -14,8 +14,8 @@ if (@$_POST['ready']) {
     $r = $pdo->exec($query);
     if ($r) {
         $progressbar_value = 80;
-        $steps[$step]['result'] = 1;
-        $_SESSION['created_user'] = $admin_login;
+        @$steps[$step]['result'] = 1;
+        $_SESSION['created_user'] = @$admin_login;
 
         //return true;
         //$text.='<p>Администратор создан</p>';
@@ -42,11 +42,15 @@ if (@$_POST['ready']) {
 
     $sitebill_document_uri = '';
     $sitebill_document_root = $_SERVER['DOCUMENT_ROOT'] . $folder;
-    define('SITEBILL_DOCUMENT_ROOT', $sitebill_document_root);
+    if ( defined('SITEBILL_DOCUMENT_ROOT') ) {
+        define('SITEBILL_DOCUMENT_ROOT', $sitebill_document_root);
+    }
     //define('SITEBILL_MAIN_URL', $folder);
     require_once(__DIR__ . '/../../third/smarty/Smarty.class.php');
     require_once(__DIR__ . "/../../inc/db.inc.php");
-    define('DB_PREFIX', $__db_prefix);
+    if ( !defined('DB_PREFIX') ) {
+        define('DB_PREFIX', $__db_prefix);
+    }
 
 
 

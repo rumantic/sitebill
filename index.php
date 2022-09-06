@@ -1,8 +1,9 @@
 <?php
 
 date_default_timezone_set('Europe/Moscow');
-error_reporting(E_ERROR);
-error_reporting(E_ERROR | E_WARNING);
+//error_reporting(E_ERROR);
+error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_WARNING);
+//error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);
 //error_reporting(E_ALL);
 ini_set('display_errors', 'On');
 
@@ -39,8 +40,9 @@ if (!defined('CURRENT_CURRENCY')) {
         define('CURRENT_CURRENCY', 1);
     }
 }
-
-ini_set("include_path", $include_path);
+if ( isset($include_path) ) {
+    ini_set("include_path", $include_path);
+}
 
 require_once(SITEBILL_DOCUMENT_ROOT . '/third/smarty/Smarty.class.php');
 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/init.php');
@@ -53,20 +55,20 @@ require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/install/install.p
 if (file_exists(SITEBILL_DOCUMENT_ROOT . '/inc/db.inc.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/install')) {
     $msgs = array();
     Sitebill::removeDirectory(SITEBILL_DOCUMENT_ROOT . '/install', $msgs);
-    if (count($msg) > 0) {
+    if (count($msgs) > 0) {
         foreach ($msgs as $msg) {
             echo $msg . '<br/>';
         }
     }
     if ( file_exists(SITEBILL_DOCUMENT_ROOT . '/install') ) {
-        echo 'Для продолжения работы удалите каталог install в корне сатай';
+        echo 'Для продолжения работы удалите каталог install в корне сайта';
         exit;
     }
 }
 if ( file_exists(SITEBILL_DOCUMENT_ROOT . '/sitebill_setup.php') ) {
     unlink(SITEBILL_DOCUMENT_ROOT . '/sitebill_setup.php');
     if ( file_exists(SITEBILL_DOCUMENT_ROOT . '/sitebill_setup.php') ) {
-        echo 'Для продолжения работы удалите файл sitebill_setup.php в корне сатай';
+        echo 'Для продолжения работы удалите файл sitebill_setup.php в корне сайта';
         exit;
     }
 }
@@ -91,6 +93,31 @@ if (isset($_REQUEST['_lang'])) {
 }
 
 
+if(isset($_GET['dlang'])){
+
+    $sitebill = new SiteBill();
+    $RURI = $sitebill::getClearRequestURI();
+
+    $prefix_list = array();
+    $prefixlistconf = trim($sitebill->getConfigValue('apps.language.language_prefix_list'));
+    if ($prefixlistconf !== '') {
+        $prefix_pairs = explode('|', $prefixlistconf);
+        if (count($prefix_pairs) > 0) {
+            foreach ($prefix_pairs as $lp) {
+                list($pr, $lo) = explode('=', $lp);
+                $prefix_list[$pr] = $lo;
+            }
+        }
+    }
+
+    $locale = '';
+    if(isset($prefix_list[$_SESSION['_lang']])){
+        $locale = $prefix_list[$_SESSION['_lang']];
+    }
+
+    $sitebill->go301($sitebill->createUrlTpl($RURI, false, false, $locale));
+    exit();
+}
 
 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/multilanguage/multilanguage.class.php';
 
@@ -98,6 +125,16 @@ Sitebill::initRequest();
 Multilanguage::start('frontend', $_SESSION['_lang']);
 
 $sitebill = new SiteBill();
+/*
+if ($_GET['session_region_id'] != '') {
+    $_SESSION['session_region_id'] = $_GET['session_region_id'];
+    setcookie('session_region_id', $_GET['session_region_id'], time()+$sitebill->get_cookie_duration_in_sec(), '/', SiteBill::$_cookiedomain);
+    $sitebill->setRequestValue('region_id', $_GET['session_region_id']);
+} elseif ($_COOKIE['session_region_id'] != '') {
+    $_SESSION['session_region_id'] = $_COOKIE['session_region_id'];
+    $sitebill->setRequestValue('region_id', $_COOKIE['session_region_id']);
+}
+*/
 
 
 //$sitebill->writeLog('test');
