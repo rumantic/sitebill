@@ -130,30 +130,30 @@ class wizard {
     function check_step4() {
         $admin_login = $_POST['admin_login'];
         if ($admin_login == '') {
-            $admin_login = $_SESSION['admin_login'];
+            $admin_login = @$_SESSION['admin_login'];
         }
 
         $admin_pass = $_POST['admin_pass'];
         if ($admin_pass == '') {
-            $admin_pass = $_SESSION['admin_pass'];
+            $admin_pass = @$_SESSION['admin_pass'];
         }
 
 
         $order_email_acceptor = $_POST['order_email_acceptor'];
         if ($order_email_acceptor == '') {
-            $order_email_acceptor = $_SESSION['order_email_acceptor'];
+            $order_email_acceptor = @$_SESSION['order_email_acceptor'];
         }
 
 
         $site_title = $_POST['site_title'];
         if ($site_title == '') {
-            $site_title = $_SESSION['site_title'];
+            $site_title = @$_SESSION['site_title'];
         }
 
 
         $distrib_folder = $_POST['distrib_folder'];
         if ($distrib_folder == '') {
-            $distrib_folder = @$_SESSION['distrib_folder'];
+            $distrib_folder = @@$_SESSION['distrib_folder'];
         }
 
         $_SESSION['distrib_folder'] = $distrib_folder;
