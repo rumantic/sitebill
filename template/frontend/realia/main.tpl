@@ -2,17 +2,17 @@
 {include file='main_closed.tpl'}
 {else}
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
+<html lang="{$CurrentLang}">
 
     {include file="header.tpl"}
+
     <body>
         {if $smarty.session.user_id eq ''}
             {include file="login_register.tpl"}
         {/if}
 
-
         <div id="wrapper-outer" >
-            <div id="wrapper">
+            <div id="wrapper{if $is_realty_view}1{/if}">
                 <div id="wrapper-inner">
                     <!-- BREADCRUMB -->
                     <div class="breadcrumb-wrapper">
@@ -24,7 +24,7 @@
                                             {section name=i loop=$right_menu}
                                             <li><a href="{$right_menu[i].url}">{$right_menu[i].name}</a></li>
                                             {/section}
-                                        <li><a href="{$estate_folder}/myfavorites/">{$L_TABS_FAVORITES} (<span id="favorites_count">{(int)$smarty.session.favorites|count}</span>)</a></li>
+                                        <li><a href="{formaturl path="myfavorites"}">{$L_TABS_FAVORITES} (<span id="favorites_count">{if is_array($smarty.session.favorites)}{(int)$smarty.session.favorites|count}{else}0{/if}</span>)</a></li>
                                     </ul><!-- /.breadcrumb -->
                                     {*include file='city_buttons.tpl'*}
 
@@ -34,7 +34,7 @@
                                                 <li><a href="#" data-toggle="modal" data-target="#prettyLogin">{$L_LOGIN_BUTTON}</a></li>
                                                 <li><a href="#" data-toggle="modal" data-target="#prettyLogin">{$L_AUTH_REGISTRATION}</a></li>
                                                 {else} {if isset($user_menu)}{$user_menu}{/if}
-                                                <li><a href="{$estate_folder}/logout/" >{$L_LOGOUT_BUTTON}</a></li>
+                                                <li><a href="{formaturl path="logout"}" >{$L_LOGOUT_BUTTON}</a></li>
                                                 {/if}
 
 
@@ -52,28 +52,8 @@
                         <div class="container">
                             <div class="navigation-wrapper">
                                 <div class="navigation clearfix-normal">
-
                                     {$navmenu}
-
-
-
-                                    <div class="language-switcher">
-                                        {foreach item=ln from=$available_langs key=k}
-                                            {if $smarty.session._lang eq $k}
-                                                <div class="current"><a href="#" lang="en"><img src="{$estate_folder}/template/frontend/{$current_theme_name}/img/flags/{$k}.png"> {$ln}</a></div><!-- /.current -->
-                                                    {/if}
-                                                {/foreach}
-                                        <div class="options">
-                                            <ul>
-                                                {foreach item=ln from=$available_langs key=k}
-                                                    {if $smarty.session._lang eq $k}
-                                                    {else}
-                                                    {/if}
-                                                    <li><a href="{$smarty.const.SITEBILL_MAIN_URL}/?_lang={$k}"><img src="{$estate_folder}/template/frontend/{$current_theme_name}/img/flags/{$k}.png"></a></li>
-                                                        {/foreach}
-                                            </ul>
-                                        </div><!-- /.options -->
-                                    </div><!-- /.language-switcher -->
+                                    {include file='_langswitcher.tpl'}
                                     {if $live_search_on==1}
                                         <div class="site-search">{_e t="Быстрый поиск"} {$apps_search_block}</div>
                                     {/if}
@@ -123,6 +103,9 @@
                                         </div><!-- /.bottom-inner -->
                                     </div><!-- /.bottom -->
                                 </div><!-- /.bottom-wrapper -->
+
+                                {include file='partners.tpl'}
+
                             {/if}
                         {/if}
                     </div><!-- /#content -->
@@ -136,6 +119,12 @@
     {$messenger_widget}
         {if isset($debugbarRenderer)}
             {$debugbarRenderer->render()}
+        {/if}
+        {include file="messenger_modals.tpl"}
+        {if $smarty.session.user_id eq ''}
+            <script src="{$theme_folder}/plugins/intl-tel-input/js/intlTelInput.js"></script>
+            <script src="{$theme_folder}/plugins/intl-tel-input/js/isValidNumber.js"></script>
+            <script src="{$theme_folder}/plugins/intl-tel-input/js/isValidMobileNumber.js"></script>
         {/if}
 
 </body>

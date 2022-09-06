@@ -22,7 +22,9 @@
 
                     {if $breadcrumbs != ''}
                         <div id="breadcrumbs">{$breadcrumbs}</div>
-                    {/if}	
+                    {/if}
+
+
                     {if $main_file_tpl != ''}
                         <h1 class="page-header">{$title}</h1>
                         {include file="$main_file_tpl"}

@@ -37,6 +37,9 @@
         {/if}
 
         <form method="get" action="{formaturl path="find"}">
+            <input type="hidden" name="map_bounds" value="" id="search_bounds">
+            <input type="hidden" name="polylineString" value="" id="search_polylineString">
+
             {*$currency_list*}
             <div class="type control-group">
                 <label class="control-label" for="inputType">
@@ -122,8 +125,17 @@
                     <input type="text" name="srch_word" value="{$smarty.request.srch_word}"/>
                 </div><!-- /.controls -->
             </div><!-- /.control-group -->
+            <div class="type control-group">
+                <label class="control-label" for="inputType">
+                    ID
+                </label>
 
-            <!-- 
+                <div class="controls">
+                    <input type="text" name="id" value="{$smarty.request.id}"/>
+                </div><!-- /.controls -->
+            </div><!-- /.control-group -->
+
+            <!--
                         <div class="rent control-group">
                             <div class="controls">
                                 <label class="checkbox" for="inputRent">
@@ -131,7 +143,7 @@
                                 </label>
                             </div>
                         </div>
-            
+
                         <div class="sale control-group">
                             <div class="controls">
                                 <label class="checkbox" for="inputSale">
@@ -139,7 +151,7 @@
                                 </label>
                             </div>
                         </div>
-            -->           
+            -->
             <div class="beds control-group">
                 <div class="controls">
                     <input type="text" class="price_from price_field" name="price_min" value="{if isset($price_min)}{$price_min|number_format:0:'':' '}{else}0{/if}"/>
@@ -148,7 +160,7 @@
 
             <div class="baths control-group">
                 <div class="controls">
-                    <input type="text" class="price_for price_field" name="price" value="{if isset($price) && $price!=0}{$price|number_format:0:'':' '}{else}{$max_price|number_format:0:'':' '}{/if}"/>
+                    <input type="text" class="price_for price_field" name="price" value="{if isset($price) && $price!=0}{intval($price)|number_format:0:'':' '}{else}{$max_price|number_format:0:'':' '}{/if}"/>
                 </div><!-- /.controls -->
             </div><!-- /.control-group -->
 
@@ -164,21 +176,21 @@
                 </label>
                 <div class="controls">
                     {if isset($smarty.request.room_count) && is_array($smarty.request.room_count)}
-                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="1"{if in_array(1,$smarty.request.room_count)} checked="checked"{/if} /> <label class="ch">1</label></div> 
-                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="2"{if in_array(2,$smarty.request.room_count)} checked="checked"{/if} /> <label class="ch">2</label></div> 
-                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="3"{if in_array(3,$smarty.request.room_count)} checked="checked"{/if} /> <label class="ch">3</label></div>  
-                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="4"{if in_array(4,$smarty.request.room_count)} checked="checked"{/if} /> <label class="ch">4+</label> </div> 
+                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="1"{if in_array(1,$smarty.request.room_count)} checked="checked"{/if} /> <label class="ch">1</label></div>
+                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="2"{if in_array(2,$smarty.request.room_count)} checked="checked"{/if} /> <label class="ch">2</label></div>
+                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="3"{if in_array(3,$smarty.request.room_count)} checked="checked"{/if} /> <label class="ch">3</label></div>
+                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="4"{if in_array(4,$smarty.request.room_count)} checked="checked"{/if} /> <label class="ch">4+</label> </div>
                         {else if isset($smarty.request.room_count)}
-                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="1"{if $smarty.request.room_count==1} checked="checked"{/if} /> <label class="ch">1</label></div>  
-                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="2"{if $smarty.request.room_count==2} checked="checked"{/if} /> <label class="ch">2</label></div>  
-                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="3"{if $smarty.request.room_count==3} checked="checked"{/if} /> <label class="ch">3</label></div>  
-                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="4"{if $smarty.request.room_count>3} checked="checked"{/if} /> <label class="ch">4+</label></div>  
+                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="1"{if $smarty.request.room_count==1} checked="checked"{/if} /> <label class="ch">1</label></div>
+                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="2"{if $smarty.request.room_count==2} checked="checked"{/if} /> <label class="ch">2</label></div>
+                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="3"{if $smarty.request.room_count==3} checked="checked"{/if} /> <label class="ch">3</label></div>
+                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="4"{if $smarty.request.room_count>3} checked="checked"{/if} /> <label class="ch">4+</label></div>
                         {else}
-                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="1" /> <label class="ch">1</label></div>  
-                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="2" /> <label class="ch">2</label></div>  
-                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="3" /> <label class="ch">3</label></div>  
-                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="4" /> <label class="ch">4+</label></div>  
-                        {/if}				
+                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="1" /> <label class="ch">1</label></div>
+                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="2" /> <label class="ch">2</label></div>
+                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="3" /> <label class="ch">3</label></div>
+                        <div class="ch_small"><input class="checkbox" type="checkbox" name="room_count[]" value="4" /> <label class="ch">4+</label></div>
+                        {/if}
                 </div>
             </div>
 

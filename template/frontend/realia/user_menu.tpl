@@ -1,6 +1,14 @@
 <li><a href="{relativeurl path="account/data?do=new"}">{$L_ADD_ADV}</a></li>
 <li><a href="{relativeurl path="account/profile"}" >{$L_MY_PROFILE}</a></li>
 <li><a href="{relativeurl path="account/data"}" >{$L_MY_ADVS}</a></li>
+
+{if {get_access_smarty user_id=$smarty.session.user_id model_name='agency' function_name='access'} eq 1}
+    <li><a href="{$estate_folder}/account/myagency/" >Филиалы</a></li>
+{/if}
+{if {get_access_smarty user_id=$smarty.session.user_id model_name='cowork_users' function_name='access'} eq 1}
+    <li><a href="{$estate_folder}/account/coworker/" >Мои сотрудники</a></li>
+{/if}
+
 {if $realtylogv2_on==1}<li><a href="{$estate_folder}/{$realtylogv2_namespace}/trash/" >{_e t="Корзина"} ({$trash_count})</a></li>{/if}
 {if $mailbox_panel ne ''}<li><a href="{relativeurl path="mailbox"}" >{$mailbox_panel}</a></li>{/if}
 {if $mysearch_panel ne ''}<li><a href="{relativeurl path="mysearch"}" >{$mysearch_panel}</a></li>{/if}

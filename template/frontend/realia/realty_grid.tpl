@@ -4,7 +4,7 @@
     <div class="span9">
 
 
-        {if $grid_items|count==0}     
+        {if $grid_items|count==0}
             <h1 class="page-header">{_e t="Ничего не удалось найти"}</h1>
         {else}
             <h1 class="page-header">{$title}</h1>
@@ -17,7 +17,7 @@
             {assign var="lang_topic_name" value="name_{$smarty.session._lang}"}
 
             <div id="map" style="margin: 10px 0;">
-                <iframe src="{$estate_folder}/js/ajax.php?action=iframe_map&{$QUERY_STRING}" style="border: 0px;" border="0" width="100%" height="100%"></iframe>
+                <iframe src="{$estate_folder}/js/ajax.php?action=iframe_map&{$QUERY_STRING}&topic_id={$smarty.request.topic_id}" style="border: 0px;" border="0" width="100%" height="100%"></iframe>
             </div>
 
             {if $smarty.session.grid_type eq 'thumbs'}

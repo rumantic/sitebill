@@ -32,7 +32,7 @@ class Realia_Menu_Decorator extends frontend_main {
             }
 
             $title = '';
-            
+
             $url = '';
             if ($category_structure['catalog'][$categoryID]['url'] != '') {
                 if (preg_match('/^http/', $category_structure['catalog'][$categoryID]['url'])) {
@@ -43,8 +43,8 @@ class Realia_Menu_Decorator extends frontend_main {
             } else {
                 $url = 'topic' . $categoryID . '.html';
             }
-            
-            $url = parent::createUrlTpl($url);
+
+            //$url = parent::createUrlTpl($url);
 
             $rs .= $li_open . '<a href="' . $url . '"' . ($hasChilds ? ' class="menuparent"' : '') . '>' . $name . '</a>';
 
@@ -83,8 +83,8 @@ class Realia_Menu_Decorator extends frontend_main {
                 $li_open = '<li>';
             }
 
-     
-            
+
+
             $url = '';
             if ($category_structure['catalog'][$child_id]['url'] != '') {
                 if (preg_match('/^http/', $category_structure['catalog'][$child_id]['url'])) {
@@ -95,8 +95,8 @@ class Realia_Menu_Decorator extends frontend_main {
             } else {
                 $url = 'topic' . $child_id . '.html';
             }
-            
-            $url = parent::createUrlTpl($url);
+
+            //$url = parent::createUrlTpl($url);
 
             $rs .= $li_open . '<a href="' . $url . '"' . ($hasChilds ? ' class="menuparent"' : '') . '>' . $name . '</a>';
 

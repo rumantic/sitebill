@@ -16,6 +16,10 @@
                                     </a>
                                 </div><!-- /.logo -->
 
+                                <div class="mobile-lang-switcher hidden-desktop">
+                                    {include file='_langswitcher.tpl' simplemode=1}
+                                </div>
+
                                 <div class="site-name">
                                     <a class="brand"><editable id="site_logo_title_edit" data-file="header_contact_add.tpl">Realia<span contentEditable="false">&nbsp;</span></editable></a>
                                 </div><!-- /.site-name -->

@@ -18,7 +18,7 @@
                         </div><!-- /.content -->
                     </div><!-- /.image -->
 
-                    <div class="body span6">
+                    <div class="body span6 flex-column">
                         <div class="title-price row">
                             <div class="title span4">
                                 <h2>
@@ -49,6 +49,8 @@
                                 {else}
                                     <div class="price">{$grid_items[i].price|number_format:0:",":" "} {if $grid_items[i].currency_name != ''}{$grid_items[i].currency_name}{/if}</div>
                                 {/if}
+                                {include file='rent_price.tpl' item=$grid_items[i]}
+
                             </div><!-- /.title -->
 
                             <div class="location">{if $grid_items[i].topic_info.$lang_topic_name != ''}{$grid_items[i].topic_info.$lang_topic_name}{else}{$grid_items[i].type_sh}{/if}</div><!-- /.location -->
@@ -67,6 +69,9 @@
                                 <span class="key">{$L_FLOOR}:</span><!-- /.key -->
                                 <span class="value">{$grid_items[i].floor}/{$grid_items[i].floor_count}</span><!-- /.value -->
                             </div><!-- /.area -->
+
+                            {include file='messenger_buttons.tpl' url=$grid_items[i].href realty_id=$grid_items[i].id item=$grid_items[i]}
+
                         </div><!-- /.body -->
                     </div><!-- /.property -->
                 </div><!-- /.row -->

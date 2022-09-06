@@ -3,6 +3,8 @@
 defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
 
 class frontend_main extends SiteBill_Krascap {
+    use \system\traits\PermissionsTrait;
+    use \system\traits\MessengerTrait;
 
     function set_city_list () {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/components/model_tags/model_tags.php');
@@ -19,6 +21,10 @@ class frontend_main extends SiteBill_Krascap {
 
     }
 
+    function get_access_smarty ( $params ) {
+        return $this->get_access($params['user_id'], $params['model_name'], $params['function_name']);
+    }
+
     /**
      * Main
      * @param void
@@ -27,6 +33,11 @@ class frontend_main extends SiteBill_Krascap {
     function main() {
         $this->template->assign('QUERY_STRING', $_SERVER['QUERY_STRING']);
         $this->set_city_list();
+        $this->register_messenger_smarty_function();
+
+        $data_model = new Data_Model();
+        $model = $data_model->get_kvartira_model(false, true);
+        $this->template->assert('data_model', $model['data']);
 
         $layouts = array(
             '_default' => 'layout_basic.tpl',
@@ -48,6 +59,12 @@ class frontend_main extends SiteBill_Krascap {
 
 
         global $__site_title, $folder, $smarty;
+
+        if (!isset($smarty->registered_plugins['function']['get_access_smarty'])) {
+            $smarty->registerPlugin('function', 'get_access_smarty', array(&$this, 'get_access_smarty'));
+            // {if {get_access_smarty user_id=$smarty.session.user_id model_name='agency' function_name='access'} eq 1}
+        }
+
         $REQUESTURIPATH = Sitebill::getClearRequestURI();
         $this->template->assert('REQUESTURIPATH', $REQUESTURIPATH);
 
@@ -427,6 +444,22 @@ class frontend_main extends SiteBill_Krascap {
                 $cowork_users = new Cowork_Users();
 
                 $this->template->assert('main', $cowork_users->main());
+            } elseif (preg_match('/^account\/myagency/', $REQUESTURIPATH)) {
+
+                $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
+                    array(
+                        '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
+                        '<a href="' . $folder . '/account/">Личный кабинет</a>',
+                        '<a href="' . $folder . '/account/myagency/">Филиалы</a>'
+                    )));
+                try {
+                    require_once(SITEBILL_DOCUMENT_ROOT . '/apps/agency/admin/admin.php');
+                    $agency_admin = new agency_admin();
+                    $agency_admin->set_default_form_action('?');
+                    $this->template->assert('main', $agency_admin->main());
+                } catch (Exception $e) {
+                    $this->template->assert('main', $e->getMessage());
+                }
             } elseif (preg_match('/^account\/balance/', $REQUESTURIPATH)) {
 
                 $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
@@ -496,6 +529,7 @@ class frontend_main extends SiteBill_Krascap {
 
         if (!$has_result && $this->isRealtyDetected($REQUESTURIPATH)) {
             $work_subcontroller = 'realtyview';
+            $this->template->assign('is_realty_view', true);
             $has_result = true;
         }
 

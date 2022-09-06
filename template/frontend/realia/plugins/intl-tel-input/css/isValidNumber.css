@@ -1,0 +1,18 @@
+#error-msg {
+  color: red;
+}
+#valid-msg {
+  color: #00C900;
+}
+#mobile_error-msg {
+  color: red;
+}
+#mobile_valid-msg {
+  color: #00C900;
+}
+input.error-intl {
+  border: 1px solid #FF7C7C;
+}
+.hide-intl {
+  display: none;
+}

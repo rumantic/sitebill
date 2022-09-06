@@ -1,124 +1,35 @@
 <script src="{$estate_folder}/apps/system/js/realtymap.js" type="text/javascript"></script>
+<script type="text/javascript" src="{$theme_folder}/plugins/html5gallery/html5gallery.js"></script>
 
 {if $photo|count>0}
-<link rel="stylesheet" href="{$estate_folder}/template/frontend/realia/libraries/photoswipe/photoswipe.css">
-<link rel="stylesheet" href="{$estate_folder}/template/frontend/realia/libraries/photoswipe/default-skin/default-skin.css">
-<script src="{$estate_folder}/template/frontend/realia/libraries/photoswipe/photoswipe.min.js"></script>
-<script src="{$estate_folder}/template/frontend/realia/libraries/photoswipe/photoswipe-ui-default.min.js"></script>
-
-<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="pswp__bg"></div>
-    <div class="pswp__scroll-wrap">
-        <div class="pswp__container">
-            <div class="pswp__item"></div>
-            <div class="pswp__item"></div>
-            <div class="pswp__item"></div>
-        </div>
-        <div class="pswp__ui pswp__ui--hidden">
-            <div class="pswp__top-bar">
-                <div class="pswp__counter"></div>
-                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
-                <button class="pswp__button pswp__button--share" title="Share"></button>
-                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
-                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
-                <div class="pswp__preloader">
-                    <div class="pswp__preloader__icn">
-                      <div class="pswp__preloader__cut">
-                        <div class="pswp__preloader__donut"></div>
-                      </div>
-                    </div>
-                </div>
-            </div>
-            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
-                <div class="pswp__share-tooltip"></div>
-            </div>
-            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
-            </button>
-            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
-            </button>
-            <div class="pswp__caption">
-                <div class="pswp__caption__center"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="hiddengal" style="position: absolute; left: -10000px;    visibility: hidden;">
-    {foreach name=j from=$photo item=photoitem}
-        <img src="{mediaincpath data=$photoitem}" />
-    {/foreach}
-</div>
+    <link rel="stylesheet" href="{$theme_folder}/plugins/fotorama/fotorama.css"/>
+    <script src="{$theme_folder}/plugins/fotorama/fotorama.js"></script>
 {literal}
-<script>
-    var items = [];
-    function InitPropertySlider(id, options) {
-        var cc=$('#'+id);
-        var prev = $('#'+id+' .preview');
-        if(cc.length>0 && cc.find('.content ul').length>0){
-            cc.find('.content ul').carouFredSel({
-                scroll: {
-                    items: 1
-                },
-                auto: false,
-                next: {
-                    button: '#'+id+' .content .carousel-next',
-                    key: 'right'
-                },
-                prev: {
-                    button: '#'+id+' .content .carousel-prev',
-                    key: 'left'
-                }
-            });
-            cc.find('.content ul li:first').addClass('active');
-
-            cc.find('.content ul li a').click(function(e){
-                e.preventDefault();
-
-                cc.find('.content ul li').removeClass('active');
-                $(this).parents('li').eq(0).addClass('active');
-                prev.find('a img').attr('src', $(this).attr('href'));
-                prev.find('a').attr('href', $(this).attr('href'));
-                prev.find('a').attr('data-step', $(this).data('step'));
-            })
-
-        }
-        if(prev.length > 0){
-            prev.find('a').click(function(e){
-                e.preventDefault();
-                openPhotoSwipe(parseInt($(this).attr('data-step'), 10));
-            });
-        }
-    }
-    var openPhotoSwipe = function(step) {
-        if(items.length==0){
-            collectImgs();
-        }
-        var pswpElement = document.querySelectorAll('.pswp')[0];
-            var options = {
-            history: false,
-            focus: false,
-            showAnimationDuration: 0,
-            hideAnimationDuration: 0,
-            index: step
-        };
-        var gallery = new PhotoSwipe( pswpElement, PhotoSwipeUI_Default, items, options);
-        gallery.init();
-    }
-    var collectImgs = function(){
-        $('.hiddengal img').each(function(){
-            var _this=$(this);
-            items.push({src: _this.attr('src'), w: _this.width(), h: _this.height()});
+    <script>
+        $(document).ready(function () {
+            if ($('.photoslider').length == 1) {
+                $('.photoslider').on('fotorama:fullscreenenter fotorama:fullscreenexit', function (e, fotorama) {
+                    if (e.type === 'fotorama:fullscreenenter') {
+                        fotorama.setOptions({fit: 'contain'});
+                    } else {
+                        fotorama.setOptions({fit: 'cover'});
+                    }
+                }).fotorama({
+                    nav: "thumbs",
+                    allowfullscreen: true,
+                    width: "100%",
+                    ratio: "800/500",
+                    fit: "cover"
+                });
+            }
         });
-    }
-    $(document).ready(function () {
-        InitPropertySlider('cproperty_gal');
-    });
-</script>
+
+    </script>
 {/literal}
 {/if}
 
 <script>
-    var loc_objects ={$geoobjects_collection_clustered};
+    var loc_objects = {$geoobjects_collection_clustered};
     var map_type = '{$map_type}';
 </script>
 
@@ -139,10 +50,12 @@
     {append var=x value=$data.number.value}
 {/if}
 
-{assign var=rname value=$x|implode:', '}
+{if is_array($x)}
+    {assign var=rname value=', '|implode:$x}
+{/if}
 
 {literal}
-    <script>
+<script>
     var rname = '{/literal}{$rname}{literal}';
     $(document).ready(function () {
         var RM = new RealtyMap();
@@ -155,7 +68,7 @@
         }
 
     });
-    </script>
+</script>
 {/literal}
 
 
@@ -164,7 +77,8 @@
 {if $apps_mapplic_on==1}
     <div class="row">
         <div class="span12">
-            <div class="mapplic-wrapper" data-table="data" data-key="id" data-field-name="image" data-key-value="{$data.id.value}"></div>
+            <div class="mapplic-wrapper" data-table="data" data-key="id" data-field-name="image"
+                 data-key-value="{$data.id.value}"></div>
             {literal}
                 <script>
                     $(document).ready(function () {
@@ -193,9 +107,13 @@
 
 
         <div class="favblock">
-            {if isset($smarty.session.favorites)}
+            {if isset($data.view_count.value)}
+            <span><i class="fa fa-eye"></i> {$data.view_count.value}</span>
+            {/if}
+            {if isset($smarty.session.favorites) and is_array($smarty.session.favorites)}
                 {if in_array($data.id.value, $smarty.session.favorites)}
-                    <a class="fav-rem" alt="{$data.id.value}" title="{$L_DELETEFROMFAVORITES}" href="#remove_from_favorites"></a>
+                    <a class="fav-rem" alt="{$data.id.value}" title="{$L_DELETEFROMFAVORITES}"
+                       href="#remove_from_favorites"></a>
                 {else}
                     <a class="fav-add" alt="{$data.id.value}" title="{$L_ADDTOFAVORITES}" href="#add_to_favorites"></a>
                 {/if}
@@ -207,159 +125,197 @@
             {/if}
 
         </div>
+        {*include file='booking_orders.tpl' realty_id=$data.id.value*}
+        {if $apps_reservation_on==1}
+            <div class="res" data-id="{$data.id.value}"></div>
+        {literal}
+            <script>
+                $(document).ready(function () {
+                    var id = $('.res').attr('data-id');
+                    $('.res').load(estate_folder + '/apps/reservation/js/ajax.php?action=get_reservation_panel&id=' + id);
+                });
+            </script>
+        {/literal}
+        {/if}
+
         {if $photo|count>0}
-            <div class="carousel property" id="cproperty_gal">
-                <div class="preview">
-                    <a href="{mediaincpath data=$photo[0]}" data-step="0" class="lbgallery" title="Фото" >
-                        <img src="{mediaincpath data=$photo[0]}" alt="">
-                    </a>
+            <div class="property-slider">
+                <div class="photoslider">
+                    {section name=j loop=$photo}
+                        <img src="{mediaincpath data=$photo[j]}">
+                    {/section}
                 </div>
-                {if $photo|count>1}
-                    <div class="content">
-                        <a class="carousel-prev" href="#">{_e t="Previous"}</a>
-                        <a class="carousel-next" href="#">{_e t="Next"}</a>
-                        <ul>
-                            {foreach name=j from=$photo item=photoitem}
-                                <li{if $smarty.foreach.j.iteration == 0} class="active"{/if}>
-                                    <a href="{mediaincpath data=$photoitem}" data-step="{$smarty.foreach.j.index}">
-                                        <img src="{mediaincpath data=$photoitem type='preview'}" />
-                                    </a>
-                                </li>
-                            {/foreach}
-                        </ul>
-                    </div>
-                {/if}
             </div>
             <!--a href="/imgzip/{$data.id.value}">Скачать все фото</a-->
         {/if}
-    <div class="property-detail">
-        <div class="noverview-holder">
-            <div class="pull-left overview">
-                <div class="row">
-                    <div class="span3">
-                        <h2>{_e t="Кратко"}</h2>
-                        <table>
-                            {foreach from=$hvd_tabbed item=tab key=tabname}
-                                {if $tab|count>0}
-                                    {foreach from=$tab item=data_item}
 
-                                        {if $data_item.type eq "primary_key" or $data_item.value eq "0" or $data_item.value eq "" or $data_item.name eq "currency_id" or $data_item.name eq "export_cian" or $data_item.name eq "user_id" or $data_item.name eq "price"  or $data_item.name eq "youtube" or $data_item.type eq "hidden" or $data_item.name eq "text" or $data_item.type eq "geodata" or $data_item.name eq "meta_keywords"  or $data_item.name eq "meta_description" or $data_item.name eq "meta_title" or $data_item.type eq "uploads" or $data_item.name eq "text_en"}
 
-                                        {elseif $data_item.name eq "fio"}
-                                            {assign var="agent_fio" value=$data_item.value}
-                                        {elseif $data_item.name eq "phone"}
-                                            {assign var="agent_phone" value=$data_item.value}
-                                        {elseif $data_item.name eq "email"}
-                                            {assign var="agent_email" value=$data_item.value}
-                                        {elseif $data_item.type eq "destination"}
-                                            {if $data_item.value_string!=''}
-                                                <tr><th>{$data_item.title}</th><td>{$data_item.value_string}</td></tr>
-                                                    {/if}
-                                                {elseif $data_item.type eq "select_by_query"}
-                                                    {if $data_item.value_string!=''}
-                                                <tr><th>{$data_item.title}</th><td>{$data_item.value_string}</td></tr>
-                                                    {/if}
-                                                {elseif $data_item.type eq "select_box_structure"}
-                                                    {if $data_item.value_string!=''}
-                                                <tr><th>{$data_item.title}</th><td>{$data_item.value_string}</td></tr>
-                                                    {/if}
-                                                {elseif $data_item.type eq "checkbox"}
-                                                    {if $data_item.name ne 'hot' and $data_item.name ne 'active'}
-                                                        {if $data_item.value eq 1}
-                                                    <tr><th>{$data_item.title}</th><td><input type="checkbox" checked="checked" disabled="disabled" /></td></tr>
-                                                        {/if}
-                                                    {/if}
-                                                {elseif $data_item.type eq "select_box"}
-                                                    {if $data_item.value_string!=''}
-                                                <tr><th>{$data_item.title}</th><td>{$data_item.value_string}</td></tr>
-                                                    {/if}
-                                                {elseif $data_item.type eq "tlocation"}
-                                            <tr><th>{$data_item.title}</th><td>{$data_item.tlocation_string}</td></tr>
-                                                {elseif $data_item.type eq "select_by_query_multi" && is_array($data_item.value_string) && !empty($data_item.value_string)}
-                                            <tr><th>{$data_item.title}</th><td>{$data_item.value_string|print_r}{', '|implode:$data_item.value_string}</td></tr>
 
-                                        {else}
-                                            {if $data_item.value!=''}
-                                                {if $data_item.name eq "text"}
-                                                    <tr><th>{$data_item.title}</th><td>{$data_item.value|nl2br}</td></tr>
-                                                        {else}
-                                                    <tr><th>{$data_item.title}</th><td>{if is_array($data_item.value) && !empty($data_item.value)}{$data_item.value|implode:','}{elseif is_array($data_item.value) && empty($data_item.value)}{else}{$data_item.value}{/if}</td></tr>
-                                                        {/if}
+        <div class="property-detail">
+            <div class="noverview-holder">
+                <div class="pull-left overview">
+                    <div class="row">
+                        <div class="span3">
+                            <h2>{_e t="Кратко"}</h2>
+                            <table>
+                                {foreach from=$hvd_tabbed item=tab key=tabname}
+                                    {if $tab|count>0}
+                                        {foreach from=$tab item=data_item}
+
+                                            {if $data_item.type eq "primary_key" or $data_item.value eq "0" or $data_item.value eq "" or
+                                            $data_item.name eq "currency_id" or $data_item.name eq "export_cian" or
+                                            $data_item.name eq "user_id" or $data_item.name eq "price"  or $data_item.name eq "youtube" or
+                                            $data_item.type eq "hidden" or $data_item.name eq "text" or $data_item.type eq "geodata" or
+                                            $data_item.name eq "meta_keywords"  or $data_item.name eq "meta_description" or
+                                            $data_item.name eq "meta_title" or $data_item.type eq "uploads" or
+                                            $data_item.type eq "docuploads" or
+                                            $data_item.name eq "text_en"}
+
+                                            {elseif $data_item.name eq "fio"}
+                                                {assign var="agent_fio" value=$data_item.value}
+                                            {elseif $data_item.name eq "phone"}
+                                                {assign var="agent_phone" value=$data_item.value}
+                                            {elseif $data_item.name eq "email"}
+                                                {assign var="agent_email" value=$data_item.value}
+                                            {elseif $data_item.type eq "destination"}
+                                                {if $data_item.value_string!=''}
+                                                    <tr>
+                                                        <th>{$data_item.title}</th>
+                                                        <td>{$data_item.value_string}</td>
+                                                    </tr>
+                                                {/if}
+                                            {elseif $data_item.type eq "select_by_query"}
+                                                {if $data_item.value_string!=''}
+                                                    <tr>
+                                                        <th>{$data_item.title}</th>
+                                                        <td>{$data_item.value_string}</td>
+                                                    </tr>
+                                                {/if}
+                                            {elseif $data_item.type eq "select_box_structure"}
+                                                {if $data_item.value_string!=''}
+                                                    <tr>
+                                                        <th>{$data_item.title}</th>
+                                                        <td>{$data_item.value_string}</td>
+                                                    </tr>
+                                                {/if}
+                                            {elseif $data_item.type eq "checkbox"}
+                                                {if $data_item.name ne 'hot' and $data_item.name ne 'active'}
+                                                    {if $data_item.value eq 1}
+                                                        <tr>
+                                                            <th>{$data_item.title}</th>
+                                                            <td><input type="checkbox" checked="checked"
+                                                                       disabled="disabled"/></td>
+                                                        </tr>
                                                     {/if}
                                                 {/if}
+                                            {elseif $data_item.type eq "select_box"}
+                                                {if $data_item.value_string!=''}
+                                                    <tr>
+                                                        <th>{$data_item.title}</th>
+                                                        <td>{$data_item.value_string}</td>
+                                                    </tr>
+                                                {/if}
+                                            {elseif $data_item.type eq "tlocation"}
+                                                <tr>
+                                                    <th>{$data_item.title}</th>
+                                                    <td>{$data_item.tlocation_string}</td>
+                                                </tr>
+                                            {elseif $data_item.type eq "select_by_query_multi" && is_array($data_item.value_string) && !empty($data_item.value_string)}
+                                                <tr>
+                                                    <th>{$data_item.title}</th>
+                                                    <td>{$data_item.value_string|print_r}{', '|implode:$data_item.value_string}</td>
+                                                </tr>
+                                            {else}
+                                                {if $data_item.value!=''}
+                                                    {if $data_item.name eq "text"}
+                                                        <tr>
+                                                            <th>{$data_item.title}</th>
+                                                            <td>{$data_item.value|nl2br}</td>
+                                                        </tr>
+                                                    {else}
+                                                        <tr>
+                                                            <th>{$data_item.title}</th>
+                                                            <td>{if is_array($data_item.value) && !empty($data_item.value)}{$data_item.value|implode:','}{elseif is_array($data_item.value) && empty($data_item.value)}{else}{$data_item.value}{/if}</td>
+                                                        </tr>
+                                                    {/if}
+                                                {/if}
+                                            {/if}
 
-                                    {/foreach}
+                                        {/foreach}
 
-                                {/if}
-                            {/foreach}
-
-                        </table>
-                    </div>
-                </div>
-            </div>
-            {if $data.text.value != ''}
-                <div class="noverview-full">{$data.text.value}</div>
-            {/if}
-        </div>
-
-        {if $data.youtube.value != ''}
-            <div class="noverview-holder">
-                <div class="noverview-full">
-                    <div align="center">
-                        <iframe width="560" height="315" src="//www.youtube.com/embed/{$data.youtube.value}" frameborder="0" allowfullscreen></iframe>
-                        <p>&nbsp;</p>
-                    </div>
-                </div>
-            </div>
-        {/if}
-
-        <h2>Карта</h2>
-        <div id="property-map" data-geo="{$data.geo.value.lat};{$data.geo.value.lng}"></div><!-- /#property-map -->
-
-
-
-        {if $apps_reservation_on==1}
-            <div class="res" data-id="{$data.id.value}"></div>
-            {literal}
-                <script>
-                    $(document).ready(function () {
-                        var id = $('.res').attr('data-id');
-                        $('.res').load(estate_folder + '/apps/reservation/js/ajax.php?action=get_reservation_panel&id=' + id);
-                    });
-                </script>
-            {/literal}
-        {/if}
-    </div>
-    {if $similar_data|count>0}
-        <h2>{$L_SIMILAR}</h2>
-
-        <div class="properties-rows">
-            <div class="row">
-                {section name=x loop=$similar_data}
-                    <div class="property span9">
-                        <div class="row">
-                            <div class="image span3">
-                                <div class="content">
-                                    <a href="{$similar_data[x].href}"></a>
-                                    {if $similar_data[x].image.image_array|count ne 0}
-                                        <img src="{mediaincpath data=$similar_data[x].image.image_array[0] type='preview'}" class="previewi">
-                                    {else}
-                                        <img src="{$estate_folder}/template/frontend/realia/img/no_foto_270x200.png" class="previewi">
                                     {/if}
+                                {/foreach}
 
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {if $data.text.value != ''}
+                    <div class="noverview-full">{$data.text.value}</div>
+                {/if}
+            </div>
+
+            {if $data.youtube.value != ''}
+                <div class="noverview-holder">
+                    <div class="noverview-full">
+                        <div align="center">
+                            <iframe width="560" height="315" src="//www.youtube.com/embed/{$data.youtube.value}"
+                                    frameborder="0" allowfullscreen></iframe>
+                            <p>&nbsp;</p>
+                        </div>
+                    </div>
+                </div>
+            {/if}
+
+            {if is_array($data.media.value) && count($data.media.value) > 0 && $data.media.type == 'docuploads'}
+                <div class="noverview-holder">
+                    <div class="noverview-full">
+                        <div style="display:none;" class="html5gallery" data-skin="light" data-width="420" data-height="272">
+                            <!-- Add videos to Gallery -->
+                            {foreach from=$data.media.value item=item key=key}
+                            <a href="{$item.normal_url}"><img src="{$theme_folder}/plugins/html5gallery/icons/video-icon.png"></a>
+                            {/foreach}
+                        </div>
+                    </div>
+                </div>
+            {/if}
+
+            <h2>Карта</h2>
+            <div id="property-map" data-geo="{$data.geo.value.lat};{$data.geo.value.lng}"></div><!-- /#property-map -->
+
+
+        </div>
+        {if $similar_data|count>0}
+            <h2>{$L_SIMILAR}</h2>
+            <div class="properties-rows">
+                <div class="row">
+                    {section name=x loop=$similar_data}
+                        <div class="property span9">
+                            <div class="row">
+                                <div class="image span3">
+                                    <div class="content">
+                                        <a href="{$similar_data[x].href}"></a>
+                                        {if $similar_data[x].image.image_array|count ne 0}
+                                            <img src="{mediaincpath data=$similar_data[x].image.image_array[0] type='preview'}"
+                                                 class="previewi">
+                                        {else}
+                                            <img src="{$estate_folder}/template/frontend/realia/img/no_foto_270x200.png"
+                                                 class="previewi">
+                                        {/if}
+
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="body span6">
-                                <div class="title-price row">
-                                    <div class="title span4">
-                                        <h2>
-                                            <a href="{$similar_data[x].href}">
-                                                {if $similar_data[x].city_id.value_string ne ''} {$similar_data[x].city_id.value_string}{if
-                                    $similar_data[x].street_id.value_string ne ''}, {$similar_data[x].street_id.value_string}{if
-                                    $similar_data[x].number.value ne ''}, {$similar_data[x].number.value}{/if}{/if}
-                                                {else} {if $similar_data[x].street_id.value_string ne ''} {$similar_data[x].street_id.value_string}{if
-                                    $similar_data[x].number.value ne ''}, {$similar_data[x].number.value}{/if} {/if}
+                                <div class="body span6">
+                                    <div class="title-price row">
+                                        <div class="title span4">
+                                            <h2>
+                                                <a href="{$similar_data[x].href}">
+                                                    {if $similar_data[x].city_id.value_string ne ''} {$similar_data[x].city_id.value_string}{if
+                                                    $similar_data[x].street_id.value_string ne ''}, {$similar_data[x].street_id.value_string}{if
+                                                        $similar_data[x].number.value ne ''}, {$similar_data[x].number.value}{/if}{/if}
+                                                    {else} {if $similar_data[x].street_id.value_string ne ''} {$similar_data[x].street_id.value_string}{if
+                                                    $similar_data[x].number.value ne ''}, {$similar_data[x].number.value}{/if} {/if}
                                                     {/if}
                                                 </a>
                                             </h2>
@@ -388,70 +344,72 @@
                                 </div>
                             </div>
                         </div>
-                        {/section}
+                    {/section}
+                </div>
+            </div>
+        {/if}
+    </div>
+
+
+    <div class="sidebar span3">
+        {if $show_mortgage_calculator eq 'true'}
+            {include file='mortgage_calculator.tpl'}
+        {/if}
+        {if $user_data ne ''}
+            <div class="widget our-agents">
+                <div class="title">
+                    <h2><a href="{$user_data._href}">{$user_data.group_id.value_string}</a></h2>
+                </div>
+
+                <div class="content">
+                    <div class="agent">
+                        <div class="image">
+                            {if $user_data.imgfile.value != ''}
+                                <img src="{$estate_folder}/img/data/user/{$user_data.imgfile.value}"/>
+                            {else}
+                                <img src="{$estate_folder}/template/frontend/{$current_theme_name}/img/userplaceholder.png"/>
+                            {/if}
                         </div>
-                    </div>
-                    {/if}
-                    </div>
-
-
-
-
-                    <div class="sidebar span3">
-                        {if $show_mortgage_calculator eq 'true'}
-                            {include file='mortgage_calculator.tpl'}
+                        <div class="name">
+                            {if isset($data.fio.value) && $data.fio.value!=''}
+                                {$data.fio.value}
+                            {else}
+                                {$user_data.fio.value}
+                            {/if}
+                        </div>
+                        <div class="phone">
+                            {if isset($data.phone.value) && $data.phone.value!=''}
+                                {$data.phone.value}
+                            {elseif $user_data.phone.value != ''}
+                                {$user_data.phone.value}
+                            {/if}
+                        </div>
+                        {if $user_data.mobile.value != ''}
+                            <div class="phone">{$user_data.mobile.value}</div>
+                            <!-- /.phone -->
                         {/if}
-                        {if $user_data ne ''}
-                            <div class="widget our-agents">
-                                <div class="title">
-                                    <h2><a href="{$user_data._href}">{_e t="Агент"}</a></h2>
-                                </div>
 
-                                <div class="content">
-                                    <div class="agent">
-                                        <div class="image">
-                                            {if $user_data.imgfile.value != ''}
-                                                <img src="{$estate_folder}/img/data/user/{$user_data.imgfile.value}" />
-                                            {else}
-                                                <img src="{$estate_folder}/template/frontend/{$current_theme_name}/img/userplaceholder.png" />
-                                            {/if}
-                                        </div>
-                                        <div class="name">
-                                            {if isset($data.fio.value) && $data.fio.value!=''}
-                                                {$data.fio.value}
-                                            {else}
-                                                {$user_data.fio.value}
-                                            {/if}
-                                        </div>
-                                        <div class="phone">
-                                            {if isset($data.phone.value) && $data.phone.value!=''}
-                                                {$data.phone.value}
-                                            {elseif $user_data.phone.value != ''}
-                                                {$user_data.phone.value}
-                                            {/if}
-                                        </div>
-                                        {if $user_data.mobile.value != ''}
-                                            <div class="phone">{$user_data.mobile.value}</div><!-- /.phone -->
-                                        {/if}
-
-                                        {if isset($data.email.value) && $data.email.value!=''}
-                                            <div class="email"><a href="mailto:{$data.email.value}">{$data.email.value}</a></div>
-                                            {elseif $user_data.email.value != ''}
-                                            <div class="email"><a href="mailto:{$user_data.email.value}">{$user_data.email.value}</a></div>
-                                            {/if}
-                                        <br />
-                                        {if $show_upper == 'true'}
-                                            <br /><span><a class="btn btn-info" href="{$estate_folder}/upper/realty{$data.id.value}"><i class="icon-white icon-chevron-up"></i> {$L_UP_AD}</a></span>
-                                                {/if}
-                                                {if $smarty.session.user_id!=$user_data.user_id.value && $mailbox_on==1}
-                                                    {include file=$apps_mailbox_block title_data=[$data.topic_id.value_string,$data.city_id.value_string,$data.street_id.value_string] to=$user_data.user_id.value message_to_author_title=''}
-                                                {/if}
-                                    </div>
-
-                                </div>
+                        {if isset($data.email.value) && $data.email.value!=''}
+                            <div class="email"><a href="mailto:{$data.email.value}">{$data.email.value}</a></div>
+                        {elseif $user_data.email.value != ''}
+                            <div class="email"><a href="mailto:{$user_data.email.value}">{$user_data.email.value}</a>
                             </div>
                         {/if}
-                        {include file='right_special.tpl'}
                         <br/>
+                        {if $show_upper == 'true'}
+                            <br/>
+                            <span><a class="btn btn-info" href="{$estate_folder}/upper/realty{$data.id.value}"><i
+                                            class="icon-white icon-chevron-up"></i> {$L_UP_AD}</a></span>
+                        {/if}
+                        {if $smarty.session.user_id!=$user_data.user_id.value && $mailbox_on==1}
+                            {include file=$apps_mailbox_block title_data=[$data.topic_id.value_string,$data.city_id.value_string,$data.street_id.value_string] to=$user_data.user_id.value message_to_author_title=''}
+                        {/if}
                     </div>
+
                 </div>
+            </div>
+        {/if}
+        {include file='right_special.tpl'}
+        <br/>
+    </div>
+</div>

@@ -17,3 +17,21 @@
 #YMapsID_onmain img {
 	max-width: none;
 }
+.property-detail tr {
+	border-bottom: 1px solid #b5b5b5;
+}
+.property-detail tr td {
+	padding-top: 8px;
+	padding-bottom: 8px;
+}
+.error {
+	color: red;
+}
+.upload-icon {
+	padding-top: 24px;
+}
+
+.flex-column {
+	display: flex;
+	flex-flow: column;
+}
