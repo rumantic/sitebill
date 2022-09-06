@@ -40,7 +40,7 @@ if ( isset($_SESSION['need_reload_words']) && $_SESSION['need_reload_words'] ) {
 if(file_exists(SITEBILL_DOCUMENT_ROOT.'/inc/db.inc.php') && file_exists(SITEBILL_DOCUMENT_ROOT.'/install')){
 	$msgs=array();
 	Sitebill::removeDirectory(SITEBILL_DOCUMENT_ROOT.'/install', $msgs);
-	if(count($msg)>0){
+	if(count($msgs)>0){
 		foreach($msgs as $msg){
 			echo $msg.'<br/>';
 		}
