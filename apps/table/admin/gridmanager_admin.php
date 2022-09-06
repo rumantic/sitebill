@@ -1,8 +1,10 @@
 <?php
 
-class gridmanager_admin extends table_admin {
+class gridmanager_admin extends table_admin
+{
 
-    public function __construct() {
+    public function __construct()
+    {
         parent::__construct();
         if (!$this->helper->check_table_exist('table_gridmanager')) {
             $this->install();
@@ -10,7 +12,8 @@ class gridmanager_admin extends table_admin {
         $this->table_name = 'table_gridmanager';
     }
 
-    function install() {
+    function install()
+    {
         $query = "CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_table_gridmanager` (
 			  `gridmanager_id` int(11) NOT NULL AUTO_INCREMENT,
 			  `columns_id` int(10) unsigned NOT NULL,
@@ -28,7 +31,8 @@ class gridmanager_admin extends table_admin {
         return $rs;
     }
 
-    function main() {
+    function main()
+    {
         $rs = $this->getTopMenu();
         $rs .= $this->grid();
 
@@ -38,7 +42,8 @@ class gridmanager_admin extends table_admin {
         return $rs_new;
     }
 
-    public function getGridColumns() {
+    public function getGridColumns()
+    {
         $ret = array();
         $DBC = DBC::getInstance();
         $q = 'SELECT c.name FROM ' . DB_PREFIX . '_' . $this->table_name . ' g LEFT JOIN ' . DB_PREFIX . '_columns c USING(columns_id) WHERE c.table_id=(SELECT table_id FROM ' . DB_PREFIX . '_table WHERE `name`=? LIMIT 1) ORDER BY g.gridmanager_id ASC';
@@ -51,15 +56,23 @@ class gridmanager_admin extends table_admin {
         if (empty($ret)) {
             $ret = array(
                 'id',
+                'user_id',
+                'date_added',
                 'topic_id',
-                'price'
+                'active',
+                'region_id',
+                'district_id',
+                'street_id',
+                'price',
+                'image'
             );
         }
         //print_r($ret);
         return $ret;
     }
 
-    private function _getColumnsNameIds() {
+    private function _getColumnsNameIds()
+    {
         $DBC = DBC::getInstance();
 
         $columns_ids = array();
@@ -86,7 +99,8 @@ class gridmanager_admin extends table_admin {
     }
     */
 
-    function grid($params = array(), $default_params = array()) {
+    function grid($params = array(), $default_params = array())
+    {
         $DBC = DBC::getInstance();
         $columns = $this->_getColumnsNameIds();
 
@@ -122,8 +136,7 @@ class gridmanager_admin extends table_admin {
         }
 
 
-        
-        foreach($ret as $nm => $format){
+        foreach ($ret as $nm => $format) {
             $fields[$nm] = array('title' => $model_data['data'][$nm]['title']);
             $fields[$nm]['checked'] = 1;
             // Добавить при включении поддержки форматов свойств
@@ -142,21 +155,22 @@ class gridmanager_admin extends table_admin {
             //$fields[$k]['format'] = '';
             $fields[$k]['id'] = $v['columns_id'];
         }
-        
+
         $this->template->assert('fields', $fields);
         global $smarty;
         $form_body = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/template/gridmanager_list.tpl');
         return $form_body;
     }
 
-    public function save_search_form() {
+    public function save_search_form()
+    {
         $DBC = DBC::getInstance();
         $columns_ids = array();
-        $form_id = (int) $this->getRequestValue('form_id');
+        $form_id = (int)$this->getRequestValue('form_id');
         $topic_id = $this->getRequestValue('topic_id');
         $form_title = preg_replace('/[^A-Za-zА-Яа-я0-9єії\-_ ]/', '', SiteBill::iconv('utf-8', SITE_ENCODING, $this->getRequestValue('form_title')));
         $fields = $this->getRequestValue('fields');
-        
+
         if (count($fields) == 0) {
             $q = "DELETE FROM " . DB_PREFIX . "_table_searchform WHERE `searchform_id`=" . $form_id;
             $stmt = $DBC->query($q);
@@ -176,9 +190,9 @@ class gridmanager_admin extends table_admin {
         }
 
         if ($form_id == 0) {
-            $DBC->query("INSERT INTO " . DB_PREFIX . "_table_searchform (`topic_id`, `columns`, `title`) VALUES (?,?,?)", array((int) $topic_id, serialize($input_fields), $form_title));
+            $DBC->query("INSERT INTO " . DB_PREFIX . "_table_searchform (`topic_id`, `columns`, `title`) VALUES (?,?,?)", array((int)$topic_id, serialize($input_fields), $form_title));
         } else {
-            $DBC->query("INSERT INTO " . DB_PREFIX . "_table_searchform (`searchform_id`, `topic_id`, `columns`, `title`) VALUES (?,?,?,?)", array($form_id, (int) $topic_id, serialize($input_fields), $form_title));
+            $DBC->query("INSERT INTO " . DB_PREFIX . "_table_searchform (`searchform_id`, `topic_id`, `columns`, `title`) VALUES (?,?,?,?)", array($form_id, (int)$topic_id, serialize($input_fields), $form_title));
         }
     }
 

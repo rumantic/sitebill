@@ -3975,6 +3975,13 @@ class Data_Model extends SiteBill
         $form_data['data']['address']['parameters']['dadata'] = 1;
         $form_data['data']['address']['hint'] = 'Укажите адрес объекта, можно вводить город, улицу, номер дома через пробел. Затем выберите из предложенных вариантов правильный адрес.';
 
+        $form_data['data']['geo']['name'] = 'geo';
+        $form_data['data']['geo']['title'] = 'Координаты';
+        $form_data['data']['geo']['value'] = '';
+        $form_data['data']['geo']['type'] = 'geodata';
+        $form_data['data']['geo']['required'] = 'off';
+        $form_data['data']['geo']['unique'] = 'off';
+        $form_data['data']['geo']['tab'] = '';
 
         if ($this->getConfigValue('country_in_form')) {
             $form_data['data']['country_id']['name'] = 'country_id';
@@ -4532,14 +4539,6 @@ class Data_Model extends SiteBill
         $form_data['data']['meta_description']['tab'] = 'Мета-теги';
         $form_data['data']['meta_description']['rows'] = '8';
         $form_data['data']['meta_description']['cols'] = '40';
-
-        $form_data['data']['geo']['name'] = 'geo';
-        $form_data['data']['geo']['title'] = 'Координаты';
-        $form_data['data']['geo']['value'] = '';
-        $form_data['data']['geo']['type'] = 'geodata';
-        $form_data['data']['geo']['required'] = 'off';
-        $form_data['data']['geo']['unique'] = 'off';
-        $form_data['data']['geo']['tab'] = 'Координаты';
 
         $form_data['data']['view_count']['name'] = 'view_count';
         $form_data['data']['view_count']['title'] = 'Количество просмотров';

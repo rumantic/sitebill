@@ -836,7 +836,7 @@ class config_admin extends Object_Manager
 
         $this->addParamToConfig('curator_mode_chainsallow', '0', 'Разрешить цепочки кураторства', SConfig::$fieldtypeCheckbox);
 
-        $this->addParamToConfig('use_new_realty_grid', '0', 'Использовать настраиваемую сетку в выводе в админке', SConfig::$fieldtypeCheckbox);
+        $this->addParamToConfig('use_new_realty_grid', '1', 'Использовать настраиваемую сетку в выводе в админке', SConfig::$fieldtypeCheckbox);
 
         $this->addParamToConfig('notify_admin_about_register', '0', 'Уведомлять администратора о новой регистрации пользователя', SConfig::$fieldtypeCheckbox);
 
