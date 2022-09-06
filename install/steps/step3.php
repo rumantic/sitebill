@@ -58,7 +58,7 @@ if (!in_array('curl', $modules)) {
  */
 
 
-if ($catalog_check === FALSE) {
+if (@$catalog_check === FALSE) {
     $error = 1;
 }
 
@@ -122,7 +122,7 @@ function getResultMessage($message) {
         $ret .= '<ul class="list-unstyled list-striped  pricing-table-header">';
 
         foreach ($message as $m) {
-            if ($m['error']) {
+            if (@$m['error']) {
                 $error = true;
                 $ret .= '<li class="text-danger">';
             } else {
@@ -131,7 +131,7 @@ function getResultMessage($message) {
             $ret .= '';
             $ret .= $m['text'];
             $ret .= '<div class="pull-right" style="padding-right: 5px;">';
-            if ($m['error']) {
+            if (@$m['error']) {
                 $ret .= '<i class="ace-icon fa fa-times bigger-110 red"></i>';
             } else {
                 $ret .= '<i class="ace-icon fa fa-check bigger-110 green"></i>';

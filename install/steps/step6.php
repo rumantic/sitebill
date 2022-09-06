@@ -1,6 +1,6 @@
 <img src="https://www.sitebill.ru/logo_install?source=step6" width="1" height="1">
 <?php
-if ($_POST['ready']) {
+if (@$_POST['ready']) {
     echo 'Установка конфигурационного файла...';
     fillIncFile($db_inc_file);
     echo 'OK<br/>';

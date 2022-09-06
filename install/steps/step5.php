@@ -1,34 +1,34 @@
 <img src="https://www.sitebill.ru/logo_install?source=step5" width="1" height="1">
 <?php
 $params = array();
-if ($_POST['admin_login'] != '') {
+if (@$_POST['admin_login'] != '') {
     $params['admin_login'] = $_POST['admin_login'];
 } else {
-    $params['admin_login'] = $_SESSION['admin_login'];
+    $params['admin_login'] = @$_SESSION['admin_login'];
 }
 
-if ($_POST['admin_pass'] != '') {
+if (@$_POST['admin_pass'] != '') {
     $params['admin_pass'] = $_POST['admin_pass'];
 } else {
-    $params['admin_pass'] = $_SESSION['admin_pass'];
+    $params['admin_pass'] = @$_SESSION['admin_pass'];
 }
 
-if ($_POST['order_email_acceptor'] != '') {
+if (@$_POST['order_email_acceptor'] != '') {
     $params['order_email_acceptor'] = $_POST['order_email_acceptor'];
 } else {
-    $params['order_email_acceptor'] = $_SESSION['order_email_acceptor'];
+    $params['order_email_acceptor'] = @$_SESSION['order_email_acceptor'];
 }
 
-if ($_POST['site_title'] != '') {
+if (@$_POST['site_title'] != '') {
     $params['site_title'] = $_POST['site_title'];
 } else {
-    $params['site_title'] = $_SESSION['site_title'];
+    $params['site_title'] = @$_SESSION['site_title'];
 }
 
-if ($_POST['distrib_folder'] != '') {
+if (@$_POST['distrib_folder'] != '') {
     $params['distrib_folder'] = $_POST['distrib_folder'];
 } else {
-    $params['distrib_folder'] = $_SESSION['distrib_folder'];
+    $params['distrib_folder'] = @$_SESSION['distrib_folder'];
 }
 
 if ($params['distrib_folder'] == '') {
@@ -55,21 +55,21 @@ function getAdminCreateForm($step, $wizard, $params) {
         $text .= '<div class="space-4"></div>';
     }
 
-    $text .= '<div class="form-group ' . $error_hash['admin_login'] . '">
+    $text .= '<div class="form-group ' . @$error_hash['admin_login'] . '">
 			<label class="col-sm-3 control-label no-padding-right" for="form-field-1"> Логин администратора </label>
 			<div class="col-sm-9">
 			<input type="text" name="admin_login" value="' . $params['admin_login'] . '" class="col-xs-10 col-sm-5" />
 			</div>
 			</div>';
 
-    $text .= '<div class="form-group ' . $error_hash['admin_pass'] . '">
+    $text .= '<div class="form-group ' . @$error_hash['admin_pass'] . '">
 			<label class="col-sm-3 control-label no-padding-right" for="form-field-1"> Пароль администратора </label>
 			<div class="col-sm-9">
 			<input type="text" name="admin_pass" value="' . $params['admin_pass'] . '" class="col-xs-10 col-sm-5" />
 			</div>
 			</div>';
 
-    $text .= '<div class="form-group ' . $error_hash['order_email_acceptor'] . '">
+    $text .= '<div class="form-group ' . @$error_hash['order_email_acceptor'] . '">
 			<label class="col-sm-3 control-label no-padding-right" for="form-field-1"> Email администратора </label>
 			<div class="col-sm-9">
 			<input data-rel="tooltip" type="text" name="order_email_acceptor" value="' . $params['order_email_acceptor'] . '" class="col-xs-10 col-sm-5" />
@@ -77,7 +77,7 @@ function getAdminCreateForm($step, $wizard, $params) {
 			</div>
 			</div>';
 
-    $text .= '<div class="form-group ' . $error_hash['site_title'] . '">
+    $text .= '<div class="form-group ' . @$error_hash['site_title'] . '">
 			<label class="col-sm-3 control-label no-padding-right" for="form-field-1"> Заголовок сайта </label>
 			<div class="col-sm-9">
 			<input data-rel="tooltip" type="text" name="site_title" value="' . $params['site_title'] . '" class="col-xs-10 col-sm-5" />

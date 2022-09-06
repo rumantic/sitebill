@@ -46,8 +46,9 @@ if ($wizard->check_step( --$step)) {
     $step++;
 }
 //echo 'step = '.$step.'<br>';
-
-ini_set("include_path", $include_path);
+if ( isset($include_path) ) {
+    ini_set("include_path", $include_path);
+}
 
 if (isset($_SESSION['steps'])) {
     $steps = $_SESSION['steps'];
@@ -152,7 +153,7 @@ class wizard {
 
         $distrib_folder = $_POST['distrib_folder'];
         if ($distrib_folder == '') {
-            $distrib_folder = $_SESSION['distrib_folder'];
+            $distrib_folder = @$_SESSION['distrib_folder'];
         }
 
         $_SESSION['distrib_folder'] = $distrib_folder;
@@ -192,7 +193,7 @@ class wizard {
     }
 
     function check_step3() {
-        if ($_POST['ready'] == 1) {
+        if (@$_POST['ready'] == 1) {
             return true;
         }
         $connection_status = FALSE;
@@ -252,7 +253,7 @@ class wizard {
             }
 
             $progressbar_value = 60;
-            $steps[$step]['result'] = 1;
+            @$steps[$step]['result'] = 1;
             return true;
         }
 
@@ -819,16 +820,17 @@ function getPDO() {
 
 function decode($key) {
     $array = explode("-", $key);
-    $first = hexdec($array[0]);
-    $second = hexdec($array[1]);
+    $first = @hexdec($array[0]);
+    $second = @hexdec($array[1]);
     $index = ($first + $second) / 10000;
+    $sum = 0;
     if (!in_array($index, array(1, 2, 3, 4))) {
         return 0;
     }
     for ($i = 2; $i < 5; $i++) {
-        $sum += hexdec($array[$i]);
+        $sum += @hexdec($array[$i]);
     }
-    if ($sum != hexdec($array[5])) {
+    if ($sum != @hexdec($array[5])) {
         return 0;
     }
     return hexdec($array[$index]);

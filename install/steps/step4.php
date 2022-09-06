@@ -4,31 +4,31 @@ $params = array();
 if (isset($_POST['db_host'])) {
     $params['db_host'] = $_POST['db_host'];
 } else {
-    $params['db_host'] = $_SESSION['db']['db_host'];
+    $params['db_host'] = @$_SESSION['db']['db_host'];
 }
-if ($_POST['db_port'] != '') {
+if (@$_POST['db_port'] != '') {
     $params['db_port'] = $_POST['db_port'];
 } else {
-    $params['db_port'] = $_SESSION['db']['db_port'];
+    $params['db_port'] = @$_SESSION['db']['db_port'];
 }
 
 if (isset($_POST['db_name'])) {
     $params['db_name'] = $_POST['db_name'];
 } else {
-    $params['db_name'] = $_SESSION['db']['db_name'];
+    $params['db_name'] = @$_SESSION['db']['db_name'];
 }
 
 
 if (isset($_POST['db_user'])) {
     $params['db_user'] = $_POST['db_user'];
 } else {
-    $params['db_user'] = $_SESSION['db']['db_user'];
+    $params['db_user'] = @$_SESSION['db']['db_user'];
 }
 
 if (isset($_POST['db_pass'])) {
     $params['db_pass'] = $_POST['db_pass'];
 } else {
-    $params['db_pass'] = $_SESSION['db']['db_pass'];
+    $params['db_pass'] = @$_SESSION['db']['db_pass'];
 }
 
 
@@ -54,28 +54,28 @@ function getDBParametersForm($step, $params = array(), $wizard) {
     }
 
 
-    $text .= '<div class="form-group ' . $error_hash['db_host'] . '">
+    $text .= '<div class="form-group ' . @$error_hash['db_host'] . '">
 			<label class="col-sm-3 control-label no-padding-right" for="form-field-1"> Хост </label>
 			<div class="col-sm-9">
 			<input type="text" name="db_host" value="' . $params['db_host'] . '" class="col-xs-10 col-sm-7" />
 			</div>
 			</div>';
 
-    $text .= '<div class="form-group ' . $error_hash['db_port'] . '">
+    $text .= '<div class="form-group ' . @$error_hash['db_port'] . '">
 			<label class="col-sm-3 control-label no-padding-right" for="form-field-1"> Порт </label>
 			<div class="col-sm-9">
 			<input type="text" name="db_port" value="' . $params['db_port'] . '" class="col-xs-10 col-sm-7" />
 			</div>
 			</div>';
 
-    $text .= '<div class="form-group ' . $error_hash['db_name'] . '">
+    $text .= '<div class="form-group ' . @$error_hash['db_name'] . '">
 			<label class="col-sm-3 control-label no-padding-right" for="form-field-1"> Название базы </label>
 			<div class="col-sm-9">
 			<input type="text" name="db_name" value="' . $params['db_name'] . '" class="col-xs-10 col-sm-7" />
 			</div>
 			</div>';
 
-    $text .= '<div class="form-group ' . $error_hash['db_user'] . '">
+    $text .= '<div class="form-group ' . @$error_hash['db_user'] . '">
 			<label class="col-sm-3 control-label no-padding-right" for="form-field-1"> Пользователь</label>
 			<div class="col-sm-9">
 			<input type="text" name="db_user" value="' . $params['db_user'] . '" class="col-xs-10 col-sm-7" />
