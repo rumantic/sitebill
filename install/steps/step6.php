@@ -42,7 +42,7 @@ if (@$_POST['ready']) {
 
     $sitebill_document_uri = '';
     $sitebill_document_root = $_SERVER['DOCUMENT_ROOT'] . $folder;
-    if ( defined('SITEBILL_DOCUMENT_ROOT') ) {
+    if ( !defined('SITEBILL_DOCUMENT_ROOT') ) {
         define('SITEBILL_DOCUMENT_ROOT', $sitebill_document_root);
     }
     //define('SITEBILL_MAIN_URL', $folder);
