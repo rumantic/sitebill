@@ -1,6 +1,7 @@
 <?php
 
 use system\lib\model\compose_functions;
+use system\lib\system\cache\RedisCache;
 
 /**
  * Data model
@@ -469,9 +470,9 @@ class Data_Model extends SiteBill
                 if ((isset($parameters['allow_htmltags']) && (int)$parameters['allow_htmltags'] == 1) || (isset($parameters['html']) && (int)$parameters['html'] == 1)) {
                     $model_array[$key]['value'] = $this->htmlspecialchars_decode($this->getRequestValue($model_array[$key]['name']));
                 } elseif ($parameters['serialize_array'] and $parameters['serialize_array'] == 1) {
-                    if ( $this->getRequestValue($model_array[$key]['name']) != '' ) {
+                    if ($this->getRequestValue($model_array[$key]['name']) != '') {
                         $explode_array = explode($this->getConfigValue('apps.excel.images_delimiter'), $this->getRequestValue($model_array[$key]['name']));
-                        if ( is_array($explode_array) and count($explode_array) > 0 ) {
+                        if (is_array($explode_array) and count($explode_array) > 0) {
                             $model_array[$key]['value'] = serialize($explode_array);
                         }
                     }
@@ -1582,7 +1583,7 @@ class Data_Model extends SiteBill
             if ($model_array[$key]['type'] == 'uploadify_image' or $model_array[$key]['type'] == 'uploadify_file') {
                 $model_array[$key]['primary_key_value'] = $primary_key_value;
             }
-            if ( ($model_array[$key]['type'] == 'uploads' || $model_array[$key]['type'] == 'docuploads') && $key == 'image') {
+            if (($model_array[$key]['type'] == 'uploads' || $model_array[$key]['type'] == 'docuploads') && $key == 'image') {
                 $model_array[$key]['primary_key_value'] = $primary_key_value;
                 $model_array[$key]['primary_key'] = $primary_key_name;
                 $model_array[$key]['table_name'] = $table_name;
@@ -1957,11 +1958,12 @@ class Data_Model extends SiteBill
         return $model_array;
     }
 
-    function sharder_mirror ($image_array, $from_array = false) {
-        if ( !$this->getConfigValue('apps.sharder.mirroring.enable') ) {
+    function sharder_mirror($image_array, $from_array = false)
+    {
+        if (!$this->getConfigValue('apps.sharder.mirroring.enable')) {
             return $image_array;
         }
-        if ( $from_array and is_array($image_array) ) {
+        if ($from_array and is_array($image_array)) {
             foreach ($image_array as $index => $item) {
                 $image_array[$index] = $this->replace_one_mirror_item($item);
             }
@@ -1971,7 +1973,8 @@ class Data_Model extends SiteBill
         return $image_array;
     }
 
-    function replace_one_mirror_item ($image_array) {
+    function replace_one_mirror_item($image_array)
+    {
         $image_array['normal_url'] =
             str_replace($this->getConfigValue('apps.sharder.mirroring.find'), $this->getConfigValue('apps.sharder.mirroring.replace'), $image_array['normal_url']);
         $image_array['preview'] =
@@ -2137,8 +2140,11 @@ class Data_Model extends SiteBill
         }
         $DBC = DBC::getInstance();
         if ($cache) {
-
-            if (!isset(self::$cache[$primary_key_table][$value][$value_name])) {
+            $redis_key = 'dict_'.$primary_key_table.'.'.$primary_key_name;
+            $redis_cache = unserialize(RedisCache::get($redis_key));
+            if ( is_array($redis_cache) and count($redis_cache) > 0 ) {
+                return $redis_cache[$value][$value_name];
+            } elseif (!isset(self::$cache[$primary_key_table][$value][$value_name])) {
                 //exit;
                 $value_name = str_replace(' ', '', $value_name);
                 $value_name = str_replace('`', '', $value_name);
@@ -2149,7 +2155,7 @@ class Data_Model extends SiteBill
                 //$query = 'SELECT `'.$primary_key_name.'`, `'.$value_name.'` FROM '.DB_PREFIX.'_'.$primary_key_table.' WHERE `'.$primary_key_name.'` = ?';
                 $query = 'SELECT `' . $primary_key_name . '`, `' . $value_name . '` FROM ' . DB_PREFIX . '_' . $primary_key_table . '';
 
-                $stmt = $DBC->query($query, array($value));
+                $stmt = $DBC->query($query);
                 if ($stmt) {
                     while ($ar = $DBC->fetch($stmt)) {
                         self::$cache[$primary_key_table][$ar[$primary_key_name]][$value_name] = $ar[$value_name];
@@ -2158,6 +2164,9 @@ class Data_Model extends SiteBill
                     //print_r($ar);
                     //echo '</pre>';
                 }
+            }
+            if ( is_array(self::$cache[$primary_key_table]) and count(self::$cache[$primary_key_table]) > 0 ) {
+                RedisCache::set($redis_key, serialize(@self::$cache[$primary_key_table]));
             }
             return @self::$cache[$primary_key_table][$value][$value_name];
         } else {
@@ -2547,12 +2556,12 @@ class Data_Model extends SiteBill
                     $error_fields[$key][] = sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                 }
             } elseif ($model_array[$key]['type'] == 'select_box_structure') {
-                if ( $is_field_required and $model_array[$key]['value'] == 0 ) {
+                if ($is_field_required and $model_array[$key]['value'] == 0) {
                     $errors[] = _e('Укажите тип недвижимости') . ': ' . $model_array[$key]['title'];
                     $error_fields[$key][] = _e('Укажите тип недвижимости') . ': ' . $model_array[$key]['title'];
                 }
-                if ( @$parameters['level_required'] > 0 ) {
-                    if ( ($model_array[$key]['value'] != '') && (!$this->validateLevelRequired($model_array[$key]['value'], $parameters['level_required'])) ) {
+                if (@$parameters['level_required'] > 0) {
+                    if (($model_array[$key]['value'] != '') && (!$this->validateLevelRequired($model_array[$key]['value'], $parameters['level_required']))) {
                         $errors[] = _e('Укажите подтип недвижимости') . ': ' . $model_array[$key]['title'];
                         $error_fields[$key][] = _e('Укажите подтип недвижимости') . ': ' . $model_array[$key]['title'];
                     }
@@ -2850,7 +2859,7 @@ class Data_Model extends SiteBill
         $qvals = array();
 
         foreach ($model_array as $key => $item_array) {
-            if ( !isset($item_array['type']) ) {
+            if (!isset($item_array['type'])) {
                 $item_array['type'] = '';
             }
 
@@ -5587,7 +5596,7 @@ class Data_Model extends SiteBill
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $SM = new Structure_Manager();
         $category_structure = $SM->loadCategoryStructure();
-        if ( $category_structure['catalog'][$value]['parent_id'] == 0 and $level_required > 0 ) {
+        if ($category_structure['catalog'][$value]['parent_id'] == 0 and $level_required > 0) {
             return false;
         }
         return true;
