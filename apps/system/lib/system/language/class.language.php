@@ -10,9 +10,9 @@ class Language extends SiteBill {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
     }
-    
+
     /**
      * Get control
      */
@@ -20,7 +20,7 @@ class Language extends SiteBill {
         $rs = "<a href=\"?action=$action&do=$do&$key=$value&language_id=$language_id\">".$this->get_icon($language_id, $exist)."</a>";
         return $rs;
     }
-    
+
     /**
      * Get icon for language ID
      * @param int $language_id
@@ -40,7 +40,7 @@ class Language extends SiteBill {
         }
         return '<img src="/apps/admin/admin/template/img/'.$icons[$this->language_key[$language_id]]['empty'].'" border="0" width="16" height="16" alt="'.$icons[$this->language_key[$language_id]]['title'].'" title="'.$icons[$this->language_key[$language_id]]['title'].'">';
     }
-    
+
     /**
      * Get language version of the record for this Lanugage ID
      * @param string $table_name
@@ -65,7 +65,7 @@ class Language extends SiteBill {
 		}
         return false;
     }
-    
+
 	function get_version_list ( $table_name, $language_id=0, $params=array() ) {
 		$ret=array();
 		$where=array();
@@ -81,7 +81,7 @@ class Language extends SiteBill {
 			$query = "SELECT * FROM ".DB_PREFIX."_".$table_name." WHERE language_id=".$language_id." AND ".implode(' AND ', $where);
 			$stmt=$DBC->query($query, $where_d);
 		}
-        
+
         if($stmt){
 			while($ar=$DBC->fetch($stmt)){
 				$ret[]=$ar;

@@ -12,7 +12,7 @@ class mailbox_admin extends Object_Manager {
      * Constructor
      */
     function __construct($realty_type = false) {
-        $this->SiteBill();
+        parent::__construct();
 
         $this->table_name = 'mailbox';
         $this->action = 'mailbox';
@@ -682,7 +682,7 @@ class mailbox_admin extends Object_Manager {
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl')) {
             $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl';
         } else {
-            $tpl_name = $smarty->template_dir . '/data_form.tpl';
+            $tpl_name = $this->get_smarty_template_dir() . '/data_form.tpl';
         }
         return $smarty->fetch($tpl_name);
     }

@@ -1,11 +1,13 @@
 <html>
 <head>
-    
+
 <script type="text/javascript">
 var estate_folder = '{$estate_folder}';
 var map_type='{$map_type}';
+var language = '{$language}';
 //var loc_objects={$iframe_grid_data};
 </script>
+{$SystemJSvars}
 {literal}
 <script type="text/javascript">
 var options={scrollZoom: {/literal}{if $scroll_zoom}true{else}false{/if}{literal}, minimap: false, defaultZoom: 4, use_clusters: true};
@@ -23,7 +25,7 @@ var options={scrollZoom: {/literal}{if $scroll_zoom}true{else}false{/if}{literal
 <link rel="stylesheet" type="text/css" href="{$estate_folder}/apps/system/js/leaflet/MarkerCluster.Default.css" />
 
 <script type="text/javascript" src="{$estate_folder}/apps/system/js/leaflet/leaflet.js"></script>
-<script type="text/javascript" src="{$estate_folder}/apps/system/js/leaflet/leaflet.markercluster.js"></script>   
+<script type="text/javascript" src="{$estate_folder}/apps/system/js/leaflet/leaflet.markercluster.js"></script>
 {else}
 <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3{if $g_api_key ne ''}&key={$g_api_key}{/if}"></script>
 <script type="text/javascript" src="{$estate_folder}/apps/third/google/markerclusterer/markerclusterer.js"></script>
@@ -42,14 +44,23 @@ var options={scrollZoom: {/literal}{if $scroll_zoom}true{else}false{/if}{literal
     search_params = {$iframe_grid_params};
 </script>
 {/if}
+{assign var=enable_mobile_map_drag value="{getConfig key='apps.geodata.enable_mobile_map_drag'}"}
+<script>
+    {if $enable_mobile_map_drag}
+        let enable_mobile_map_drag = true;
+    {else}
+        let enable_mobile_map_drag = false;
+    {/if}
+</script>
+
 <script src="{$estate_folder}/apps/system/js/simplify/simplify.js"></script>
-<script src="{$estate_folder}/apps/system/js/activemap.js"></script>
+<script src="{$estate_folder}/apps/system/js/activemap.js?v=2"></script>
 <body style="margin:0;">
 
-<div id="ActiveMapContainer" class="ActiveMapContainer" style="position: relative;"> 
+<div id="ActiveMapContainer" class="ActiveMapContainer" style="position: relative;">
 
-    
-    
+
+
 	<div class="e-map-draw-search ActiveMapControls">
         <div id="ActiveMapControls-Draw" class="b-btn m-green pull-left hidden-print ">
             <i class="fa fa-pencil"></i>
@@ -73,22 +84,22 @@ var options={scrollZoom: {/literal}{if $scroll_zoom}true{else}false{/if}{literal
                                     <h3 class="ActiveMapListBlock-item-title"></h3>
                                     <div class="ActiveMapListBlock-item-price"></div>
                                     <div class="ActiveMapListBlock-item-address"></div>
-                                    
+
 
                                 </div>
                             </a>
-                            
+
                         </div>
                     </div>
-      
-                    
+
+
                 </div>
             </div>
         </div>
     </div>
     <div id="ActiveMap" class="" data-center-lat="{$map_center[0]}" data-center-lng="{$map_center[1]}" data-zoom="{$map_zoom}"></div>
     <canvas id="ActiveMapCanvas" class="" style="position: absolute; left: 0; top: 0; display: none;"></canvas>
-    
+
 </div>
         </body>
 {literal}

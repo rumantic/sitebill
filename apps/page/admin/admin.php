@@ -14,7 +14,7 @@ class page_admin extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
         Multilanguage::appendAppDictionary('page');
         $this->table_name = 'page';
         $this->action = 'page';
@@ -58,9 +58,9 @@ class page_admin extends Object_Manager {
         $config_admin->addParamToConfig('apps.page.count_on_main', '3', 'Количество объектов на главной');
         $config_admin->addParamToConfig('apps.page.blog_enable', '1', 'Включить вывод /blog/', SConfig::$fieldtypeCheckbox);
         $config_admin->addParamToConfig('apps.page.recommendations_enable', '1', 'Включить вывод /recommendations/', SConfig::$fieldtypeCheckbox);
-        
+
     }
-    
+
     public function sitemap_pages_count($sitemap) {
         $cnt = 0;
         $DBC = DBC::getInstance();
@@ -303,12 +303,6 @@ class page_admin extends Object_Manager {
         $this->template->assert('apps_pages_column', $ret);
     }
 
-    function upgrade() {
-        $DBC = DBC::getInstance();
-        $query = "ALTER TABLE " . DB_PREFIX . "_page ADD COLUMN meta_title TEXT";
-        $stmt = $DBC->query($query);
-    }
-
     function main() {
         $rs .= parent::main();
         return $rs;
@@ -317,40 +311,12 @@ class page_admin extends Object_Manager {
     function getTopMenu() {
         $rs = '';
         $rs .= '<a href="?action=' . $this->action . '&do=new" class="btn btn-primary">' . Multilanguage::_('ADD_PAGE', 'page') . '</a>';
+        $rs .= $this->get_extended_items();
         return $rs;
     }
 
     function grid($params = array(), $default_params = array()) {
-        $this->upgrade();
-        $params = array();
-        $params['action'] = $this->action;
-
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/grid.php');
-        $common_grid = new Common_Grid($this);
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/page.php');
-        $common_page = new Common_Page();
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/tab.php');
-        $common_tab = new Common_Tab();
-        $url = '/admin/index.php?action=' . $this->action;
-
-        $common_grid->add_grid_item('page_id');
-        $common_grid->add_grid_item('uri');
-        $common_grid->add_grid_item('title');
-        //$common_grid->add_grid_item('anons');
-
-        $common_grid->add_grid_control('edit');
-        $common_grid->add_grid_control('delete');
-        //$common_grid->set_grid_query("SELECT * FROM ".DB_PREFIX."_".$this->table_name." ORDER BY page_id DESC");
-        $params['page'] = $this->getRequestValue('page');
-        $params['per_page'] = $this->getConfigValue('common_per_page');
-
-        $common_grid->setPagerParams($params);
-
-        $common_page->setTab($common_tab);
-        $common_page->setGrid($common_grid);
-        //$rs='';
-        $rs .= $common_page->toString();
-        return $rs;
+        return parent::grid($params, $default_params);
     }
 
     function install() {

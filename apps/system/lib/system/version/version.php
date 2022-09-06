@@ -10,7 +10,7 @@ class Version extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
     }
     
     /**

@@ -20,7 +20,7 @@ class Permission extends Sitebill {
      * Constructor
      */
     function __construct() {
-        $this->Sitebill();
+        parent::__construct();
         if ( empty(self::$structure) or empty(self::$group_users) ) {
         	$this->load();
         }
@@ -29,9 +29,14 @@ class Permission extends Sitebill {
         $this->nobody_group_id = 0;
     }
 
+    function get_nobody_group_id () {
+        return $this->nobody_group_id;
+    }
+
     function reset_cache () {
         self::$structure = array();
         self::$group_users = array();
+        self::load();
     }
 
     function getAdminGroupId() {
@@ -94,8 +99,8 @@ class Permission extends Sitebill {
         return false;
     }
 
-    function load_components () {
-        if ( !isset(self::$components) ) {
+    function load_components ($ignore_cache = false) {
+        if ( !isset(self::$components) or $ignore_cache ) {
             $datas = Component::get();
 
             foreach ( $datas as $item ) {
@@ -162,46 +167,77 @@ class Permission extends Sitebill {
     	$apps_processor = new Apps_Processor();
 
     	$apps_menu = array_merge($this->init_static_apps(), $apps_processor->load_apps_menu());
-
-
-    	//Добавляем в функцию действие execute
-    	$query = "select function_id from ".DB_PREFIX."_function where name=?";
-    	$stmt=$DBC->query($query, array('access'));
-    	if (!$stmt) {
-    		$query = "insert into ".DB_PREFIX."_function (name, description) values (?, ?)";
-    		$stmt=$DBC->query($query, array('access', 'Доступ'));
-    	}
-
-
-    	foreach ( $apps_menu as $action => $app_info ) {
-    		$query = "select component_id from ".DB_PREFIX."_component where name=?";
-    		$stmt=$DBC->query($query, array($action));
-    		if ( !$stmt ) {
-    			$query = "insert into ".DB_PREFIX."_component (name, title) values (?, ?)";
-    			$stmt=$DBC->query($query, array($action, $app_info['title']));
-    		}
-
-    		$this->add_permission($action, 'access');
-    	}
-
-
-    	//echo '<pre>';
-    	//print_r($apps_menu);
-    	//echo '</pre>';
-
+        $this->init_components_from_apps_array($apps_menu);
     }
+
+    function get_component_id ( $component ) {
+        $DBC = DBC::getInstance();
+        $query = "select component_id from ".DB_PREFIX."_component where name=?";
+        $stmt=$DBC->query($query, array($component));
+        if ( $stmt ) {
+            $ar=$DBC->fetch($stmt);
+            if ( $ar['component_id'] > 0 ) {
+                return $ar['component_id'];
+            }
+        }
+        return false;
+    }
+
+    function get_function_id ( $function ) {
+        $DBC = DBC::getInstance();
+        $query = "select function_id from ".DB_PREFIX."_function where name=?";
+        $stmt=$DBC->query($query, array($function));
+        if ( $stmt ) {
+            $ar=$DBC->fetch($stmt);
+            if ( $ar['function_id'] > 0 ) {
+                return $ar['function_id'];
+            }
+        }
+        return false;
+    }
+
+    function init_components_from_apps_array ($apps_menu) {
+        $DBC=DBC::getInstance();
+
+        //Добавляем в функцию действие execute
+        $query = "select function_id from ".DB_PREFIX."_function where name=?";
+        $stmt=$DBC->query($query, array('access'));
+        if (!$stmt) {
+            $query = "insert into ".DB_PREFIX."_function (name, description) values (?, ?)";
+            $stmt=$DBC->query($query, array('access', 'Доступ'));
+        }
+
+
+        foreach ( $apps_menu as $action => $app_info ) {
+            $query = "select component_id from ".DB_PREFIX."_component where name=?";
+            $stmt=$DBC->query($query, array($action));
+            if ( !$stmt ) {
+                $query = "insert into ".DB_PREFIX."_component (name, title) values (?, ?)";
+                $stmt=$DBC->query($query, array($action, $app_info['title']));
+            }
+
+            $this->add_permission($action, 'access');
+        }
+    }
+
 
     function add_component ( $name, $title ) {
-    	$DBC=DBC::getInstance();
+        if ( $title == '' ) {
+            $title = $name;
+        }
+    	$DBC = DBC::getInstance();
     	if ( !$this->get_component($name) ) {
     		$query = "insert into ".DB_PREFIX."_component (name, title) values (?, ?)";
-    		$stmt=$DBC->query($query, array($name, $title));
+    		$stmt = $DBC->query($query, array($name, $title), $row, $succes_mark);
+            if ( !$succes_mark ) {
+                echo $DBC->getLastError()."<br>\n";
+            }
     	}
     }
 
-    function get_component ( $name ) {
-        if ( !isset(self::$components) ) {
-            $this->load_components();
+    function get_component ( $name, $ignore_cache = false ) {
+        if ( !isset(self::$components) or $ignore_cache ) {
+            $this->load_components($ignore_cache);
         }
         if ( isset(self::$components[$name]) ) {
             return self::$components[$name];
@@ -209,14 +245,78 @@ class Permission extends Sitebill {
         return false;
     }
 
+    function add_group_permission( $group_id, $component, $component_title, $do ) {
+        if ( $component == '' or $do == '' ) {
+            echo 'empty component or function name';
+            debug_print_backtrace(0, 7);
+            return;
+        }
+        if ( $this->get_group_access_record($group_id, $component, $do) ) {
+            return true;
+        }
+        $component_info = $this->get_component($component, true);
+        if (!$component_info) {
+            $this->add_component($component, $component_title);
+            $component_info = $this->get_component($component, true);
+        }
+        $this->add_permission($component, $do);
+        $function_id = $this->get_function_id($do);
+
+        if ( $group_id == 0 and !$this->check_group_exist($group_id) ) {
+            $group_id = $this->add_group_record('nobody', 'nobody', true);
+            if ( $group_id != 0 ) {
+                echo _e('Невозможно создать группу nobody с group_id = 0')."\n";
+                return false;
+            }
+        }
+
+        $new_dna_record_id = $this->add_dna_record($group_id, $component_info['component_id'], $function_id);
+        return $new_dna_record_id;
+    }
+
+    function add_group_record ( $system_name, $name, $nobody = false ) {
+        $DBC = DBC::getInstance();
+        $query = "insert into " . DB_PREFIX . "_group (`name`, `system_name`) values (?, ?)";
+        $stmt = $DBC->query($query, array($name, $system_name), $row, $succes_mark);
+        if (!$succes_mark) {
+            echo 'add_group_record error: '.$DBC->getLastError()."\n";
+            return false;
+        } else {
+            $new_group_id = $DBC->lastInsertId();
+            if ( $nobody ) {
+                $group_id = 0;
+                $query = "update " . DB_PREFIX . "_group SET group_id=? where group_id=?";
+                $stmt = $DBC->query($query, array($group_id, $new_group_id), $row, $succes_mark);
+                if ( !$succes_mark ) {
+                    echo 'add_group_record error: '.$DBC->getLastError()."\n";
+                    return false;
+                }
+                return $group_id;
+            }
+        }
+        return $new_group_id;
+    }
+
+    function add_dna_record ($group_id, $component_id, $function_id) {
+        $DBC = DBC::getInstance();
+        $query = "insert into " . DB_PREFIX . "_dna (group_id, component_id, function_id) values (?, ?, ?)";
+        $stmt = $DBC->query($query, array($group_id, $component_id, $function_id), $row, $succes_mark);
+        if (!$succes_mark) {
+            echo "add_dna_record group_id = $group_id, component_id = $component_id, function_id = $function_id: ".$DBC->getLastError()."\n";
+            debug_print_backtrace(0, 7);
+            return false;
+        }
+        return $DBC->lastInsertId();
+    }
+
     function add_permission ( $action, $do ) {
         $this->writeLog("add_permission ( $action, $do )");
-    	$DBC=DBC::getInstance();
+    	$DBC = DBC::getInstance();
     	$component_id = 0;
     	$function_id = 0;
 
     	//Получим ID компонента
-        $component = $this->get_component($action);
+        $component = $this->get_component($action, true);
         if ( $component ) {
             $component_id = intval($component->component_id);
         }
@@ -235,6 +335,9 @@ class Permission extends Sitebill {
     		if ( !$stmt ) {
     			$query = "insert into ".DB_PREFIX."_component_function (component_id, function_id) values (?, ?)";
     			$stmt=$DBC->query($query, array($component_id, $function_id));
+                if ( !$stmt ) {
+                    echo $DBC->getLastError()."<br>\n";
+                }
     		}
     	}
     }
@@ -244,6 +347,13 @@ class Permission extends Sitebill {
             return true;
         }
         return false;
+    }
+
+    function check_group_exist ( $group_id ) {
+        if(!isset(self::$structure[$group_id])){
+            return false;
+        }
+        return true;
     }
 
 
@@ -277,6 +387,13 @@ class Permission extends Sitebill {
         //echo 'group_id = '.$group_id.'<br>';
         if ( isset(self::$structure[$group_id][$component_name][$function_name]) && self::$structure[$group_id][$component_name][$function_name] == 1 ) {
         	//echo 'true!<br>';
+            return true;
+        }
+        return false;
+    }
+
+    function get_group_access_record ($group_id, $component_name, $function_name) {
+        if ( isset(self::$structure[$group_id][$component_name][$function_name]) && self::$structure[$group_id][$component_name][$function_name] == 1 ) {
             return true;
         }
         return false;

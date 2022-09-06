@@ -16,8 +16,6 @@ require_once('../system/bootstrap.php');
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
         <link rel="icon" type="image/x-icon" href="/favicon.ico">
-        <link href="https://api.sitebill.ru/api/apps/cloudprovider/assets/icons/meteocons/style.css" rel="stylesheet">
-        <link href="https://api.sitebill.ru/api/apps/cloudprovider/assets/icons/material-icons/outline/style.css" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css?family=Muli:300,400,600,700" rel="stylesheet">
         <script type="text/javascript" src="/apps/system/js/jquery/jquery.js"></script>
 

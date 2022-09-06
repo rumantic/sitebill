@@ -15,7 +15,7 @@ class columns_admin extends table_admin
      */
     function __construct()
     {
-        $this->SiteBill();
+        parent::__construct();
         $this->table_name = 'columns';
         $this->app_title = 'Редактор таблиц';
         $this->action = 'columns';

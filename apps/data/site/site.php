@@ -35,6 +35,7 @@ class data_site extends data_admin
         if (!$this->allowAddButton() and ($this->getRequestValue('do') == 'new' or $this->getRequestValue('do') == 'new_done')) {
             return '';
         }
+        $this->template->assert('search_form', $this->get_search_form());
         return parent::main();
     }
 
@@ -106,7 +107,7 @@ class data_site extends data_admin
 
         if ($clearprotect && 1 == intval($this->getConfigValue('watermark_user_control'))) {
             $fold = $this->notwatermarked_folder;
-            if ($this->nowatermark_folder_with_id) {
+            if ( $this->nowatermark_folder_with_id) {
                 $fold = $fold . $id . '/';
             }
             foreach ($images as $photo) {
@@ -231,7 +232,7 @@ class data_site extends data_admin
                         $this->setUpdatedAtDate($id);
                     }
                 }
-                header('location:' . SITEBILL_MAIN_URL . '/account/data' . self::$_trslashes);
+                header('location:' . SITEBILL_MAIN_URL . '/'.$this->get_app_root() . self::$_trslashes);
                 exit();
                 return $this->grid();
                 break;
@@ -264,7 +265,7 @@ class data_site extends data_admin
                     }
                 }
 
-                header('location:' . SITEBILL_MAIN_URL . '/account/data' . self::$_trslashes);
+                header('location:' . SITEBILL_MAIN_URL . '/'.$this->get_app_root() . self::$_trslashes);
                 exit();
                 break;
             }
@@ -371,7 +372,7 @@ class data_site extends data_admin
                         }
                     }
                 }
-                header('location:' . SITEBILL_MAIN_URL . '/account/data' . self::$_trslashes);
+                header('location:' . SITEBILL_MAIN_URL . '/'.$this->get_app_root() . self::$_trslashes);
                 exit();
                 $rs .= $this->grid();
             }
@@ -396,7 +397,7 @@ class data_site extends data_admin
         if (1 == $this->getConfigValue('apps.geodata.enable')) {
             $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/geodata/js/geodata.js"></script>';
         }
-        $rs .= '<form method="post" class="form-horizontal" action="' . SITEBILL_MAIN_URL . '/account/data' . self::$_trslashes . '" enctype="multipart/form-data">';
+        $rs .= '<form method="post" class="form-horizontal" action="' . SITEBILL_MAIN_URL . '/'.$this->get_app_root() . self::$_trslashes . '" enctype="multipart/form-data">';
         if ($this->getError()) {
             $smarty->assign('form_error', $form_generator->get_error_message_row($this->GetErrorMessage()));
         }
@@ -723,6 +724,10 @@ class data_site extends data_admin
             $state = 'all';
         }
 
+        if ( $this->request()->get('state') == 'all' ) {
+            $state = 'all';
+        }
+
 
         $rs = '';
         if ($this->allowAddButton()) {
@@ -735,19 +740,37 @@ class data_site extends data_admin
 
 
         $rs .= '<div class="btn-group" role="group" aria-label="...">';
-        if (!$this->getConfigValue('apps.data.disable_all_button')) {
-            $rs .= '<a href="' . $this->createUrlTpl('account/data/all') . '" class="btn' . ($state == 'all' ? ' btn-primary btn-current' : '') . '">' . Multilanguage::_('L_ALL') . '</a> ';
+        if (!$this->getConfigValue('apps.data.disable_all_button') && !$this->is_default_app_root() ) {
+            if ( !$this->getConfigValue('apps.data.remove_only_all_button') ) {
+                $rs .= '<a href="' . $this->createUrlTpl($this->get_app_root().'/?state=all') . '" class="btn' . ($state == 'all' ? ' btn-primary btn-current' : '') . '">' . Multilanguage::_('L_ALL') . '</a> ';
+            }
         }
-        $rs .= '<a href="' . $this->createUrlTpl('account/data') . '" class="btn' . ($state == '' ? ' btn-primary btn-current' : '') . '">' . _e('Все мои') . '</a>
-            <a href="' . $this->createUrlTpl('account/data/?active=1') . '" class="btn' . ($state == 'active' ? ' btn-primary btn-current' : '') . '">' . _e('Активные') . '</a>
-            <a href="' . $this->createUrlTpl('account/data/?active=0') . '" class="btn' . ($state == 'notactive' ? ' btn-primary btn-current' : '') . '">' . _e('В архиве') . '</a>';
+        if (!$this->getConfigValue('apps.data.disable_all_button') && $this->is_default_app_root() ) {
+            if ( !$this->getConfigValue('apps.data.remove_only_all_button') ) {
+                $rs .= '<a href="' . $this->createUrlTpl($this->get_app_root().'/all/') . '" class="btn' . ($state == 'all' ? ' btn-primary btn-current' : '') . '">' . Multilanguage::_('L_ALL') . '</a> ';
+            }
+        }
+
+        if ($this->getConfigValue('apps.data.allow_postponded') ) {
+            $rs .= '<a href="' . $this->createUrlTpl($this->get_app_root().'/?postponded=1') . '" class="btn' .
+                ($this->request()->get('postponded') ? ' btn-primary btn-current' : '') . '">' . _e('Отложенные') . '</a> ';
+            if ( $this->request()->get('postponded') ) {
+                $state = 'postponded';
+            }
+
+        }
+
+
+        $rs .= '<a href="' . $this->createUrlTpl($this->get_app_root()) . '" class="btn' . ($state == '' ? ' btn-primary btn-current' : '') . '">' . _e('Все мои') . '</a>
+            <a href="' . $this->createUrlTpl($this->get_app_root().'/?active=1') . '" class="btn' . ($state == 'active' ? ' btn-primary btn-current' : '') . '">' . _e('Активные') . '</a>
+            <a href="' . $this->createUrlTpl($this->get_app_root().'/?active=0') . '" class="btn' . ($state == 'notactive' ? ' btn-primary btn-current' : '') . '">' . _e('В архиве') . '</a>';
         $rs .= '</div>';
-        if ( 1 == $this->getConfigValue('apps.yandexrealty.allow_personal_feeds') ) {
+        if (1 == $this->getConfigValue('apps.yandexrealty.allow_personal_feeds')) {
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/yandexrealty/admin/admin.php');
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/yandexrealty/site/site.php');
             $yandexrealty_site = new yandexrealty_site();
             $yandexrealty_user_feed_url = $yandexrealty_site->get_user_id_feed_url($this->getSessionUserId());
-            if ( $yandexrealty_user_feed_url ) {
+            if ($yandexrealty_user_feed_url) {
                 $rs .= '<a href="' . $yandexrealty_user_feed_url . '" target="_blank" class="btn">' . _e('Ваш XML-фид') . '</a> ';
             }
 
@@ -777,15 +800,7 @@ class data_site extends data_admin
         return true;
     }
 
-    function grid($params = array(), $default_params = array())
-    {
-        if (isset($this->data_model[$this->table_name]['user_id'])) {
-            $this->data_model[$this->table_name]['user_id']['type'] = 'select_by_query';
-        }
-
-        $REQUESTURIPATH = Sitebill::getClearRequestURI();
-        $this->set_tags_from_request();
-
+    private function set_toolbar_buttons () {
         if ($this->getConfigValue('apps.pdfreport.enabled')) {
             $this->template->assign('pdf_enable', 1);
         }
@@ -801,19 +816,17 @@ class data_site extends data_admin
         if ($this->getConfigValue('apps.data.disable_pdf')) {
             $this->template->assign('disable_pdf', 1);
         }
+    }
 
-
+    private function set_session_politics () {
         //Устанавливаем параметр USER_ID для функции импорта XLS файла.
         //Чтобы при загрузке из XLS пользоатель не смог получить доступ к чужим записям
         $_SESSION['politics']['data']['check_access'] = true;
         $_SESSION['politics']['data']['user_id'] = $this->getSessionUserId();
 
-        $default_params['grid_item'] = array('id', 'date_added', 'topic_id', 'city_id', 'district_id', 'street_id', 'price', 'image');
-        $default_params['render_user_id'] = $this->getSessionUserId();
-        /* if (!preg_match('/all[\/]?$/', $REQUESTURIPATH)) {
-          $params['grid_conditions']['user_id'] = $this->getSessionUserId();
-          } */
+    }
 
+    private function get_cowork_panel ($params, $default_params) {
         $coworked = array();
         $coworked_users = array();
 
@@ -899,12 +912,12 @@ class data_site extends data_admin
                     $colclass = 'col-md-4';
                 }
                 $cowork_panel .= '<div>';
-                $cowork_panel .= '<form id="cowork_filter" action="' . $this->createUrlTpl('account/data') . '" method="get">';
+                $cowork_panel .= '<form id="cowork_filter" action="' . $this->createUrlTpl($this->get_app_root()) . '" method="get">';
                 $cowork_panel .= '<div class="' . $rowclass . '">';
                 $cowork_panel .= '<div class="' . $colclass . '">';
                 $cowork_panel .= '<select name="cowork_mode">';
-                $cowork_panel .= '<option value="">Все</option>';
-                $cowork_panel .= '<option ' . ($cowork_mode == '0' ? 'selected="selected"' : '') . ' value="0">Только мои</option>';
+                $cowork_panel .= '<option value="">'._e('Все').'</option>';
+                $cowork_panel .= '<option ' . ($cowork_mode == '0' ? 'selected="selected"' : '') . ' value="0">'._e('Только мои').'</option>';
                 foreach ($users as $ar) {
                     $cowork_panel .= '<option ' . ($cowork_mode == $ar['user_id'] ? 'selected="selected"' : '') . ' value="' . $ar['user_id'] . '">' . $ar['fio'] . '</option>';
                 }
@@ -913,13 +926,13 @@ class data_site extends data_admin
                 $active = trim($this->getRequestValue('active'));
                 $cowork_panel .= '<div class="' . $colclass . '">';
                 $cowork_panel .= '<select name="active">';
-                $cowork_panel .= '<option ' . ($active == '' ? 'selected="selected"' : '') . ' value="">Любое состояние</option>';
-                $cowork_panel .= '<option ' . ($active == '1' ? 'selected="selected"' : '') . ' value="1">Активные</option>';
-                $cowork_panel .= '<option ' . ($active == '0' ? 'selected="selected"' : '') . ' value="0">В архиве</option>';
+                $cowork_panel .= '<option ' . ($active == '' ? 'selected="selected"' : '') . ' value="">'._e('Любое состояние').'</option>';
+                $cowork_panel .= '<option ' . ($active == '1' ? 'selected="selected"' : '') . ' value="1">'._e('Активные').'</option>';
+                $cowork_panel .= '<option ' . ($active == '0' ? 'selected="selected"' : '') . ' value="0">'._e('В архиве').'</option>';
                 $cowork_panel .= '</select>';
                 $cowork_panel .= '</div>';
                 $cowork_panel .= '<div class="' . $colclass . '">';
-                $cowork_panel .= '<input type="submit" value="Показать" class="btn btn-primary">';
+                $cowork_panel .= '<input type="submit" value="'._e('Показать').'" class="btn btn-primary">';
                 $cowork_panel .= '</div>';
                 $cowork_panel .= '</div>';
                 $cowork_panel .= '</form>';
@@ -928,8 +941,6 @@ class data_site extends data_admin
             }
         }
 
-        $default_params['pager_params']['per_page'] = $this->getConfigValue('per_page_account');
-        $default_params['pager_params']['page_url'] = 'account/data';
 
         if ($enable_curator_mode && 1 === intval($this->getConfigValue('curator_mode_fullaccess'))) {
             if ($cowork_mode === '0') {
@@ -941,9 +952,9 @@ class data_site extends data_admin
             } else {
                 $users = array($this->getSessionUserId());
                 $users = array_merge($users, array_keys($coworked_users));
-                $params['grid_conditions'][] = array(
-                    'user_id' => $users
-                );
+                $params['grid_conditions']['user_id'] = $users;
+                //@todo: эта опция вызывает полное зависание при пейджинге
+                // /admin?action=data&_sortby=id&_sortdir=DESC&0[]=Array&page=2
             }
         } elseif ($enable_curator_mode && !empty($coworked)) {
 
@@ -965,26 +976,75 @@ class data_site extends data_admin
                 if (!empty($cleared_coworked)) {
                     $params['grid_conditions']['id'] = $cleared_coworked;
                 } else {
-                    $params['grid_conditions'][] = array(
-                        'id' => array('-1')
-                    );
+                    //@todo: эта опция вызывает полное зависание при пейджинге
+                    // /admin?action=data&_sortby=id&_sortdir=DESC&0[]=Array&page=2
+                    $params['grid_conditions']['id'] = array('-1');
                 }
             } else {
-                $params['grid_conditions'][] = array(
-                    'user_id' => $this->getSessionUserId(),
-                    'id' => $coworked
-                );
+                //@todo: эта опция вызывает полное зависание при пейджинге
+                // /admin?action=data&_sortby=id&_sortdir=DESC&0[]=Array&page=2
+                $params['grid_conditions']['id'] = $coworked;
+                $params['grid_conditions']['user_id'] = $this->getSessionUserId();
             }
+        }
+
+        return [$cowork_panel, $params, $default_params];
+
+    }
+
+    function get_search_form () {
+        $params = array();
+        $this->enable_vue();
+        require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/view/grid.php');
+        $grid = new Common_Grid($this);
+        $params['user_select_box'] = $grid->vue_tags_input('data', 'user_id');
+        return $this->view('apps.data.resources.views.search_form', $params);
+    }
 
 
-        } else {
+    function grid($params = array(), $default_params = array())
+    {
+        if (isset($this->data_model[$this->table_name]['user_id'])) {
+            $this->data_model[$this->table_name]['user_id']['type'] = 'select_by_query';
+        }
+
+        $REQUESTURIPATH = Sitebill::getClearRequestURI();
+        $this->set_tags_from_request();
+        $this->set_toolbar_buttons();
+        $this->set_session_politics();
+
+
+        $default_params['grid_item'] = $this->get_grid_items();
+
+        $default_params['render_user_id'] = $this->getSessionUserId();
+
+        $default_params['pager_params']['per_page'] = $this->getConfigValue('per_page_account');
+        $default_params['pager_params']['page_url'] = $this->get_app_root();
+
+        list($cowork_panel, $params, $default_params) = $this->get_cowork_panel($params, $default_params);
+
+
+        if (intval($this->getConfigValue('enable_curator_mode')) == 0) {
+
             if (!preg_match('/all[\/]?$/', $REQUESTURIPATH)) {
                 $params['grid_conditions']['user_id'] = $this->getSessionUserId();
             }
-            if (preg_match('/\/all$/', $REQUESTURIPATH)) {
-                $default_params['pager_params']['page_url'] = 'account/data/all';
+            if ( $this->request()->get('state') != 'all' && $this->get_app_root() != 'account/data' ) {
+                $params['grid_conditions']['user_id'] = $this->getSessionUserId();
+            } elseif ( $this->get_app_root() == 'account/data' and !preg_match('/all[\/]?$/', $REQUESTURIPATH)) {
+                $params['grid_conditions']['user_id'] = $this->getSessionUserId();
+            } else {
+                if ( $this->getConfigValue('apps.data.disable_all_button') != 1 ) {
+                    unset($params['grid_conditions']['user_id']);
+                    $default_params['pager_params']['state'] = 'all';
+                }
             }
         }
+        if (preg_match('/\/all$/', $REQUESTURIPATH)) {
+            $default_params['pager_params']['page_url'] = 'account/data/all';
+            $default_params['pager_params']['state'] = 'all';
+        }
+
         if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting')) {
             $params['grid_conditions']['archived'] = 0;
         }
@@ -996,6 +1056,75 @@ class data_site extends data_admin
         }
 
 
+
+        $this->set_sort_by_request();
+        $params = $this->onGridConditionsPrepare($this, $params);
+        $params = $this->add_grid_controls_params($params);
+
+        $params['url'] = '/' . $REQUESTURIPATH;
+
+        $params = $this->addCategoryTree($params);
+        $rs = $this->bootstrap_and_css_header();
+        $params = $this->add_grid_item_params($params);
+        $default_params = $this->batch_and_mass_default_params($default_params);
+
+        if ($cowork_panel != '') {
+            $rs .= '<div>' . $cowork_panel . '</div>';
+        }
+        if ( $this->is_all_state() ) {
+            $params = $this->get_agency_params($params, $this->getSessionUserId());
+        }
+
+        $params = $this->get_postponded_params($params);
+
+        if ( $this->get_full_access_mode() ) {
+            unset($params['grid_conditions']['user_id']);
+            unset($default_params['render_user_id']);
+            $_SESSION['politics']['data']['check_access'] = false;
+            unset($_SESSION['politics']['data']['user_id']);
+        }
+
+        if ( $this->getConfigValue('apps.data.disable_all_button') == 1 ) {
+            $params['grid_conditions']['user_id'] = $this->getSessionUserId();
+        }
+
+
+        $rs .= Object_Manager::grid($params, $default_params);
+        if ($this->getConfigValue('apps.billing.enable')) {
+            $rs .= $this->billing_plugin();
+        }
+
+        return $rs;
+    }
+
+    function get_postponded_params ($params) {
+        if ($this->getConfigValue('apps.data.allow_postponded') ) {
+            if ( $this->request()->get('postponded') ) {
+                $params['grid_conditions_sql']['postponded'] = '`'.DB_PREFIX.'_'.$this->table_name.'`.`postponded_to` > ' . '\''.date('Y-m-d H:i:s').'\'';
+            }
+        }
+
+        return $params;
+    }
+
+    function is_all_state () {
+        if ( $this->request()->get('state') == 'all' ) {
+            return true;
+        }
+        if (preg_match('/all[\/]?$/', Sitebill::getClearRequestURI())) {
+            return true;
+        }
+        return false;
+    }
+
+    function get_agency_params ( $params, $user_id ) {
+        if ( $this->agency_admin ) {
+            $params['grid_conditions']['user_id'] = $this->agency_admin->get_agency_user_id_array($user_id);
+        }
+        return $params;
+    }
+
+    private function set_sort_by_request () {
         if (null === $this->getRequestValue('_sortby')) {
             $default_sort = trim($this->getConfigValue('apps.data.default_sort'));
             if ($default_sort != '') {
@@ -1009,22 +1138,29 @@ class data_site extends data_admin
             }
 
         }
+    }
 
+    /**
+     * Добавление кастомных контролов
+     * Тип func используется для функциональніх контролов, доступность которых основывается на текущих данных объекта
+     * параметр func определяет имя функцииЮ возвращающей
+     * array_push($params['grid_controls'], array(
+            'name' => 'actionname (имя экшена)',
+            'btnclass' => 'btnclass (класс кнопки)',
+            'btnicon' => 'btnclass (иконка кнопки)',
+            'btntext' => 'btnclass (текст кнопки)',
+            'type' => 'func',
+            'func' => 'checkBtnEnabled (функция возвоащающая true|false как признак доступности кнопки. аргумент - данные объекта в рамках прав пользователя)',
+            'object' => $this (указатель на объект)
+        ));
+     * @param array $params
+     * @return array
+     */
+    protected function add_custom_grid_controls_params ($params){
+        return $params;
+    }
 
-        $params = $this->onGridConditionsPrepare($this, $params);
-
-        //echo '<pre>';
-        //print_r($params['grid_conditions']);
-        //echo '</pre>';
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
-        $Structure_Manager = new Structure_Manager();
-        $Structure_Manager->set_context($this);
-        $category_tree = $Structure_Manager->get_category_tree_control($this->getConfigValue('topic_id'), $params['grid_conditions']['user_id']);
-        //echo $category_tree;
-        $this->template->assert('category_tree_account', $category_tree);
-
-        //print_r($params['grid_conditions']);
-        //$params['grid_controls'] = array('fast_preview', 'edit', 'delete');
+    private function add_grid_controls_params ($params) {
         $params['grid_controls'] = array('fast_preview');
         if (!$this->getConfigValue('apps.data.disable_delete_button')) {
             array_push($params['grid_controls'], 'delete');
@@ -1035,35 +1171,26 @@ class data_site extends data_admin
         if ($this->getConfigValue('apps.reservation.enable')) {
             array_push($params['grid_controls'], 'reservation');
         }
-
-
         if (!$this->getConfigValue('apps.data.disable_memory_button')) {
             array_push($params['grid_controls'], 'memorylist');
         }
-        $params['url'] = '/' . $REQUESTURIPATH;
-        if ($this->getRequestValue('topic_id') != '') {
-            $all_cats = $Structure_Manager->get_all_childs($this->getRequestValue('topic_id'), $Structure_Manager->loadCategoryStructure());
-            //$all_cats = array_push($all_cats, $this->getRequestValue('topic_id'));
-            array_push($all_cats, $this->getRequestValue('topic_id'));
-            //print_r($all_cats);
-            $params['grid_conditions']['topic_id'] = $all_cats;
+        return $this->add_custom_grid_controls_params($params);
+    }
+
+    private function batch_and_mass_default_params ( $default_params ) {
+        $default_params['batch_update'] = true;
+        $default_params['batch_update_url'] = SITEBILL_MAIN_URL .'/'.$this->get_app_root() . self::$_trslashes;
+
+        $default_params['mass_delete'] = true;
+        $default_params['mass_delete_url'] = SITEBILL_MAIN_URL . '/'.$this->get_app_root() . self::$_trslashes;
+
+        if (isset($this->data_model[$this->table_name]['active'])) {
+            $default_params['batch_activate'] = true;
         }
+        return $default_params;
+    }
 
-        //$params['pager_url']='account/data';
-
-        $rs = '<link rel="stylesheet" href="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template1/assets/css/font-awesome.min.css" />';
-        $rs .= '<link rel="stylesheet" href="' . SITEBILL_MAIN_URL . '/apps/data/css/style.css" />';
-        $bootstrap_version = trim($this->getConfigValue('bootstrap_version'));
-        if ($bootstrap_version == '3') {
-            $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/system/js/bootstrap3-typeahead.min.js"></script>';
-        }
-        $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template1/assets/js/bootstrap-tag.min.js"></script>';
-
-
-        if (isset($this->data_model[$this->table_name]['user_id'])) {
-            //$this->data_model[$this->table_name]['user_id']['type'] = 'select_by_query';
-        }
-
+    private function add_grid_item_params ($params) {
         $DBC = DBC::getInstance();
         $used_fields = array();
         $query = 'SELECT `grid_fields` FROM ' . DB_PREFIX . '_table_grids WHERE `action_code`=?';
@@ -1073,27 +1200,26 @@ class data_site extends data_admin
             $used_fields = json_decode($ar['grid_fields']);
             $params['grid_item'] = $used_fields;
         }
-        $default_params['batch_update'] = true;
-        $default_params['batch_update_url'] = SITEBILL_MAIN_URL . '/account/data' . self::$_trslashes;
+        return $params;
+    }
 
-        $default_params['mass_delete'] = true;
-        $default_params['mass_delete_url'] = SITEBILL_MAIN_URL . '/account/data' . self::$_trslashes;
-
-        if (isset($this->data_model[$this->table_name]['active'])) {
-            $default_params['batch_activate'] = true;
+    private function addCategoryTree ($params) {
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
+        $Structure_Manager = new Structure_Manager();
+        $Structure_Manager->set_context($this);
+        if ( !is_array($params['grid_conditions']['user_id']) ) {
+            $category_tree = $Structure_Manager->get_category_tree_control($this->getConfigValue('topic_id'), $params['grid_conditions']['user_id']);
+            $this->template->assert('category_tree_account', $category_tree);
         }
 
-        if ($cowork_panel != '') {
-            $rs .= '<div>' . $cowork_panel . '</div>';
+        if ($this->getRequestValue('topic_id') != '') {
+            $all_cats = $Structure_Manager->get_all_childs($this->getRequestValue('topic_id'), $Structure_Manager->loadCategoryStructure());
+            //$all_cats = array_push($all_cats, $this->getRequestValue('topic_id'));
+            array_push($all_cats, $this->getRequestValue('topic_id'));
+            //print_r($all_cats);
+            $params['grid_conditions']['topic_id'] = $all_cats;
         }
-
-
-        $rs .= Object_Manager::grid($params, $default_params);
-        if ($this->getConfigValue('apps.billing.enable')) {
-            $rs .= $this->billing_plugin();
-        }
-
-        return $rs;
+        return $params;
     }
 
     public function billing_plugin()

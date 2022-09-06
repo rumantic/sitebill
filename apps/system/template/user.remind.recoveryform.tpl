@@ -3,5 +3,5 @@
 		<label for="login">{$TYPE_RECOVERY_CODE}</label>
 		<input type="text" name="recovery_code" id="recovery_code" placeholder="">
 	</div>
-	<input type="submit" name="submit" value="{$SEND_RECOVERYCODE}">
+	<input type="submit" name="submit" value="{_e t="Отправить код"}">
 </form>

@@ -9,8 +9,8 @@ class Region_Manager extends Object_Manager {
     /**
      * Constructor
      */
-    function Region_Manager() {
-        $this->SiteBill();
+    function __construct() {
+        parent::__construct();
         $this->table_name = 'region';
         $this->action = 'region';
         $this->app_title = Multilanguage::_('REGION_APP_NAME', 'system');

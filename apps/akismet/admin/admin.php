@@ -12,7 +12,7 @@ class akismet_admin extends Object_Manager
      */
     function __construct()
     {
-        $this->SiteBill();
+        parent::__construct();
     }
 
     function main()

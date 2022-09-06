@@ -22,7 +22,7 @@ class logger_admin extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
         //Multilanguage::appendAppDictionary('logger');
         $this->table_name = 'logger';
         $this->action = 'logger';
@@ -33,17 +33,24 @@ class logger_admin extends Object_Manager {
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
 
-        if (!$config_admin->check_config_item('apps.logger.enable')) {
-            $config_admin->addParamToConfig('apps.logger.enable', '0', 'Включить приложение Logger');
-        }
+        $config_admin->addParamToConfig(
+            'apps.logger.enable',
+            '0',
+            'Включить приложение Logger',
+            SConfig::$fieldtypeCheckbox
+        );
 
-        if (!$config_admin->check_config_item('apps.logger.limit')) {
-            $config_admin->addParamToConfig('apps.logger.limit', '10000', 'Максимальное количество записей в таблице лога');
-        }
+        $config_admin->addParamToConfig(
+            'apps.logger.limit',
+            '1000',
+            'Максимальное количество записей в таблице лога'
+        );
 
-        if (!$config_admin->check_config_item('apps.logger.per_page')) {
-            $config_admin->addParamToConfig('apps.logger.per_page', '50', 'Количество сообщений на страницу');
-        }
+        $config_admin->addParamToConfig(
+            'apps.logger.per_page',
+            '50',
+            'Количество сообщений на страницу'
+        );
 
         $this->data_model = $this->get_model();
     }
@@ -125,7 +132,7 @@ class logger_admin extends Object_Manager {
       } */
 
     protected function _defaultAction() {
-        if (!$this->check_table_exist('logger')) {
+        if (!$this->check_table_exist(DB_PREFIX.'_logger')) {
             $rs = '<h1>Приложение не установлено. <a href="?action=logger&do=install">Установить</a></h1>';
             return $rs;
         }
@@ -217,11 +224,11 @@ class logger_admin extends Object_Manager {
         if ( defined('HTTP_X_FORWARDED_FOR') ) {
             $ip = getenv(HTTP_X_FORWARDED_FOR);
         }
-        if ($ip == '') {
+        if (@$ip == '') {
             $ip = $_SERVER['REMOTE_ADDR'];
         }
 
-        $user_id = intval($_SESSION['user_id']);
+        $user_id = intval(@$_SESSION['user_id']);
         $logger = new \logger\model\Logger();
         $logger->apps_name = (isset($message_array['apps_name'])) ? $message_array['apps_name'] : '';
         $logger->method = (isset($message_array['method'])) ? $message_array['method'] : '';

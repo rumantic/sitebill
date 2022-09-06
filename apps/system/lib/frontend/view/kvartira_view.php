@@ -4,29 +4,38 @@
  * Kvartira view
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
-class Kvartira_View extends SiteBill {
+class Kvartira_View extends SiteBill
+{
 
     private $city_id = 0;
     private $topic_id = 0;
     protected $realty = null;
     protected $realty_title = '';
+    /**
+     * @var string
+     */
+    private $pdffilename;
 
     /**
      * Constructor
      */
-    function __construct() {
-        $this->SiteBill();
+    function __construct()
+    {
+        parent::__construct();
     }
 
-    function getCityID() {
+    function getCityID()
+    {
         return $this->city_id;
     }
 
-    function getTopicID() {
+    function getTopicID()
+    {
         return $this->topic_id;
     }
 
-    function geocodeField($item, &$form_data_shared) {
+    function geocodeField($item, &$form_data_shared)
+    {
         if ($item['value']['lat'] == '' && $item['value']['lng'] == '' && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/geodata/admin/admin.php') && 1 == $this->getConfigValue('apps.geodata.enable')) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/geodata/admin/admin.php';
             if (method_exists('geodata_admin', 'geocode_address')) {
@@ -58,11 +67,13 @@ class Kvartira_View extends SiteBill {
         }
     }
 
-    function setRealty($form_data_shared) {
+    function setRealty($form_data_shared)
+    {
         $this->realty = $form_data_shared;
     }
 
-    function init($realty_id) {
+    function init($realty_id)
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         $form_data_shared = $data_model->get_kvartira_model(false, true);
@@ -70,7 +81,8 @@ class Kvartira_View extends SiteBill {
         $form_data_shared = $data_model->init_language_values($form_data_shared, $form_data_shared);
     }
 
-    function setLastViewed($realty_id) {
+    function setLastViewed($realty_id)
+    {
         $length = 10;
         if (!isset($_COOKIE['last_viewed_data'])) {
             $last_viewed = array();
@@ -83,18 +95,21 @@ class Kvartira_View extends SiteBill {
         if (!in_array($realty_id, $last_viewed)) {
             $last_viewed[] = $realty_id;
         }
-        setcookie('last_viewed_data', json_encode($last_viewed), time() + 60 * 60 * 24 * 30, SITEBILL_MAIN_URL . '/', self::$_cookiedomain);
+        @setcookie('last_viewed_data', json_encode($last_viewed), time() + 60 * 60 * 24 * 30, SITEBILL_MAIN_URL . '/', self::$_cookiedomain);
     }
 
-    function isAccessibleObject($data_shared) {
+    function isAccessibleObject($data_shared)
+    {
         return true;
     }
 
-    function addMessageToOwner() {
-        
+    function addMessageToOwner()
+    {
+
     }
 
-    function collectViewStat() {
+    function collectViewStat()
+    {
         $get_stat = false;
         if (1 == $this->getConfigValue('apps.statoid.enable')) {
             $get_stat = true;
@@ -117,7 +132,8 @@ class Kvartira_View extends SiteBill {
      * @param int $realty_id realty id
      * @return mixed
      */
-    function main($realty_id) {
+    function main($realty_id)
+    {
 
         $result = false;
 
@@ -145,7 +161,6 @@ class Kvartira_View extends SiteBill {
         //init Data model with rules
         $form_data = $data_model->init_model_data_from_db('data', 'id', $realty_id, $form_data['data'], true);
 
-        
 
         $topic_id = 0;
         if (isset($form_data['topic_id'])) {
@@ -190,18 +205,17 @@ class Kvartira_View extends SiteBill {
             $this->template->assign('notactive_item_showed', 1);
         }
 
-        if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting') && isset($form_data_shared['archived']) && $form_data_shared['archived']['value'] == 1 && 1 == $this->getConfigValue('apps.realty.archived_notactive')) {
+        if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting') && isset($form_data_shared['archived']) && $form_data_shared['archived']['value'] == 1 && 1 == $this->getConfigValue('apps.realty.archived_notactive')) {
             header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
             $this->template->assign('main_file_tpl', 'error_message.tpl');
             return false;
         }
         $result = true;
 
-        if(isset($form_data_shared['active']) && $form_data_shared['active']['value']==1){
-			$this->setLastViewed($form_data_shared['id']['value']);
-			$this->collectViewStat();
-		}
-
+        if (isset($form_data_shared['active']) && $form_data_shared['active']['value'] == 1) {
+            $this->setLastViewed($form_data_shared['id']['value']);
+            $this->collectViewStat();
+        }
 
 
         $form_data = $data_model->init_language_values($form_data, $form_data);
@@ -221,7 +235,7 @@ class Kvartira_View extends SiteBill {
         //clearing by in topic activity
         $topic_id = 0;
         if (isset($form_data['topic_id'])) {
-            $topic_id = (int) $form_data['topic_id']['value'];
+            $topic_id = (int)$form_data['topic_id']['value'];
         }
 
         if ($topic_id != 0) {
@@ -273,7 +287,6 @@ class Kvartira_View extends SiteBill {
         }
 
 
-
         if ($this->getConfigValue('apps.company.timelimit')) {
             $current_time = time();
             $query = "select re_data.* from re_data, re_user u, re_company c where re_data.id=$realty_id and re_data.user_id=u.user_id and u.company_id=c.company_id and c.start_date <= $current_time and c.end_date >= $current_time";
@@ -289,7 +302,7 @@ class Kvartira_View extends SiteBill {
             }
         }
         if ($this->getConfigValue('apps.company.enable')) {
-            require_once (SITEBILL_DOCUMENT_ROOT . '/apps/company/admin/admin.php');
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/company/admin/admin.php');
             $company_admin = new company_admin();
             $company_profile = $company_admin->load_by_id($form_user['company_id']['value']);
             if ($company_profile) {
@@ -307,18 +320,18 @@ class Kvartira_View extends SiteBill {
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/currency/admin/admin.php';
         $CA = new currency_admin();
 
-        if (1 == (int) $this->getConfigValue('apps.pdfreport.enabled') && isset($_GET['format']) && $_GET['format'] == 'pdf') {
-            
+        if (1 == (int)$this->getConfigValue('apps.pdfreport.enabled') && isset($_GET['format']) && $_GET['format'] == 'pdf') {
+
         } else {
             if (method_exists($this, 'getCustomSimilarData')) {
                 $this->template->assign('similar_data', $this->getCustomSimilarData($category_structure, $form_data_shared));
             } else {
                 $simparams = array(
-                    'id' => (int) $form_data['id']['value'],
-                    'topic_id' => (int) $form_data['topic_id']['value'],
-                    'city_id' => (int) $form_data['city_id']['value'],
-                    'district_id' => (int) $form_data['district_id']['value'],
-                    'street_id' => (int) $form_data['street_id']['value'],
+                    'id' => (int)$form_data['id']['value'],
+                    'topic_id' => (int)$form_data['topic_id']['value'],
+                    'city_id' => (int)$form_data['city_id']['value'],
+                    'district_id' => (int)$form_data['district_id']['value'],
+                    'street_id' => (int)$form_data['street_id']['value'],
                 );
                 if (1 == $this->getConfigValue('apps.realty.similar_grid')) {
                     $this->template->assign('similar_data_list', $this->getSimilar($category_structure, $simparams));
@@ -331,10 +344,6 @@ class Kvartira_View extends SiteBill {
         //append similar advs
 
 
-
-
-
-
         if ($form_user['login']['value'] == '_unregistered') {
             $form_user['fio']['value'] = $form_data['fio']['value'];
             $form_user['phone']['value'] = $form_data['phone']['value'];
@@ -342,10 +351,10 @@ class Kvartira_View extends SiteBill {
 
         if ($this->getConfigValue('use_google_map')) {
             $this->template->assign('map_type', 'google');
-        }elseif(2 == $this->getConfigValue('use_google_map')){
-			$this->template->assign('map_type', 'leaflet_osm');
-        }else{
-			$this->template->assign('map_type', 'yandex');
+        } elseif (2 == $this->getConfigValue('use_google_map')) {
+            $this->template->assign('map_type', 'leaflet_osm');
+        } else {
+            $this->template->assign('map_type', 'yandex');
         }
 
         $form_user['_href'] = $this->getUserHREF($form_user['user_id']['value']);
@@ -358,9 +367,7 @@ class Kvartira_View extends SiteBill {
         //$this->template->assign('pmap', $this->getConfigValue('pmap'));
 
 
-
         $this->makeUserOperatios($form_data_shared);
-
 
 
         $hasTlocation = false;
@@ -412,16 +419,14 @@ class Kvartira_View extends SiteBill {
 
         $this->template->assign('realty_breadcrumbs', explode(' / ', $breadcrumbs));
         $this->template->assign('breadcrumbs', $breadcrumbs);
-        
+
         $this->template->assign('title', $meta_data['title']);
         $this->template->assign('meta_title', $meta_data['meta_title']);
-		$this->template->assign('meta_description', htmlentities($meta_data['meta_description'], ENT_QUOTES, 'utf-8', false));
-		$this->template->assign('meta_keywords', htmlentities($meta_data['meta_keywords'], ENT_QUOTES, 'utf-8', false));
+        $this->template->assign('meta_description', htmlentities($meta_data['meta_description'], ENT_QUOTES, 'utf-8', false));
+        $this->template->assign('meta_keywords', htmlentities($meta_data['meta_keywords'], ENT_QUOTES, 'utf-8', false));
 
 
         $this->template->assign('this_adv_info', $this_adv_info);
-
-
 
 
         if (1 == $this->getConfigValue('apps.comment.enable')) {
@@ -430,7 +435,7 @@ class Kvartira_View extends SiteBill {
             $CoM = new comment_site();
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/login.php');
             $Login = new Login();
-            $user_id = (int) $Login->getSessionUserId();
+            $user_id = (int)$Login->getSessionUserId();
             $commentsPanel = $CoM->generateCommentPanel($user_id, 'data', $realty_id);
         }
 
@@ -447,7 +452,7 @@ class Kvartira_View extends SiteBill {
         /*if ($this->getConfigValue('theme') != 'estate' and ! file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/realty_view.tpl')) {
             $this->template->assign('main_file_tpl', '../estate/realty_view.tpl');
         } else {*/
-            $this->template->assign('main_file_tpl', 'realty_view.tpl');
+        $this->template->assign('main_file_tpl', 'realty_view.tpl');
         /*}*/
 
         if (1 == $this->getConfigValue('apps.billing.enable')) {
@@ -481,11 +486,10 @@ class Kvartira_View extends SiteBill {
         }
 
         $pdffilename = $this->getPDFFileName($form_data_shared);
-        if($pdffilename == ''){
+        if ($pdffilename == '') {
             $pdffilename = $this->transliteMe($meta_data['title']);
         }
-
-
+        $this->set_pdffilename($pdffilename);
 
 
         $this->makePDF($realty_id, $pdffilename);
@@ -494,25 +498,39 @@ class Kvartira_View extends SiteBill {
         return $result;
     }
 
-    private function get_city_info($city_id) {
+    private function set_pdffilename($pdffilename)
+    {
+        $this->pdffilename = $pdffilename;
+    }
+
+    public function get_pdffilename()
+    {
+        return $this->pdffilename;
+    }
+
+    private function get_city_info($city_id)
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/city/city_manager.php');
         $city_manager = new City_Manager();
         return $city_manager->load_by_id($city_id);
     }
 
-    private function get_region_info($region_id) {
+    private function get_region_info($region_id)
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/region/region_manager.php');
         $region_manager = new Region_Manager();
         return $region_manager->load_by_id($region_id);
     }
 
-    private function get_country_info($country_id) {
+    private function get_country_info($country_id)
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/country/country_manager.php');
         $country_manager = new Country_Manager();
         return $country_manager->load_by_id($country_id);
     }
 
-    protected function makeUserOperatios($form_data_shared) {
+    protected function makeUserOperatios($form_data_shared)
+    {
         /* $user_identity=md5($_SERVER['HTTP_USER_AGENT'].'_'.$_SERVER['REMOTE_ADDR']);
           $realty_id=(int)$form_data_shared['id']['value'];
 
@@ -551,18 +569,25 @@ class Kvartira_View extends SiteBill {
           $this->template->assign('likevoter', $likevoter); */
     }
 
-    protected function getPDFFileName($form_data_shared){
+    public function getPDFFileName_public($form_data_shared)
+    {
+        return $this->getPDFFileName($form_data_shared);
+    }
+
+    protected function getPDFFileName($form_data_shared)
+    {
         return '';
     }
 
-    protected function makePDF($realty_id, $title) {
+    protected function makePDF($realty_id, $title)
+    {
         $hasAccessor = false;
         if (isset($_SESSION['Accessor'])) {
             $this->template->assign('accessor_mode', 1);
             $hasAccessor = true;
         }
 
-        if (1 == (int) $this->getConfigValue('apps.pdfreport.enabled') && isset($_GET['format']) && $_GET['format'] == 'pdf') {
+        if (1 == (int)$this->getConfigValue('apps.pdfreport.enabled') && isset($_GET['format']) && $_GET['format'] == 'pdf') {
             /* try{
               $x=new Accessor();
               }catch(Exception $e){
@@ -591,7 +616,6 @@ class Kvartira_View extends SiteBill {
               } */
 
 
-
             $_tpl_code = '';
             if (isset($_GET['tpl']) && $_GET['tpl'] != '') {
                 $_tpl = $_GET['tpl'];
@@ -606,7 +630,6 @@ class Kvartira_View extends SiteBill {
             }
 
 
-
             $pdfpageurl = Sitebill::getClearRequestURI();
             $pdfpageurl = $this->getServerFullUrl() . '/' . $pdfpageurl;
             $pdfpageurl .= ' | ' . date('d-m-Y H:i');
@@ -619,13 +642,13 @@ class Kvartira_View extends SiteBill {
             $this->template->assign('_core_folder', SITEBILL_DOCUMENT_ROOT);
             $pdf_file_name = 'realty' . $realty_id . $_tpl_code . '.pdf';
             $pdf_file_storage = SITEBILL_DOCUMENT_ROOT . '/cache/';
-            
-            $pdfpageorient = 'portrait';
-			if(1 == intval($this->getConfigValue('apps.pdfreport.data_page_orient'))){
-				$pdfpageorient = 'landscape';
-			}
 
-            if (0 == (int) $this->getConfigValue('apps.pdfreport.use_cache') || $hasAccessor) {
+            $pdfpageorient = 'portrait';
+            if (1 == intval($this->getConfigValue('apps.pdfreport.data_page_orient'))) {
+                $pdfpageorient = 'landscape';
+            }
+
+            if (0 == (int)$this->getConfigValue('apps.pdfreport.use_cache') || $hasAccessor) {
                 global $smarty;
                 if ($_tpl != '' && file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/' . $_tpl)) {
                     $html = $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/pdfreport/' . $_tpl);
@@ -689,11 +712,13 @@ class Kvartira_View extends SiteBill {
         }
     }
 
-    public function getPublicAutoOutputData($form_data) {
+    public function getPublicAutoOutputData($form_data)
+    {
         return $this->getAutoOutputData($form_data);
     }
 
-    protected function getAutoOutputData($form_data) {
+    protected function getAutoOutputData($form_data)
+    {
         $hvd_tabbed = array();
         foreach ($form_data as $hvd) {
             if ($hvd['tab'] == '') {
@@ -705,7 +730,8 @@ class Kvartira_View extends SiteBill {
         return $hvd_tabbed;
     }
 
-    protected function getRealtyOnMap($form_data) {
+    protected function getRealtyOnMap($form_data)
+    {
 
         $gdata = array();
         $geoobjects_collection = array();
@@ -762,11 +788,12 @@ class Kvartira_View extends SiteBill {
         return $geoobjects_collection;
     }
 
-    protected function formatPhoneNumber($num) {
+    protected function formatPhoneNumber($num)
+    {
         $parts = array();
         $matches = array();
         $num = preg_replace('/[^\d]/', '', $num);
-        //echo 
+        //echo
         if (substr($num, 0, 1) == '8' && strlen($num) == 11) {
             preg_match_all('/(\d*)(\d{3})(\d{3})(\d{2})(\d{2})$/', $num, $matches);
         } elseif (strlen($num) == 11 || strlen($num) == 10) {
@@ -786,11 +813,12 @@ class Kvartira_View extends SiteBill {
         }
     }
 
-    protected function getSimilar($categories, $params = array()) {
+    protected function getSimilar($categories, $params = array())
+    {
         if (intval($this->getConfigValue('similar_items_count')) == -1) {
             return array();
         }
-        $similar_items_count = (0 == (int) $this->getConfigValue('similar_items_count') ? 5 : (int) $this->getConfigValue('similar_items_count'));
+        $similar_items_count = (0 == (int)$this->getConfigValue('similar_items_count') ? 5 : (int)$this->getConfigValue('similar_items_count'));
 
         //$str='{}'
         /* $similar_str=trim($this->getConfigValue('apps.realty.similar_preg'));
@@ -803,7 +831,6 @@ class Kvartira_View extends SiteBill {
           //print_r($matches);
 
           } */
-
 
 
         $simvariants = array();
@@ -919,14 +946,14 @@ class Kvartira_View extends SiteBill {
                     if ($v[0] == 'rand') {
                         $v = array();
                         $v[] = 'active=1';
-                        if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
+                        if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting')) {
                             $v[] = '`archived`<>1';
                         }
                         $v[] = 'id NOT IN (' . implode(',', $ids) . ')';
                         $q = 'SELECT id FROM ' . DB_PREFIX . '_data' . (!empty($v) ? ' WHERE ' . implode(' AND ', $v) : '') . ' ORDER BY RAND() LIMIT ' . $last_to_select;
                     } else {
                         $v[] = 'active=1';
-                        if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
+                        if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting')) {
                             $v[] = '`archived`<>1';
                         }
                         $v[] = 'id NOT IN (' . implode(',', $ids) . ')';
@@ -951,12 +978,11 @@ class Kvartira_View extends SiteBill {
             $category_structure = $Structure_Manager->loadCategoryStructure();
 
 
-
             $where = array();
             if (!empty($params)) {
                 $ids[] = $params['id'];
                 $where['active'] = 'active=1';
-                if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
+                if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting')) {
                     $where['archived'] = '`archived`<>1';
                 }
                 if ($params['street_id'] != 0) {
@@ -1061,7 +1087,7 @@ class Kvartira_View extends SiteBill {
                 }
                 $sim = $data_model->init_model_data_from_db_multi('data', 'id', $ret, $form_data_src['data'], true);
                 foreach ($sim as $id => $v) {
-                    $sim[$id]=$data_model->init_language_values($v);
+                    $sim[$id] = $data_model->init_language_values($v);
                     $sim[$id]['href'] = $this->getRealtyHREF($id, false, array('alias' => $sim[$id]['translit_alias']['value'], 'topic_id' => $sim[$id]['topic_id']['value']));
                     if ($hasTlocation) {
                         $sim[$id]['country_id']['value_string'] = $sim[$id][$tlocationElement]['value_string']['country_id'];
@@ -1079,7 +1105,8 @@ class Kvartira_View extends SiteBill {
         return $datas;
     }
 
-    protected function getBreadcrumbs($params) {
+    protected function getBreadcrumbs($params)
+    {
         /* if(!is_null($this->realty)){
           $p['topic_id']=intval($this->realty['topic_id']['value']);
           require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
@@ -1129,11 +1156,13 @@ class Kvartira_View extends SiteBill {
         return $this->get_category_breadcrumbs($params, $category_structure, SITEBILL_MAIN_URL . '/');
     }
 
-    public function getPublicMetaData($form_data, $hasTlocation = false, $tlocationElement = '') {
+    public function getPublicMetaData($form_data, $hasTlocation = false, $tlocationElement = '')
+    {
         return $this->getMetaData($form_data, $hasTlocation, $tlocationElement);
     }
 
-    public function formatTitle($form_data, $title_str) {
+    public function formatTitle($form_data, $title_str)
+    {
         if ($title_str == '') {
             return '';
         }
@@ -1175,7 +1204,8 @@ class Kvartira_View extends SiteBill {
         return $title;
     }
 
-    protected function getMetaData($form_data, $hasTlocation = false, $tlocationElement = '') {
+    protected function getMetaData($form_data, $hasTlocation = false, $tlocationElement = '')
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
         $category_structure = $Structure_Manager->loadCategoryStructure();
@@ -1204,12 +1234,12 @@ class Kvartira_View extends SiteBill {
                         if (in_array($form_data[$keyval]['type'], array('select_box', 'select_by_query', 'select_box_structure'))) {
                             $str_parts[$key] = $form_data[$keyval]['value_string'];
                         } elseif ($form_data[$keyval]['type'] == 'price') {
-                            if($form_data[$keyval]['value'] != floor($form_data[$keyval]['value'])){
+                            if ($form_data[$keyval]['value'] != floor($form_data[$keyval]['value'])) {
                                 $str_parts[$key] = number_format($form_data[$keyval]['value'], 2, '.', ' ');
-                            }else{
+                            } else {
                                 $str_parts[$key] = number_format($form_data[$keyval]['value'], 0, '.', ' ');
                             }
-                            
+
                         } else {
                             $str_parts[$key] = $form_data[$keyval]['value'];
                         }
@@ -1236,7 +1266,7 @@ class Kvartira_View extends SiteBill {
                 if ($form_data[$tlocationElement]['tlocation_string'] != '') {
                     $title_parts[] = $form_data[$tlocationElement]['tlocation_string'];
                 }
-                if (0 != (int) $form_data['price']['value']) {
+                if (0 != (int)$form_data['price']['value']) {
                     $title_parts[] = number_format($form_data['price']['value'], 0, ',', ' ');
                 }
                 if (!empty($title_parts)) {
@@ -1256,7 +1286,7 @@ class Kvartira_View extends SiteBill {
                 if ($form_data['street_id']['value_string'] != '') {
                     $title_parts[] = $form_data['street_id']['value_string'];
                 }
-                if (0 != (int) $form_data['price']['value']) {
+                if (0 != (int)$form_data['price']['value']) {
                     if (1 == $this->getConfigValue('currency_enable') && isset($form_data['currency_id']) && $form_data['currency_id']['value'] > 0) {
                         $title_parts[] = number_format($form_data['price']['value'], 0, ',', ' ') . ' ' . $form_data['currency_id']['value_string'];
                     } else {
@@ -1270,12 +1300,7 @@ class Kvartira_View extends SiteBill {
         }
 
 
-
         $this->realty_title = $title;
-
-
-
-
 
 
         if ($form_data['meta_title']['value'] == '') {
@@ -1291,7 +1316,6 @@ class Kvartira_View extends SiteBill {
         if ($form_data['meta_keywords']['value'] != '') {
             $meta_keywords = $form_data['meta_keywords']['value'];
         }
-
 
 
         /*
@@ -1329,8 +1353,6 @@ class Kvartira_View extends SiteBill {
           }
           }
          */
-
-
 
 
         return array(

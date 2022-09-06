@@ -7,8 +7,8 @@
     <authorUrl>http://www.sitebill.ru</authorUrl>
     <copyright>Copyright (C) 2012-2014 Sitebill Team. All rights reserved.</copyright>
     <license>http://www.sitebill.ru/licenses/sitebill.html</license>
-    <backendMenu>false</backendMenu>
-    <version status="beta">1.7.6</version>
+    <backendMenu>true</backendMenu>
+    <version status="beta">1.7.29</version>
     <administration>
         <!-- Administration Menu Section -->
         <menu>CMS Sitebill API</menu>

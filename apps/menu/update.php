@@ -8,7 +8,7 @@ class menu_update extends menu_admin {
      * Construct
      */
     function __construct() {
-        $this->sitebill();
+        parent::__construct();
     }
 
     function main () {

@@ -4,7 +4,7 @@ class Company_Structure_Manager extends Structure_Implements {
 	private static $_company_category_structure=NULL;
 	
 	function __construct() {
-		$this->SiteBill();
+		parent::__construct();
 		$this->table='company_topic';
 		$this->entity='company';
 		$this->action='structure_'.$this->entity;

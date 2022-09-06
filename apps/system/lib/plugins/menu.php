@@ -9,19 +9,19 @@ class menu extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
     }
-    
+
     /**
      * Main
      */
     function main () {
         global $smarty;
-        
+
         $query = "select ms.*, m.tag from ".DB_PREFIX."_menu m, ".DB_PREFIX."_menu_structure ms where m.menu_id=ms.menu_id order by ms.sort_order";
         $DBC=DBC::getInstance();
 		$stmt=$DBC->query($query);
-			
+
         $ra = array();
         $i = 0;
         if($stmt){

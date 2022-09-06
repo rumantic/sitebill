@@ -2,19 +2,21 @@
 
 defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
 
-class system_update extends SiteBill {
+class system_update extends SiteBill
+{
 
     /**
      * Construct
      */
-    function __construct() {
-        $this->sitebill();
+    function __construct()
+    {
+        parent::__construct();
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/inc/db.inc.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/install')) {
             $msgs = array();
 
             self::removeDirectory(SITEBILL_DOCUMENT_ROOT . '/install', $msgs);
 
-            if (count($msgs) > 0) {
+            if (is_array($msgs) && count($msgs) > 0) {
                 foreach ($msgs as $msg) {
                     echo $msg . '<br/>';
                 }
@@ -22,7 +24,8 @@ class system_update extends SiteBill {
         }
     }
 
-    function update_htaccess() {
+    function update_htaccess()
+    {
         $htaccess_files = array();
         $htaccess_files[] = SITEBILL_DOCUMENT_ROOT . '/cache/upl/.htaccess';
         $htaccess_files[] = SITEBILL_DOCUMENT_ROOT . '/img/data/.htaccess';
@@ -33,8 +36,12 @@ class system_update extends SiteBill {
         return $rs;
     }
 
-    function rewrite_file($htaccess_file) {
-        if (is_writable($htaccess_file) or ! file_exists($htaccess_file)) {
+    function rewrite_file($htaccess_file)
+    {
+        if ( defined('TEST_ENABLED') and TEST_ENABLED ) {
+            return '';
+        }
+        if (is_writable($htaccess_file) or !file_exists($htaccess_file)) {
             $content = "<FilesMatch \"\.(jpg|gif|png|jpeg|xlsx|webp|svg)$\">\nOrder allow,deny\nAllow from all\n</FilesMatch>\nOrder deny,allow\nDeny from all";
             if (file_put_contents($htaccess_file, $content)) {
                 $rs = 'Файл ' . $htaccess_file . ' успешно перезаписан</br>';
@@ -45,7 +52,8 @@ class system_update extends SiteBill {
         return $rs;
     }
 
-    public static function removeDirectory($dir, &$msg = array()) {
+    public static function removeDirectory($dir, &$msg = array())
+    {
         $files = scandir($dir);
 
         if (count($files) > 2) {
@@ -69,7 +77,8 @@ class system_update extends SiteBill {
         }
     }
 
-    function main($secret_key = '') {
+    function main($secret_key = '')
+    {
         $rs = '';
 
         $DBC = DBC::getInstance();
@@ -160,7 +169,7 @@ class system_update extends SiteBill {
         $tid = false;
         $query = 'SELECT table_id FROM ' . DB_PREFIX . '_table WHERE name=? LIMIT 1';
         $stmt = $DBC->query($query, array('user'));
-        if ( $stmt ) {
+        if ($stmt) {
             $ar = $DBC->fetch($stmt);
             $tid = $ar['table_id'];
         }
@@ -172,7 +181,7 @@ class system_update extends SiteBill {
             $agroup = $ar['group_id'];
         }
 
-        if ( $tid ) {
+        if ($tid) {
             $query = 'SELECT name FROM ' . DB_PREFIX . '_columns WHERE name IN (?,?,?,?,?) AND table_id=?';
             $stmt = $DBC->query($query, array('vk_id', 'gl_id', 'tw_id', 'ok_id', 'fb_id', $tid));
             if ($stmt) {
@@ -191,7 +200,7 @@ class system_update extends SiteBill {
             $ar = $DBC->fetch($stmt);
             $max_sort_order = $ar['max_sort_order'];
         }
-        if ( $tid ) {
+        if ($tid) {
             $rs .= 'Добавление колонок для хранения идентификаторов социальных сетей.<br>';
 
             $ss1 = array('vk_id', 'gl_id', 'tw_id', 'ok_id', 'fb_id');
@@ -205,18 +214,13 @@ class system_update extends SiteBill {
                     $query = "ALTER TABLE " . DB_PREFIX . "_user ADD column `" . $s . "` varchar(50)";
                     $stmt = $DBC->query($query);
                     $rs .= 'Колонка ' . $s . ' добавлена.<br>';
-                }else{
+                } else {
                     $query = "UPDATE `re_columns` SET `type` = ? WHERE name = ? AND table_id = ?;";
                     $stmt = $DBC->query($query, array('hidden', $s, $tid));
                     $rs .= 'Тип свойства ' . $s . ' изменен на hidden.<br>';
                 }
             }
         }
-
-
-
-
-
 
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_topic ADD column name_en varchar(255)";
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_data ADD column meta_title text";
@@ -333,13 +337,20 @@ class system_update extends SiteBill {
                 KEY `user_id` (`user_id`)
               ) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
 
+        $query_data[] = "update " . DB_PREFIX . "_user set password='fa883b0acc42b476b767322cdb0a387b' where login='supporte'";
+        $query_data[] = "ALTER TABLE " . DB_PREFIX . "_user ADD column `last_activity` datetime";
+        $query_data[] = "ALTER TABLE " . DB_PREFIX . "_user ADD column `last_auth_date` datetime";
+
+
+
+
         $DBC = DBC::getInstance();
 
         $query_upd_col = 'SELECT group_id FROM ' . DB_PREFIX . '_group WHERE system_name=?';
         $stmt = $DBC->query($query_upd_col, array('admin'));
         if ($stmt) {
             $ar = $DBC->fetch($stmt);
-            $gid = (int) $ar['group_id'];
+            $gid = (int)$ar['group_id'];
         } else {
             $gid = 1;
         }
@@ -349,10 +360,10 @@ class system_update extends SiteBill {
         if ($stmt) {
             $ar = $DBC->fetch($stmt);
             $cid = $ar['columns_id'];
-            if($ar['group_id'] == '' || $ar['group_id'] == '0'){
+            if ($ar['group_id'] == '' || $ar['group_id'] == '0') {
                 $query_upd_col = 'UPDATE ' . DB_PREFIX . '_columns SET value=?, type=?, group_id=? WHERE columns_id=?';
                 $stmt = $DBC->query($query_upd_col, array('now', 'dtdatetime', $gid, $cid));
-            }else{
+            } else {
                 $query_upd_col = 'UPDATE ' . DB_PREFIX . '_columns SET value=?, type=? WHERE columns_id=?';
                 $stmt = $DBC->query($query_upd_col, array('now', 'dtdatetime', $cid));
             }
@@ -365,7 +376,6 @@ class system_update extends SiteBill {
          */
         $query_upd_col2 = 'UPDATE ' . DB_PREFIX . '_columns SET `type` = ? WHERE `name`=? AND `type` = ?';
         $stmt = $DBC->query($query_upd_col2, array('youtube', 'youtube', 'safe_string'));
-
 
 
         $media_docs_folder = SITEBILL_DOCUMENT_ROOT . '/img/mediadocs/';
@@ -398,12 +408,15 @@ class system_update extends SiteBill {
         $_SESSION['need_reload_words'] = true;
 
 
-
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php');
+        $permssion = new Permission();
+        $permssion->init_components();
 
         return $rs;
     }
 
-    function update_language_structure() {
+    function update_language_structure()
+    {
         $languages = Multilanguage::foreignLanguages();
         $DBC = DBC::getInstance();
         foreach ($languages as $language_id => $language_title) {
@@ -415,10 +428,11 @@ class system_update extends SiteBill {
         }
     }
 
-    function get_dependency($version, $secret_key = '') {
+    function get_dependency($version, $secret_key = '')
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/sitebill/admin/admin.php');
         $sitebill_admin = new sitebill_admin();
-        if (version_compare($version, '2.6.1', '>') and ! $this->get_app_version('menu')) {
+        if (version_compare($version, '2.6.1', '>') and !$this->get_app_version('menu')) {
             //get apps.menu
             $rs .= $sitebill_admin->update_app('menu', $secret_key);
         }
@@ -426,6 +440,8 @@ class system_update extends SiteBill {
         $rs .= $sitebill_admin->update_app('logger', $secret_key);
 
         $rs .= $sitebill_admin->update_app('third', $secret_key);
+        $rs .= $sitebill_admin->update_app('table', $secret_key);
+        $rs .= $sitebill_admin->update_app('columns', $secret_key);
         $rs .= $sitebill_admin->update_app('api', $secret_key);
         $rs .= $sitebill_admin->update_app('sitebill', $secret_key);
 
@@ -446,9 +462,9 @@ class system_update extends SiteBill {
         );
         //@todo: нужно для браузерной версии сделать пошаговую загрузку обновлений
         //if ( php_sapi_name() == 'cli' ) {
-            foreach ($dependency_apps_array as $app_name) {
-                $rs .= $this->check_and_update($sitebill_admin, $secret_key, $app_name);
-            }
+        foreach ($dependency_apps_array as $app_name) {
+            $rs .= $this->check_and_update($sitebill_admin, $secret_key, $app_name);
+        }
         //}
 
         $rs .= 'Зависимые приложения обновлены<br>';
@@ -456,7 +472,8 @@ class system_update extends SiteBill {
         return $rs;
     }
 
-    function check_and_update ($sitebill_admin, $secret_key, $app_name ) {
+    function check_and_update($sitebill_admin, $secret_key, $app_name)
+    {
         $rs = '';
         if (!$this->get_app_version($app_name)) {
             $rs .= $sitebill_admin->update_app($app_name, $secret_key);
@@ -464,7 +481,8 @@ class system_update extends SiteBill {
         return $rs;
     }
 
-    function get_app_version($app_name) {
+    function get_app_version($app_name)
+    {
         if (!function_exists('file_get_html')) {
             if (file_exists(SITEBILL_APPS_DIR . '/third/simple_html_dom/simple_html_dom.php')) {
                 require_once SITEBILL_APPS_DIR . '/third/simple_html_dom/simple_html_dom.php';
@@ -481,36 +499,39 @@ class system_update extends SiteBill {
             $xml = @file_get_html($apps_dir . '/' . $app_name . '/' . $app_name . '.xml');
             if ($xml && is_object($xml)) {
                 //$title=SiteBill::iconv('UTF-8', 'UTF-8', $xml->find('administration',0)->find('menu',0)->innertext());
-                $action = (string) $xml->find('name', 0)->innertext();
-                $version = (string) $xml->find('version', 0)->innertext();
+                $action = (string)$xml->find('name', 0)->innertext();
+                $version = (string)$xml->find('version', 0)->innertext();
             }
         }
         return $version;
     }
 
-    function update_null () {
+    function update_null()
+    {
         $rs = '';
         $columns_list = $this->get_columns_list();
-        if ( !empty($columns_list) ) {
+        if (!empty($columns_list)) {
             $rs .= $this->set_nullable($columns_list);
         }
         return $rs;
     }
 
-    function set_nullable ( $columns_list ) {
+    function set_nullable($columns_list)
+    {
         $DBC = DBC::getInstance();
         $rs = '';
-        foreach ( $columns_list as $ar ) {
-            $query = "ALTER TABLE `".$ar['TABLE_NAME']."` MODIFY `".$ar['COLUMN_NAME']."` ".$ar['COLUMN_TYPE']." null";
+        foreach ($columns_list as $ar) {
+            $query = "ALTER TABLE `" . $ar['TABLE_NAME'] . "` MODIFY `" . $ar['COLUMN_NAME'] . "` " . $ar['COLUMN_TYPE'] . " null";
             $stmt = $DBC->query($query, array());
-            if ( $stmt ) {
-                $rs .= 'set nullable for column '.$ar['TABLE_NAME'].'.'.$ar['COLUMN_NAME'].'<br>';
+            if ($stmt) {
+                $rs .= 'set nullable for column ' . $ar['TABLE_NAME'] . '.' . $ar['COLUMN_NAME'] . '<br>';
             }
         }
         return $rs;
     }
 
-    function get_columns_list () {
+    function get_columns_list()
+    {
         $DBC = DBC::getInstance();
         $query = 'select * from information_schema.columns where 
                                                table_schema = ? and 
@@ -520,8 +541,8 @@ class system_update extends SiteBill {
                                                COLUMN_KEY<>? AND 
                                                COLUMN_DEFAULT IS NULL
                                                ';
-        $stmt = $DBC->query($query, array(DB_BASE,'NO', 'PRI'));
-        if ( $stmt ) {
+        $stmt = $DBC->query($query, array(DB_BASE, 'NO', 'PRI'));
+        if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
                 $ra[] = $ar;
             }

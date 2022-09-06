@@ -4,7 +4,8 @@
  * View models in table format
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
-class Table_View extends Data_Model {
+class Table_View extends Data_Model
+{
 
     protected $absolute_urls = false;
 
@@ -13,11 +14,13 @@ class Table_View extends Data_Model {
      * @param void
      * @return void
      */
-    function __construct() {
-        $this->SiteBill();
+    function __construct()
+    {
+        parent::__construct();
     }
 
-    public function setAbsoluteUrls() {
+    public function setAbsoluteUrls()
+    {
         $this->absolute_urls = true;
     }
 
@@ -26,10 +29,12 @@ class Table_View extends Data_Model {
      * @param $form_data form data
      * @return string
      */
-    function compile_view($form_data, $add_tooltip = false) {
+    function compile_view($form_data, $add_tooltip = false)
+    {
         //echo '<pre>';
         //print_r($form_data);
         //echo '</pre>';
+
         foreach ($form_data as $item_id => $item_array) {
             switch ($item_array['type']) {
                 case 'select_box':
@@ -62,6 +67,7 @@ class Table_View extends Data_Model {
                     $rs .= $this->get_textarea_row($item_array);
                     break;
 
+                case 'hidden':
                 case 'safe_string':
                     $rs .= $this->get_safe_text_input($item_array);
                     break;
@@ -107,7 +113,7 @@ class Table_View extends Data_Model {
                     break;
             }
         }
-        if ( $add_tooltip ) {
+        if ($add_tooltip) {
             $rs .= $this->get_tooltip_script();
         }
         return $rs;
@@ -118,7 +124,8 @@ class Table_View extends Data_Model {
      * @param array $item_array
      * @return string
      */
-    function get_select_box_row($item_array) {
+    function get_select_box_row($item_array)
+    {
         $rs = '<tr>';
         $rs .= '<td>';
         $rs .= $item_array['title'];
@@ -136,13 +143,14 @@ class Table_View extends Data_Model {
      * @param array $item_array
      * @return string
      */
-    function get_select_box_by_query_row($item_array) {
+    function get_select_box_by_query_row($item_array)
+    {
         $rs = '<tr>';
         $rs .= '<td>';
         $rs .= $item_array['title'];
         $rs .= '</td>';
         $rs .= '<td>';
-        if($item_array['value_string'] == ''){
+        if ($item_array['value_string'] == '') {
             $item_array['value_string'] = $this->get_string_value_by_id($item_array['primary_key_table'], $item_array['primary_key_name'], $item_array['value_name'], $item_array['value']);
         }
 
@@ -153,7 +161,8 @@ class Table_View extends Data_Model {
         return $rs;
     }
 
-    function get_select_by_query_multi_row($item_array) {
+    function get_select_by_query_multi_row($item_array)
+    {
         $rs = '<tr>';
         $rs .= '<td>';
         $rs .= $item_array['title'];
@@ -196,7 +205,8 @@ class Table_View extends Data_Model {
         return $rs;
     }
 
-    function get_client_id_row($item_array) {
+    function get_client_id_row($item_array)
+    {
         $rs = '<tr>';
         $rs .= '<td>';
         $rs .= $item_array['title'];
@@ -209,8 +219,9 @@ class Table_View extends Data_Model {
         return $rs;
     }
 
-    function get_injector_row($item_array, $model) {
-        switch ( $item_array['name'] ) {
+    function get_injector_row($item_array, $model)
+    {
+        switch ($item_array['name']) {
             case 'booking':
                 $form_injection = new \reservation\admin\Form_Injection();
                 break;
@@ -224,7 +235,7 @@ class Table_View extends Data_Model {
         $rs .= $item_array['title'];
         $rs .= '</td>';
         $rs .= '<td>';
-        if ( isset($form_injection) ) {
+        if (isset($form_injection)) {
             $rs .= $form_injection->get_content($item_array, null, $model);
         }
         $rs .= '</td>';
@@ -239,7 +250,8 @@ class Table_View extends Data_Model {
      * @param array $item_array
      * @return string
      */
-    function get_select_box_structure_row($item_array) {
+    function get_select_box_structure_row($item_array)
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
         $category_structure = $Structure_Manager->loadCategoryStructure();
@@ -264,7 +276,8 @@ class Table_View extends Data_Model {
      * @param array $item_array
      * @return string
      */
-    function get_checkbox_box_row($item_array) {
+    function get_checkbox_box_row($item_array)
+    {
         $rs = '<tr>';
         $rs .= '<td>';
         $rs .= $item_array['title'];
@@ -282,7 +295,8 @@ class Table_View extends Data_Model {
      * @param array $item_array
      * @return string
      */
-    function get_uploadify_row($item_array) {
+    function get_uploadify_row($item_array)
+    {
 
         $rs .= '<tr>';
         $rs .= '<td colspan="2">';
@@ -304,7 +318,8 @@ class Table_View extends Data_Model {
      * @param array $item_array
      * @return string
      */
-    function get_checkbox($item_array) {
+    function get_checkbox($item_array)
+    {
         if ($item_array['value'] == 1) {
             $rs .= Multilanguage::_('L_YES');
         } else {
@@ -318,7 +333,8 @@ class Table_View extends Data_Model {
      * @param array $item_array
      * @return string
      */
-    function get_textarea_row($item_array) {
+    function get_textarea_row($item_array)
+    {
         $rs = '<tr>';
         $rs .= '<td>';
         $rs .= $item_array['title'];
@@ -332,8 +348,8 @@ class Table_View extends Data_Model {
     }
 
 
-
-    function get_tlocaion_row($item_array) {
+    function get_tlocaion_row($item_array)
+    {
         $rs = '<tr>';
         $rs .= '<td>';
         $rs .= $item_array['title'];
@@ -346,7 +362,8 @@ class Table_View extends Data_Model {
         return $rs;
     }
 
-    function get_uploadify_preview($item_array) {
+    function get_uploadify_preview($item_array)
+    {
 
         $rs = '<tr>';
         $rs .= '<td>';
@@ -366,7 +383,8 @@ class Table_View extends Data_Model {
         return $rs;
     }
 
-    function get_uploads_preview($item_array) {
+    function get_uploads_preview($item_array)
+    {
         $rs = '<tr>';
         $rs .= '<td>';
         $rs .= $item_array['title'];
@@ -376,15 +394,19 @@ class Table_View extends Data_Model {
         if (is_array($item_array['value']) && count($item_array['value']) > 0) {
             foreach ($item_array['value'] as $it) {
                 $rs .= '<div>';
-                if ($this->absolute_urls) {
-                    $rs .= '<a href="' . $this->getServerFullUrl() . '/img/data/' . $it['normal'] . '" target="_blank"><img style="max-width:300px;" src="' . $this->getServerFullUrl() . '/img/data/' . $it['preview'] . '"></a>';
+
+                if ($it['remote'] === 'true') {
+                    $normal = $it['normal'];
+                    $preview = $it['preview'];
+                } elseif ($this->absolute_urls) {
+                    $normal = $this->getServerFullUrl() . '/img/data/' . $it['normal'];
+                    $preview = $this->getServerFullUrl() . '/img/data/' . $it['preview'];
                 } else {
-                    if ( $it['remote'] === 'true' ) {
-                        $rs .= '1<a href="' . $it['normal'] . '" target="_blank"><img style="max-width:300px;" src="' . $it['preview'] . '"></a>';
-                    } else {
-                        $rs .= '<a href="' . SITEBILL_MAIN_URL . '/img/data/' . $it['normal'] . '" target="_blank"><img style="max-width:300px;" src="' . SITEBILL_MAIN_URL . '/img/data/' . $it['preview'] . '"></a>';
-                    }
+                    $normal = SITEBILL_MAIN_URL . '/img/data/' . $it['normal'];
+                    $preview = SITEBILL_MAIN_URL . '/img/data/' . $it['preview'];
                 }
+                $rs .= '<a href="' . $normal . '" target="_blank"><img style="max-width:300px;" src="' . $preview . '"></a>';
+
                 $rs .= '</div>';
             }
         }
@@ -395,7 +417,8 @@ class Table_View extends Data_Model {
         return $rs;
     }
 
-    function get_docuploads_preview($item_array) {
+    function get_docuploads_preview($item_array)
+    {
         $rs = '<tr>';
         $rs .= '<td>';
         $rs .= $item_array['title'];
@@ -425,7 +448,8 @@ class Table_View extends Data_Model {
      * @param unknown_type $item_array
      * @return string
      */
-    function get_safe_text_input($item_array) {
+    function get_safe_text_input($item_array)
+    {
 
         /* Un-quote slashes */
         $value = stripslashes($value);

@@ -15,7 +15,7 @@ class Cowork_Object extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
         $this->table_name = 'cowork';
         $this->action = 'cowork';
         $this->primary_key = 'cowork_id';

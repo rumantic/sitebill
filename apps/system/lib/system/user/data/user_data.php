@@ -4,20 +4,24 @@
  * User data manager
  * @author http://www.sitebill.ru
  */
+
 //require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/sitebill_krascap_editor.php');
 
-class User_Data_Manager extends Object_Manager {
+class User_Data_Manager extends Object_Manager
+{
 
     public $table_name = 'data';
     public $primary_key = 'id';
-    private $nowatermark_folder_with_id = false;
+    protected $nowatermark_folder_with_id = false;
 
     //public $_grid_constructor;
+
     /**
      * Constructor
      */
-    function __construct() {
-        $this->SiteBill();
+    function __construct()
+    {
+        parent::__construct();
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         //require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/grid/grid_constructor.php';
         //$this->_grid_constructor = new Grid_Constructor();
@@ -29,112 +33,118 @@ class User_Data_Manager extends Object_Manager {
             unset($this->data_model['data']['phone']);
             unset($this->data_model['data']['email']);
         }
-        if ( $this->getConfigValue('dadata_autocomplete_force') ) {
+        if ($this->getConfigValue('dadata_autocomplete_force')) {
             $this->data_model['data'] = $this->prepare_model_for_dadata($this->data_model['data']);
         }
     }
 
-    public function _before_edit_done_action($form_data) {
+    public function _before_edit_done_action($form_data)
+    {
         return $form_data;
     }
 
-    protected function _before_add_done_action($form_data) {
+    protected function _before_add_done_action($form_data)
+    {
         return $form_data;
     }
 
-    public function _before_check_action($form_data, $type = 'new') {
+    public function _before_check_action($form_data, $type = 'new')
+    {
         return $form_data;
     }
 
-    function init_more_fields($form_data) {
+    function init_more_fields($form_data)
+    {
         return $form_data;
     }
-    
-    
-    function get_photos($id, $clearprotect = false){
-		
-		$DBC = DBC::getInstance();
-		//$isprotected = false;
-		
-		$query = 'SELECT image FROM '.DB_PREFIX.'_data WHERE id = ? AND user_id = ? AND image <> ?';
-		$stmt = $DBC->query($query, array($id, $_SESSION['user_id'], ''));
-		if(!$stmt){
-			exit();
-		}
-		$ar = $DBC->fetch($stmt);
-		$images = unserialize($ar['image']);
-		
-		if(empty($images)){
+
+
+    function get_photos($id, $clearprotect = false)
+    {
+
+        $DBC = DBC::getInstance();
+        //$isprotected = false;
+
+        $query = 'SELECT image FROM ' . DB_PREFIX . '_data WHERE id = ? AND user_id = ? AND image <> ?';
+        $stmt = $DBC->query($query, array($id, $_SESSION['user_id'], ''));
+        if (!$stmt) {
+            exit();
+        }
+        $ar = $DBC->fetch($stmt);
+        $images = unserialize($ar['image']);
+
+        if (empty($images)) {
             return false;
         }
-		
-		
+
+
         $zip = new ZipArchive();
-        $zip_name = "photos_".$id.'_'.time().".zip";
+        $zip_name = "photos_" . $id . '_' . time() . ".zip";
         $zip->open($zip_name, ZIPARCHIVE::CREATE);
-		
-		$exported = array();
-		
-		if($clearprotect && 1 == intval($this->getConfigValue('watermark_user_control'))){
+
+        $exported = array();
+
+        if ($clearprotect && 1 == intval($this->getConfigValue('watermark_user_control'))) {
             $fold = $this->notwatermarked_folder;
-			if($this->nowatermark_folder_with_id){
-				$fold = $fold.$id.'/';
-			}
-			foreach($images as $photo){
-				if(file_exists($fold.$photo['normal'])){
-					$exported[] = array($fold.$photo['normal'], $photo['normal']);
-				}else{
-					$exported[] = array(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$photo['normal'], $photo['normal']);
-				}
-			}
-		}elseif($clearprotect && 0 == intval($this->getConfigValue('watermark_user_control'))){
-            $fold = SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/';
-			
-			foreach($images as $photo){
-				if(file_exists($fold.$photo['normal'])){
-					$exported[] = array($fold.$photo['normal'], $photo['normal']);
-				}else{
-					$exported[] = array(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$photo['normal'], $photo['normal']);
-				}
-			}
-		}else{
-            $j = 0;
-            foreach($images as $photo){
-                $j++;
-                if ( $photo['remote'] === 'true' ) {
-                    $pathinfo = pathinfo($photo['normal']);
-                    $file_name = $j.'.'.$pathinfo['extension'];
-                    $exported[] = array($fold.$photo['normal'], $photo['normal'], 1);
+            if ($this->nowatermark_folder_with_id) {
+                $fold = $fold . $id . '/';
+            }
+            foreach ($images as $photo) {
+                if (file_exists($fold . $photo['normal'])) {
+                    $exported[] = array($fold . $photo['normal'], $photo['normal']);
                 } else {
-                    $exported[] = array(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$photo['normal'], $photo['normal']);
+                    $exported[] = array(SITEBILL_DOCUMENT_ROOT . '/img/data/' . $photo['normal'], $photo['normal']);
                 }
             }
-		}
-		
-		foreach($exported as $exp){
-            if(isset($exp[2]) && $exp[2] == 1){
+        } elseif ($clearprotect && 0 == intval($this->getConfigValue('watermark_user_control'))) {
+            $fold = SITEBILL_DOCUMENT_ROOT . '/img/data/nowatermark/';
+
+            foreach ($images as $photo) {
+                if (file_exists($fold . $photo['normal'])) {
+                    $exported[] = array($fold . $photo['normal'], $photo['normal']);
+                } else {
+                    $exported[] = array(SITEBILL_DOCUMENT_ROOT . '/img/data/' . $photo['normal'], $photo['normal']);
+                }
+            }
+        } else {
+            $j = 0;
+            foreach ($images as $photo) {
+                $j++;
+                if ($photo['remote'] === 'true') {
+                    $pathinfo = pathinfo($photo['normal']);
+                    $file_name = $j . '.' . $pathinfo['extension'];
+                    $exported[] = array($fold . $photo['normal'], $photo['normal'], 1);
+                } else {
+                    $exported[] = array(SITEBILL_DOCUMENT_ROOT . '/img/data/' . $photo['normal'], $photo['normal']);
+                }
+            }
+        }
+
+        foreach ($exported as $exp) {
+            if (isset($exp[2]) && $exp[2] == 1) {
                 $zip->addFromString($exp[0], file_get_contents($exp[1]));
-            }else{
+            } else {
                 $zip->addFile($exp[0], $exp[1]);
             }
-			
-		}
-		
+
+        }
+
         $zip->close();
-        if(file_exists($zip_name)){
+        if (file_exists($zip_name)) {
             header("Pragma: public");
             header("Expires: 0");
             header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
             header("Cache-Control: private", false);
             header('Content-type: application/zip');
-            header('Content-Disposition: attachment; filename="'.$zip_name.'"');
+            header('Content-Disposition: attachment; filename="' . $zip_name . '"');
             readfile($zip_name);
             unlink($zip_name);
         }
         exit();
-	}
+    }
 
-    protected function _upAction() {
+    protected function _upAction()
+    {
         $user_id = $this->getSessionUserId();
         $id = intval($this->getRequestValue('id'));
         $rs = '';
@@ -157,7 +167,7 @@ class User_Data_Manager extends Object_Manager {
             $query = 'SELECT max(id) AS mid FROM ' . DB_PREFIX . '_data';
             $stmt = $DBC->query($query);
             $ar = $DBC->fetch($stmt);
-            $mid = (int) $ar['mid'];
+            $mid = (int)$ar['mid'];
             $mid++;
 
             $tryupdate = $this->setUpdatedAtDate($id);
@@ -180,12 +190,13 @@ class User_Data_Manager extends Object_Manager {
     }
 
 
-    protected function _deprotect_imagesAction(){
+    protected function _deprotect_imagesAction()
+    {
 
-        if(1==intval($this->getConfigValue('is_watermark'))){
+        if (1 == intval($this->getConfigValue('is_watermark'))) {
             return $this->formatAnswer_deprotect_images(0, 'denied');
         }
-        if(0==intval($this->getConfigValue('watermark_user_control'))){
+        if (0 == intval($this->getConfigValue('watermark_user_control'))) {
             return $this->formatAnswer_deprotect_images(0, 'denied');
         }
 
@@ -201,19 +212,19 @@ class User_Data_Manager extends Object_Manager {
         $DBC = DBC::getInstance();
         $query = 'SELECT watermark_images FROM ' . DB_PREFIX . '_data WHERE id=?';
         $stmt = $DBC->query($query, array($id));
-        if($stmt){
+        if ($stmt) {
             $ar = $DBC->fetch($stmt);
-            if($ar['watermark_images'] == 0){
+            if ($ar['watermark_images'] == 0) {
                 return $this->formatAnswer_deprotect_images(0, 'nonprotected');
-            }else{
+            } else {
                 $need_clear_watermark = true;
             }
 
-        }else{
+        } else {
             return $this->formatAnswer_deprotect_images(0, 'denied');
         }
 
-        if(!$need_clear_watermark){
+        if (!$need_clear_watermark) {
             return $this->formatAnswer_deprotect_images(0, 'denied');
         }
 
@@ -228,10 +239,10 @@ class User_Data_Manager extends Object_Manager {
         $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, 'id', $id, $form_data['data']);
 
 
-        foreach($form_data[$this->table_name] as $name=>$item){
-            if($item['type']=='uploads'){
-                if(is_array($item['value']) && !empty($item['value'])){
-                    foreach($item['value'] as $val){
+        foreach ($form_data[$this->table_name] as $name => $item) {
+            if ($item['type'] == 'uploads') {
+                if (is_array($item['value']) && !empty($item['value'])) {
+                    foreach ($item['value'] as $val) {
                         $images[] = $val['normal'];
                     }
                 }
@@ -240,23 +251,23 @@ class User_Data_Manager extends Object_Manager {
 
         $query = 'UPDATE ' . DB_PREFIX . '_data SET watermark_images=0 WHERE id=?';
         $stmt = $DBC->query($query, array($id));
-        if(!$stmt){
+        if (!$stmt) {
             return $this->formatAnswer_deprotect_images(0, 'denied');
         }
 
         $restored_count = 0;
 
-        if(!empty($images)){
-            if($this->nowatermark_folder_with_id){
-                $dest=$fold.$id.'/';
-            }else{
-                $dest=$fold;
+        if (!empty($images)) {
+            if ($this->nowatermark_folder_with_id) {
+                $dest = $fold . $id . '/';
+            } else {
+                $dest = $fold;
             }
 
-            foreach ($images as $image){
-                if(file_exists($dest.$image)){
-                    copy($dest.$image, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$image);
-                    @unlink($dest.$image);
+            foreach ($images as $image) {
+                if (file_exists($dest . $image)) {
+                    copy($dest . $image, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $image);
+                    @unlink($dest . $image);
                     $restored_count++;
                 }
             }
@@ -266,37 +277,43 @@ class User_Data_Manager extends Object_Manager {
 
     }
 
-    public function formatAnswer_protect_images($status, $code, $updated_photo_count=0){
-        if($status==0){
-            switch($code){
-                case 'denied' : {
-                   return 'Обшибка. Доступ запрещен.';
-                   break;
+    public function formatAnswer_protect_images($status, $code, $updated_photo_count = 0)
+    {
+        if ($status == 0) {
+            switch ($code) {
+                case 'denied' :
+                {
+                    return 'Обшибка. Доступ запрещен.';
+                    break;
                 }
-                case 'protected' : {
+                case 'protected' :
+                {
                     return 'Обшибка. Защита уже включена.';
-                   break;
+                    break;
                 }
             }
-        }else{
-            return 'Защита включена. Обработано '.$updated_photo_count.' фото';
+        } else {
+            return 'Защита включена. Обработано ' . $updated_photo_count . ' фото';
         }
     }
 
-    public function formatAnswer_deprotect_images($status, $code, $updated_photo_count=0, $restored_photo_count=0){
-        if($status==0){
-            switch($code){
-                case 'denied' : {
-                   return 'Обшибка. Доступ запрещен.';
-                   break;
+    public function formatAnswer_deprotect_images($status, $code, $updated_photo_count = 0, $restored_photo_count = 0)
+    {
+        if ($status == 0) {
+            switch ($code) {
+                case 'denied' :
+                {
+                    return 'Обшибка. Доступ запрещен.';
+                    break;
                 }
-                case 'protected' : {
+                case 'protected' :
+                {
                     return 'Обшибка. Защита не использовалась для этого объекта.';
-                   break;
+                    break;
                 }
             }
-        }else{
-            return 'Защита выключена. Восстановлено '.$restored_photo_count.' из '.$updated_photo_count.' фото';
+        } else {
+            return 'Защита выключена. Восстановлено ' . $restored_photo_count . ' из ' . $updated_photo_count . ' фото';
         }
     }
 
@@ -306,17 +323,17 @@ class User_Data_Manager extends Object_Manager {
      * @return type
      */
     /*public function deprotectImagesFromWatermark($id){
-        
+
         $images = array();
-        
+
         $fold = $this->notwatermarked_folder;
-        
+
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         $form_data = $this->data_model;
-        
+
         $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, 'id', $id, $form_data['data']);
-        
+
         $fields = array();
         foreach($form_data[$this->table_name] as $name=>$item){
             if($item['type']=='uploads'){
@@ -327,19 +344,19 @@ class User_Data_Manager extends Object_Manager {
                 }
             }
         }
-        
+
         if(!empty($images)){
-            
+
             if($this->nowatermark_folder_with_id){
                 $copy_path=$fold.$id.'/';
                 mkdir($copy_path);
             }else{
                 $copy_path=$fold;
             }
-            
+
             foreach ($images as $image){
                 copy(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$image, $copy_path.$image);
-                
+
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/watermark/watermark.php';
                 $Watermark = new Watermark();
                 $Watermark->setPosition($this->getConfigValue('apps.watermark.position'));
@@ -352,11 +369,12 @@ class User_Data_Manager extends Object_Manager {
                 $Watermark->printWatermark(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$image);
             }
         }
-        
+
         return count($images);
     }*/
-    
-    public function protectImagesByWatermark($id){
+
+    public function protectImagesByWatermark($id)
+    {
 
         $images = array();
 
@@ -369,33 +387,33 @@ class User_Data_Manager extends Object_Manager {
         $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, 'id', $id, $form_data['data']);
 
         $fields = array();
-        foreach($form_data[$this->table_name] as $name=>$item){
-            if($item['type']=='uploads'){
-                if(is_array($item['value']) && !empty($item['value'])){
-                    foreach($item['value'] as $val){
+        foreach ($form_data[$this->table_name] as $name => $item) {
+            if ($item['type'] == 'uploads') {
+                if (is_array($item['value']) && !empty($item['value'])) {
+                    foreach ($item['value'] as $val) {
                         $images[] = $val['normal'];
                     }
                 }
             }
         }
-        
+
         $donecount = 0;
 
-        if(!empty($images)){
+        if (!empty($images)) {
 
-            if($this->nowatermark_folder_with_id){
-                $copy_path=$fold.$id.'/';
+            if ($this->nowatermark_folder_with_id) {
+                $copy_path = $fold . $id . '/';
                 mkdir($copy_path);
-            }else{
-                $copy_path=$fold;
+            } else {
+                $copy_path = $fold;
             }
 
-            foreach ($images as $image){
-                if(file_exists($copy_path.$image)){
+            foreach ($images as $image) {
+                if (file_exists($copy_path . $image)) {
                     continue;
                 }
-                
-                copy(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$image, $copy_path.$image);
+
+                copy(SITEBILL_DOCUMENT_ROOT . '/img/data/' . $image, $copy_path . $image);
 
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/watermark/watermark.php';
                 $Watermark = new Watermark();
@@ -406,8 +424,8 @@ class User_Data_Manager extends Object_Manager {
                     $this->getConfigValue('apps.watermark.offset_right'),
                     $this->getConfigValue('apps.watermark.offset_bottom')
                 ));
-                $Watermark->printWatermark(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$image);
-                
+                $Watermark->printWatermark(SITEBILL_DOCUMENT_ROOT . '/img/data/' . $image);
+
                 $donecount += 1;
             }
         }
@@ -415,15 +433,16 @@ class User_Data_Manager extends Object_Manager {
         return $donecount;
     }
 
-    protected function _protect_imagesAction(){
+    protected function _protect_imagesAction()
+    {
 
         $status = 0;
         $error_msg = '';
 
-        if(1==intval($this->getConfigValue('is_watermark'))){
+        if (1 == intval($this->getConfigValue('is_watermark'))) {
             return $this->formatAnswer_protect_images(0, 'denied');
         }
-        if(0==intval($this->getConfigValue('watermark_user_control'))){
+        if (0 == intval($this->getConfigValue('watermark_user_control'))) {
             return $this->formatAnswer_protect_images(0, 'denied');
         }
         $need_watermark = false;
@@ -438,20 +457,20 @@ class User_Data_Manager extends Object_Manager {
         $DBC = DBC::getInstance();
         $query = 'SELECT watermark_images FROM ' . DB_PREFIX . '_data WHERE id=?';
         $stmt = $DBC->query($query, array($id));
-        if($stmt){
+        if ($stmt) {
             $ar = $DBC->fetch($stmt);
-            if($ar['watermark_images'] == 1){
+            if ($ar['watermark_images'] == 1) {
                 return $this->formatAnswer_protect_images(0, 'protected');
-            }else{
+            } else {
                 $need_watermark = true;
             }
 
-        }else{
+        } else {
             return $this->formatAnswer_protect_images(0, 'denied');
         }
 
 
-        if(!$need_watermark){
+        if (!$need_watermark) {
             return $this->formatAnswer_protect_images(0, 'denied');
         }
 
@@ -461,7 +480,7 @@ class User_Data_Manager extends Object_Manager {
 
         $query = 'UPDATE ' . DB_PREFIX . '_data SET watermark_images=1 WHERE id=?';
         $stmt = $DBC->query($query, array($id));
-        if(!$stmt){
+        if (!$stmt) {
             return $this->formatAnswer_protect_images(0, 'denied');
         }
 
@@ -473,7 +492,8 @@ class User_Data_Manager extends Object_Manager {
     }
 
 
-    protected function _edit_doneAction() {
+    protected function _edit_doneAction()
+    {
         $user_id = $this->getSessionUserId();
         $id = intval($this->getRequestValue('id'));
 
@@ -488,7 +508,6 @@ class User_Data_Manager extends Object_Manager {
         } elseif (!$this->check_access_to_data($user_id, $id)) {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
-
 
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
@@ -515,8 +534,6 @@ class User_Data_Manager extends Object_Manager {
             unset($form_data['data']['hot']);
         }
         $form_data['data'] = $data_model->init_model_data_from_request($form_data['data']);
-
-
 
 
         $new_values = $this->getRequestValue('_new_value');
@@ -600,7 +617,8 @@ class User_Data_Manager extends Object_Manager {
         return $rs;
     }
 
-    protected function _editAction() {
+    protected function _editAction()
+    {
         $id = intval($this->getRequestValue('id'));
         $user_id = $this->getSessionUserId();
 
@@ -670,7 +688,8 @@ class User_Data_Manager extends Object_Manager {
         return $rs;
     }
 
-    protected function _new_doneAction() {
+    protected function _new_doneAction()
+    {
         /* $rtoken=$_POST['csrftoken'];
           $rhash=$_POST['csrfhash'];
           var_dump($rtoken);
@@ -685,19 +704,17 @@ class User_Data_Manager extends Object_Manager {
           } */
 
 
-
         $user_id = $this->getSessionUserId();
         $user_id = intval($_SESSION['user_id']);
 
         if ($this->getConfigValue('apps.billing.enable')) {
             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/tariff/tariff.xml') and $this->getConfigValue('apps.tariff.enable') and file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/billing/billing.xml')) {
-                if(!$this->checkAdvAbonent()){
+                if (!$this->checkAdvAbonent()) {
                     $rs = 'Недостаточно средств на счету';
                     return $rs;
                 }
             }
         }
-
 
 
         $rs = '';
@@ -715,7 +732,6 @@ class User_Data_Manager extends Object_Manager {
         if (isset($form_data['data']['fio'])) {
             $form_data['data']['fio']['required'] = 'off';
         }
-
 
 
         if ($this->getConfigValue('special_advert_cost') > 0 && isset($form_data['data']['hot'])) {
@@ -827,7 +843,8 @@ class User_Data_Manager extends Object_Manager {
         return $rs;
     }
 
-    protected function _deleteAction() {
+    protected function _deleteAction()
+    {
         $user_id = $this->getSessionUserId();
         $id = intval($this->getRequestValue('id'));
         $rs = '';
@@ -838,7 +855,7 @@ class User_Data_Manager extends Object_Manager {
         $data_model = new Data_Model();
         $model = $data_model->get_kvartira_model(false, true);
 
-        if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting') && isset($model['data']['archived'])) {
+        if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting') && isset($model['data']['archived'])) {
             $DBC = DBC::getInstance();
             $query = 'UPDATE ' . DB_PREFIX . '_data SET `archived`=1 WHERE `id`=?';
             $stmt = $DBC->query($query, array($id));
@@ -865,7 +882,8 @@ class User_Data_Manager extends Object_Manager {
     /**
      * Выдача фотографий объекта с вотермарком в zip
      */
-    protected function _exportPhotoAction() {
+    protected function _exportPhotoAction()
+    {
         $id = intval($this->getRequestValue('id'));
         $user_id = $this->getSessionUserId();
 
@@ -886,7 +904,8 @@ class User_Data_Manager extends Object_Manager {
     /**
      * Выдача фотографий объекта без вотермарка в zip, если таковые есть
      */
-    protected function _exportPhotoClearAction() {
+    protected function _exportPhotoClearAction()
+    {
         $id = intval($this->getRequestValue('id'));
         $user_id = $this->getSessionUserId();
 
@@ -905,12 +924,11 @@ class User_Data_Manager extends Object_Manager {
     }
 
 
-    protected function _newAction() {
+    protected function _newAction()
+    {
 
         $user_id = $this->getSessionUserId();
         $rs = '';
-
-
 
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
@@ -957,11 +975,10 @@ class User_Data_Manager extends Object_Manager {
                     }
                 }
 
-                if(!$billing->checkAdvAbonent($_SESSION['user_id'])){
+                if (!$billing->checkAdvAbonent($_SESSION['user_id'])) {
                     $rs = 'Недостаточно средств на счету для размещения объекта';
                     return $rs;
                 }
-
 
 
             } else {
@@ -986,7 +1003,8 @@ class User_Data_Manager extends Object_Manager {
         return $rs;
     }
 
-    protected function _defaultAction() {
+    protected function _defaultAction()
+    {
 
         $user_id = $this->getSessionUserId();
         $rs = '';
@@ -999,14 +1017,14 @@ class User_Data_Manager extends Object_Manager {
      * @param void
      * @return string
      */
-    function main($params = array()) {
+    function main($params = array())
+    {
 
         $user_id = $this->getSessionUserId();
         $user_id = intval($_SESSION['user_id']);
         if ($user_id == '' or $user_id < 1) {
             return sprintf(Multilanguage::_('L_NEED_AUTH_WITH_LINK'), '"' . SITEBILL_MAIN_URL . '/login/"');
         }
-
 
 
         $rs = $this->getTopMenu();
@@ -1023,12 +1041,13 @@ class User_Data_Manager extends Object_Manager {
         return $rs;
     }
 
-    function getNonUniqIds($form_data){
+    function getNonUniqIds($form_data)
+    {
         $ids = array();
         $unque_fields = trim($this->getConfigValue('apps.realty.uniq_params'));
 
         $id = 0;
-        if(intval($form_data['id']['value']) != 0){
+        if (intval($form_data['id']['value']) != 0) {
             $id = intval($form_data['id']['value']);
         }
 
@@ -1053,18 +1072,18 @@ class User_Data_Manager extends Object_Manager {
                     }
                 }
             }
-            if($id > 0){
+            if ($id > 0) {
                 $where[] = '`id`<>?';
                 $where_val[] = $id;
             }
         } elseif (isset($form_data['city_id']) && isset($form_data['street_id']) && isset($form_data['number'])) {
             $where[] = '`city_id`=?';
-            $where_val[] = (int) $form_data['city_id']['value'];
+            $where_val[] = (int)$form_data['city_id']['value'];
             $where[] = '`street_id`=?';
-            $where_val[] = (int) $form_data['street_id']['value'];
+            $where_val[] = (int)$form_data['street_id']['value'];
             $where[] = '`number`=?';
             $where_val[] = $form_data['number']['value'];
-            if($id > 0){
+            if ($id > 0) {
                 $where[] = '`id`<>?';
                 $where_val[] = $id;
             }
@@ -1086,16 +1105,18 @@ class User_Data_Manager extends Object_Manager {
         return $ids;
     }
 
-    function checkUniquety($form_data) {
+    function checkUniquety($form_data)
+    {
         $uns = $this->getNonUniqIds($form_data);
         if (count($uns) > 0) {
-            $this->riseError(Multilanguage::_('ADVUNIQUETY_ERROR', 'system').' ('.implode(',', $uns).')');
+            $this->riseError(Multilanguage::_('ADVUNIQUETY_ERROR', 'system') . ' (' . implode(',', $uns) . ')');
             return FALSE;
         }
         return TRUE;
     }
 
-    private function notifyAboutNewAdvert($id) {
+    private function notifyAboutNewAdvert($id)
+    {
 
         /* require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
           $mailer = new Mailer(); */
@@ -1143,7 +1164,8 @@ class User_Data_Manager extends Object_Manager {
         return;
     }
 
-    private function notifyAboutModerationNeed($id, $action = 'new') {
+    private function notifyAboutModerationNeed($id, $action = 'new')
+    {
 
         /* require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
           $mailer = new Mailer(); */
@@ -1190,7 +1212,8 @@ class User_Data_Manager extends Object_Manager {
         return;
     }
 
-    private function notifyUserAboutAdding($user_id, $id, $topic_id) {
+    private function notifyUserAboutAdding($user_id, $id, $topic_id)
+    {
         $DBC = DBC::getInstance();
 
         $useremail = '';
@@ -1272,7 +1295,8 @@ class User_Data_Manager extends Object_Manager {
         return;
     }
 
-    protected function removeTemporaryFields(&$model, $remove_this_names = array()) {
+    protected function removeTemporaryFields(&$model, $remove_this_names = array())
+    {
         if (is_array($remove_this_names) && count($remove_this_names) > 0) {
             foreach ($remove_this_names as $r) {
                 unset($model[$r]);
@@ -1287,14 +1311,15 @@ class User_Data_Manager extends Object_Manager {
      * @param int $data_id
      * @return boolean
      */
-    function check_access_to_data($user_id, $data_id) {
+    function check_access_to_data($user_id, $data_id)
+    {
         $DBC = DBC::getInstance();
         $enable_curator_mode = false;
         if (1 == $this->getConfigValue('enable_curator_mode')) {
             $enable_curator_mode = true;
             $has_access = 0;
 
-            if(1 === intval($this->getConfigValue('curator_mode_fullaccess'))){
+            if (1 === intval($this->getConfigValue('curator_mode_fullaccess'))) {
 
                 $query = 'SELECT COUNT(d.id) AS _cnt FROM ' . DB_PREFIX . '_data d LEFT JOIN ' . DB_PREFIX . '_user u USING(user_id) WHERE d.id=? AND u.parent_user_id=?';
                 $stmt = $DBC->query($query, array($data_id, $user_id));
@@ -1304,7 +1329,7 @@ class User_Data_Manager extends Object_Manager {
                         $has_access = 1;
                     }
                 }
-            }else{
+            } else {
                 $query = 'SELECT COUNT(id) AS _cnt FROM ' . DB_PREFIX . '_cowork WHERE coworker_id=? AND object_type=? AND id=?';
                 $stmt = $DBC->query($query, array($user_id, 'data', $data_id));
                 if ($stmt) {
@@ -1323,7 +1348,7 @@ class User_Data_Manager extends Object_Manager {
 
         $where[] = '`id`=?';
         $where_val[] = $data_id;
-        if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
+        if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting')) {
             $where[] = '`archived`=0';
         }
 
@@ -1361,11 +1386,12 @@ class User_Data_Manager extends Object_Manager {
      * @param int $data_id
      * @return boolean
      */
-    function check_access_to_aggregated_data($user_id, $data_id) {
+    function check_access_to_aggregated_data($user_id, $data_id)
+    {
         $DBC = DBC::getInstance();
 
         $query = 'SELECT user_id FROM ' . DB_PREFIX . '_user WHERE puser_id=?';
-        if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
+        if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting')) {
             $query = "SELECT id FROM " . DB_PREFIX . "_data WHERE user_id IN (SELECT user_id FROM " . DB_PREFIX . "_user WHERE puser_id=? OR user_id=?) AND id=? AND archived=0";
         } else {
             $query = "SELECT id FROM " . DB_PREFIX . "_data WHERE user_id IN (SELECT user_id FROM " . DB_PREFIX . "_user WHERE puser_id=? OR user_id=?) AND id=?";
@@ -1389,7 +1415,8 @@ class User_Data_Manager extends Object_Manager {
      * @param int $current_category_id current category id
      * @return string
      */
-    function grid_e($user_id, $current_category_id) {
+    function grid_e($user_id, $current_category_id)
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
         $category_tree = $Structure_Manager->get_category_tree_control($current_category_id, $user_id);
@@ -1416,7 +1443,6 @@ class User_Data_Manager extends Object_Manager {
         }
 
 
-
         $rs .= '</div>';
         //global $smarty;
         //$smarty->assign();
@@ -1430,7 +1456,8 @@ class User_Data_Manager extends Object_Manager {
      * @param int $user_id
      * @return string
      */
-    function get_data_grid($user_id, $current_category_id = false) {
+    function get_data_grid($user_id, $current_category_id = false)
+    {
 
         $FM = new frontend_main();
         $params = $FM->gatherRequestParams();
@@ -1477,7 +1504,6 @@ class User_Data_Manager extends Object_Manager {
         $grid_constructor = $this->_getGridConstructor();
 
 
-
         /* $params['topic_id'] = $this->getRequestValue('topic_id');
           $params['order'] = $this->getRequestValue('order');
           $params['region_id'] = $this->getRequestValue('region_id');
@@ -1497,14 +1523,14 @@ class User_Data_Manager extends Object_Manager {
           } */
 
         $params['active'] = $this->getRequestValue('active');
-        $params['id'] = (int) $this->getRequestValue('id');
+        $params['id'] = (int)$this->getRequestValue('id');
 
         //$params['per_page'] = 2;
 
-        if ((int) $this->getRequestValue('page_limit') != 0) {
-            $params['page_limit'] = (int) $this->getRequestValue('page_limit');
-        }else{
-            if(0!=intval($this->getConfigValue('per_page_account'))){
+        if ((int)$this->getRequestValue('page_limit') != 0) {
+            $params['page_limit'] = (int)$this->getRequestValue('page_limit');
+        } else {
+            if (0 != intval($this->getConfigValue('per_page_account'))) {
                 $params['page_limit'] = intval($this->getConfigValue('per_page_account'));
             }
         }
@@ -1518,7 +1544,7 @@ class User_Data_Manager extends Object_Manager {
 
             $DBC = DBC::getInstance();
 
-            if(1 == $this->getConfigValue('curator_mode_fullaccess')){
+            if (1 == $this->getConfigValue('curator_mode_fullaccess')) {
                 $query = 'SELECT user_id FROM ' . DB_PREFIX . '_user WHERE parent_user_id=?';
                 $stmt = $DBC->query($query, array($user_id));
                 if ($stmt) {
@@ -1527,7 +1553,7 @@ class User_Data_Manager extends Object_Manager {
                     }
                 }
                 $params['coworked_users'] = $coworked;
-            }else{
+            } else {
                 $query = 'SELECT id FROM ' . DB_PREFIX . '_cowork WHERE coworker_id=? AND object_type=?';
                 $stmt = $DBC->query($query, array($user_id, 'data'));
                 if ($stmt) {
@@ -1539,11 +1565,10 @@ class User_Data_Manager extends Object_Manager {
             }
 
 
-
         }
 
 
-        $params['pager_url']='account/data';
+        $params['pager_url'] = 'account/data';
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
@@ -1589,7 +1614,8 @@ class User_Data_Manager extends Object_Manager {
      * @param mixed $current_category_id
      * @return mixed
      */
-    function getOfferList($user_id, $current_category_id = false) {
+    function getOfferList($user_id, $current_category_id = false)
+    {
         $ret = array();
         if ($current_category_id) {
             $query = 'SELECT * FROM ' . DB_PREFIX . '_data WHERE user_id=' . $user_id . ' and topic_id = ' . $current_category_id;
@@ -1611,7 +1637,8 @@ class User_Data_Manager extends Object_Manager {
      * @param array $form_data form data
      * @return boolean
      */
-    function add_data($form_data, $language_id = 0) {
+    function add_data($form_data, $language_id = 0)
+    {
 
         $curator_id = 0;
 
@@ -1648,7 +1675,6 @@ class User_Data_Manager extends Object_Manager {
         }
 
 
-
         $moderation_mode = false;
         if (1 == $this->getConfigValue('moderate_first')) {
             $moderation_mode = true;
@@ -1666,7 +1692,7 @@ class User_Data_Manager extends Object_Manager {
         }
 
         if ($moderation_mode) {
-            if(isset($form_data['active'])){
+            if (isset($form_data['active'])) {
                 $form_data['active']['value'] = 0;
             }
         }
@@ -1743,7 +1769,7 @@ class User_Data_Manager extends Object_Manager {
             if ($form_item['type'] == 'select_by_query_multi') {
                 $vals = $form_item['value'];
                 if (!is_array($vals)) {
-                    $vals = (array) $mutiitems[$k];
+                    $vals = (array)$mutiitems[$k];
                 }
                 if (!empty($vals)) {
                     $mutiitems[$k] = $vals;
@@ -1826,7 +1852,7 @@ class User_Data_Manager extends Object_Manager {
                     }
                 }
             }
-        }else{
+        } else {
 
         }
 
@@ -1842,12 +1868,12 @@ class User_Data_Manager extends Object_Manager {
                 $account->minusMoney($this->getSessionUserId(), $this->getConfigValue('special_advert_cost'));
             }
 
-            if ($this->getConfigValue('apps.twitter.enable') && 1 == (int) $this->getConfigValue('apps.twitter.allow_posting_from_account')) {
+            if ($this->getConfigValue('apps.twitter.enable') && 1 == (int)$this->getConfigValue('apps.twitter.allow_posting_from_account')) {
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/twitter/admin/admin.php';
                 $Twitter = new twitter_admin();
                 $Twitter->sendTwit($new_record_id);
             }
-            if ($this->getConfigValue('apps.telegram.enable') && 1 == (int) $this->getConfigValue('apps.telegram.allow_posting_from_account')) {
+            if ($this->getConfigValue('apps.telegram.enable') && 1 == (int)$this->getConfigValue('apps.telegram.allow_posting_from_account')) {
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/telegram/admin/admin.php';
                 $Telegram = new telegram_admin();
                 $Telegram->sendPost($new_record_id);
@@ -1864,7 +1890,8 @@ class User_Data_Manager extends Object_Manager {
      * @param array $form_data form data
      * @return boolean
      */
-    function edit_data($form_data, $language_id = 0, $primary_key_value = false) {
+    function edit_data($form_data, $language_id = 0, $primary_key_value = false)
+    {
         $id = intval($this->getRequestValue('id'));
         if ($id == 0) {
             return false;
@@ -1878,7 +1905,7 @@ class User_Data_Manager extends Object_Manager {
         $account = new Account();
         $user_balance = $account->getAccountValue($this->getSessionUserId());
 
-        if(isset($form_data['price'])){
+        if (isset($form_data['price'])) {
             $form_data['price']['value'] = str_replace(' ', '', $form_data['price']['value']);
         }
 
@@ -1896,11 +1923,11 @@ class User_Data_Manager extends Object_Manager {
                 $account->minusMoney($this->getSessionUserId(), $this->getConfigValue('special_advert_cost'));
             }
         }
-        if(isset($form_data['active']) && ($form_data_tmp['active']['value'] == 0 and $form_data['active']['value'] == 1)){
-            if(!$this->checkAdvAbonent($id)){
+        if (isset($form_data['active']) && ($form_data_tmp['active']['value'] == 0 and $form_data['active']['value'] == 1)) {
+            if (!$this->checkAdvAbonent($id)) {
                 $this->riseError('Вы не можете изменить статус активности');
                 return;
-            }else{
+            } else {
                 $this->setAdvAbonent($id);
             }
 
@@ -1959,7 +1986,6 @@ class User_Data_Manager extends Object_Manager {
         }
 
 
-
         if ($moderation_mode) {
             $this->notifyAboutModerationNeed($id, 'edit');
         }
@@ -1999,7 +2025,7 @@ class User_Data_Manager extends Object_Manager {
             if ($form_item['type'] == 'select_by_query_multi') {
                 $vals = $form_item['value'];
                 if (!is_array($vals)) {
-                    $vals = (array) $mutiitems[$k];
+                    $vals = (array)$mutiitems[$k];
                 }
                 if (!empty($vals)) {
                     $mutiitems[$k] = $vals;
@@ -2029,7 +2055,6 @@ class User_Data_Manager extends Object_Manager {
                 }
             }
         }
-
 
 
         if (1 == $this->getConfigValue('apps.seo.data_alias_enable') && ((isset($form_data['translit_alias']) && $form_data['translit_alias']['value'] == '') || !isset($form_data['translit_alias']))) {
@@ -2083,17 +2108,18 @@ class User_Data_Manager extends Object_Manager {
                     }
                 }
             }
-        }else{
+        } else {
 
         }
     }
 
-    public function checkAdvAbonent($user_id = 0, $id = 0) {
-        if ( $user_id === 0 ) {
+    public function checkAdvAbonent($user_id = 0, $id = 0)
+    {
+        if ($user_id === 0) {
             $user_id = $this->getSessionUserId();
         }
 
-        if ( file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/billing/lib/billing.php') ) {
+        if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/billing/lib/billing.php')) {
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/billing/lib/billing.php');
             $billing = new Billing();
             return $billing->checkAdvAbonent($user_id, $id);
@@ -2101,8 +2127,9 @@ class User_Data_Manager extends Object_Manager {
         return true;
     }
 
-    protected function setAdvAbonent($id, $user_id = 0){
-        if ( $user_id === 0 ) {
+    protected function setAdvAbonent($id, $user_id = 0)
+    {
+        if ($user_id === 0) {
             $user_id = $this->getSessionUserId();
         }
 
@@ -2116,7 +2143,8 @@ class User_Data_Manager extends Object_Manager {
     }
 
 
-    public function setStatusDate($id, $date = '') {
+    public function setStatusDate($id, $date = '')
+    {
         $DBC = DBC::getInstance();
         if ($date == '') {
             $date = date('Y-m-d H:i:s', time());
@@ -2125,7 +2153,8 @@ class User_Data_Manager extends Object_Manager {
         $stmt = $DBC->query($query, array($date, $id));
     }
 
-    public function setUpdatedAtDate($id) {
+    public function setUpdatedAtDate($id)
+    {
         $field = trim($this->getConfigValue('apps.realty.updated_at_field'));
         /*
          * $type = 1|0 - 1-date, 0-dtdatetime
@@ -2162,7 +2191,8 @@ class User_Data_Manager extends Object_Manager {
      * @param array $form_data
      * @return boolean
      */
-    function check_data($form_data) {
+    function check_data($form_data)
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         if (!$data_model->check_data($form_data)) {
@@ -2192,7 +2222,8 @@ class User_Data_Manager extends Object_Manager {
      * @param void
      * @return string
      */
-    function getTopMenu() {
+    function getTopMenu()
+    {
         if ($this->getRequestValue('do') != 'new' and $this->getRequestValue('do') != 'edit') {
             $rs = '';
             $rs .= '<a class="btn btn-primary" href="' . SITEBILL_MAIN_URL . '/account/data/?do=new">' . Multilanguage::_('L_ADD_ADV') . '</a>';
@@ -2203,7 +2234,8 @@ class User_Data_Manager extends Object_Manager {
         return '';
     }
 
-    function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
+    function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php')
+    {
         $_SESSION['allow_disable_root_structure_select'] = true;
         if (1 == $this->getConfigValue('divide_step_form')) {
             return $this->_get_form_step_divided($form_data, $do);
@@ -2212,7 +2244,8 @@ class User_Data_Manager extends Object_Manager {
         }
     }
 
-    function getSteps($form_data, $step) {
+    function getSteps($form_data, $step)
+    {
 
         $default_tab_name = $this->getConfigValue('default_tab_name');
         $tabs = array($default_tab_name);
@@ -2237,8 +2270,8 @@ class User_Data_Manager extends Object_Manager {
         return $tabs_array;
     }
 
-    function _get_form_step_divided($form_data = array(), $do = 'new', $language_id = 0, $button_title = '') {
-
+    function _get_form_step_divided($form_data = array(), $do = 'new', $language_id = 0, $button_title = '')
+    {
 
 
         //$step=(int)$this->getRequestValue('step')
@@ -2247,7 +2280,7 @@ class User_Data_Manager extends Object_Manager {
             preg_replace('/^' . trim(SITEBILL_MAIN_URL, '/') . '/', '', $requesturi);
         }
         if (preg_match('/step(\d+)$/', $requesturi, $matches)) {
-            $step = (int) $matches[1];
+            $step = (int)$matches[1];
         } else {
             $step = 1;
         }
@@ -2297,8 +2330,8 @@ class User_Data_Manager extends Object_Manager {
 
         $el = $form_generator->compile_form_elements($form_data);
 
-        $topic_id = (int) $form_data['topic_id']['value'];
-        $current_id = (int) $form_data['id']['value'];
+        $topic_id = (int)$form_data['topic_id']['value'];
+        $current_id = (int)$form_data['id']['value'];
 
         if ($topic_id != 0 && $current_id != 0) {
 
@@ -2312,7 +2345,7 @@ class User_Data_Manager extends Object_Manager {
             $rs .= '<form id="step_form" method="post" action="' . SITEBILL_MAIN_URL . '/account/data/step' . $steps_total . '" enctype="multipart/form-data" class="user_add_form">';
         }
 
-        if ($this->getConfigValue('advert_cost') > 0 and ( $do == 'new' or $do == 'new_done' )) {
+        if ($this->getConfigValue('advert_cost') > 0 and ($do == 'new' or $do == 'new_done')) {
 
             $rs .= '<p><b>Стоимость размещения одного объявления ' . $this->getConfigValue('advert_cost') . ' ' . $this->getConfigValue('ue_name') . '</b></p>';
 
@@ -2324,11 +2357,9 @@ class User_Data_Manager extends Object_Manager {
         }
 
 
-
         if ($this->getError()) {
             $smarty->assign('form_error', $form_generator->get_error_message_row($this->GetErrorMessage()));
         }
-
 
 
         $el['form_header'] = $rs;
@@ -2375,7 +2406,8 @@ class User_Data_Manager extends Object_Manager {
         return $smarty->fetch($tpl_name);
     }
 
-    function _get_form_standart($form_data = array(), $do = 'new', $language_id = 0, $button_title = '') {
+    function _get_form_standart($form_data = array(), $do = 'new', $language_id = 0, $button_title = '')
+    {
 
         global $smarty;
         if ($button_title == '') {
@@ -2400,8 +2432,8 @@ class User_Data_Manager extends Object_Manager {
         }
 
 
-        $topic_id = (int) $form_data['topic_id']['value'];
-        $current_id = (int) $form_data['id']['value'];
+        $topic_id = (int)$form_data['topic_id']['value'];
+        $current_id = (int)$form_data['id']['value'];
 
         if ($topic_id != 0 && $current_id != 0) {
             $href = $this->getRealtyHREF($current_id, true, array('topic_id' => $topic_id, 'alias' => $form_data['translit_alias']['value']));
@@ -2410,7 +2442,7 @@ class User_Data_Manager extends Object_Manager {
 
         $rs .= '<form method="post" class="form-horizontal" action="' . SITEBILL_MAIN_URL . '/account/data' . SiteBill::$_trslashes . '" enctype="multipart/form-data">';
 
-        if ($this->getConfigValue('advert_cost') > 0 and ( $do == 'new' or $do == 'new_done' )) {
+        if ($this->getConfigValue('advert_cost') > 0 and ($do == 'new' or $do == 'new_done')) {
 
             $rs .= '<p><b>Стоимость размещения одного объявления ' . $this->getConfigValue('advert_cost') . ' ' . $this->getConfigValue('ue_name') . '</b></p>';
 
@@ -2420,7 +2452,6 @@ class User_Data_Manager extends Object_Manager {
                 return $rs;
             }
         }
-
 
 
         if ($this->getError()) {
@@ -2466,7 +2497,8 @@ class User_Data_Manager extends Object_Manager {
         return $smarty->fetch($tpl_name);
     }
 
-    protected function createTranslitAliasByFields($id, $fields_for_alias) {
+    protected function createTranslitAliasByFields($id, $fields_for_alias)
+    {
         $alias = '';
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
@@ -2499,14 +2531,15 @@ class User_Data_Manager extends Object_Manager {
         return $alias;
     }
 
-    protected function makeUniqueAlias($alias, $id) {
+    protected function makeUniqueAlias($alias, $id)
+    {
         $is_similar_alias_exists = false;
         $DBC = DBC::getInstance();
         $query = "SELECT COUNT(*) AS cnt FROM " . DB_PREFIX . "_data WHERE translit_alias=? AND id<>? ORDER BY translit_alias DESC LIMIT 1";
         $stmt = $DBC->query($query, array($alias, $id));
         if ($stmt) {
             $ar = $DBC->fetch($stmt);
-            if ((int) $ar['cnt'] > 0) {
+            if ((int)$ar['cnt'] > 0) {
                 $is_similar_alias_exists = true;
             }
         }
@@ -2517,7 +2550,7 @@ class User_Data_Manager extends Object_Manager {
             if ($stmt) {
                 $ar = $DBC->fetch($stmt);
                 if (preg_match('/' . $alias . '-(\d+)/', $ar['translit_alias'], $matches)) {
-                    $alias .= '-' . ((int) $matches[1] + 1);
+                    $alias .= '-' . ((int)$matches[1] + 1);
                 } else {
                     $alias .= '-1';
                 }
@@ -2527,11 +2560,12 @@ class User_Data_Manager extends Object_Manager {
         return $alias;
     }
 
-    function mass_delete_data($table_name, $primary_key, $ids) {
+    function mass_delete_data($table_name, $primary_key, $ids)
+    {
 
-        $cuser_id = (int) $_SESSION['user_id'];
+        $cuser_id = (int)$_SESSION['user_id'];
 
-        if($cuser_id==0){
+        if ($cuser_id == 0) {
             return '';
         }
         $errors = '';
@@ -2545,11 +2579,11 @@ class User_Data_Manager extends Object_Manager {
         }
 
         if (count($ids) > 0) {
-            if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
+            if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting')) {
                 $DBC = DBC::getInstance();
                 $query = 'UPDATE ' . DB_PREFIX . '_data SET archived=1 WHERE `id` IN (' . implode(',', $ids) . ')';
                 $stmt = $DBC->query($query);
-                header('location: '.SITEBILL_MAIN_URL.'/account/data/');
+                header('location: ' . SITEBILL_MAIN_URL . '/account/data/');
                 exit();
             } else {
                 foreach ($ids as $id) {
@@ -2578,9 +2612,9 @@ class User_Data_Manager extends Object_Manager {
                     }
                 }
                 if ($errors != '') {
-                    $rs .= $errors . '<div align="center"><a href="'.SITEBILL_MAIN_URL.'/accoutn/data/">ОК</a></div>';
+                    $rs .= $errors . '<div align="center"><a href="' . SITEBILL_MAIN_URL . '/accoutn/data/">ОК</a></div>';
                 } else {
-                    header('location: '.SITEBILL_MAIN_URL.'/account/data/');
+                    header('location: ' . SITEBILL_MAIN_URL . '/account/data/');
                     exit();
                 }
                 return $rs;
@@ -2589,7 +2623,8 @@ class User_Data_Manager extends Object_Manager {
         }
     }
 
-    protected function saveTranslitAlias($id) {
+    protected function saveTranslitAlias($id)
+    {
         $new_alias = '';
         $old_alias = '';
         if (1 == $this->getConfigValue('apps.seo.allow_custom_realty_aliases')) {

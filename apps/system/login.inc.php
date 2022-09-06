@@ -6,7 +6,7 @@ class Sitebill_Auth extends SiteBill {
      * Constructor
      */
     function Sitebill_Auth() {
-        $this->SiteBill();
+        parent::__construct();
         $this->hardmode=false;
     }
 
@@ -21,8 +21,8 @@ class Sitebill_Auth extends SiteBill {
     			$query='SELECT `auth_salt` FROM '.DB_PREFIX.'_user WHERE user_id=?';
     			$stmt=$DBC->query($query, array($_COOKIE["logged_user_id"]));
     			if(!$stmt){
-    				setcookie('logged_user_id', '', time()-60*60*24*5, '/', self::$_cookiedomain);
-    				setcookie('logged_user_token', '', time()-60*60*24*5, '/', self::$_cookiedomain);
+    				setcookie('logged_user_id', '', time()-$this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+    				setcookie('logged_user_token', '', time()-$this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
     				return false;
     			}
     			$ar=$DBC->fetch($stmt);
@@ -30,16 +30,16 @@ class Sitebill_Auth extends SiteBill {
     				$auth_salt=md5(rand(10000, 99999).time());
     				$sql = 'UPDATE '.DB_PREFIX.'_user SET `auth_salt`=? WHERE `user_id`=? ';
     				$stmt=$DBC->query($sql, array($auth_salt, $_COOKIE["logged_user_id"]));
-    				setcookie('logged_user_id', '', time()-60*60*24*5, '/', self::$_cookiedomain);
-    				setcookie('logged_user_token', '', time()-60*60*24*5, '/', self::$_cookiedomain);
+    				setcookie('logged_user_id', '', time()-$this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+    				setcookie('logged_user_token', '', time()-$this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
     				return false;
     			}else{
     				$auth_salt=$ar['auth_salt'];
     			}
     			$test_hash=md5((int)$_COOKIE["logged_user_id"].' '.$_SERVER['REMOTE_ADDR'].' '.$_SERVER['HTTP_USER_AGENT'].' '.$auth_salt);
     			if($test_hash!=$_COOKIE["logged_user_token"]){
-    				setcookie('logged_user_id', '', time()-60*60*24*5, '/', self::$_cookiedomain);
-    				setcookie('logged_user_token', '', time()-60*60*24*5, '/', self::$_cookiedomain);
+    				setcookie('logged_user_id', '', time()-$this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+    				setcookie('logged_user_token', '', time()-$this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
     				return false;
     			}
     			$query='SELECT u.login, u.password, u.fio, u.group_id, u.user_id, g.system_name FROM '.DB_PREFIX.'_user u LEFT JOIN '.DB_PREFIX.'_group g USING(group_id) WHERE u.user_id=? LIMIT 1';
@@ -56,8 +56,8 @@ class Sitebill_Auth extends SiteBill {
     			require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/permission/permission.php');
     			$permission = new Permission();
     			if ( !$permission->get_access($ar['user_id'], 'admin_panel', 'login') ) {
-    				setcookie('logged_user_id', '', time()-60*60*24*5, '/', self::$_cookiedomain);
-    				setcookie('logged_user_token', '', time()-60*60*24*5, '/', self::$_cookiedomain);
+    				setcookie('logged_user_id', '', time()-$this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+    				setcookie('logged_user_token', '', time()-$this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
                     return false;
     			}
 
@@ -114,8 +114,8 @@ class Sitebill_Auth extends SiteBill {
     		}
 
     	}
-    	setcookie('logged_user_id', '', time()-60*60*24*5, '/', self::$_cookiedomain);
-    	setcookie('logged_user_token', '', time()-60*60*24*5, '/', self::$_cookiedomain);
+    	setcookie('logged_user_id', '', time()-$this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+    	setcookie('logged_user_token', '', time()-$this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
     	return false;
     }
 
@@ -141,8 +141,8 @@ class Sitebill_Auth extends SiteBill {
                     $permission = new Permission();
                     if ( !$permission->get_access($_SESSION['user_id_value'], 'admin_panel', 'login') ) {
                         unset($_SESSION['user_id']);
-                        setcookie('logged_user_id', '', time()-60*60*24*5, '/', self::$_cookiedomain);
-                        setcookie('logged_user_token', '', time()-60*60*24*5, '/', self::$_cookiedomain);
+                        setcookie('logged_user_id', '', time()-$this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+                        setcookie('logged_user_token', '', time()-$this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
                         $this->riseError('not login');
                         return $this->getAuthForm();
                     }*/
@@ -212,8 +212,8 @@ class Sitebill_Auth extends SiteBill {
                     unset($_SESSION['current_user_group_id']);
                     unset($_SESSION['current_user_name']);
                     //unset($_COOKIE['logged_user_id'])
-                    setcookie('logged_user_id', '', time()-60*60*24*5, '/', SiteBill::$_cookiedomain);
-                    setcookie('logged_user_token', '', time()-60*60*24*5, '/', SiteBill::$_cookiedomain);
+                    setcookie('logged_user_id', '', time()-$this->get_cookie_duration_in_sec(), '/', SiteBill::$_cookiedomain);
+                    setcookie('logged_user_token', '', time()-$this->get_cookie_duration_in_sec(), '/', SiteBill::$_cookiedomain);
     				$this->riseError('not login');
     				return $this->getAuthForm();
     			}
@@ -372,8 +372,8 @@ class Sitebill_Auth extends SiteBill {
 
         				$str=md5($id.' '.$_SERVER['REMOTE_ADDR'].' '.$_SERVER['HTTP_USER_AGENT'].' '.$auth_salt);
         			}
-        			setcookie('logged_user_id', $id, time()+60*60*24*5, '/', self::$_cookiedomain);
-        			setcookie('logged_user_token', $str, time()+60*60*24*5, '/', self::$_cookiedomain);
+        			setcookie('logged_user_id', $id, time()+$this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+        			setcookie('logged_user_token', $str, time()+$this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
         		}
         		return true;
         	}

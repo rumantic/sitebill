@@ -10,7 +10,7 @@ class angular_update extends angular_admin
      */
     function __construct()
     {
-        $this->sitebill();
+        parent::__construct();
     }
 
     function pre_update () {

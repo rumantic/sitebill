@@ -6,7 +6,7 @@ class config_update extends SiteBill {
      * Construct
      */
     function __construct() {
-        $this->sitebill();
+        parent::__construct();
     }
 
     function main() {
@@ -36,6 +36,7 @@ class config_update extends SiteBill {
         // Устанавливаем параметрам публичный доступ
         $config_admin->set_public_access('allow_register_account');
         $config_admin->set_public_access('allow_remind_password');
+        $config_admin->set_public_access('apps.realty.enable_guest_mode');
 
 
         //Меняем тип полей-чекбоксов на правильное значение vtype
@@ -195,6 +196,7 @@ class config_update extends SiteBill {
             'apps.faq.enable',
             'apps.mapviewer.enable',
             'apps.rss.enable',
+            'apps.rss.data_mode',
             'apps.search.enable',
             'apps.shop.user_limit_enable',
             'apps.sms.test_mode',

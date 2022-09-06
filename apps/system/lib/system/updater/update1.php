@@ -8,14 +8,14 @@ class Update1 extends SiteBill {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
     }
-    
+
     function main () {
         //$this->update_data_img();
         //$this->update_street_id();
     }
-    
+
     function update_street_id () {
     	$DBC=DBC::getInstance();
     	$ra=array();
@@ -37,13 +37,13 @@ class Update1 extends SiteBill {
         	}
         }
     }
-    
+
     function get_street_id ( $street ) {
     	$DBC=DBC::getInstance();
         $street = trim($street);
         $query = 'SELECT * FROM '.DB_PREFIX.'_street WHERE name=?';
         $stmt=$DBC->query($query, array($street));
-        
+
         if($stmt){
         	$ar=$DBC->fetch($stmt);
         	if ( $ar['street_id'] > 0 ) {
@@ -52,7 +52,7 @@ class Update1 extends SiteBill {
         }
         return false;
     }
-    
+
     /**
      * Update image
      * move from data -> data_image
@@ -66,8 +66,8 @@ class Update1 extends SiteBill {
         		$ra[$ar['id']] = $ar;
         	}
         }
-        
-        
+
+
         //insert records into _image
         foreach ( $ra as $id => $item_array ) {
             for ( $i = 1; $i <= 5; $i++ ) {
@@ -75,15 +75,15 @@ class Update1 extends SiteBill {
                     $query = "insert into ".DB_PREFIX."_image (normal, preview) values ('{$item_array['img'.$i]}', '{$item_array['img'.$i.'_preview']}')";
                     $stmt=$DBC->query($query);
                     $image_id = $DBC->lastInsertId();
-                    
+
                     //link in table _data_image
                     $query = "insert into ".DB_PREFIX."_data_image (id, image_id, sort_order) values ($id, $image_id, $image_id)";
                     $stmt=$DBC->query($query);
                 }
             }
         }
-        
-        
-        
+
+
+
     }
 }

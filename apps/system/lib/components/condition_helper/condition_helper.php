@@ -3,28 +3,30 @@
  * Обработка условий принятых для маппинга в выгрузках. Основа - ЦИАН2.
  */
 
-class condition_helper {
-    
+class condition_helper
+{
+
     /**
      * Check group of conditions
      * @param array $cond
      * @param array $data_item
      * @return boolean
      */
-    public function checkCondition($cond, $data_item){
-        if(!is_array($cond) || empty($cond)){
+    public function checkCondition($cond, $data_item)
+    {
+        if (!is_array($cond) || empty($cond)) {
             return false;
         }
         $result_common = false;
-        foreach($cond as $oc){
+        foreach ($cond as $oc) {
             $result_or = true;
-            if(is_array($oc[0])){
+            if (is_array($oc[0])) {
                 $result_and = true;
-                foreach($oc as $anc){
+                foreach ($oc as $anc) {
                     $res = $this->checkOneCondition($anc, $data_item);
                     $result_or = $result_or && $res;
                 }
-            }else{
+            } else {
                 $result_or = $this->checkOneCondition($oc, $data_item);
 
             }
@@ -32,20 +34,21 @@ class condition_helper {
         }
         return $result_common;
     }
-    
+
     /**
      * Check one condition entry
      * @param array $oc
      * @param array $data_item
      * @return boolean
      */
-    protected function checkOneCondition($oc, $data_item){
+    protected function checkOneCondition($oc, $data_item)
+    {
         $f = $oc[0];
         $o = $oc[1];
         $v = $oc[2];
         return $this->isConditionValid($f, $o, $v, $data_item);
     }
-    
+
     /**
      * Is the concrete condition entry valid
      * @param string $f Testing field name
@@ -54,112 +57,128 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionValid($f, $o, $v, $data_item){
+    protected function isConditionValid($f, $o, $v, $data_item)
+    {
         //Возвращаем несовпадение при отсуствии свойства
-        if(!isset($data_item[$f])){
+        if (!isset($data_item[$f])) {
             return false;
         }
-        switch($o){
-            case '=' : {
+        switch ($o) {
+            case '=' :
+            {
                 $method = 'isConditionEQ';
                 $val = $v;
                 break;
             }
-            case '!=' : {
+            case '!=' :
+            {
                 $method = 'isConditionNEQ';
                 $val = $v;
                 break;
             }
-            case '>' : {
+            case '>' :
+            {
                 $method = 'isConditionGT';
                 $val = $v;
                 break;
             }
-            case '<' : {
+            case '<' :
+            {
                 $method = 'isConditionLT';
                 $val = $v;
                 break;
             }
-            case '>=' : {
+            case '>=' :
+            {
                 $method = 'isConditionGTEQ';
                 $val = $v;
                 break;
             }
-            case '<=' : {
+            case '<=' :
+            {
                 $method = 'isConditionLTEQ';
                 $val = $v;
                 break;
             }
-            case 'IN' : {
+            case 'IN' :
+            {
                 $method = 'isConditionIN';
-                if(false != strpos($v, ',')){
+                if (false != strpos($v, ',')) {
                     $val = explode(',', $v);
-                    foreach($val as $k => $x){
+                    foreach ($val as $k => $x) {
                         $val[$k] = trim($x);
                     }
                     $method = 'isConditionINSet';
-                }else{
+                } else {
                     list($v1, $v2) = explode('-', $v);
                     $val = array(trim($v1), trim($v2));
                 }
                 break;
             }
-            case '!IN' : {
-                $method='isConditionNIN';
-                if(false != strpos($v, ',')){
+            case '!IN' :
+            {
+                $method = 'isConditionNIN';
+                if (false != strpos($v, ',')) {
                     $val = explode(',', $v);
-                    foreach($val as $k => $x){
+                    foreach ($val as $k => $x) {
                         $val[$k] = trim($x);
                     }
                     $method = 'isConditionNINSet';
-                }else{
+                } else {
                     list($v1, $v2) = explode('-', $v);
                     $val = array(trim($v1), trim($v2));
                 }
                 break;
             }
-            case 'EMPTY' : {
+            case 'EMPTY' :
+            {
                 $method = 'isConditionEMPTY';
                 $val = '';
                 break;
             }
-            case 'ZERO' : {
+            case 'ZERO' :
+            {
                 $method = 'isConditionZERO';
                 $val = '';
                 break;
             }
-            case 'EMPTYZ' : {
+            case 'EMPTYZ' :
+            {
                 $method = 'isConditionEMPTYZ';
                 $val = '';
                 break;
             }
-            case '!EMPTY' : {
+            case '!EMPTY' :
+            {
                 $method = 'isConditionNEMPTY';
                 $val = '';
                 break;
             }
-            case '!ZERO' : {
+            case '!ZERO' :
+            {
                 $method = 'isConditionNZERO';
                 $val = '';
                 break;
             }
-            case '!EMPTYZ' : {
+            case '!EMPTYZ' :
+            {
                 $method = 'isConditionNEMPTYZ';
                 $val = '';
                 break;
             }
-            default : {
+            default :
+            {
                 $method = '';
                 $val = '';
             }
         }
-        if($method != ''){
+        if ($method != '') {
             return $this->$method($f, $val, $data_item);
-        }else{
+        } else {
             return false;
         }
     }
-    
+
     /**
      * Check value is not equal zero (!= 0)
      * @param string $f Testing field name
@@ -167,8 +186,9 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionNZERO($f, $v, $data_item){
-        if(!$this->isConditionZERO($f, $v, $data_item)){
+    protected function isConditionNZERO($f, $v, $data_item)
+    {
+        if (!$this->isConditionZERO($f, $v, $data_item)) {
             return true;
         }
         return false;
@@ -181,8 +201,9 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionNEMPTY($f, $v, $data_item){
-        if(!$this->isConditionEMPTY($f, $v, $data_item)){
+    protected function isConditionNEMPTY($f, $v, $data_item)
+    {
+        if (!$this->isConditionEMPTY($f, $v, $data_item)) {
             return true;
         }
         return false;
@@ -195,8 +216,9 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionNEMPTYZ($f, $v, $data_item){
-        if(!$this->isConditionEMPTYZ($f, $v, $data_item)){
+    protected function isConditionNEMPTYZ($f, $v, $data_item)
+    {
+        if (!$this->isConditionEMPTYZ($f, $v, $data_item)) {
             return true;
         }
         return false;
@@ -209,8 +231,9 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionZERO($f, $v, $data_item){
-        if(intval($data_item[$f]['value']) == 0){
+    protected function isConditionZERO($f, $v, $data_item)
+    {
+        if (intval($data_item[$f]['value']) == 0) {
             return true;
         }
         return false;
@@ -224,11 +247,12 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionEMPTY($f, $v, $data_item){
-        if(is_array($data_item[$f]['value']) && empty($data_item[$f]['value'])){
+    protected function isConditionEMPTY($f, $v, $data_item)
+    {
+        if (is_array($data_item[$f]['value']) && empty($data_item[$f]['value'])) {
             return true;
-        }else{
-            if(strval($data_item[$f]['value']) == ''){
+        } else {
+            if (strval($data_item[$f]['value']) == '') {
                 return true;
             }
         }
@@ -242,8 +266,9 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionEMPTYZ($f, $v, $data_item){
-        if(strval($data_item[$f]['value']) == '' || intval($data_item[$f]['value']) == 0){
+    protected function isConditionEMPTYZ($f, $v, $data_item)
+    {
+        if (strval($data_item[$f]['value']) == '' || intval($data_item[$f]['value']) == 0) {
             return true;
         }
         return false;
@@ -257,13 +282,17 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionEQ($f, $v, $data_item){
-        if(is_array($data_item[$f]['value'])){
-            if(in_array($v, $data_item[$f]['value'])){
+    protected function isConditionEQ($f, $v, $data_item)
+    {
+        if (!is_array($data_item) or !is_array($data_item[$f])) {
+            return false;
+        }
+        if (is_array($data_item[$f]['value'])) {
+            if (in_array($v, $data_item[$f]['value'])) {
                 return true;
             }
-        }else{
-            if($data_item[$f]['value'] == $v){
+        } else {
+            if ($data_item[$f]['value'] == $v) {
                 return true;
             }
         }
@@ -278,18 +307,19 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionINSet($f, $v, $data_item){
-        if(is_array($data_item[$f]['value']) && empty($data_item[$f]['value'])){
+    protected function isConditionINSet($f, $v, $data_item)
+    {
+        if (is_array($data_item[$f]['value']) && empty($data_item[$f]['value'])) {
             return false;
         }
-        if(is_array($data_item[$f]['value'])){
+        if (is_array($data_item[$f]['value'])) {
             foreach ($data_item[$f]['value'] as $item) {
-                if(in_array($item, $v)){
+                if (in_array($item, $v)) {
                     return true;
                 }
             }
-        }else{
-            if(in_array($data_item[$f]['value'], $v)){
+        } else {
+            if (in_array($data_item[$f]['value'], $v)) {
                 return true;
             }
         }
@@ -303,7 +333,8 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionNINSet($f, $v, $data_item){
+    protected function isConditionNINSet($f, $v, $data_item)
+    {
         return !$this->isConditionINSet($f, $v, $data_item);
     }
 
@@ -314,8 +345,9 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionNEQ($f, $v, $data_item){
-        if(!$this->isConditionEQ($f, $v, $data_item)){
+    protected function isConditionNEQ($f, $v, $data_item)
+    {
+        if (!$this->isConditionEQ($f, $v, $data_item)) {
             return true;
         }
         return false;
@@ -328,8 +360,9 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionGT($f, $v, $data_item){
-        if($data_item[$f]['value'] > $v){
+    protected function isConditionGT($f, $v, $data_item)
+    {
+        if ($data_item[$f]['value'] > $v) {
             return true;
         }
         return false;
@@ -342,8 +375,9 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionLT($f, $v, $data_item){
-        if($data_item[$f]['value'] < $v){
+    protected function isConditionLT($f, $v, $data_item)
+    {
+        if ($data_item[$f]['value'] < $v) {
             return true;
         }
         return false;
@@ -356,8 +390,9 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionLTEQ($f, $v, $data_item){
-        if($this->isConditionEQ($f, $v, $data_item) || $this->isConditionLT($f, $v, $data_item)){
+    protected function isConditionLTEQ($f, $v, $data_item)
+    {
+        if ($this->isConditionEQ($f, $v, $data_item) || $this->isConditionLT($f, $v, $data_item)) {
             return true;
         }
         return false;
@@ -370,8 +405,9 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionGTEQ($f, $v, $data_item){
-        if($this->isConditionEQ($f, $v, $data_item) || $this->isConditionGT($f, $v, $data_item)){
+    protected function isConditionGTEQ($f, $v, $data_item)
+    {
+        if ($this->isConditionEQ($f, $v, $data_item) || $this->isConditionGT($f, $v, $data_item)) {
             return true;
         }
         return false;
@@ -384,13 +420,14 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionIN($f, $v, $data_item){
-        if($this->isConditionGTEQ($f, $v[0], $data_item) && $this->isConditionLTEQ($f, $v[1], $data_item)){
+    protected function isConditionIN($f, $v, $data_item)
+    {
+        if ($this->isConditionGTEQ($f, $v[0], $data_item) && $this->isConditionLTEQ($f, $v[1], $data_item)) {
             return true;
         }
         return false;
     }
-    
+
     /**
      * Check value is not in diapasone (!(>= $v1 AND <=$v2))
      * @param string $f Testing field name
@@ -398,11 +435,12 @@ class condition_helper {
      * @param array $data_item
      * @return boolean
      */
-    protected function isConditionNIN($f, $v, $data_item){
-        if(!$this->isConditionIN($f, $v, $data_item)){
+    protected function isConditionNIN($f, $v, $data_item)
+    {
+        if (!$this->isConditionIN($f, $v, $data_item)) {
             return true;
         }
         return false;
     }
-    
+
 }

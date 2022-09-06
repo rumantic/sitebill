@@ -9,7 +9,7 @@ class Menu_Manager extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
         $this->check_table();
         $this->table_name = 'menu';
         $this->action = 'menu';

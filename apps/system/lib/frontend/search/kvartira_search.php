@@ -12,7 +12,7 @@ class Kvartira_Search_Form extends SiteBill {
      * Construct
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
     }
 
     /*
@@ -41,7 +41,7 @@ class Kvartira_Search_Form extends SiteBill {
         $kvartira_model = $this->cleanUpModel($kvartira_model);
         return $kvartira_model;
     }
-    
+
     function cleanUpModel ( $model ) {
         foreach ( $model as $item_key => $item ) {
             if ( isset($item['parameters']['autocomplete']) ) {

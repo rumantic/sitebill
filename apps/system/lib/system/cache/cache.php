@@ -105,7 +105,7 @@ class Cache extends Sitebill {
 	 * COnstructor
 	 */
 	private function __construct(){
-		$this->SiteBill();
+		parent::__construct();
 		$query="CREATE TABLE IF NOT EXISTS `".DB_PREFIX."_cache` (
   `parameter` varchar(200) NOT NULL,
   `value` text NOT NULL,

@@ -1,4 +1,22 @@
-var SitebillCore={
+var SitebillCore = {
+    /**
+     * Wrapper on default $.ajax
+     * used for adding current language code to query data
+     * @param Object options
+     * @returns {jqXHR}
+     */
+    lajax: function(options){
+        if(typeof SystemJSvars !== 'undefined' && SystemJSvars.currentLang !== 'undefined'){
+            if(typeof options.data !== 'undefined'){
+                options.data._lang = SystemJSvars.currentLang;
+            }else if(-1 !== options.url.indexOf('?')){
+                options.url += '&_lang=' + SystemJSvars.currentLang;
+            } else {
+                options.url += '?_lang=' + SystemJSvars.currentLang;
+            }
+        }
+        return $.ajax(options);
+    },
     ajaxRequest: function(ajax_options){
         var options = {
             async: true,
@@ -91,7 +109,7 @@ var SitebillCore={
                         scrollTop: $('#' + vm[i].id).offset().top
                     }, 2000);
                     alertwin.find('.modal-body').text(
-                        'Согласно правилам сайта, необходимо добавить не менее ' + vm[i].count + ' фотографий!!!!' +
+                        'Согласно правилам сайта, необходимо добавить не менее ' + vm[i].count + ' фотографий!' +
                         '\n' +
                         'Minimum photo count: ' + vm[i].count + ' image'
                     );
@@ -136,6 +154,7 @@ var SitebillCore={
         return km + kw + kd;
     }
 };
+
 function loadScript_beta(url, callback)
 {
     var head = document.getElementsByTagName('head')[0];

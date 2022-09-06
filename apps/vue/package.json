@@ -15,7 +15,7 @@
         "@vue/cli-plugin-eslint": "~4.2.3",
         "@vue/cli-service": "~4.2.3",
         "@vue/eslint-config-standard": "^5.1.0",
-        "axios": "^0.21",
+        "axios": "^0.19",
         "babel-eslint": "^10.0.3",
         "babel-plugin-transform-class-properties": "^6.24.1",
         "bootstrap": "^4.0.0",

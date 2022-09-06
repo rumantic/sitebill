@@ -89,9 +89,10 @@ class BlackBoxController extends BaseController
 
 
         if ( !$has_result ) {
+			//$this->frontend->
             $sitebill_krascap = new \SiteBill_Krascap();
-            $sitebill_krascap->grid_special_right();
-            if ($sitebill_krascap->grid_adv() === false ) {
+            $this->frontend->grid_special_right();
+            if ($this->frontend->grid_adv() === false ) {
                 return $this->return_pageview('pages.error_message');
             }
 
@@ -232,7 +233,7 @@ class BlackBoxController extends BaseController
         $ids = array();
 
         $DBC = \DBC::getInstance();
-        $local_team_conditions = \SConfig::getConfigValue('TeamsQueryConditions');
+        $local_team_conditions = \SConfig::getConfigValueStatic('TeamsQueryConditions');
         $query = 'SELECT COUNT(user_id) AS cnt FROM '.DB_PREFIX.'_user WHERE `active` = ? '.$local_team_conditions;
         $stmt = $DBC->query($query, array(1));
         if($stmt){
@@ -332,8 +333,8 @@ class BlackBoxController extends BaseController
         $ids = array();
 
         $DBC = \DBC::getInstance();
-        if ( \SConfig::getConfigValue('_getAgentsQuery') ) {
-            $query = \SConfig::getConfigValue('_getAgentsQuery');
+        if ( \SConfig::getConfigValueStatic('_getAgentsQuery') ) {
+            $query = \SConfig::getConfigValueStatic('_getAgentsQuery');
         } else {
             $query = 'SELECT user_id FROM '.DB_PREFIX.'_user LIMIT 4';
         }

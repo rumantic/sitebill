@@ -4,8 +4,10 @@
  * Structure manager
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
+
 //require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/cache/cache.php';
-class Structure_Manager extends SiteBill_Krascap {
+class Structure_Manager extends SiteBill_Krascap
+{
 
     private static $_category_structure = NULL;
     private static $_category_structure_published = NULL;
@@ -17,8 +19,9 @@ class Structure_Manager extends SiteBill_Krascap {
     /**
      * Constructor
      */
-    function __construct() {
-        $this->SiteBill();
+    function __construct()
+    {
+        parent::__construct();
         //$this->operation_type_array = $this->load_operation_type_list();
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/version/version.php';
         $version = new Version();
@@ -32,13 +35,15 @@ class Structure_Manager extends SiteBill_Krascap {
         $this->app_title = Multilanguage::_('L_ADMIN_MENU_STRUCTURE');
     }
 
-    function add_topic_url() {
+    function add_topic_url()
+    {
         $query = "alter table " . DB_PREFIX . "_topic add column url text";
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query);
     }
 
-    function get_content_drop_menu() {
+    function get_content_drop_menu()
+    {
         $ra = array();
         $DBC = DBC::getInstance();
 
@@ -52,7 +57,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return $ra;
     }
 
-    function upgrade() {
+    function upgrade()
+    {
         $DBC = DBC::getInstance();
 
         $query = "alter table " . DB_PREFIX . "_topic add column meta_title text";
@@ -65,20 +71,21 @@ class Structure_Manager extends SiteBill_Krascap {
         $stmt = $DBC->query($query);
     }
 
-    function list2Tree($list){
+    function list2Tree($list)
+    {
         $r = array();
         $childs = array();
         $items = array();
         $currentDepth = 0;
 
-        foreach($list as $line){
+        foreach ($list as $line) {
             $name = rtrim($line);
             $lDepth = strlen($line) - strlen(ltrim($name, " "));
             $name = trim($name);
-            if($lDepth == 0){
+            if ($lDepth == 0) {
                 $items[0][] = $name;
             }
-           echo $name.' '.$lDepth.'==';
+            echo $name . ' ' . $lDepth . '==';
 
         }
         print_r($items);
@@ -89,26 +96,28 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param void
      * @return string
      */
-    function main() {
+    function main()
+    {
         //return 'В разработке';
         $do = $this->getRequestValue('do');
         switch ($do) {
-            case 'loadlist': {
-                if('post' == strtolower($_SERVER['REQUEST_METHOD'])){
+            case 'loadlist':
+            {
+                if ('post' == strtolower($_SERVER['REQUEST_METHOD'])) {
                     $catlist = explode(PHP_EOL, trim($_POST['catlist']));
                     print_r($catlist);
                     $this->list2Tree($catlist);
                     $rs .= '<textarea name="catlist" rows="30">222</textarea>';
-                }else{
+                } else {
 
                 }
-                 $rs .= '<form method="post" action="'.SITEBILL_MAIN_URL.'/admin'.self::$_trslashes.'">'
-                            . '<textarea name="catlist" rows="30">'
-                            . '</textarea>'
-                            . '<input type="hidden" name="action" value="structure">'
-                            . '<input type="hidden" name="do" value="loadlist">'
-                            . '<input type="submit">'
-                            . '</form>';
+                $rs .= '<form method="post" action="' . SITEBILL_MAIN_URL . '/admin' . self::$_trslashes . '">'
+                    . '<textarea name="catlist" rows="30">'
+                    . '</textarea>'
+                    . '<input type="hidden" name="action" value="structure">'
+                    . '<input type="hidden" name="do" value="loadlist">'
+                    . '<input type="submit">'
+                    . '</form>';
                 break;
             }
             case 'delete':
@@ -123,7 +132,7 @@ class Structure_Manager extends SiteBill_Krascap {
                 }
 
                 $c = 0;
-                $query = 'SELECT COUNT(*) AS rs FROM ' . DB_PREFIX . '_data WHERE topic_id=' . (int) $this->getRequestValue('id');
+                $query = 'SELECT COUNT(*) AS rs FROM ' . DB_PREFIX . '_data WHERE topic_id=' . (int)$this->getRequestValue('id');
                 $DBC = DBC::getInstance();
                 $stmt = $DBC->query($query);
                 if ($stmt) {
@@ -162,7 +171,7 @@ class Structure_Manager extends SiteBill_Krascap {
                     $this->reorderImage($this->table_name, $this->getRequestValue('image_id'), $this->primary_key, $this->getRequestValue($this->primary_key), 'down');
                 }
 
-                if ($this->getRequestValue('language_id') > 0 and ! $this->language->get_version($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $this->getRequestValue('language_id'))) {
+                if ($this->getRequestValue('language_id') > 0 and !$this->language->get_version($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $this->getRequestValue('language_id'))) {
                     $rs = $this->get_form($form_data[$this->table_name], 'new', $this->getRequestValue('language_id'));
                 } else {
                     if ($this->getRequestValue('language_id') > 0) {
@@ -211,7 +220,7 @@ class Structure_Manager extends SiteBill_Krascap {
                 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
                 $data_model = new Data_Model();
                 $form_data = $this->getStrModel();
-                $form_data[$this->table_name]['parent_id']['value'] = (int) $this->getRequestValue('parent_id');
+                $form_data[$this->table_name]['parent_id']['value'] = (int)$this->getRequestValue('parent_id');
                 $rs = $this->get_form($form_data[$this->table_name]);
                 //return $rs;
                 // $rs = $this->getForm();
@@ -220,13 +229,13 @@ class Structure_Manager extends SiteBill_Krascap {
             case 'linker':
                 //Структура таблицы для хранения линков
                 /**
-                  CREATE TABLE IF NOT EXISTS `re_topic_links` (
-                  `id` int(11) NOT NULL AUTO_INCREMENT,
-                  `topic_id` int(11) NOT NULL,
-                  `link_topic_id` int(11) NOT NULL,
-                  `params` text,
-                  PRIMARY KEY (`id`)
-                  ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+                 * CREATE TABLE IF NOT EXISTS `re_topic_links` (
+                 * `id` int(11) NOT NULL AUTO_INCREMENT,
+                 * `topic_id` int(11) NOT NULL,
+                 * `link_topic_id` int(11) NOT NULL,
+                 * `params` text,
+                 * PRIMARY KEY (`id`)
+                 * ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
                  * */
                 //$rs = $this->getTopMenu();
                 if (isset($_POST['submit'])) {
@@ -262,50 +271,51 @@ class Structure_Manager extends SiteBill_Krascap {
 
               break; */
 
-            case 'new_done': {
-                    if ($this->isDemo()) {
-                        return $this->demo_function_disabled();
+            case 'new_done':
+            {
+                if ($this->isDemo()) {
+                    return $this->demo_function_disabled();
+                }
+                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
+                $data_model = new Data_Model();
+                $form_data = $this->getStrModel();
+
+                $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
+
+                if (isset($form_data[$this->table_name]['url']) && $form_data[$this->table_name]['url']['value'] == '') {
+                    $form_data[$this->table_name]['url']['value'] = $this->transliteMe($form_data[$this->table_name]['name']['value']);
+                    $this->setRequestValue('url', $this->transliteMe($form_data[$this->table_name]['name']['value']));
+                }
+
+
+                require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
+                $OM = new Object_Manager();
+
+                if (!$OM->check_data($form_data[$this->table_name]) || !$this->checkData()) {
+                    if ($OM->GetErrorMessage() != '') {
+                        $this->riseError($this->GetErrorMessage() . ' ' . $OM->GetErrorMessage());
                     }
-                    require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
-                    $data_model = new Data_Model();
-                    $form_data = $this->getStrModel();
-
-                    $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
-
-                    if (isset($form_data[$this->table_name]['url']) && $form_data[$this->table_name]['url']['value'] == '') {
-                        $form_data[$this->table_name]['url']['value'] = $this->transliteMe($form_data[$this->table_name]['name']['value']);
-                        $this->setRequestValue('url', $this->transliteMe($form_data[$this->table_name]['name']['value']));
-                    }
-
-
-                    require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
-                    $OM = new Object_Manager();
-
-                    if (!$OM->check_data($form_data[$this->table_name]) || !$this->checkData()) {
-                        if ($OM->GetErrorMessage() != '') {
-                            $this->riseError($this->GetErrorMessage() . ' ' . $OM->GetErrorMessage());
-                        }
+                    $rs = $this->get_form($form_data[$this->table_name], 'new');
+                } else {
+                    $new_record_id = $this->add_data($form_data[$this->table_name], $this->getRequestValue('language_id'));
+                    if ($this->getError()) {
                         $rs = $this->get_form($form_data[$this->table_name], 'new');
                     } else {
-                        $new_record_id = $this->add_data($form_data[$this->table_name], $this->getRequestValue('language_id'));
-                        if ($this->getError()) {
-                            $rs = $this->get_form($form_data[$this->table_name], 'new');
-                        } else {
-                            $rs .= $this->grid();
-                        }
+                        $rs .= $this->grid();
                     }
-                    /* return $rs;
-                      if ( !$this->checkData() ) {
-                      $rs = $this->getForm();
-                      } else {
-                      $this->addRecord();
-                      $Cache=Cache::getInstance();
-                      $Cache->clearValue('catalog_structure');
-                      $rs = $this->getTopMenu();
-                      $rs .= $this->grid();
-                      } */
-                    break;
                 }
+                /* return $rs;
+                  if ( !$this->checkData() ) {
+                  $rs = $this->getForm();
+                  } else {
+                  $this->addRecord();
+                  $Cache=Cache::getInstance();
+                  $Cache->clearValue('catalog_structure');
+                  $rs = $this->getTopMenu();
+                  $rs .= $this->grid();
+                  } */
+                break;
+            }
             case 'edit_done':
                 if ($this->isDemo()) {
                     return $this->demo_function_disabled();
@@ -321,8 +331,6 @@ class Structure_Manager extends SiteBill_Krascap {
                     $form_data[$this->table_name]['url']['value'] = $this->transliteMe($form_data[$this->table_name]['name']['value']);
                     $this->setRequestValue('url', $this->transliteMe($form_data[$this->table_name]['name']['value']));
                 }
-
-
 
 
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
@@ -366,16 +374,18 @@ class Structure_Manager extends SiteBill_Krascap {
 
                 break;
 
-            default: {
-                    $rs .= $this->grid();
-                }
+            default:
+            {
+                $rs .= $this->grid();
+            }
         }
 
         $rs = $this->get_app_title_bar() . $this->getTopMenu() . $rs;
         return $rs;
     }
 
-    function edit_data($form_data, $language_id = 0, $primary_key_value = false) {
+    function edit_data($form_data, $language_id = 0, $primary_key_value = false)
+    {
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
@@ -401,13 +411,13 @@ class Structure_Manager extends SiteBill_Krascap {
 
         foreach ($form_data as $form_item) {
             if ($form_item['type'] == 'uploads') {
-                $imgs_uploads = $this->appendUploads($this->table_name, $form_item, $this->primary_key, (int) $this->getRequestValue($this->primary_key));
+                $imgs_uploads = $this->appendUploads($this->table_name, $form_item, $this->primary_key, (int)$this->getRequestValue($this->primary_key));
                 //$this->set_imgs($imgs_uploads);
             } elseif ($form_item['type'] == 'select_by_query_multi') {
                 //echo 1;
                 $vals = $form_item['value'];
                 if (!is_array($vals)) {
-                    $vals = (array) $vals;
+                    $vals = (array)$vals;
                 }
                 $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name`=? AND `primary_id`=?';
                 $stmt = $DBC->query($query, array($this->table_name, $form_item['name'], $primary_key_value));
@@ -435,7 +445,8 @@ class Structure_Manager extends SiteBill_Krascap {
         }
     }
 
-    function add_data($form_data, $language_id = 0) {
+    function add_data($form_data, $language_id = 0)
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         //$query = $data_model->get_insert_query(DB_PREFIX.'_'.$this->table_name, $form_data, $language_id);
@@ -459,7 +470,7 @@ class Structure_Manager extends SiteBill_Krascap {
                     //echo 1;
                     $vals = $form_item['value'];
                     if (!is_array($vals)) {
-                        $vals = (array) $vals;
+                        $vals = (array)$vals;
                     }
                     $query = 'DELETE FROM ' . DB_PREFIX . '_multiple_field WHERE `table_name`=? AND `field_name`=? AND `primary_id`=?';
                     $stmt = $DBC->query($query, array($this->table_name, $form_item['name'], $new_record_id));
@@ -481,7 +492,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return $new_record_id;
     }
 
-    function get_app_title_bar() {
+    function get_app_title_bar()
+    {
         $breadcrumbs = array();
         $breadcrumbs[] = array('href' => '#', 'title' => Multilanguage::_('L_ADMIN_MENU_APPLICATIONS'));
 
@@ -494,7 +506,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return '';
     }
 
-    function saveAssociations($rules) {
+    function saveAssociations($rules)
+    {
         //print_r($rules);
         $category_structure = $this->loadCategoryStructure();
         foreach ($category_structure['childs'] as $k => $v) {
@@ -523,11 +536,12 @@ class Structure_Manager extends SiteBill_Krascap {
         //print_r($ret);
     }
 
-    private function updateAssociations($items = array(), $rules = array()) {
+    private function updateAssociations($items = array(), $rules = array())
+    {
         if (!empty($items)) {
             $DBC = DBC::getInstance();
             foreach ($items as $v) {
-                $query = 'UPDATE ' . DB_PREFIX . '_topic SET obj_type_id=' . (int) $rules['obj_type_id'] . ', operation_type_id=' . (int) $rules['operation_type'] . ' WHERE id=' . (int) $v;
+                $query = 'UPDATE ' . DB_PREFIX . '_topic SET obj_type_id=' . (int)$rules['obj_type_id'] . ', operation_type_id=' . (int)$rules['operation_type'] . ' WHERE id=' . (int)$v;
                 $stmt = $DBC->query($query);
                 //echo 'SET rules FOR ID:'.$v.' optype='.$rules['operation_type'].' realtytype='.$rules['obj_type_id'].'<br />';
             }
@@ -539,7 +553,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $operation_type_id operation type id
      * @return string
      */
-    function get_operation_type_name_by_id($operation_type_id) {
+    function get_operation_type_name_by_id($operation_type_id)
+    {
         return $this->operation_type_array[$operation_type_id]['name'];
     }
 
@@ -548,7 +563,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $operation_type_id operation type id
      * @return string
      */
-    function get_operation_type_select_box($operation_type_id) {
+    function get_operation_type_select_box($operation_type_id)
+    {
         $query = "SELECT * FROM " . DB_PREFIX . "_operation_type order by `operation_type_id` ";
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query);
@@ -604,7 +620,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $id topic ID
      * @return boolean
      */
-    function deleteRecord($id) {
+    function deleteRecord($id)
+    {
         $imgs_ids = array();
         $DBC = DBC::getInstance();
         if (1 == $this->getConfigValue('allow_topic_images')) {
@@ -632,7 +649,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return TRUE;
     }
 
-    function deleteTopicItem($id, $delete_option, $childs_delete_option) {
+    function deleteTopicItem($id, $delete_option, $childs_delete_option)
+    {
         $DBC = DBC::getInstance();
         $childs_delete_option = 'move_up';
         if ($delete_option == 'delete_current') {
@@ -640,7 +658,7 @@ class Structure_Manager extends SiteBill_Krascap {
                 $query = 'SELECT parent_id FROM ' . DB_PREFIX . '_topic WHERE id=? LIMIT 1';
                 $stmt = $DBC->query($query, array($id));
                 $ar = $DBC->fetch($stmt);
-                $parent_id = (int) $ar['parent_id'];
+                $parent_id = (int)$ar['parent_id'];
 
 
                 $query = 'UPDATE ' . DB_PREFIX . '_topic SET parent_id=? WHERE parent_id=?';
@@ -681,7 +699,7 @@ class Structure_Manager extends SiteBill_Krascap {
                 $query = 'SELECT parent_id FROM ' . DB_PREFIX . '_topic WHERE id=? LIMIT 1';
                 $stmt = $DBC->query($query, array($id));
                 $ar = $DBC->fetch($stmt);
-                $parent_id = (int) $ar['parent_id'];
+                $parent_id = (int)$ar['parent_id'];
 
 
                 $category_structure = $this->loadCategoryStructure();
@@ -742,7 +760,8 @@ class Structure_Manager extends SiteBill_Krascap {
       return true;
       } */
 
-    function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
+    function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php')
+    {
 
         $_SESSION['allow_disable_root_structure_select'] = false;
         global $smarty;
@@ -787,9 +806,6 @@ class Structure_Manager extends SiteBill_Krascap {
         $el['controls']['submit'] = array('html' => '<button id="formsubmit" onClick="return SitebillCore.formsubmit(this);" name="submit" class="btn btn-primary">' . $button_title . '</button>');
 
 
-
-
-
         $smarty->assign('form_elements', $el);
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl')) {
             $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl';
@@ -804,7 +820,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param string $action action
      * @return string
      */
-    function getForm($action = 'new') {
+    function getForm($action = 'new')
+    {
         $form_data = $this->getStrModel();
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
         $OM = new Object_Manager();
@@ -953,7 +970,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $record_id record ID
      * @return boolean
      */
-    function load($record_id) {
+    function load($record_id)
+    {
         $DBC = DBC::getInstance();
 
         $query = "select * from " . DB_PREFIX . "_topic where id=$record_id";
@@ -983,7 +1001,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param void
      * @return boolean
      */
-    function checkData() {
+    function checkData()
+    {
         if ($this->getRequestValue('name') == '') {
             $this->riseError(Multilanguage::_('NOT_SET_TOPIC_NAME', 'system'));
             return false;
@@ -993,9 +1012,9 @@ class Structure_Manager extends SiteBill_Krascap {
             return false;
         }
 
-        if (0 != (int) $this->getRequestValue('id') && 0 != (int) $this->getRequestValue('parent_id')) {
-            $id = (int) $this->getRequestValue('id');
-            $parent_id = (int) $this->getRequestValue('parent_id');
+        if (0 != (int)$this->getRequestValue('id') && 0 != (int)$this->getRequestValue('parent_id')) {
+            $id = (int)$this->getRequestValue('id');
+            $parent_id = (int)$this->getRequestValue('parent_id');
             $category_structure = $this->loadCategoryStructure();
             $childs = $this->get_all_childs($id, $category_structure);
             if (in_array($parent_id, $childs)) {
@@ -1017,7 +1036,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param void
      * @return string
      */
-    function getTopMenu() {
+    function getTopMenu()
+    {
         $rs = '<a href="?action=structure&do=new" class="btn btn-primary">' . Multilanguage::_('L_ADD_RECORD_BUTTON') . '</a> ';
         if ($this->getConfigValue('use_topic_linker')) {
             $rs .= '<a href="?action=structure&do=linker" class="btn btn-primary">' . Multilanguage::_('L_TOPIC_LINKER') . '</a> ';
@@ -1046,7 +1066,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @return array
      *
      */
-    function loadCategoriesUrls() {
+    function loadCategoriesUrls()
+    {
 
         /* if($this->getConfigValue('apps.cache.enable')==1){
           $Cache=Cache::getInstance();
@@ -1067,7 +1088,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * Создает ассоциативный массив соответствий id категорий и составным иерархическим урлам
      * @return array
      */
-    private function createCategoriesUrls() {
+    private function createCategoriesUrls()
+    {
 
         if (self::$_category_urls === NULL) {
             $ret = array();
@@ -1085,8 +1107,7 @@ class Structure_Manager extends SiteBill_Krascap {
             }
 
 
-
-            if (count($points) > 0) {
+            if (is_array($points) && count($points) > 0) {
                 if (1 == $this->getConfigValue('apps.seo.level_enable')) {
                     foreach ($points as $p) {
                         $chain = array();
@@ -1113,14 +1134,16 @@ class Structure_Manager extends SiteBill_Krascap {
     /**
      * Ищет транслитерированный урл предка для конкретного элемента
      */
-    private function appendParent($child_id, &$items, &$chain, $categories) {
-        if ((int) $items[$child_id] !== 0) {
+    private function appendParent($child_id, &$items, &$chain, $categories)
+    {
+        if ((int)$items[$child_id] !== 0) {
             array_unshift($chain, $categories[$items[$child_id]]);
             $this->appendParent($items[$child_id], $items, $chain, $categories);
         }
     }
 
-    function createCatalogChains() {
+    function createCatalogChains()
+    {
         $ret = array();
         $points = array();
 
@@ -1128,9 +1151,9 @@ class Structure_Manager extends SiteBill_Krascap {
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
             $curlang = $this->getCurrentLang();
             $default_lng = '';
-            if(1 == $this->getConfigValue('apps.language.use_default_as_ru')){
+            if (1 == $this->getConfigValue('apps.language.use_default_as_ru')) {
                 $default_lng = 'ru';
-            }elseif('' != trim($this->getConfigValue('apps.language.use_as_default'))){
+            } elseif ('' != trim($this->getConfigValue('apps.language.use_as_default'))) {
                 $default_lng = trim($this->getConfigValue('apps.language.use_as_default'));
             }
             if ($default_lng != '' && $default_lng == $curlang) {
@@ -1168,8 +1191,9 @@ class Structure_Manager extends SiteBill_Krascap {
         return $rs = array('txt' => $ret, 'num' => $ret_num, 'ar' => $ret_arr);
     }
 
-    function findParent($child_id, &$items, &$chain, &$chain_num, $categories) {
-        if ((int) $items[$child_id] !== 0) {
+    function findParent($child_id, &$items, &$chain, &$chain_num, $categories)
+    {
+        if ((int)$items[$child_id] !== 0) {
             //echo $child_id.' has parent '.$items[$child_id].'<br>';;
             $chain = $categories[$items[$child_id]] . '|' . $chain;
             $chain_num = $items[$child_id] . '|' . $chain_num;
@@ -1177,7 +1201,8 @@ class Structure_Manager extends SiteBill_Krascap {
         }
     }
 
-    function convertToNestedArray($structure, $parent_id = 0, $level = 0) {
+    function convertToNestedArray($structure, $parent_id = 0, $level = 0)
+    {
         $nested = array();
         $level++;
         if ($level > 999) {
@@ -1262,7 +1287,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param $load_published true/false - параметр определяет загружать ли категории по статусу активности. Если true - то будут загружены только активные. Если false - то будут загружены все категории
      * @return array
      */
-    function loadCategoryStructure($load_published = false) {
+    function loadCategoryStructure($load_published = false)
+    {
         $where_active_condition = '';
         if ($load_published) {
             if (self::$_category_structure_published !== NULL) {
@@ -1296,7 +1322,7 @@ class Structure_Manager extends SiteBill_Krascap {
 
         if (1 == $this->getConfigValue('apps.seo.level_enable')) {
             $urls = $this->loadCategoriesUrls();
-            if (count($ret['catalog']) > 0) {
+            if (is_array($ret['catalog']) && count($ret['catalog']) > 0) {
                 foreach ($ret['catalog'] as $k => $v) {
                     $ret['catalog'][$k]['url'] = $urls[$v['id']];
                 }
@@ -1330,10 +1356,13 @@ class Structure_Manager extends SiteBill_Krascap {
     }
 
     /**
-     * Get all childs
-     * @param array $category_structure
+     * Возвращает массив всех вложенных категорий для искомой
+     * @param int $category_id category ID
+     * @param array $category_structure structure data array
+     * @return array
      */
-    function get_all_childs($category_id, $category_structure) {
+    function get_all_childs($category_id, $category_structure)
+    {
         $ra = array();
         //echo 'category_id = '.$category_id.'<br>';
         if (isset($category_structure['childs'][$category_id]) && count($category_structure['childs'][$category_id]) > 0) {
@@ -1354,7 +1383,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * из тегов
      * @param object $context_object
      */
-    function set_context($context_object) {
+    function set_context($context_object)
+    {
         $this->context_object = $context_object;
     }
 
@@ -1362,7 +1392,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * Возвращает контекст
      * @return object
      */
-    function get_context() {
+    function get_context()
+    {
         return $this->context_object;
     }
 
@@ -1371,7 +1402,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $user_id
      * @return array
      */
-    function load_data_structure($user_id, $params = array(), $search_params = array()) {
+    function load_data_structure($user_id, $params = array(), $search_params = array())
+    {
         $where_array = array();
 
         if ($this->get_context() != NULL) {
@@ -1437,12 +1469,13 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $user_id
      * @return array
      */
-    function load_data_structure_shop($user_id, $params = array()) {
+    function load_data_structure_shop($user_id, $params = array())
+    {
         $where_array = array();
         //echo '<pre>';
         //print_r($params);
         //echo '</pre>';
-        $language_id = ((int) $this->getRequestValue('language_id') == 0 ? 0 : (int) $this->getRequestValue('language_id'));
+        $language_id = ((int)$this->getRequestValue('language_id') == 0 ? 0 : (int)$this->getRequestValue('language_id'));
 
 
         if ($user_id == 0) {
@@ -1505,9 +1538,10 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $user_id
      * @return array
      */
-    function load_data_structure_price($user_id, $params = array()) {
+    function load_data_structure_price($user_id, $params = array())
+    {
         $where_array = array();
-        $language_id = ((int) $this->getRequestValue('language_id') == 0 ? 0 : (int) $this->getRequestValue('language_id'));
+        $language_id = ((int)$this->getRequestValue('language_id') == 0 ? 0 : (int)$this->getRequestValue('language_id'));
 
         if (count($where_array) > 0) {
             $where = ' WHERE ' . implode(' AND ', $where_array);
@@ -1530,7 +1564,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param mixed $ajax_function
      * @return string
      */
-    function getCategorySelectBox($current_category_id, $ajax_function = false) {
+    function getCategorySelectBox($current_category_id, $ajax_function = false)
+    {
         $category_structure = $this->loadCategoryStructure();
         $level = 1;
         $rs = '';
@@ -1565,7 +1600,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return $rs;
     }
 
-    function getLevel($category_structure, $pid, $level, &$leveled, $selected_id, &$now_selected, &$find_more) {
+    function getLevel($category_structure, $pid, $level, &$leveled, $selected_id, &$now_selected, &$find_more)
+    {
         $fm = $find_more;
         if (isset($category_structure['childs'][$pid]) && count($category_structure['childs'][$pid]) > 0) {
             $i = 0;
@@ -1591,7 +1627,8 @@ class Structure_Manager extends SiteBill_Krascap {
         }
     }
 
-    function getCategorySelectBoxLeveled($name, $selected, $options = array()) {
+    function getCategorySelectBoxLeveled($name, $selected, $options = array(), $model_item = array())
+    {
         $category_structure = $this->loadCategoryStructure($this->getConfigValue('use_topic_publish_status'));
         //$selected=intval($this->getRequestValue('topic_id'));
         $now_selected = false;
@@ -1624,16 +1661,22 @@ class Structure_Manager extends SiteBill_Krascap {
             $rt .= '<div class="level" data-level="' . $lev . '">';
             foreach ($it as $pid => $pvals) {
                 $rt .= '<div data-id="' . $pid . '" class="levelitem levelitem_' . $pid . '" style="display: none;">';
-                $rt .= '<select'.($classes!='' ? ' class="'.$classes.'"' : '').'>';
+                if ($lev > 1) {
+                    $rt .= _e('Подтип недвижимости') . ' ';
+                    if (isset($model_item) and $model_item['required'] == 'on') {
+                        $rt .= '<span style="color: red;">*</span> ';
+                    }
+                }
+                $rt .= '<select' . ($classes != '' ? ' class="' . $classes . '"' : '') . '>';
 
                 $tname = '';
-				if($lev == 1){
-					$tname = (isset($options['zerotitle']) && $options['zerotitle'] != '' ? $options['zerotitle'] : '--');
-				}else{
-					$tname = (isset($options['nonzerotitle']) && $options['nonzerotitle'] != '' ? $options['nonzerotitle'] : '--');
-				}
+                if ($lev == 1) {
+                    $tname = (isset($options['zerotitle']) && $options['zerotitle'] != '' ? $options['zerotitle'] : '--');
+                } else {
+                    $tname = (isset($options['nonzerotitle']) && $options['nonzerotitle'] != '' ? $options['nonzerotitle'] : '--');
+                }
 
-                $rt .= '<option value="0">'.$tname.'</option>';
+                $rt .= '<option value="0">' . $tname . '</option>';
                 foreach ($pvals as $pval) {
                     $rt .= '<option value="' . $pval[0] . '"' . ($pval[2] == 1 ? ' selected="selected"' : '') . '>' . $pval[1] . '</option>';
                 }
@@ -1654,16 +1697,17 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param mixed $ajax_function
      * @return string
      */
-    function getCategorySelectBoxWithName($name, $current_category_id, $ajax_function = false, $parameters = array(), $zero_title = '') {
+    function getCategorySelectBoxWithName($name, $current_category_id, $ajax_function = false, $parameters = array(), $zero_title = '')
+    {
         //echo '$current_category_id = '.$current_category_id;
         $core_level_symbol = $this->getConfigValue('core_level_symbol');
         $core_level_symbol = str_replace('#', ' ', $core_level_symbol);
 
         if (!defined('ADMIN_MODE')) {
 
-            if(isset($parameters['classes'])){
+            if (isset($parameters['classes'])) {
                 $classes = $parameters['classes'];
-            }else{
+            } else {
                 $bootstrap_version = trim($this->getConfigValue('bootstrap_version'));
                 if ($bootstrap_version == '3') {
                     $classes = 'form-control';
@@ -1675,7 +1719,6 @@ class Structure_Manager extends SiteBill_Krascap {
                     $classes = '';
                 }
             }
-
 
 
         } else {
@@ -1690,7 +1733,7 @@ class Structure_Manager extends SiteBill_Krascap {
         } else {
             $category_structure = $this->loadCategoryStructure($this->getConfigValue('use_topic_publish_status'));
         }
-        if ( isset($parameters['only_top_level']) && $parameters['only_top_level'] ) {
+        if (isset($parameters['only_top_level']) && $parameters['only_top_level']) {
             $tmp = $category_structure['childs'][0];
             unset($category_structure['childs']);
             $category_structure['childs'][0] = $tmp;
@@ -1761,7 +1804,7 @@ class Structure_Manager extends SiteBill_Krascap {
                 } else {
                     $option_title = $category_structure['catalog'][$categoryID]['name'];
                 }
-                $rs .= '<option class="rootlevel rootlevel_'.$level.'" data-superparent="' . $superparent . '" value="' . $categoryID . '" ' . $selected . $disabled . '>' . str_repeat($core_level_symbol, $level) . $option_title . '</option>';
+                $rs .= '<option class="rootlevel rootlevel_' . $level . '" data-superparent="' . $superparent . '" value="' . $categoryID . '" ' . $selected . $disabled . '>' . str_repeat($core_level_symbol, $level) . $option_title . '</option>';
                 $rs .= $this->getChildNodes($categoryID, $category_structure, $level + 1, $current_category_id, $superparent);
             }
         }
@@ -1771,7 +1814,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return $rs;
     }
 
-    function getCategoryCheckboxes($name, $current_category_id, $ajax_function = false) {
+    function getCategoryCheckboxes($name, $current_category_id, $ajax_function = false)
+    {
         $category_structure = $this->loadCategoryStructure();
         $rs = '';
         if (isset($category_structure['childs'][0]) && count($category_structure['childs'][0]) > 0) {
@@ -1790,7 +1834,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return $rs;
     }
 
-    function getChildNodesCheckboxes($name, $categoryID, $category_structure, $current_category_id) {
+    function getChildNodesCheckboxes($name, $categoryID, $category_structure, $current_category_id)
+    {
         $rs = '';
         if (isset($category_structure['childs'][$categoryID]) && count($category_structure['childs'][$categoryID]) > 0) {
             foreach ($category_structure['childs'][$categoryID] as $child_id) {
@@ -1808,7 +1853,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return $rs;
     }
 
-    function getShopCategorySelectBoxWithName($name, $current_category_id, $ajax_function = false) {
+    function getShopCategorySelectBoxWithName($name, $current_category_id, $ajax_function = false)
+    {
         //echo '$current_category_id = '.$current_category_id;
         $category_structure = $this->loadShopCategoryStructure();
         //echo '<pre>';
@@ -1842,7 +1888,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param void
      * @return array
      */
-    function load_mark_structure() {
+    function load_mark_structure()
+    {
         $query = "SELECT * FROM " . DB_PREFIX . "_mark order by `name` ";
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query);
@@ -1860,7 +1907,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param void
      * @return array
      */
-    function load_coachwork_structure() {
+    function load_coachwork_structure()
+    {
         $ret = array();
         $query = "SELECT * FROM " . DB_PREFIX . "_coachwork order by `name` ";
         $DBC = DBC::getInstance();
@@ -1879,7 +1927,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param void
      * @return array
      */
-    function load_model_structure() {
+    function load_model_structure()
+    {
         $query = "SELECT * FROM " . DB_PREFIX . "_model order by `name` ";
         //echo $query;
         $DBC = DBC::getInstance();
@@ -1898,7 +1947,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param void
      * @return array
      */
-    function load_modification_structure() {
+    function load_modification_structure()
+    {
         $query = "SELECT * FROM " . DB_PREFIX . "_modification order by `name` ";
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query);
@@ -1917,7 +1967,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param mixed $ajax_function ajax function
      * @return string
      */
-    function getMarkSelectBox($current_mark_id, $ajax_function = false) {
+    function getMarkSelectBox($current_mark_id, $ajax_function = false)
+    {
         //echo '$current_category_id = '.$current_category_id;
         $category_structure = $this->loadCategoryStructure();
         $mark_structure = $this->load_mark_structure();
@@ -1956,7 +2007,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $current_mark_id selected mark_id
      * @return string
      */
-    function get_flat_mark_select_box($categoryID, $current_mark_id) {
+    function get_flat_mark_select_box($categoryID, $current_mark_id)
+    {
         $mark_structure = $this->load_mark_structure();
         $rs = '';
         $rs .= '<div id="mark_id_div">';
@@ -1983,7 +2035,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $current_coachwork_id selected coachwork_id
      * @return string
      */
-    function get_flat_coachwork_select_box($categoryID, $current_coachwork_id) {
+    function get_flat_coachwork_select_box($categoryID, $current_coachwork_id)
+    {
         $coachwork_structure = $this->load_coachwork_structure();
         $rs = '';
         $rs .= '<div id="coachwork_id_div">';
@@ -2010,7 +2063,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $current_model_id selected model_id
      * @return string
      */
-    function get_flat_model_select_box($mark_id, $current_model_id) {
+    function get_flat_model_select_box($mark_id, $current_model_id)
+    {
         $model_structure = $this->load_model_structure();
         $rs = '';
         $rs .= '<div id="model_id_div">';
@@ -2039,7 +2093,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $current_modification_id selected modification_id
      * @return string
      */
-    function get_flat_modification_select_box($model_id, $current_modification_id) {
+    function get_flat_modification_select_box($model_id, $current_modification_id)
+    {
         $modification_structure = $this->load_modification_structure();
         $rs = '';
         $rs .= '<div id="modification_id_div">';
@@ -2067,7 +2122,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $current_mark_id mark ID
      * @return string
      */
-    function getModelSelectBox($current_mark_id) {
+    function getModelSelectBox($current_mark_id)
+    {
         //echo '$current_category_id = '.$current_category_id;
         $category_structure = $this->loadCategoryStructure();
         $mark_structure = $this->load_mark_structure();
@@ -2105,7 +2161,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $current_mark_id selected mark_id
      * @return string
      */
-    function get_mark_option_items($categoryID, $mark_structure, $level, $current_mark_id) {
+    function get_mark_option_items($categoryID, $mark_structure, $level, $current_mark_id)
+    {
         if (is_array($mark_structure['childs'][$categoryID])) {
             foreach ($mark_structure['childs'][$categoryID] as $mark_id) {
                 if ($current_mark_id == $mark_id) {
@@ -2128,7 +2185,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param array $model_structure
      * @return string
      */
-    function get_mark_and_model_option_items($categoryID, $mark_structure, $level, $current_model_id, $model_structure) {
+    function get_mark_and_model_option_items($categoryID, $mark_structure, $level, $current_model_id, $model_structure)
+    {
         if (is_array($mark_structure['childs'][$categoryID])) {
             foreach ($mark_structure['childs'][$categoryID] as $mark_id) {
                 if ($current_mark_id == $mark_id) {
@@ -2151,7 +2209,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $level level
      * @return string
      */
-    function get_model_option_items($model_structure, $current_model_id, $mark_id, $level) {
+    function get_model_option_items($model_structure, $current_model_id, $mark_id, $level)
+    {
         if (is_array($model_structure['childs'][$mark_id])) {
             foreach ($model_structure['childs'][$mark_id] as $model_id) {
                 if ($current_model_id == $model_id) {
@@ -2167,7 +2226,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return $rs;
     }
 
-    function getCategoryTreeModern($current_category_id) {
+    function getCategoryTreeModern($current_category_id)
+    {
         global $smarty;
         $smarty->assign('structure_grid_allow_drag', 1);
         $smarty->assign('use_topic_publish_status', intval($this->getConfigValue('use_topic_publish_status')));
@@ -2180,7 +2240,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $current_category_id category ID
      * @return string
      */
-    function getCategoryTree($current_category_id) {
+    function getCategoryTree($current_category_id)
+    {
         //echo '$current_category_id = '.$current_category_id;
         $category_structure = $this->loadCategoryStructure();
         $level = 0;
@@ -2228,7 +2289,11 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param array $params
      * @return string
      */
-    function get_category_tree_control($current_category_id, $user_id, $control = false, $params = array(), $search_params = array()) {
+    function get_category_tree_control($current_category_id, $user_id, $control = false, $params = array(), $search_params = array())
+    {
+        // @todo: $user_id нужно добавить проверку на массив в этом значении и генерировать контрол в соответствии с массивом
+        // user_id
+
         $category_structure = $this->loadCategoryStructure();
         $data_structure = $this->load_data_structure($user_id, $params, $search_params);
         //print_r($data_structure);
@@ -2267,7 +2332,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param array $params
      * @return string
      */
-    function get_category_tree_control_shop($current_category_id, $user_id, $control = false, $params = array()) {
+    function get_category_tree_control_shop($current_category_id, $user_id, $control = false, $params = array())
+    {
         //print_r($params);
         //echo '$current_category_id = '.$current_category_id;
         $category_structure = $this->loadCategoryStructure();
@@ -2282,7 +2348,6 @@ class Structure_Manager extends SiteBill_Krascap {
 
             $data_structure['data'][$user_id][$cat_point['id']] += $ch;
         }
-
 
 
         $level = 0;
@@ -2309,7 +2374,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param array $params
      * @return string
      */
-    function get_category_tree_control_price($current_category_id, $user_id, $control = false, $params = array()) {
+    function get_category_tree_control_price($current_category_id, $user_id, $control = false, $params = array())
+    {
         //print_r($params);
         //echo '$current_category_id = '.$current_category_id;
         $category_structure = $this->loadCategoryStructure();
@@ -2324,7 +2390,6 @@ class Structure_Manager extends SiteBill_Krascap {
 
             $data_structure['data'][$user_id][$cat_point['id']] += $ch;
         }
-
 
 
         $level = 0;
@@ -2347,7 +2412,8 @@ class Structure_Manager extends SiteBill_Krascap {
     //	return $data_structure['data'][$user_id][$id];
     //}
 
-    function getChildsItemsCount($id, $category_structure_childs, $data_structure, &$ret) {
+    function getChildsItemsCount($id, $category_structure_childs, $data_structure, &$ret)
+    {
         //echo '1Call with id='.$id.' <br />';
         if (isset($category_structure_childs[$id]) && count($category_structure_childs[$id]) > 0) {
             foreach ($category_structure_childs[$id] as $v) {
@@ -2371,7 +2437,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param int $level
      * @param string $row_class
      */
-    function get_row($categoryID, $category_structure, $level, $row_class) {
+    function get_row($categoryID, $category_structure, $level, $row_class)
+    {
         $rs .= '<tr>';
         $rs .= '<td class="' . $row_class . '">' . str_repeat('&nbsp;.&nbsp;', $level) . $category_structure['catalog'][$categoryID]['name'] . '</td>';
         if ($category_structure['catalog'][$categoryID]['url'] == '') {
@@ -2403,16 +2470,16 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param array $params
      * @return string
      */
-    function get_row_control($categoryID, $category_structure, $level, $row_class, $user_id, $control = false, $data_structure, $current_category_id, $params = array()) {
+    function get_row_control($categoryID, $category_structure, $level, $row_class, $user_id, $control = false, $data_structure, $current_category_id, $params = array())
+    {
         //echo '<pre>';
         //print_r($params);
         //echo '</pre>';
         $rs = '';
 
-        if (((int) $this->getConfigValue('hide_empty_catalog') != 0) AND ( (int) $data_structure['data'][$user_id][$categoryID] == 0)) {
+        if (((int)$this->getConfigValue('hide_empty_catalog') != 0) and ((int)$data_structure['data'][$user_id][$categoryID] == 0)) {
             return '';
         }
-
 
 
         if (count($params) > 0) {
@@ -2428,7 +2495,7 @@ class Structure_Manager extends SiteBill_Krascap {
         if ($category_structure['catalog'][$categoryID]['parent_id'] == 0) {
             $subclass = 'maincat';
         }
-        $rs .= '<td class="' . $row_class . ' ' . $subclass . '"><a href="?topic_id=' . $categoryID . '' . $add_url . '">' . str_repeat('&nbsp;.&nbsp;', $level) . $category_structure['catalog'][$categoryID]['name'] . '</a> (' . (int) $data_structure['data'][$user_id][$categoryID] . ') <small>id:' . $categoryID . '</small></td>';
+        $rs .= '<td class="' . $row_class . ' ' . $subclass . '"><a href="?topic_id=' . $categoryID . '' . $add_url . '">' . str_repeat('&nbsp;.&nbsp;', $level) . $category_structure['catalog'][$categoryID]['name'] . '</a> (' . (int)$data_structure['data'][$user_id][$categoryID] . ') <small>id:' . $categoryID . '</small></td>';
 
         if ($control) {
             $edit_icon = '<a href="?action=structure&do=edit&id=' . $categoryID . '"><img src="' . SITEBILL_MAIN_URL . '/img/edit.gif" border="0" width="16" height="16" alt="редактировать" title="редактировать"></a>';
@@ -2442,7 +2509,6 @@ class Structure_Manager extends SiteBill_Krascap {
         $rs .= '</tr>';
 
 
-
         return $rs;
     }
 
@@ -2453,7 +2519,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param $level
      * @param $current_category_id
      */
-    function getChildNodesRow($categoryID, $category_structure, $level, $current_category_id) {
+    function getChildNodesRow($categoryID, $category_structure, $level, $current_category_id)
+    {
         if (!is_array($category_structure['childs'][$categoryID])) {
             return '';
         }
@@ -2505,12 +2572,12 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param $level
      * @param $current_category_id
      */
-    function get_child_nodes_row_control($categoryID, $category_structure, $level, $current_category_id, $user_id, $control = false, $data_structure, $params = array()) {
+    function get_child_nodes_row_control($categoryID, $category_structure, $level, $current_category_id, $user_id, $control = false, $data_structure, $params = array())
+    {
         $rs = '';
         if (!isset($category_structure['childs'][$categoryID]) || !is_array($category_structure['childs'][$categoryID])) {
             return '';
         }
-
 
 
         if (count($params) > 0) {
@@ -2520,7 +2587,7 @@ class Structure_Manager extends SiteBill_Krascap {
         foreach ($category_structure['childs'][$categoryID] as $child_id) {
 
 
-            if ((0 != $this->getConfigValue('hide_empty_catalog')) AND ( 0 == $data_structure['data'][$user_id][$child_id])) {
+            if ((0 != $this->getConfigValue('hide_empty_catalog')) and (0 == $data_structure['data'][$user_id][$child_id])) {
                 $rs .= '';
             } else {
 
@@ -2545,7 +2612,7 @@ class Structure_Manager extends SiteBill_Krascap {
                 if ($child_id == $current_category_id) {
                     $row_class = 'active';
                 }
-                $rs .= '<td class="' . $row_class . '"><a href="?topic_id=' . $child_id . '' . $add_url . '">' . str_repeat('&nbsp;.&nbsp;', $level) . $category_structure['catalog'][$child_id]['name'] . '</a> (' . (int) $data_structure['data'][$user_id][$child_id] . ')' . ' <small>id:' . $child_id . '</small></td>';
+                $rs .= '<td class="' . $row_class . '"><a href="?topic_id=' . $child_id . '' . $add_url . '">' . str_repeat('&nbsp;.&nbsp;', $level) . $category_structure['catalog'][$child_id]['name'] . '</a> (' . (int)$data_structure['data'][$user_id][$child_id] . ')' . ' <small>id:' . $child_id . '</small></td>';
                 if ($control) {
                     $edit_icon = '<a href="?action=structure&do=edit&id=' . $child_id . '"><img src="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template/img/edit.png" border="0"  alt="редактировать" title="редактировать"></a>';
                     $delete_icon = '<a href="?action=structure&do=delete&id=' . $child_id . '" onclick="if ( confirm(\'' . Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE') . '\') ) {return true;} else {return false;}"><img src="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template/img/delete.png" border="0" width="16" height="16" alt="удалить" title="удалить"></a>';
@@ -2592,7 +2659,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param $level
      * @param $current_category_id
      */
-    function getChildNodes($categoryID, $category_structure, $level, $current_category_id, $superparent = 0) {
+    function getChildNodes($categoryID, $category_structure, $level, $current_category_id, $superparent = 0)
+    {
         $level_symbol = $this->getConfigValue('level_symbol');
         $level_symbol = str_replace('#', ' ', $level_symbol);
 
@@ -2633,7 +2701,7 @@ class Structure_Manager extends SiteBill_Krascap {
             } else {
                 $offset_level = $level;
             }
-            $rs .= '<option class="rootlevel rootlevel_'.$level.'" data-superparent="' . $superparent . '" data-parent="' . $categoryID . '" data-level="' . $level . '" value="' . $child_id . '" data-value="' . $category_structure['catalog'][$child_id]['name'] . '" ' . $selected . $disabled . '>' . str_repeat($level_symbol, $offset_level) . $category_structure['catalog'][$child_id]['name'] . '</option>';
+            $rs .= '<option class="rootlevel rootlevel_' . $level . '" data-superparent="' . $superparent . '" data-parent="' . $categoryID . '" data-level="' . $level . '" value="' . $child_id . '" data-value="' . $category_structure['catalog'][$child_id]['name'] . '" ' . $selected . $disabled . '>' . str_repeat($level_symbol, $offset_level) . $category_structure['catalog'][$child_id]['name'] . '</option>';
             if (isset($category_structure['childs'][$child_id])) {
                 if (count($category_structure['childs'][$child_id]) > 0) {
                     $rs .= $this->getChildNodes($child_id, $category_structure, $level + 1, $current_category_id, $superparent);
@@ -2663,7 +2731,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return $rs;
     }
 
-    function getShopChildNodes($categoryID, $category_structure, $level, $current_category_id) {
+    function getShopChildNodes($categoryID, $category_structure, $level, $current_category_id)
+    {
         if (!is_array($category_structure['childs'][$categoryID])) {
             return '';
         }
@@ -2708,7 +2777,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @return string
      * @author Kris
      */
-    function getServiceTypesTree_selectBox($select_name, $current_servicetype_id) {
+    function getServiceTypesTree_selectBox($select_name, $current_servicetype_id)
+    {
         //echo '$current_category_id = '.$current_category_id;
         $service_type_array = $this->getServiceTypeTree_array(0, 0);
         $level = 1;
@@ -2730,7 +2800,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @return string
      * @author Kris
      */
-    function getServiceTypesTree_optionItems($array, $current_servicetype_id) {
+    function getServiceTypesTree_optionItems($array, $current_servicetype_id)
+    {
         if (count($array) == 0)
             return '';
         foreach ($array as $value) {
@@ -2757,7 +2828,8 @@ class Structure_Manager extends SiteBill_Krascap {
      * @return array
      * @author Kris
      */
-    function getServiceTypeTree_array($level, $parent_id) {
+    function getServiceTypeTree_array($level, $parent_id)
+    {
         global $_SESSION;
         $query = "select st1.* from " . DB_PREFIX . "_service_type as st1 where st1.parent_id = " . $parent_id . "";
         $arr = array();
@@ -2787,11 +2859,13 @@ class Structure_Manager extends SiteBill_Krascap {
      * @param void
      * @return string
      */
-    function grid() {
+    function grid()
+    {
         return $this->getCategoryTreeModern(0);
     }
 
-    function findCurrent(&$structure, $active) {
+    function findCurrent(&$structure, $active)
+    {
         foreach ($structure['childs'] as $k => $v) {
             foreach ($v as $vv) {
                 if ($vv == $active) {
@@ -2806,7 +2880,8 @@ class Structure_Manager extends SiteBill_Krascap {
         }
     }
 
-    private function getRealtyTypeSelectbox($realty_type, $topic_id) {
+    private function getRealtyTypeSelectbox($realty_type, $topic_id)
+    {
         $re_types = array('0' => 'Игнорировать', '1' => 'Жилая', '4' => 'Коммерческая', '6' => 'Нежилая');
         $ret = '';
         $ret .= '<select name="data[' . $topic_id . '][obj_type_id]">';
@@ -2821,7 +2896,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return $ret;
     }
 
-    private function getOperationTypeSelectbox($operation_type, $topic_id) {
+    private function getOperationTypeSelectbox($operation_type, $topic_id)
+    {
         $op_types = array('0' => 'Игнорировать', '1' => 'Продажа', '2' => 'Аренда');
         $ret = '';
         $ret .= '<select name="data[' . $topic_id . '][operation_type]">';
@@ -2836,7 +2912,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return $ret;
     }
 
-    function getCategoryTreeAssoc() {
+    function getCategoryTreeAssoc()
+    {
         //echo '$current_category_id = '.$current_category_id;
         $category_structure = $this->loadCategoryStructure();
         //echo '<pre>';
@@ -2872,13 +2949,15 @@ class Structure_Manager extends SiteBill_Krascap {
         return $rs;
     }
 
-    function saveLinkerAssociations($rules) {
+    function saveLinkerAssociations($rules)
+    {
         foreach ($_POST['topic'] as $topic_id => $link_topic_id) {
             $this->update_topic_links($topic_id, $link_topic_id, $_POST['params_topic'][$topic_id]);
         }
     }
 
-    function update_topic_links($topic_id, $link_topic_id, $params) {
+    function update_topic_links($topic_id, $link_topic_id, $params)
+    {
         $DBC = DBC::getInstance();
         //echo "topic_id = $topic_id, link_topic_id = $link_topic_id, params = $params<br>";
         $query = 'SELECT id FROM ' . DB_PREFIX . '_topic_links WHERE topic_id=?';
@@ -2905,7 +2984,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return true;
     }
 
-    function load_topic_links() {
+    function load_topic_links()
+    {
         $DBC = DBC::getInstance();
         $ra = array();
         $query = 'SELECT * FROM ' . DB_PREFIX . '_topic_links';
@@ -2919,7 +2999,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return $ra;
     }
 
-    function getCategoryTreeLinker() {
+    function getCategoryTreeLinker()
+    {
         $topic_links_hash = $this->load_topic_links();
         //echo '$current_category_id = '.$current_category_id;
         $category_structure = $this->loadCategoryStructure();
@@ -2958,7 +3039,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return $rs;
     }
 
-    function getRowAssoc($categoryID, $category_structure, $level, $row_class) {
+    function getRowAssoc($categoryID, $category_structure, $level, $row_class)
+    {
         $rs .= '<tr>';
         $rs .= '<td class="' . $row_class . '">' . str_repeat('&nbsp;.&nbsp;', $level) . $category_structure['catalog'][$categoryID]['name'] . '</td>';
 
@@ -2971,15 +3053,16 @@ class Structure_Manager extends SiteBill_Krascap {
         return $rs;
     }
 
-    function getRowLinker($categoryID, $category_structure, $level, $row_class, $topic_links_hash, $data_structure = false) {
-        if ( isset($data_structure['data'][0][$categoryID])) {
+    function getRowLinker($categoryID, $category_structure, $level, $row_class, $topic_links_hash, $data_structure = false)
+    {
+        if (isset($data_structure['data'][0][$categoryID])) {
             $has_data = ' warning ';
         } else {
             $has_data = '';
         }
 
-        $rs .= '<tr class="'.$has_data.'">';
-        $rs .= '<td class="' . $row_class . '">' . str_repeat('&nbsp;.&nbsp;', $level) . $category_structure['catalog'][$categoryID]['name'] . ' <strong>[' . $categoryID . ']</strong>' . ' d = '.$data_structure['data'][0][$categoryID].'</td>';
+        $rs .= '<tr class="' . $has_data . '">';
+        $rs .= '<td class="' . $row_class . '">' . str_repeat('&nbsp;.&nbsp;', $level) . $category_structure['catalog'][$categoryID]['name'] . ' <strong>[' . $categoryID . ']</strong>' . ' d = ' . $data_structure['data'][0][$categoryID] . '</td>';
 
         $params['ignore_published_status'] = 1;
         $true_categoryID = $categoryID;
@@ -3001,13 +3084,14 @@ class Structure_Manager extends SiteBill_Krascap {
         return $rs;
     }
 
-    function getChildNodesRowLinker($categoryID, $category_structure, $level, $current_category_id, $topic_links_hash, $data_structure = false) {
+    function getChildNodesRowLinker($categoryID, $category_structure, $level, $current_category_id, $topic_links_hash, $data_structure = false)
+    {
         if (!is_array($category_structure['childs'][$categoryID])) {
             return '';
         }
         $params['ignore_published_status'] = 1;
         foreach ($category_structure['childs'][$categoryID] as $child_id) {
-            if ( $category_structure['catalog'][$child_id]['published'] == 1 ) {
+            if ($category_structure['catalog'][$child_id]['published'] == 1) {
                 // Чтобы проще видеть, в линкере отображаем только не опубликованные ветки
                 // В рабочей версии закоменчено, пока включать через код, потом выключать
                 //continue;
@@ -3037,7 +3121,7 @@ class Structure_Manager extends SiteBill_Krascap {
                 $this->j = 0;
                 $row_class = "row2";
             }
-            if ($category_structure['catalog'][$child_id]['published'] == 0 and isset($data_structure['data'][0][$child_id]) and $data_structure['data'][0][$child_id] > 100 ) {
+            if ($category_structure['catalog'][$child_id]['published'] == 0 and isset($data_structure['data'][0][$child_id]) and $data_structure['data'][0][$child_id] > 100) {
                 $has_data = ' error ';
             } elseif ($category_structure['catalog'][$child_id]['published'] == 0 and isset($data_structure['data'][0][$child_id])) {
                 $has_data = ' warning ';
@@ -3045,17 +3129,15 @@ class Structure_Manager extends SiteBill_Krascap {
                 $has_data = '';
             }
 
-            $rs .= '<tr class="'.$has_data.'">';
+            $rs .= '<tr class="' . $has_data . '">';
             $rs .= '<td class="' . $row_class . '">' .
                 str_repeat('&nbsp;.&nbsp;', $level) . $category_structure['catalog'][$child_id]['name'] .
                 ' <strong>[' . $child_id . ']</strong>' .
-                ' d = '.$data_structure['data'][0][$child_id].
-                ' p = '.$category_structure['catalog'][$child_id]['published'].'</td>'
-            ;
+                ' d = ' . $data_structure['data'][0][$child_id] .
+                ' p = ' . $category_structure['catalog'][$child_id]['published'] . '</td>';
 
 
-
-            $rs .= '<td class="' . $row_class . '" '.$changed_style.'>' . $this->getCategorySelectBoxWithName('topic[' . $child_id . ']', $tmp_child_id, false, $params) . '</td>';
+            $rs .= '<td class="' . $row_class . '" ' . $changed_style . '>' . $this->getCategorySelectBoxWithName('topic[' . $child_id . ']', $tmp_child_id, false, $params) . '</td>';
             $rs .= '<td class="' . $row_class . '"><textarea type="text" name="params_topic[' . $child_id . ']">' . $topic_links_hash[$child_id]['params'] . '</textarea></td>';
 
 
@@ -3067,7 +3149,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return $rs;
     }
 
-    function getChildNodesRowAssoc($categoryID, $category_structure, $level, $current_category_id) {
+    function getChildNodesRowAssoc($categoryID, $category_structure, $level, $current_category_id)
+    {
         if (!is_array($category_structure['childs'][$categoryID])) {
             return '';
         }
@@ -3100,7 +3183,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return $rs;
     }
 
-    public static function has_child($id) {
+    public static function has_child($id)
+    {
         $DBC = DBC::getInstance();
         $query = 'SELECT COUNT(id) AS cnt FROM ' . DB_PREFIX . '_topic WHERE parent_id=?';
         $stmt = $DBC->query($query, array($id));
@@ -3111,7 +3195,8 @@ class Structure_Manager extends SiteBill_Krascap {
         return false;
     }
 
-    protected function getStrModelFromDB() {
+    protected function getStrModelFromDB()
+    {
         $form_data = array();
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
         $ATH = new Admin_Table_Helper();
@@ -3122,11 +3207,13 @@ class Structure_Manager extends SiteBill_Krascap {
         return $form_data;
     }
 
-    public function get_model () {
+    public function get_model()
+    {
         return $this->getStrModel();
     }
 
-    protected function getStrModel() {
+    protected function getStrModel()
+    {
 
         $form_data = $this->getStrModelFromDB();
 
@@ -3167,15 +3254,13 @@ class Structure_Manager extends SiteBill_Krascap {
         $form_data['topic']['order']['required'] = 'off';
         $form_data['topic']['order']['unique'] = 'off';
 
-        if ($this->getConfigValue('use_topic_publish_status')) {
-            $form_data['topic']['published']['name'] = 'published';
-            $form_data['topic']['published']['title'] = 'Раздел активен';
-            $form_data['topic']['published']['value'] = 1;
-            $form_data['topic']['published']['length'] = 40;
-            $form_data['topic']['published']['type'] = 'checkbox';
-            $form_data['topic']['published']['required'] = 'off';
-            $form_data['topic']['published']['unique'] = 'off';
-        }
+        $form_data['topic']['published']['name'] = 'published';
+        $form_data['topic']['published']['title'] = 'Раздел активен';
+        $form_data['topic']['published']['value'] = 1;
+        $form_data['topic']['published']['length'] = 40;
+        $form_data['topic']['published']['type'] = 'checkbox';
+        $form_data['topic']['published']['required'] = 'off';
+        $form_data['topic']['published']['unique'] = 'off';
 
         $form_data['topic']['name']['name'] = 'name';
         $form_data['topic']['name']['title'] = 'Название';
@@ -3299,7 +3384,6 @@ class Structure_Manager extends SiteBill_Krascap {
                 $form_data['topic']['description_' . $language_id]['unique'] = 'off';
             }
         }
-
 
 
         $form_data['topic']['url']['name'] = 'url';

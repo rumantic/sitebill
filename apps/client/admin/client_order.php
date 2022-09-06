@@ -89,7 +89,7 @@ class Client_Order extends client_site {
                         $table_view->setAbsoluteUrls();
                         $order_table .= $table_view->compile_view($form_data);
                         $order_table .= '</table>';
-                        $subject = $_SERVER['SERVER_NAME'] . ': Новая заявка от клиента / ' . $client_admin->data_model['client']['type_id']['select_data'][$order_model];
+                        $subject = $_SERVER['SERVER_NAME'] . ': '._e('Новая заявка от клиента').' / ' . $client_admin->data_model['client']['type_id']['select_data'][$order_model];
                         $to = $this->get_email_list();
                         $from = $this->getConfigValue('system_email');
                         $this->sendFirmMail($to, $from, $subject, $order_table);
@@ -287,7 +287,7 @@ class Client_Order extends client_site {
                     $this->writeLog(array('apps_name' => 'apps.client', 'method' => __METHOD__, 'message' => 'client_add_error: ' . $client_admin->GetErrorMessage(), 'type' => ERROR));
                     return json_encode(array('status' => 'error', 'message' => '<div class="alert alert-success">' . $client_admin->GetErrorMessage() . '</div>'));
                 } else {
-                    $subject = $_SERVER['SERVER_NAME'] . ': Новая заявка от клиента / ' . $client_admin->data_model['client']['type_id']['select_data'][$order_model];
+                    $subject = $_SERVER['SERVER_NAME'] . ': '._e('Новая заявка от клиента').' / ' . $client_admin->data_model['client']['type_id']['select_data'][$order_model];
                     $to = $this->get_email_list();
                     $_owner_user_id = intval($this->request()->get('_owner_user_id'));
                     if ( $_owner_user_id > 0 ) {

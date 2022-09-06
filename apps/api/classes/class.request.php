@@ -18,7 +18,7 @@ class API_Request {
     }
 
     function get($name) {
-        if ($_REQUEST[$name] != '') {
+        if (@$_REQUEST[$name] != '') {
             return $_REQUEST[$name];
         } elseif ($this->iRequest->get($name) != '') {
             return $this->iRequest->get($name);

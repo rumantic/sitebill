@@ -8,8 +8,8 @@ class Menu_Structure_Manager extends Object_Manager {
     /**
      * Constructor
      */
-    function Menu_Structure_Manager() {
-        $this->Sitebill();
+    function __construct() {
+        parent::__construct();
         $this->table_name = 'menu_structure';
         $this->action = 'menu_structure';
         $this->primary_key = 'menu_structure_id';

@@ -40,7 +40,7 @@ class Object_Manager extends SiteBill {
     private $total_count = 0;
     protected $redirect_disabled = false;
     public $notwatermarked_folder = SITEBILL_DOCUMENT_ROOT . '/img/nwtm/';
-    private $nowatermark_folder_with_id = false;
+    protected $nowatermark_folder_with_id = false;
     private $grid_params = null;
     /**
      * @var bool
@@ -66,12 +66,10 @@ class Object_Manager extends SiteBill {
 
     private static $tables_list = false;
 
-    /**
-     * Constructor
-     */
-    function __construct() {
-        $this->SiteBill();
-    }
+    private $default_form_action = false;
+
+    private $top_menu_items = array();
+    private $extended_items = '';
 
     function _preload() {
         return false;
@@ -82,6 +80,9 @@ class Object_Manager extends SiteBill {
             $this->load_table_list();
         }
         if (is_array(self::$tables_list) && self::$tables_list[$table_name] ) {
+            return true;
+        }
+        if (is_array(self::$tables_list) && self::$tables_list[DB_PREFIX.'_'.$table_name] ) {
             return true;
         }
         return false;
@@ -609,11 +610,26 @@ class Object_Manager extends SiteBill {
 
     function create_unique_index ( $table_name, $column_name ) {
         $DBC = DBC::getInstance();
-        $query = 'ALTER TABLE `'.DB_PREFIX.'_'.$table_name.'` ADD UNIQUE(`'.$column_name.'` )';
+
+        $query = "SELECT DISTINCT TABLE_NAME, INDEX_NAME 
+                    FROM INFORMATION_SCHEMA.STATISTICS 
+                    WHERE TABLE_SCHEMA = ? and TABLE_NAME=? and INDEX_NAME=?";
+        $stmt = $DBC->query($query, array(DB_BASE, DB_PREFIX.'_'.$table_name, 'idx_'.$column_name));
+        if ($stmt) {
+            while ( $ar = $DBC->fetch($stmt) ) {
+                if ( $ar['INDEX_NAME'] == 'idx_'.$column_name ) {
+                    return false;
+                }
+            }
+        }
+
+        $query = 'ALTER TABLE `'.DB_PREFIX.'_'.$table_name.'` ADD UNIQUE `idx_'.$column_name.'` (`'.$column_name.'` )';
         $stmt = $DBC->query($query, array());
         if ( $DBC->getLastError() ) {
             $this->writeLog($DBC->getLastError());
             return false;
+        } else {
+            $this->writeLog('success query: '.'ALTER TABLE `'.DB_PREFIX.'_'.$table_name.'` ADD UNIQUE `idx_'.$column_name.'` (`'.$column_name.'` )');
         }
         return true;
     }
@@ -767,15 +783,6 @@ class Object_Manager extends SiteBill {
         $cycle_per_page = intval($this->getRequestValue('per_page'));
         $current_page = 0;
 
-        $query_count = $query;
-
-        $DBC = DBC::getInstance();
-        $stmt = $DBC->query($query_count);
-        //echo $query_count;
-        if ($stmt) {
-            $ar = $DBC->fetch($stmt);
-        }
-        $cycle_total = $ar['total'];
         $cycle_total = 1;
 
 
@@ -907,9 +914,13 @@ class Object_Manager extends SiteBill {
 
         $rs_new = $this->get_app_title_bar();
         if ( !self::admin3_compatible() ) {
-            $rs_new .= $this->getTopMenu();
+            $rs_new .= '<div class="page-header">'.$this->getTopMenu().'</div>';
         }
+        $rs .= '<div class="row">';
+        $rs .= '<div class="col-xs-12">';
         $rs_new .= $rs;
+        $rs .= '</div>';
+        $rs .= '</div>';
 
         return $rs_new;
     }
@@ -1239,7 +1250,7 @@ class Object_Manager extends SiteBill {
         $common_grid = new Common_Grid($this);
         $common_grid->set_action($this->action);
         $common_grid->set_grid_table($this->table_name);
-        if ($params['url'] != '') {
+        if (@$params['url'] != '') {
             $common_grid->set_grid_url($params['url']);
         }
         if (isset($default_params['render_user_id'])) {
@@ -1270,8 +1281,9 @@ class Object_Manager extends SiteBill {
                         $common_grid->add_grid_item($grid_item);
                     }
                 } else {
-                    $common_grid->add_grid_item($this->primary_key);
-                    $common_grid->add_grid_item('name');
+                    foreach ( $this->get_default_grid_items() as $g_item ) {
+                        $common_grid->add_grid_item($g_item);
+                    }
                 }
             }
         }
@@ -1292,18 +1304,18 @@ class Object_Manager extends SiteBill {
             $common_grid->set_conditions_sql($params['grid_conditions_sql']);
         }
 
-        if ($default_params['batch_update']) {
+        if (@$default_params['batch_update']) {
             $common_grid->enableBatchUpdate();
             $common_grid->setBatchUpdateUrl($default_params['batch_update_url']);
         }
 
 
-        if ($default_params['mass_delete'] && $default_params['mass_delete_url']) {
+        if (@$default_params['mass_delete'] && @$default_params['mass_delete_url']) {
             //$common_grid->enableBatchUpdate();
             $common_grid->setMAssDeleteUrl($default_params['mass_delete_url']);
         }
 
-        if ($default_params['batch_activate']) {
+        if (@$default_params['batch_activate']) {
             $common_grid->enableBatchActivate();
         }
         //$common_grid->set_grid_query('SELECT * FROM '.DB_PREFIX.'_'.$this->table_name.' ORDER BY name ASC');
@@ -1329,6 +1341,18 @@ class Object_Manager extends SiteBill {
         return $rs;
     }
 
+    function set_extended_items ($items) {
+        $this->extended_items = $items;
+    }
+
+    function get_extended_items () {
+        return $this->extended_items;
+    }
+
+    function get_default_grid_items () {
+        return array($this->primary_key, 'name');
+    }
+
     /**
      * Generate grid array (array version of the grid method)
      * @param $params - здесь задаем параметры для того чтобы полностью переопределить структуру грида
@@ -1343,7 +1367,7 @@ class Object_Manager extends SiteBill {
         $common_grid = new Common_Grid($this);
         $common_grid->set_action($this->action);
         $common_grid->set_grid_table($this->table_name);
-        if ($params['url'] != '') {
+        if (@$params['url'] != '') {
             $common_grid->set_grid_url($params['url']);
         }
         if (isset($default_params['render_user_id'])) {
@@ -1433,7 +1457,7 @@ class Object_Manager extends SiteBill {
         $query_params = $data_model->get_prepared_insert_query(DB_PREFIX . '_' . $this->table_name, $form_data, $language_id);
         $query_params_vals = $query_params['p'];
         $this->writeLog(__METHOD__);
-        $this->writeArrayLog($query_params);
+        //$this->writeArrayLog($query_params);
 
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query_params['q'], $query_params_vals, $rows, $success);
@@ -1446,10 +1470,10 @@ class Object_Manager extends SiteBill {
 
         if ($new_record_id > 0) {
             foreach ($form_data as $form_item) {
-                if ($form_item['type'] == 'uploads') {
+                if (@$form_item['type'] == 'uploads') {
                     $imgs_uploads = $this->appendUploads($this->table_name, $form_item, $this->primary_key, $new_record_id);
                     $this->set_imgs($imgs_uploads);
-                } elseif ($form_item['type'] == 'docuploads') {
+                } elseif (@$form_item['type'] == 'docuploads') {
                     $imgs_uploads = $this->appendDocUploads($this->table_name, $form_item, $this->primary_key, $new_record_id);
                 }
             }
@@ -1468,7 +1492,7 @@ class Object_Manager extends SiteBill {
 
         $mutiitems = array();
         foreach ($form_data as $k => $form_item) {
-            if ($form_item['type'] == 'select_by_query_multi') {
+            if (@$form_item['type'] == 'select_by_query_multi') {
                 $vals = $form_item['value'];
                 if (!is_array($vals)) {
                     $vals = (array) $mutiitems[$k];
@@ -1603,12 +1627,54 @@ class Object_Manager extends SiteBill {
      * @return string
      */
     function getTopMenu() {
+        $this->add_top_menu_item(
+            '?action=' . $this->action . '&do=new',
+            Multilanguage::_('L_ADD_RECORD_BUTTON'),
+            'btn btn-primary',
+            'first'
+        );
+        return $this->compile_top_menu();
+    }
+
+    function compile_top_menu () {
+        $top_menu_items = $this->get_top_menu_items();
         $rs = '';
-        $rs .= '<a href="?action=' . $this->action . '&do=new" class="btn btn-primary">' . Multilanguage::_('L_ADD_RECORD_BUTTON') . '</a> ';
-        //$rs .= '</div>';
-        //$rs .= '<form method="post"><input type="hidden" name="action" value="add" /><input type="submit" name="submit" value="Добавить объявление" /></form>';
+
+        if ( is_array($top_menu_items) and count($top_menu_items) > 0 ) {
+            foreach ( $top_menu_items as $item ) {
+                $rs .= '<a href="'.$item['href'].'" class="'.$item['class'].'">'.$item['title'].'</a> ';
+            }
+        }
+        $rs .= $this->get_extended_items();
         return $rs;
     }
+
+    function add_top_menu_item ( $href, $title, $class = 'btn btn-primary', $position = 'next' ) {
+        $item = [
+            'href' => $href,
+            'title' => $title,
+            'class' => $class,
+        ];
+        if ( $position == 'first' ) {
+            array_unshift($this->top_menu_items, $item);
+        } else {
+            $this->top_menu_items[] = $item;
+        }
+    }
+
+    function get_top_menu_items () {
+        return $this->top_menu_items;
+    }
+
+
+    function set_default_form_action ( $action ) {
+        $this->default_form_action = $action;
+    }
+
+    function get_default_form_action () {
+        return $this->default_form_action;
+    }
+
 
     /**
      * Get form for edit or new record
@@ -1641,7 +1707,7 @@ class Object_Manager extends SiteBill {
         if (1 == $this->getConfigValue('apps.geodata.enable')) {
             $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/geodata/js/geodata.js"></script>';
         }
-        $rs .= '<form method="post" class="form-horizontal" action="' . $action . '" enctype="multipart/form-data">';
+        $rs .= '<form method="post" class="form-horizontal" action="' . ($this->get_default_form_action()?$this->get_default_form_action():$action) . '" enctype="multipart/form-data">';
 
         if ($this->getError()) {
             $smarty->assign('form_error', $form_generator->get_error_message_row($this->GetErrorMessage()));
@@ -1851,7 +1917,7 @@ class Object_Manager extends SiteBill {
     }
 
     protected function removeTemporaryFields(&$model, $remove_this_names = array()) {
-        if (@count($remove_this_names) > 0) {
+        if (isset($remove_this_names) && @count($remove_this_names) > 0) {
             foreach ($remove_this_names as $r) {
                 unset($model[$r]);
             }
@@ -1931,6 +1997,14 @@ class Object_Manager extends SiteBill {
 
         $this->model = $default_object_model;
         $this->data_model = $form_data;
+
+        if ( !$this->check_table_exist(DB_PREFIX.'_'.$this->table_name) ) {
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php';
+            $TA = new \table_admin();
+            $TA->create_table_and_columns($this->data_model, $this->table_name);
+            $TA->helper->create_table_from_model($this->table_name, $this->data_model);
+        }
+
         return $result;
     }
 
@@ -2045,4 +2119,73 @@ class Object_Manager extends SiteBill {
         return $this->enable_angular;
     }
 
+    public function create_or_update_table () {
+        $this->data_model = $this->get_model();
+        if ( !$this->check_table_exist(DB_PREFIX.'_'.$this->table_name) ) {
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php';
+            $TA = new \table_admin();
+            $TA->create_table_and_columns($this->data_model, $this->table_name);
+            if ( method_exists($TA->helper, 'create_table_from_model') ) {
+                $TA->helper->create_table_from_model($this->table_name, $this->data_model);
+            }
+        }
+    }
+
+    protected function bootstrap_and_css_header () {
+        $rs = '<link rel="stylesheet" href="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template1/assets/css/font-awesome.min.css" />';
+        $rs .= '<link rel="stylesheet" href="' . SITEBILL_MAIN_URL . '/apps/data/css/style.css" />';
+        $bootstrap_version = trim($this->getConfigValue('bootstrap_version'));
+        if ($bootstrap_version == '3') {
+            $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/system/js/bootstrap3-typeahead.min.js"></script>';
+        }
+        $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template1/assets/js/bootstrap-tag.min.js"></script>';
+
+        return $rs;
+    }
+
+    function create_custom_entity ($custom_entity_title = '') {
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php';
+        $TA = new \table_admin();
+        if ( !$TA->check_entity_exist($this->table_name) ) {
+            return $TA->create_customentity_record($this->table_name, $custom_entity_title);
+        }
+        return false;
+    }
+
+    protected function gritterSuccess ( $title, $message, $sticky = 'false', $time = 10000 ) {
+        return $this->gritterMessage($title, $message, 'gritter-success', $sticky, $time);
+    }
+
+    protected function gritterError ( $title, $message, $sticky = 'false', $time = 10000 ) {
+        return $this->gritterMessage($title, $message, 'gritter-error', $sticky, $time);
+    }
+
+    protected function gritterMessage ( $title, $message,  $class_name = 'gritter-success', $sticky = 'false', $time = 10000 ) {
+        $rs = "
+            <script type=\"text/javascript\">
+            $(document).ready(function () {
+                    
+                                $.gritter.add({
+                                    title: '$title',
+                                    text: '$message',
+                                    sticky: $sticky,
+                                    time: '$time',
+                                    class_name: '$class_name'
+                                });
+            });
+            </script>
+        ";
+        return $rs;
+    }
+    function get_smarty_template_dir ($mode = 'admin') {
+        global $smarty;
+        if ( $mode == 'admin' ) {
+            return SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template1';
+        }
+        if ( is_array($smarty->template_dir) ) {
+            return $smarty->template_dir[0];
+        }
+        return $smarty->template_dir;
+    }
 }

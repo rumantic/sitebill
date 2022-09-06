@@ -52,6 +52,13 @@
                                     'menu' => $custom_admin_entity_menu,
                                 ])
                         @endif
+
+                        <div class="menu-item menu-lg-down-accordion me-lg-1">
+                            <span class="menu-link py-3">
+                                <span class="menu-title"><a href="{{$sitebill->createUrlTpl('/admin/')}}">{{_e('Классическая админка')}}</a></span>
+                                <span class="menu-arrow d-lg-none"></span>
+                            </span>
+                        </div>
                     </div>
                     <!--end::Menu-->
                 </div>

@@ -11,7 +11,7 @@ class files_queue extends \Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
         $this->table_name = 'files_queue';
         $this->action = 'files_queue';
         $this->primary_key = 'id';

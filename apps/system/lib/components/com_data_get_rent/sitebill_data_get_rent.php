@@ -1,17 +1,17 @@
 <?php
 /**
- * Estate.sitebill.ru data get rent class 
+ * Estate.sitebill.ru data get rent class
  * @author Kondin Dmitriy <kondin@etown.ru>
  * @url http://www.sitebill.ru
  */
 class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
     var $room_item = array();
     var $time_range_item = array();
-    
+
     /**
      * Constructor
      */
-    function Sitebill_Data_Get_Rent() {
+    function __construct() {
         $this->room_item[1] = 'Комната на подселение';
         $this->room_item[2] = 'Гостинка';
         $this->room_item[3] = '1-ком.';
@@ -21,10 +21,10 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
 
         $this->time_range_item[1] = 'Длительный срок';
         $this->time_range_item[2] = 'Короткое время';
-        
-        $this->SiteBill();
+
+        parent::__construct();
     }
-    
+
     /**
      * Main
      * @param void
@@ -42,7 +42,7 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
         $rs = $this->getRentForm( $data );
         return $rs;
     }
-    
+
     /**
      * Check data
      * @param array $data data
@@ -61,10 +61,10 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
          	 $this->riseError('Неверно указано значение защитного кода');
             return false;
          }
-         
+
         return true;
     }
-    
+
     /**
      * Init data from request
      * @param void
@@ -82,7 +82,7 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
         $data['captcha_code'] = $this->getRequestValue('captcha_code');
         return $data;
     }
-    
+
     /**
      * Add record
      * @param array $data data
@@ -90,14 +90,14 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
      */
     function addRecord ( $data ) {
         $time_now = time();
-        
+
         $query = "insert into ".DB_PREFIX."_data_get_rent 
         	(room_type_id, time_range_id, district_id, name, phone, email, more, date_added) 
         		values 
         	(".$data['room_type_id'].", ".$data['time_range_id'].", ".$data['district_id'].", '".$data['name']."', '".$data['phone']."', '".$data['email']."', '".$data['more']."', ".$time_now.")";
         $DBC=DBC::getInstance();
 		$stmt=$DBC->query($query);
-        
+
     }
 
     /**
@@ -118,7 +118,7 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
         $rs .= '</select>';
         return $rs;
     }
-    
+
     /**
      * Get room type title by ID
      * @param int $room_type_id room type id
@@ -127,7 +127,7 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
     function getRoomTitleByID ( $room_type_id ) {
         return $this->room_item[$room_type_id];
     }
-    
+
     /**
      * Get time range title by ID
      * @param int $time_range_id time range id
@@ -136,7 +136,7 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
     function getTimeRangeTitleByID ( $time_range_id ) {
         return $this->time_range_item[$time_range_id];
     }
-    
+
     /**
      * Get district title by ID
      * @param int $district_id district id
@@ -144,7 +144,7 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
      */
     function getDistrictTitleByID ( $district_id ) {
         global $__db_prefix;
-        
+
         $query = "select * from ".DB_PREFIX."_district where id=$district_id";
         $DBC=DBC::getInstance();
 		$stmt=$DBC->query($query);
@@ -178,7 +178,7 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
         $rs .= '</select>';
         return $rs;
     }
-    
+
     /**
      * Get district list
      * @param int $district_id district ID
@@ -204,9 +204,9 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
         $rs .= '</select>';
         return $rs;
     }
-    
-    
-    
+
+
+
     /**
      * Get rent form
      * @param array $data data
@@ -225,7 +225,7 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
             $rs .= '<td colspan="2"><span class="error">'.$this->getError().'</span></td>';
             $rs .= '</tr>';
         }
-        
+
         $rs .= '<tr>';
         $rs .= '<td>Кол.во комнат</td><td>'.$this->getRoomSelectBox( $data['room_type_id'] ).'</td>';
         $rs .= '</tr>';
@@ -248,55 +248,55 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
         $rs .= '<td style="vertical-align: top;">Дополнительные пожелания</td><td><textarea name="more" rows="7" cols="20" class="getrent_form_textarea">'.$data['more'].'</textarea></td>';
         $rs .= '</tr>';
         $captcha_session_key = md5(time().rand(9999, 4).'random key captcha string core sitebill');
-        
+
         $rs .= '<tr>';
         $rs .= '<td style="vertical-align: top;"></td>';
         $rs .= '<td><img src="'.SITEBILL_MAIN_URL.'/captcha.php?captcha_session_key='.$captcha_session_key.'" width="180" height="80">';
         $rs .= '</tr>';
-        
+
         $rs .= '<tr>';
         $rs .= '<td style="vertical-align: top;">'.Multilanguage::_('CAPTCHA_TITLE', 'system').' <span style="color: red;">*</span> </td>';
         $rs .= '<td><input type="text" name="captcha_code" value="" class="getrent_form_input" /></td>';
         $rs .= '</tr>';
-        
+
         $rs .= '<input type="hidden" name="captcha_session_key" value="'.$captcha_session_key.'">';
         $rs .= '</tr>';
-        
-        
-        
+
+
+
         if($this->getConfigValue('post_form_agreement_enable')==1){
-        	
+
         	$rs .= '<script type="text/javascript">';
         	$rs.='$(document).ready(function(){';
         	$rs.='	if($("#i_am_agree_in_form").attr("checked")){';
-        		
+
         	$rs.='	}else{';
         	$rs.='		$("#getrent_submit").attr("disabled","disabled");';
         	$rs.='	}';
-        	
+
         	$rs.='	$("#i_am_agree_in_form").change(function(){';
         	$rs.='			if($(this).attr("checked")){';
         	$rs.='				$("#getrent_submit").removeAttr("disabled");';
-        	
+
         	$rs.='			}else{';
         	$rs.='				$("#getrent_submit").attr("disabled","disabled");';
-        	
+
         	$rs.='			}';
-        	
-        	
+
+
         	//$rs.=' $("#getrent_submit").toggle();';
-        	
+
         	$rs.='});';
-        	
+
         	$rs.='});';
         	$rs .= '</script>';
-        	
+
         	$rs .= '</script>';
         	$rs .= '<tr>';
 	        $rs .= '<td><input type="checkbox" id="i_am_agree_in_form" /></td><td>'.$this->getConfigValue('post_form_agreement_text').'</td>';
 	        $rs .= '</tr>';
         }
-        
+
         $rs .= '<tr>';
         $rs .= '<input type="hidden" name="do" value="add_done">';
         $rs .= '<td></td><td><input type="submit" value="Отправить" id="getrent_submit"></td>';
@@ -307,5 +307,5 @@ class Sitebill_Data_Get_Rent extends SiteBill_Krascap {
 
         return $rs;
     }
-    
+
 }

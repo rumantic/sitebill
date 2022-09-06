@@ -1,6 +1,6 @@
 
-<link href="https://api.sitebill.ru/api/apps/cloudprovider/assets/icons/meteocons/style.css" rel="stylesheet">
-<link href="https://api.sitebill.ru/api/apps/cloudprovider/assets/icons/material-icons/outline/style.css" rel="stylesheet">
+<link href="{{$estate_folder}}/apps/admin3/resources/assets/icons/meteocons/style.css" rel="stylesheet">
+<link href="{{$estate_folder}}/apps/admin3/resources/assets/icons/material-icons/outline/style.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css?family=Muli:300,400,600,700" rel="stylesheet">
 
 <link rel="stylesheet" href="{{\bridge\Helpers\Helpers::get_angular_file('styles')}}"></head>

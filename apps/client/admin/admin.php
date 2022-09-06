@@ -20,7 +20,7 @@ class client_admin extends Object_Manager {
      */
     function __construct() {
         $this->enable_angular();
-        $this->SiteBill();
+        parent::__construct();
         Multilanguage::appendAppDictionary('client');
 
         $this->table_name = 'client';
@@ -776,7 +776,7 @@ class client_admin extends Object_Manager {
             return $Client_Order->save_order_form($model);
         } elseif ($this->getRequestValue('action') == 'get_client') {
 
-            $user_id = intval($_SESSION['user_id']);
+            $user_id = $this->getSessionUserID();
             $access_allow = false;
 
 
@@ -789,7 +789,7 @@ class client_admin extends Object_Manager {
             } elseif ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php');
                 $permission = new Permission();
-                if (!$permission->get_access($_SESSION['user_id_value'], 'client', 'access')) {
+                if (!$permission->get_access($user_id, 'client', 'access')) {
                     $access_allow = false;
                 } else {
                     $access_allow = true;
@@ -828,7 +828,7 @@ class client_admin extends Object_Manager {
             }
             return json_encode(array_values($ret));
         } elseif ($this->getRequestValue('action') == 'add_client') {
-            $user_id = intval($_SESSION['user_id_value']);
+            $user_id = $this->getSessionUserID();
             $access_allow = false;
 
             if ($user_id == 0) {
@@ -838,7 +838,7 @@ class client_admin extends Object_Manager {
             } elseif ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
                 require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php');
                 $permission = new Permission();
-                if (!$permission->get_access($_SESSION['user_id_value'], 'client', 'access')) {
+                if (!$permission->get_access($user_id, 'client', 'access')) {
                     $access_allow = false;
                 } else {
                     $access_allow = true;

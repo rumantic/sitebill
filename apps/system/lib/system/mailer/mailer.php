@@ -197,7 +197,14 @@ class Mailer
             $mail->SMTPSecure = "ssl";
         }
 
-        $mail->SMTPDebug = 0;             // enables SMTP debug information (for testing)
+        if ( defined('SMTP_DEBUG') and SMTP_DEBUG == true ) {
+            echo '<pre>';
+            print_r($to);
+            echo '</pre>';
+            $mail->SMTPDebug = 1;             // enables SMTP debug information (for testing)
+        } else {
+            $mail->SMTPDebug = 0;             // enables SMTP debug information (for testing)
+        }
         // 1 = errors and messages
         // 2 = messages only
         $mail->SMTPAuth = true;          // enable SMTP authentication
@@ -220,10 +227,21 @@ class Mailer
         //$address = "ctrlaltdel@mail.ru";
 
         if (!is_array($to)) {
+            if ( defined('SMTP_DEBUG') and SMTP_DEBUG == true ) {
+                echo 'send to 1 address: '.$to.'<br>';
+                $sitebill->writeLog('send to 1 address: '.$to);
+            }
             $mail->AddAddress($to);
         } elseif (is_array($to) && count($to) > 0) {
+            if ( defined('SMTP_DEBUG') and SMTP_DEBUG == true ) {
+                echo 'send to array addresses: ';
+                echo '<pre>';
+                print_r($to);
+                echo '</pre>';
+            }
 
             foreach ($to as $k => $_to) {
+                $sitebill->writeLog('send to array '.$k.' = '.$_to);
                 $mail->AddAddress($_to);
             }
         }

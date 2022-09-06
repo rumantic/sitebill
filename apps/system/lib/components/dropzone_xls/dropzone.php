@@ -31,7 +31,7 @@ class DropZone extends ajax_common
 
         $script_code = array();
         $collection = array();
-        $script_code[] = '<script src="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.js"></script>';
+        $script_code[] = '<script src="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.js?v=2"></script>';
         $script_code[] = '<link rel="stylesheet" type="text/css" href="' . SITEBILL_MAIN_URL . '/apps/system/js/dropzone/dropzone.css">';
         $script_code[] = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/dataimagelist.js?v=1"></script>';
         //$html.='<script src="'.SITEBILL_MAIN_URL.'/apps/system/js/dropzone_sitebill.js"></script>';

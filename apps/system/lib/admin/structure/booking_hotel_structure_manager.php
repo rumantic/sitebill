@@ -2,7 +2,7 @@
 class Booking_Hotel_Structure_Manager extends Structure_Implements {
 	
 	function __construct() {
-		$this->SiteBill();
+		parent::__construct();
 		$this->table='booking_hotel_topic';
 		$this->entity='booking_hotel';
 		$this->action='structure_'.$this->entity;

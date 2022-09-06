@@ -75,7 +75,7 @@ class BaseController
         $viewparams = [];
         $viewparams['sitebill'] = $this->sitebill;
         $viewparams['sessiondata'] = $_SESSION;
-        $viewparams['tpldata'] = $this->getCommonTplData();
+        $viewparams['tpldata'] = @$this->getCommonTplData();
         $viewparams['config'] = \SConfig::getInstance();
         $viewparams['LangSwitcher'] = $this->buildLangSwitcher($this->sitebill->getClearRequestURI());
 

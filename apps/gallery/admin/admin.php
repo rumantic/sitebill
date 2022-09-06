@@ -6,35 +6,40 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * Gallery admin backend
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
-class gallery_admin extends Object_Manager {
+class gallery_admin extends Object_Manager
+{
     use \system\traits\blade\BladeTrait;
 
     /**
      * Constructor
      */
-    function __construct() {
-        $this->SiteBill();
+    function __construct()
+    {
+        parent::__construct();
         Multilanguage::appendAppDictionary('gallery');
         $this->table_name = 'gallery';
         $this->action = 'gallery';
         $this->primary_key = 'gallery_id';
 
         $this->data_model = $this->get_gallery_model();
-        $this->add_resource_path(SITEBILL_DOCUMENT_ROOT.'/apps/gallery/resources/views');
+        $this->add_resource_path(SITEBILL_DOCUMENT_ROOT . '/apps/gallery/resources/views');
     }
 
 
-    function structure_processor() {
+    function structure_processor()
+    {
         switch ($this->getRequestValue('do')) {
-            case 'structure' : {
-                    $this->install();
-                    return 'Приложение установлено';
-                    break;
-                }
+            case 'structure' :
+            {
+                $this->install();
+                return 'Приложение установлено';
+                break;
+            }
         }
     }
 
-    function install() {
+    function install()
+    {
         $success_result = true;
         $DBC = DBC::getInstance();
 
@@ -73,14 +78,13 @@ ALTER TABLE `" . DB_PREFIX . "_gallery`
      * @param void
      * @return string
      */
-    function grid($params = array(), $default_params = array()) {
-        if (!$this->check_table_exist('gallery') or ! $this->check_table_exist('gallery_image')) {
-            return 'Приложение не установлено. <a href="?action=gallery&do=structure&subdo=install">Нажмите чтобы установить</a>';
-        }
+    function grid($params = array(), $default_params = array())
+    {
         return parent::grid($params, $default_params);
     }
 
-    function _get_gallery_model() {
+    function _get_gallery_model()
+    {
         $form_gallery = array();
 
         $form_gallery['gallery']['gallery_id']['name'] = 'gallery_id';
@@ -143,7 +147,8 @@ ALTER TABLE `" . DB_PREFIX . "_gallery`
      * @param
      * @return
      */
-    function get_gallery_model() {
+    function get_gallery_model()
+    {
         $form_data = array();
         $table_name = 'gallery';
         //echo 'from table1';

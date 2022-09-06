@@ -10,4 +10,5 @@ class Base {
     public static $required = 'required';
     public static $unique = 'unique';
     public static $length = 'length';
+    public static $parameters = 'parameters';
 }

@@ -9,10 +9,10 @@ class Memory_List extends Object_Manager {
     private $this_user;
 
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
         $this->memorylist_table = 'memorylist';
         $this->memorylist_item_table = 'memorylist_item';
-        $this->this_user = (int) $_SESSION['user_id'];
+        $this->this_user = (int) @$_SESSION['user_id'];
     }
 
     function main() {

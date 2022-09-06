@@ -9,8 +9,8 @@ class Street_Manager extends Object_Manager {
     /**
      * Constructor
      */
-    function Street_Manager() {
-        $this->SiteBill();
+    function __construct() {
+        parent::__construct();
         $this->table_name = 'street';
         $this->action = 'street';
         $this->app_title = Multilanguage::_('STREET_APP_NAME', 'system');
@@ -310,16 +310,6 @@ class Street_Manager extends Object_Manager {
         return true;
     }
 
-    /**
-     * Get top menu
-     * @param void
-     * @return string
-     */
-    function getTopMenu() {
-        $rs = '<a href="?action=street&do=new" class="btn btn-primary">' . Multilanguage::_('L_TEXT_ADD_STREET') . '</a>';
-        //$rs.=$this->getAdditionalSearchForm();
-        return $rs;
-    }
 
     function getAdditionalSearchForm() {
         $ret = '';

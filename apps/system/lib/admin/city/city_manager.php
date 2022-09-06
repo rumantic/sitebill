@@ -9,8 +9,8 @@ class City_Manager extends Object_Manager {
     /**
      * Constructor
      */
-    function City_Manager() {
-        $this->SiteBill();
+    function __construct() {
+        parent::__construct();
         $this->table_name = 'city';
         $this->action = 'city';
         $this->app_title = Multilanguage::_('CITY_APP_NAME', 'system');
@@ -35,6 +35,7 @@ class City_Manager extends Object_Manager {
             $rs .= '<a href="#" class="btn btn-primary setmode" data-type="modern">M</a> ';
         }
         $rs .= '<script>$(document).ready(function(){$(".setmode").click(function(){$.cookie("city_manager_mode", $(this).data("type"));window.location.replace(window.location.href)});});</script>';
+        $rs .= $this->get_extended_items();
         return $rs;
     }
 
@@ -276,7 +277,7 @@ class City_Manager extends Object_Manager {
         $left_page = $current_page - $offset_left;
         $right_page = $current_page - $offset_right;
         if ($left_page < 0) {
-            
+
         }
 
         $pager = '<ul>';

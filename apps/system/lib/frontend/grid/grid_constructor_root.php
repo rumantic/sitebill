@@ -16,7 +16,7 @@ class Grid_Constructor_Root extends SiteBill {
      * @return void
      */
     function Grid_Constructor_Root() {
-        $this->SiteBill();
+        parent::__construct();
     }
 
     /**
@@ -51,7 +51,7 @@ class Grid_Constructor_Root extends SiteBill {
 
     /**
      * Process get form
-     * @param 
+     * @param
      * @return string
      */
     function processGetRentForm() {
@@ -74,7 +74,7 @@ class Grid_Constructor_Root extends SiteBill {
     }
 
     protected function FrontAction_isunderconstruct() {
-        
+
     }
 
     protected function FrontAction_yandexrealty_export() {
@@ -148,7 +148,7 @@ class Grid_Constructor_Root extends SiteBill {
             $stantdart_yandex_alias = 'yandexrealty';
         }
         if ($yandex_alias !== '') {
-            
+
         } elseif (0 === intval($this->getConfigValue('apps.yandexrealty.disable_standart_entrypoint')) && $REQUESTURIPATH == $stantdart_yandex_alias) {
             $this->FrontAction_yandexrealty_export();
         }
@@ -647,7 +647,7 @@ class Grid_Constructor_Root extends SiteBill {
     }
 
     /**
-     * Process advanced form 
+     * Process advanced form
      * @param string $key key
      * @return string
      */
@@ -801,7 +801,7 @@ class Grid_Constructor_Root extends SiteBill {
         $urls = $Structure->loadCategoriesUrls();
 
         if ($this->getConfigValue('apps.seo.level_enable') == 1) {
-            
+
         } else {
             foreach ($urls as $k => $u) {
                 $up = explode('/', $u);
@@ -1296,7 +1296,7 @@ class Grid_Constructor_Root extends SiteBill {
     }
 
     /*protected function FrontAction_index() {
-        
+
     }
 
     protected function FrontAction_add($REQUESTURIPATH) {
@@ -1807,7 +1807,7 @@ class Grid_Constructor_Root extends SiteBill {
         $REQUESTURIPATH = Sitebill::getClearRequestURI();
 
         $grid_constructor = $this->_getGridConstructor();
-        
+
         $uselangs = false;
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
             $uselangs = true;
@@ -1815,7 +1815,7 @@ class Grid_Constructor_Root extends SiteBill {
         } else {
             $lang_postfix = '';
         }
-            
+
 
         if ($REQUESTURIPATH == 'find') {
             //$grid_constructor->setCatchedRoute('system:find');
@@ -1952,7 +1952,7 @@ class Grid_Constructor_Root extends SiteBill {
             //$work_params=$Router->getWorkParams();
             //$this->setRequestValue('router_info', $work_params);
         } elseif ($predefined_url_catched) {
-            
+
 
             if (isset($predefined_info['meta_title' . $lang_postfix]) && $predefined_info['meta_title' . $lang_postfix] != '') {
                 $meta_title = $predefined_info['meta_title' . $lang_postfix];
@@ -2424,21 +2424,21 @@ class Grid_Constructor_Root extends SiteBill {
 
 
         if ($route_catched) {
-            
+
         } elseif ($predefined_url_catched) {
-            
+
         } elseif ($country_url_catched) {
-            
+
         } elseif ($city_url_catched) {
             if (method_exists($this, 'cityFrontPage')) {
                 return $this->cityFrontPage($city_info);
             }
         } elseif ($region_url_catched) {
-            
+
         } elseif ($complex_url_catched) {
-            
+
         } else {
-            
+
         }
 
         $params_r = $this->gatherRequestParams();
@@ -3159,7 +3159,7 @@ class Grid_Constructor_Root extends SiteBill {
     /**
      * Valid page
      * @param int $array_count array count
-     * @param int $counter counter 
+     * @param int $counter counter
      * @param int $page page
      * @return boolean
      */

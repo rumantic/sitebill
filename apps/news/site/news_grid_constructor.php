@@ -6,12 +6,14 @@ require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/grid/grid_const
  * Grid constructor
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
-class News_Grid_Constructor extends Grid_Constructor {
+class News_Grid_Constructor extends Grid_Constructor
+{
 
     /**
      * Constructor
      */
-    function __construct() {
+    function __construct()
+    {
         parent::__construct();
     }
 
@@ -20,7 +22,8 @@ class News_Grid_Constructor extends Grid_Constructor {
      * @param array $param
      * @return array
      */
-    function main($params) {
+    function main($params)
+    {
 
     }
 
@@ -30,7 +33,8 @@ class News_Grid_Constructor extends Grid_Constructor {
      * @param boolean $random
      * @return array
      */
-    function get_sitebill_adv_ext($params, $random = false, $premium = false) {
+    function get_sitebill_adv_ext($params, $random = false, $premium = false)
+    {
         $DBC = DBC::getInstance();
         $paging_alias = SiteBill::getClearRequestURI();
 
@@ -76,14 +80,14 @@ class News_Grid_Constructor extends Grid_Constructor {
             $page = $params['page'];
         }
 
-        if (!isset($params['per_page']) OR $params['per_page'] == 0) {
+        if (!isset($params['per_page']) or $params['per_page'] == 0) {
             $limit = $this->getConfigValue('apps.news.front.per_page');
         } else {
             $limit = $params['per_page'];
         }
 
         if (isset($params['news_topic_id']) && $params['news_topic_id'] != 0) {
-            $where[] = 'news_topic_id=' . (int) $params['news_topic_id'];
+            $where[] = 'news_topic_id=' . (int)$params['news_topic_id'];
         }
 
         if ($use_datetime) {
@@ -92,12 +96,12 @@ class News_Grid_Constructor extends Grid_Constructor {
             $where[] = '`date`<=' . time();
         }
 
-        if ( $this->getConfigValue('apps.news.use_active_status') ) {
+        if ($this->getConfigValue('apps.news.use_active_status')) {
             $where[] = '`active`=1';
         }
 
 
-        if (isset($_SESSION['user_domain_owner']) && (int) $_SESSION['user_domain_owner']['user_id'] != 0) {
+        if (isset($_SESSION['user_domain_owner']) && (int)$_SESSION['user_domain_owner']['user_id'] != 0) {
             $where[] = 'user_id=' . $_SESSION['user_domain_owner']['user_id'];
         }
 
@@ -133,11 +137,7 @@ class News_Grid_Constructor extends Grid_Constructor {
         $paging = Page_Navigator::getPagingArray($total, $page, $limit, array(), $paging_alias);
         $this->template->assert('news_paging', $paging);
 
-        $this->template->assert('news_pager', $this->get_page_links_list ($page, $total, $limit, array('page_url' => $paging_alias)));
-
-
-
-
+        $this->template->assert('news_pager', $this->get_page_links_list($page, $total, $limit, array('page_url' => $paging_alias)));
 
 
         $query = "SELECT * FROM " . DB_PREFIX . "_news " . $add_from_table . " " . $where_statement . " ORDER BY " . $order . " LIMIT " . $start . ", " . $limit;
@@ -180,7 +180,7 @@ class News_Grid_Constructor extends Grid_Constructor {
                     }
                 }
             }
-            $ra[$item_id]['_date']=$ra[$item_id]['date'];
+            $ra[$item_id]['_date'] = $ra[$item_id]['date'];
             if ($use_datetime) {
                 $ra[$item_id]['date'] = date('d.m.Y', strtotime($ra[$item_id]['date']));
             } else {
@@ -191,9 +191,6 @@ class News_Grid_Constructor extends Grid_Constructor {
             $ra[$item_id]['_news_topic_id'] = $ra[$item_id]['news_topic_id'];
             $ra[$item_id]['news_topic_id'] = $data_model->get_string_value_by_id('news_topic', 'id', 'name', $ra[$item_id]['news_topic_id']);
         }
-
-
-
 
 
         $hasUploadify = false;
@@ -241,6 +238,8 @@ class News_Grid_Constructor extends Grid_Constructor {
                     $ims = array();
                 }
                 if (isset($ims[0])) {
+                    $ims = $data_model->sharder_mirror($ims, true);
+
                     $ra[$k]['prev_img'] = $this->createMediaIncPath($ims[0], 'preview');
                     $ra[$k]['norm_img'] = $this->createMediaIncPath($ims[0]);
                 }
@@ -251,13 +250,14 @@ class News_Grid_Constructor extends Grid_Constructor {
         return $ra;
     }
 
-    protected function getNewsRoute($news_id, $news_alias = '') {
+    protected function getNewsRoute($news_id, $news_alias = '')
+    {
         if ('' != $this->getConfigValue('apps.news.alias')) {
             $app_news_alias = $this->getConfigValue('apps.news.alias');
         } else {
             $app_news_alias = 'news';
         }
-        if (1 == (int) $this->getConfigValue('apps.seo.no_trailing_slashes')) {
+        if (1 == (int)$this->getConfigValue('apps.seo.no_trailing_slashes')) {
             $trailing_slashe = '';
         } else {
             $trailing_slashe = '/';

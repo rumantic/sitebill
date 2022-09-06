@@ -121,12 +121,12 @@ class GraphQl extends \API_model {
                 if ($this->getConfigValue('apps.realtylog.enable')) {
                     require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylog/admin/admin.php';
                     $Logger = new \realtylog_admin();
-                    $Logger->addLog($model_data, $user_id, 'edit', 'data');
+                    $Logger->addLog($model_data[$primary_key]['value'], $user_id, 'edit', 'data');
                 }
                 if ($this->getConfigValue('apps.realtylogv2.enable')) {
                     require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylogv2/admin/admin.php';
                     $Logger = new \realtylogv2_admin();
-                    $Logger->addLog($model_data, $user_id, 'edit', 'data', 'id');
+                    $Logger->addLog($model_data[$primary_key]['value'], $user_id, 'edit', 'data', 'id');
                 }
 
 

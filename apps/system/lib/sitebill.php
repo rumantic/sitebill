@@ -10,7 +10,7 @@ if (!defined('DEBUG_MODE')) {
 if (!defined('DB_HOST')) {
     define('DB_HOST', $__server);
 }
-if (!defined('DB_PORT')) {
+if (!defined('DB_PORT') and isset($__db_port)) {
     define('DB_PORT', $__db_port);
 }
 if (!defined('DB_BASE')) {
@@ -26,7 +26,7 @@ if (!defined('DB_PASS')) {
     define('DB_PASS', $__password);
 }
 if (!defined('DB_DSN')) {
-    if (defined(DB_PORT) && DB_PORT != '') {
+    if (defined('DB_PORT') && DB_PORT != '') {
         define('DB_DSN', 'mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_BASE);
     } else {
         define('DB_DSN', 'mysql:host=' . DB_HOST . ';dbname=' . DB_BASE);
@@ -60,7 +60,6 @@ if (!defined('IMAGE_TABLE')) {
 if (!defined('MEDIA_FOLDER')) {
     define('MEDIA_FOLDER', SITEBILL_DOCUMENT_ROOT . '/img/data');
 }
-
 
 
 if (!defined('ESTATE_FOLDER')) {
@@ -109,13 +108,11 @@ if (!defined('WARNING')) {
   setcookie('CSRF-TOKEN', $token, time()+3600, '/', Sitebill::$_cookiedomain); */
 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/sitebill_autoload.php';
 
-
 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/debugger.class.php';
 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/logger.class.php';
 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/dbc.php';
 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/sconfig.php';
 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/sitebill_datetime.php';
-
 
 
 //require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/sitebill_router.php';
@@ -124,9 +121,8 @@ require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/sitebill_datetime
 $SConfig = SConfig::getInstance();
 if ('' != $SConfig->getConfigValue('default_timezone')) {
     ini_set('date.timezone', $SConfig->getConfigValue('default_timezone'));
-    //date_default_timezone_set($SConfig->getConfigValue('default_timezone'));
+    date_default_timezone_set($SConfig->getConfigValue('default_timezone'));
 }
-
 
 
 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/sitebill_registry.php');
@@ -157,9 +153,11 @@ Sitebill::setLangSession();
   $_SESSION['Sitebill_User']['group_system_name']='guest';
   }
  */
+
 use Illuminate\Http\Request;
 
-class SiteBill {
+class SiteBill
+{
     /**
      * Error message
      */
@@ -200,6 +198,11 @@ class SiteBill {
     protected $sharder;
 
     /**
+     * @var logger_admin
+     */
+    private $logger_admin;
+
+    /**
      *  Request mini data
      * @var array
      */
@@ -238,17 +241,61 @@ class SiteBill {
      */
     public static $grid_replaced_with_angular = false;
 
-    public static function admin3_compatible () {
+    /**
+     * @var agency_admin
+     */
+    protected $agency_admin;
+
+    /**
+     * @var API_Common
+     */
+    protected $api_common;
+
+    public static function admin3_compatible()
+    {
         return self::$grid_replaced_with_angular;
+    }
+
+    /**
+     * @return \api\aliases\API_common_alias|API_Common
+     */
+    protected function get_api_common()
+    {
+        if (!$this->api_common) {
+            $this->api_common = new \api\aliases\API_common_alias();
+        }
+        return $this->api_common;
+    }
+
+    /**
+     * Формирование набора js-переменных для использования в скриптах
+     * Для интеграции в smarty-шаблоны использовать переменную {$SystemJSvars}
+     * TODO Добавить сюда выдачу языковых переменных, используемых скриптами,
+     * напр. фраза "происходит загрузка" или уведомление о минимальном числе фото
+     * @return string
+     */
+    function getSystemJSvars()
+    {
+        $vars = new stdClass();
+
+        // Путь к ajax-точке входа
+        $vars->ajaxPath = SITEBILL_MAIN_URL . '/js/ajax.php';
+        // Текущий язык
+        $vars->currentLang = $this->getCurrentLang();
+
+        return '<!--SystemJSvars--><script>var SystemJSvars=' . json_encode($vars) . ';</script><!--.SystemJSvars-->';
+    }
+
+    function SiteBill() {
+        self::__construct();
     }
 
     /**
      * Constructor
      */
-    function SiteBill() {
+    function __construct()
+    {
         $this->register_illuminate_request();
-
-
 
 
         $this->extendsSmarty();
@@ -264,19 +311,14 @@ class SiteBill {
             $this->parseLocalSettings();
             $this->initLocalComponents();
         }
-        if($this->_grid_constructor === null){
+        if ($this->_grid_constructor === null) {
             $this->_grid_constructor = self::$_grid_constructor_local;
         }
-
-
-
 
 
         /*if (!isset($smarty->registered_plugins['function']['_e'])) {
             $smarty->registerPlugin("function","_e", "_translate");
         }*/
-
-
 
 
         /*if(self::$_csrf_token == ''){
@@ -292,21 +334,16 @@ class SiteBill {
         }*/
 
         if ($this->isDemo()) {
-            $this->template->assign('show_demo_banners', '1');
+            $this->template->assert('show_demo_banners', '1');
         }
 
-        $this->template->assign('estate_folder', SITEBILL_MAIN_URL);
+        $this->template->assert('estate_folder', SITEBILL_MAIN_URL);
         $this->template->assert('theme_folder', SITEBILL_MAIN_URL . '/template/frontend/' . $this->getConfigValue('theme'));
-        $this->template->assign('bootstrap_version', trim($this->getConfigValue('bootstrap_version')));
+        $this->template->assert('bootstrap_version', trim($this->getConfigValue('bootstrap_version')));
 
-        $this->template->assign('CurrentLang', $this->getCurrentLang());
+        $this->template->assert('CurrentLang', $this->getCurrentLang());
 
-        $params_str = 'var SitebillVars={};';
-        $params_str .= 'SitebillVars.resInc=\'' . SITEBILL_MAIN_URL . '\';';
-        $params_str .= 'SitebillVars.linkPath=\'' . SITEBILL_MAIN_URL . '\';';
-        $params_str .= 'SitebillVars.ajaxPath=\'' . SITEBILL_MAIN_URL . '/js/ajax.php\';';
-        $params_str = '<script>' . $params_str . '</script>';
-        $this->template->assign('SitebillVars', $params_str);
+        $this->template->assert('SystemJSvars', $this->getSystemJSvars());
         /* if(1===(int)$this->getConfigValue('use_heaps')){
           if(!isset(self::$Heaps['user'])){
           require_once SITEBILL_DOCUMENT_ROOT.'/user_heap.php';
@@ -318,20 +355,20 @@ class SiteBill {
         $lang_str = 'var jsWords={};';
         $lang_str .= 'jsWords.L_FORMDATASTORING = \'' . Multilanguage::_('L_FORMDATASTORING') . '\';';
         $lang_str .= 'jsWords.L_FORMIMAGEMORE = \'' . Multilanguage::_('L_FORMIMAGEMORE') . '\';';
-        $this->template->assign('jsWords', $lang_str);
+        $this->template->assert('jsWords', $lang_str);
 */
         //$this->db = new Db( $__server, $__db, $__user, $__password );
         Sitebill_Datetime::setDateFormat($this->getConfigValue('date_format'));
 
         if (defined('ADMIN_NO_MAP')) {
-            $this->template->assign('ADMIN_NO_MAP_PROVIDERS', '1');
+            $this->template->assert('ADMIN_NO_MAP_PROVIDERS', '1');
         } else {
-            $this->template->assign('ADMIN_NO_MAP_PROVIDERS', '0');
+            $this->template->assert('ADMIN_NO_MAP_PROVIDERS', '0');
         }
         if (defined('ADMIN_NO_NANOAPI')) {
-            $this->template->assign('ADMIN_NO_NANOAPI', '1');
+            $this->template->assert('ADMIN_NO_NANOAPI', '1');
         } else {
-            $this->template->assign('ADMIN_NO_NANOAPI', '0');
+            $this->template->assert('ADMIN_NO_NANOAPI', '0');
         }
         if (1 == $this->getConfigValue('use_google_map')) {
             $this->template->assert('map_type', 'google');
@@ -354,6 +391,56 @@ class SiteBill {
 
     }
 
+    /**
+     * Получение исполняемого файла приложения
+     * содержит проверку локализаций, подключения родительских файлов
+     * на выходе объект приложения требуемого класса
+     * @param $app имя приложения
+     * @param string $interface интерфейс site|admin
+     * @return object|null объект приложения
+     */
+    function get_app($app, $interface = 'site')
+    {
+
+        $instance = null;
+
+        $apps_processor = new Apps_Processor();
+        $appdata = $apps_processor->get_apps_by_name($app);
+        if ($appdata) {
+            if ($appdata['local_admin_path'] != '') {
+                require_once($appdata['local_admin_path']);
+            } elseif ($appdata['admin_path'] != '') {
+                require_once($appdata['admin_path']);
+            }
+
+            if ($interface == 'site') {
+                if ($appdata['local_site_path'] != '') {
+                    require_once($appdata['site_path']);
+                    require_once($appdata['local_site_path']);
+                    $app_class_name = 'local_' . $app . '_site';
+                    if (!class_exists($app_class_name)) {
+                        $app_class_name = $app . '_site';
+                        if (!class_exists($app_class_name)) {
+                            $app_class_name = false;
+                        }
+                    }
+                } elseif ($appdata['site_path'] != '') {
+                    require_once($appdata['site_path']);
+                    $app_class_name = $app . '_site';
+                }
+                if ($app_class_name) {
+                    $instance = new $app_class_name;
+                }
+            } else {
+                $app_class_name = $app . '_admin';
+                if ($app_class_name) {
+                    $instance = new $app_class_name;
+                }
+            }
+        }
+        return $instance;
+    }
+
     /* TODO Реализовать доступ к текущей локали и ее установку в качестве своства базового класса */
 
     /*
@@ -366,59 +453,69 @@ class SiteBill {
     }
     */
 
-    static public function set_template_store($key, $value) {
+    static public function set_template_store($key, $value)
+    {
         self::$_template_store[$key] = $value;
     }
 
-    static public function get_template_store($key) {
+    static public function get_template_store($key)
+    {
         return self::$_template_store[$key];
     }
 
-    static public function register_illuminate_event_dispatcher ( \Illuminate\Events\Dispatcher $dispatcher  ) {
+    static public function register_illuminate_event_dispatcher(\Illuminate\Events\Dispatcher $dispatcher)
+    {
         self::$iEventDispatcher = $dispatcher;
     }
 
-    static public function event_dispatcher () {
+    static public function event_dispatcher()
+    {
         return self::$iEventDispatcher;
     }
 
 
-    function register_illuminate_request () {
-        if ( !self::$illuminate_request_registred ) {
+    function register_illuminate_request()
+    {
+        if (!self::$illuminate_request_registred) {
             self::$iRequest = Request::capture();
             self::$illuminate_request_registred = true;
         }
     }
 
-    function request() {
+    function request()
+    {
         return self::$iRequest;
     }
 
-    public static function register_debugbar () {
-        if ( defined('DEBUG_ENABLED') && DEBUG_ENABLED && !isset(self::$debugbar) ) {
+    public static function register_debugbar()
+    {
+        if (defined('DEBUG_ENABLED') && DEBUG_ENABLED && !isset(self::$debugbar)) {
             self::$debugbar = new \DebugBar\StandardDebugBar();
         }
     }
 
-    function getdebugbarRenderer () {
-        if ( isset(self::$debugbar) ) {
-            $baseUrl = SITEBILL_MAIN_URL.'/apps/third/vendor/maximebf/debugbar/src/DebugBar/Resources';
+    function getdebugbarRenderer()
+    {
+        if (isset(self::$debugbar)) {
+            $baseUrl = SITEBILL_MAIN_URL . '/apps/third/vendor/maximebf/debugbar/src/DebugBar/Resources';
             return self::$debugbar->getJavascriptRenderer($baseUrl);
         }
     }
 
-    public static function smarty_fetch ( $file_name ) {
+    public static function smarty_fetch($file_name)
+    {
         global $smarty;
         return $smarty->fetch($file_name);
 
     }
 
-    public static function add_pdo_debugbar_collector ($PDO, $capsule) {
-        if ( !isset(self::$debugbar) ) {
+    public static function add_pdo_debugbar_collector($PDO, $capsule)
+    {
+        if (!isset(self::$debugbar)) {
             self::register_debugbar();
         }
 
-        if ( isset(self::$debugbar) ) {
+        if (isset(self::$debugbar)) {
             $pdoCollector = new DebugBar\DataCollector\PDO\PDOCollector();
             $pdo_debug = new \DebugBar\DataCollector\PDO\TraceablePDO($PDO);
             $pdoCollector->addConnection($pdo_debug, 'sitebill-pdo');
@@ -430,9 +527,10 @@ class SiteBill {
         }
     }
 
-    public static function add_debug_message($message) {
-        if ( isset(self::$debugbar) ) {
-            self::$debugbar["messages"] ->addMessage($message);
+    public static function add_debug_message($message)
+    {
+        if (isset(self::$debugbar)) {
+            self::$debugbar["messages"]->addMessage($message);
         }
     }
 
@@ -441,7 +539,8 @@ class SiteBill {
      * Register plugins for using in smarty templates
      * @global type $smarty
      */
-    public function extendsSmarty(){
+    public function extendsSmarty()
+    {
         global $smarty;
         if (!isset($smarty->registered_plugins['function']['_e'])) {
             $smarty->registerPlugin('function', "_e", "_translate");
@@ -461,7 +560,23 @@ class SiteBill {
         if (!isset($smarty->registered_plugins['function']['getConfig'])) {
             $smarty->registerPlugin('function', 'getConfig', array(&$this, 'getConfig'));
         }
+        if (!isset($smarty->registered_plugins['function']['_word'])) {
+            $smarty->registerPlugin('function', '_word', array(&$this, 'getWord'));
+        }
+    }
 
+    public function getWord($params)
+    {
+        $parts = explode('.', $params['key']);
+        if (count($parts) == 2) {
+            return Multilanguage::_($parts[1], $parts[0]);
+        } elseif (count($parts) == 1) {
+            return Multilanguage::_($parts[0]);
+        }
+        return '##ERROR##';
+        /*$key = (isset($params['key']) ? $params['key'] : '');
+        $app = (isset($params['app']) ? $params['app'] : $this->getConfigValue('theme') . '_template');
+        return Multilanguage::_($key, $app);*/
     }
 
     /**
@@ -469,15 +584,17 @@ class SiteBill {
      * @param $params
      * @return string
      */
-    public function getConfig ( $params ) {
+    public function getConfig($params)
+    {
         return $this->getConfigValue($params['key']);
     }
 
-    public function mediaincpath($params){
+    public function mediaincpath($params)
+    {
         $mediadata = $params['data'];
         $type = 'normal';
         $inctype = 0;
-        if(isset($params['type']) && $params['type'] != ''){
+        if (isset($params['type']) && $params['type'] != '') {
             $type = $params['type'];
         }
         /*if(isset($params['abs']) && $params['abs'] == 1){
@@ -486,16 +603,17 @@ class SiteBill {
             $inctype = 2;
         }*/
 
-        if(isset($params['src']) && ($params['src'] == 2 || $params['src'] == 'root')){
+        if (isset($params['src']) && ($params['src'] == 2 || $params['src'] == 'root')) {
             $inctype = 2;
-        }elseif(isset($params['src']) && ($params['src'] == 1 || $params['src'] == 'abs')){
+        } elseif (isset($params['src']) && ($params['src'] == 1 || $params['src'] == 'abs')) {
             $inctype = 1;
         }
 
         return $this->createMediaIncPath($mediadata, $type, $inctype);
     }
 
-    function createSimpleMediaIncPath($filename, $type = 'normal', $inctype = 0){
+    function createSimpleMediaIncPath($filename, $type = 'normal', $inctype = 0)
+    {
         $mediadata = array(
             'preview' => $filename,
             'normal' => $filename,
@@ -511,23 +629,24 @@ class SiteBill {
      * @param type $inctype (0 relative, 1 absolute, 2 root)
      * @return string
      */
-    function createMediaIncPath($mediadata, $type = 'normal', $inctype = 0){
+    function createMediaIncPath($mediadata, $type = 'normal', $inctype = 0)
+    {
 
         $folder = '';
 
-        if($inctype == 2){
+        if ($inctype == 2) {
             $folder = SITEBILL_DOCUMENT_ROOT;
-        }elseif($inctype == 1){
+        } elseif ($inctype == 1) {
             $folder = $this->getServerFullUrl();
-        }else{
+        } else {
             $folder = SITEBILL_MAIN_URL;
         }
 
 
-        if(isset($mediadata['remote']) && $mediadata['remote'] === 'true'){
+        if (isset($mediadata['remote']) && $mediadata['remote'] === 'true') {
             $path = $mediadata[$type];
-        }else{
-            $path = $folder.'/img/data/'.$mediadata[$type];
+        } else {
+            $path = $folder . '/img/data/' . $mediadata[$type];
         }
         return $path;
     }
@@ -537,14 +656,15 @@ class SiteBill {
      * @param string $curlang Current lang code
      * @return string
      */
-    function getLangPostfix($curlang){
+    function getLangPostfix($curlang)
+    {
 
         $postfix = '';
 
         $default_lng = '';
-        if(1 == $this->getConfigValue('apps.language.use_default_as_ru')){
+        if (1 == $this->getConfigValue('apps.language.use_default_as_ru')) {
             $default_lng = 'ru';
-        }elseif('' != trim($this->getConfigValue('apps.language.use_as_default'))){
+        } elseif ('' != trim($this->getConfigValue('apps.language.use_as_default'))) {
             $default_lng = trim($this->getConfigValue('apps.language.use_as_default'));
         }
 
@@ -566,7 +686,8 @@ class SiteBill {
      * @param string $locale - Url locale prefix (different from requested)
      * @return string
      */
-    public function createUrlTpl($path, $absolute = false, $monolang = false, $locale = null){
+    public function createUrlTpl($path, $absolute = false, $monolang = false, $locale = null)
+    {
         $trslashes = self::$_trslashes;
 
         $alias = '';
@@ -574,64 +695,63 @@ class SiteBill {
         $hash = '';
         $query = '';
 
-        if($path == '#'){
+        if ($path == '#') {
             return $path;
         }
 
         $pathparts = explode('#', $path);
-        if(isset($pathparts[1])){
+        if (isset($pathparts[1])) {
             $hash = $pathparts[1];
         }
 
         $path = $pathparts[0];
 
 
-
         $pathparts = explode('?', $path);
-        if(isset($pathparts[0])){
+        if (isset($pathparts[0])) {
             $alias = $pathparts[0];
         }
 
-        if(isset($pathparts[1])){
+        if (isset($pathparts[1])) {
             $query = $pathparts[1];
         }
 
         $alias = trim($alias, '/');
-        if($alias == '#'){
-            return $alias.(isset($query) && $query != '' ? '?'.$query : '');
+        if ($alias == '#') {
+            return $alias . (isset($query) && $query != '' ? '?' . $query : '');
         }
 
         $parts = array();
-        if(!$monolang){
-            if(!is_null($locale) && $locale != ''){
+        if (!$monolang) {
+            if (!is_null($locale) && $locale != '') {
                 $parts[] = $locale;
-            }elseif(!is_null($locale) && $locale == ''){
+            } elseif (!is_null($locale) && $locale == '') {
 
-            }elseif(isset(self::$_request['request_lang_prefix']) && self::$_request['request_lang_prefix'] != ''){
+            } elseif (isset(self::$_request['request_lang_prefix']) && self::$_request['request_lang_prefix'] != '') {
                 $parts[] = self::$_request['request_lang_prefix'];
             }
         }
 
-        if($alias != ''){
-            if(false !== strpos($alias, '.')){
+        if ($alias != '') {
+            if (false !== strpos($alias, '.')) {
                 $trslashes = '';
             }
             $parts[] = $alias;
         }
 
-        $_alias = (!empty($parts) ? implode('/', $parts).$trslashes : '');
+        $_alias = (!empty($parts) ? implode('/', $parts) . $trslashes : '');
 
-        if($absolute){
-            $alias = $this->getServerFullUrl().($_alias != '' || $query != '' || $hash != '' ? '/' : '');
-        }else{
-            $alias = SITEBILL_MAIN_URL.'/';
+        if ($absolute) {
+            $alias = $this->getServerFullUrl() . ($_alias != '' || $query != '' || $hash != '' ? '/' : '');
+        } else {
+            $alias = SITEBILL_MAIN_URL . '/';
         }
 
-        $alias = $alias.($_alias != '' ? $_alias : '').($query != '' ? '?'.$query : '').($hash != '' ? '#'.$hash : '');
+        $alias = $alias . ($_alias != '' ? $_alias : '') . ($query != '' ? '?' . $query : '') . ($hash != '' ? '#' . $hash : '');
 
         //$alias = ($absolute ? $this->getServerFullUrl() : SITEBILL_MAIN_URL) . (!empty($parts) ? '/'.implode('/', $parts).$trslashes : (!$absolute ? '/' : ''));
         //$alias = SITEBILL_MAIN_URL . '/' . (self::$current_lang_prefix != '' ? self::$current_lang_prefix.'/' : '') . $alias . ((false === strpos($alias, '.') && $alias != '#') ? self::$_trslashes : '');
-        return $alias/*.($query != '' ? '?'.$query : '').($hash != '' ? '#'.$hash : '')*/;
+        return $alias/*.($query != '' ? '?'.$query : '').($hash != '' ? '#'.$hash : '')*/ ;
     }
 
     /**
@@ -639,15 +759,16 @@ class SiteBill {
      * @param array $params
      * @return string
      */
-    public function absoluteurl($params){
+    public function absoluteurl($params)
+    {
         $path = $params['path'];
         $absolute = true;
         $monolang = false;
         $locale = null;
-        if(isset($params['monolang']) && $params['monolang'] == 1){
+        if (isset($params['monolang']) && $params['monolang'] == 1) {
             $monolang = true;
         }
-        if(isset($params['locale'])){
+        if (isset($params['locale'])) {
             $locale = trim($params['locale']);
         }
         return $this->createUrlTpl($path, $absolute, $monolang, $locale);
@@ -658,15 +779,16 @@ class SiteBill {
      * @param array $params
      * @return string
      */
-    public function relativeurl($params){
+    public function relativeurl($params)
+    {
         $path = $params['path'];
         $absolute = false;
         $monolang = false;
         $locale = null;
-        if(isset($params['monolang']) && $params['monolang'] == 1){
+        if (isset($params['monolang']) && $params['monolang'] == 1) {
             $monolang = true;
         }
-        if(isset($params['locale'])){
+        if (isset($params['locale'])) {
             $locale = trim($params['locale']);
         }
         return $this->createUrlTpl($path, $absolute, $monolang, $locale);
@@ -677,83 +799,88 @@ class SiteBill {
      * @param array $params
      * @return string
      */
-    public function formaturl($params){
+    public function formaturl($params)
+    {
         $path = $params['path'];
         $absolute = false;
         $monolang = false;
         $locale = null;
 
-        if(isset($params['abs']) && $params['abs'] == 1){
+        if (isset($params['abs']) && $params['abs'] == 1) {
             $absolute = true;
         }
-        if(isset($params['monolang']) && $params['monolang'] == 1){
+        if (isset($params['monolang']) && $params['monolang'] == 1) {
             $monolang = true;
         }
-        if(isset($params['locale'])){
+        if (isset($params['locale'])) {
             $locale = trim($params['locale']);
         }
         return $this->createUrlTpl($path, $absolute, $monolang, $locale);
     }
 
-    public function checkCSRFToken($csrf_token){
+    public function checkCSRFToken($csrf_token)
+    {
         list($valid_thru, $token) = explode(':', $csrf_token);
-        $n = $valid_thru.':'.base64_encode(
-            hash_hmac(
-                'sha256',
-                $valid_thru . $_SERVER['REMOTE_ADDR'] . $_SERVER['HTTP_USER_AGENT'] . $_SESSION['key'],
-                $this->getConfigValue('csrf_salt'),
-                true
-            )
-        );
-        if($n === $csrf_token && $valid_thru >= time()){
+        $n = $valid_thru . ':' . base64_encode(
+                hash_hmac(
+                    'sha256',
+                    $valid_thru . $_SERVER['REMOTE_ADDR'] . $_SERVER['HTTP_USER_AGENT'] . $_SESSION['key'],
+                    $this->getConfigValue('csrf_salt'),
+                    true
+                )
+            );
+        if ($n === $csrf_token && $valid_thru >= time()) {
             return true;
         }
         return false;
     }
 
-    public function generateCSRFToken($len = 40){
+    public function generateCSRFToken($len = 40)
+    {
         $array = array('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
         $p = array();
-        for($i=1; $i<=$len; $i++){
+        for ($i = 1; $i <= $len; $i++) {
             shuffle($array);
             $p[] = $array[0];
         }
         return implode('', $p);
     }
 
-    function load_hooks() {
+    function load_hooks()
+    {
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/hooks' . '/hooks.php')) {
-            include_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/hooks' . '/hooks.php');
+            include_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/hooks' . '/hooks.php');
         }
     }
 
-    public static function genPassword($len = 8) {
+    public static function genPassword($len = 8)
+    {
         $array = array('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '@', '#', '%', '&', '?', '!');
         shuffle($array);
         $p = array_slice($array, 0, $len);
         return implode('', $p);
     }
 
-    public function getCurrentLang() {
+    public function getCurrentLang()
+    {
         return $_SESSION['_lang'];
     }
 
-    public function getUserHREF($rid, $external = false, $params = array()) {
+    public function getUserHREF($rid, $external = false, $params = array())
+    {
         $parts = array();
 
-        if(false===$this->getConfigValue('apps.seo.user_html_end')){
+        if (false === $this->getConfigValue('apps.seo.user_html_end')) {
             $use_html_end = true;
-        }else{
+        } else {
             $use_html_end = (1 === intval($this->getConfigValue('apps.seo.user_html_end')) ? true : false);
         }
 
-        if(false===$this->getConfigValue('apps.seo.user_slash_divider')){
+        if (false === $this->getConfigValue('apps.seo.user_slash_divider')) {
             $use_slash_divider = false;
-        }else{
+        } else {
             $use_slash_divider = (1 === intval($this->getConfigValue('apps.seo.user_slash_divider')) ? true : false);
         }
-
-
 
 
         if (trim($this->getConfigValue('apps.seo.user_alias')) != '') {
@@ -773,8 +900,8 @@ class SiteBill {
         } else {
             $user_alias = $user_alias . self::$_trslashes;
         }
-        if ( $this->getConfigValue('apps.agents.enable') ) {
-            $user_alias = $this->getConfigValue('apps.agents.alias').'/'.$rid.self::$_trslashes;
+        if ($this->getConfigValue('apps.agents.enable')) {
+            $user_alias = $this->getConfigValue('apps.agents.alias') . '/' . $rid . self::$_trslashes;
         }
 
 
@@ -787,7 +914,8 @@ class SiteBill {
         return $href;
     }
 
-    public function getRealtyHREF($rid, $external = false, $params = array()) {
+    public function getRealtyHREF($rid, $external = false, $params = array())
+    {
         $parts = array();
 
         if (isset($params['topic_id'])) {
@@ -861,18 +989,23 @@ class SiteBill {
      * return nonslashed full net url
      */
 
-    public function getServerFullUrl($domain_only = false) {
-        return (1 === (int) $this->getConfigValue('work_on_https') ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . (!$domain_only ? SITEBILL_MAIN_URL : '');
+    public function getServerFullUrl($domain_only = false)
+    {
+        return (1 === (int)$this->getConfigValue('work_on_https') ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . (!$domain_only ? SITEBILL_MAIN_URL : '');
     }
 
-    public function getMediaDocsDir () {
+    public function getMediaDocsDir()
+    {
         return '/img/mediadocs/';
     }
-    public function getImgDataDir () {
+
+    public function getImgDataDir()
+    {
         return '/img/data/';
     }
 
-    protected function initLocalComponents() {
+    protected function initLocalComponents()
+    {
         $SConf = SConfig::getInstance();
         //var_dump($SConf->getConfigValue('theme'));
         $grid_constructor_full_path = '';
@@ -897,7 +1030,7 @@ class SiteBill {
                 require_once $grid_constructor_full_path;
                 self::$_grid_constructor_local = new Grid_Constructor();
             }
-            $this->writeLog('$grid_constructor_full_path = '.$grid_constructor_full_path);
+            //$this->writeLog('$grid_constructor_full_path = ' . $grid_constructor_full_path);
         }
         if (self::$_realty_viewer_local === null) {
             if (self::$localSettings && isset(self::$localSettings['RealtyView']) && file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . self::$localSettings['RealtyView']['path'])) {
@@ -937,7 +1070,9 @@ class SiteBill {
             }
         }
     }
-    public function setRequest($lang){
+
+    public static function setRequest($lang)
+    {
 
         $r['request_lang_prefix'] = '';
         $r['locale'] = $lang;
@@ -957,8 +1092,8 @@ class SiteBill {
                 }
             }
 
-            foreach($prefix_list as $pr => $lo){
-                if($lo == $lang){
+            foreach ($prefix_list as $pr => $lo) {
+                if ($lo == $lang) {
                     $r['request_lang_prefix'] = $pr;
                     $r['locale'] = $lo;
                     break;
@@ -970,8 +1105,9 @@ class SiteBill {
         self::$_request = $r;
     }
 
-    public static function initRequest(){
-        if(!is_null(self::$_request)){
+    public static function initRequest()
+    {
+        if (!is_null(self::$_request)) {
             return;
         }
 
@@ -999,11 +1135,11 @@ class SiteBill {
                 }
             }
 
-            if(!empty($prefix_list) && isset($prefix_list[$parts[0]])){
+            if (!empty($prefix_list) && isset($prefix_list[$parts[0]])) {
                 $_SESSION['_lang'] = $prefix_list[$parts[0]];
                 $r['request_lang_prefix'] = $parts[0];
                 $r['locale'] = $prefix_list[$parts[0]];
-            }elseif(!empty($prefix_list) && isset($prefix_list[''])){
+            } elseif (!empty($prefix_list) && isset($prefix_list[''])) {
                 $_SESSION['_lang'] = $prefix_list[''];
                 $r['request_lang_prefix'] = '';
                 $r['locale'] = $prefix_list[''];
@@ -1037,7 +1173,8 @@ class SiteBill {
       //echo 'SiteBill<br>';
       } */
 
-    protected function parseLocalSettings() {
+    protected function parseLocalSettings()
+    {
         //var_dump(self::$localSettings);
         if (!self::$localSettings) {
             if ($settings = parse_ini_file(SITEBILL_DOCUMENT_ROOT . '/settings.ini.php', true)) {
@@ -1048,16 +1185,25 @@ class SiteBill {
         }
     }
 
-    protected function _setGridConstructor($newGridConstructor) {
+    protected function _setGridConstructor($newGridConstructor)
+    {
         $this->_grid_constructor = $newGridConstructor;
         self::$_grid_constructor_local = $newGridConstructor;
     }
 
-    public function _getGridConstructor() {
+    public function _getGridConstructor($label = '')
+    {
+        if (method_exists(self::$_grid_constructor_local, 'set_label')) {
+            self::$_grid_constructor_local->set_label($label);
+        }
         return self::$_grid_constructor_local;
     }
 
-    public function _getRealtyViewer() {
+    /**
+     * @return Kvartira_View
+     */
+    public function _getRealtyViewer()
+    {
         return self::$_realty_viewer_local;
     }
 
@@ -1065,7 +1211,8 @@ class SiteBill {
      * @param timestamp $date
      * @return timestamp
      */
-    static function addMonthToDate($date) {
+    static function addMonthToDate($date)
+    {
         $now_day = date('j', $date);
         $now_month = date('n', $date);
         $now_year = date('Y', $date);
@@ -1091,9 +1238,10 @@ class SiteBill {
         return strtotime($next_year . '-' . ($next_month < 10 ? '0' . $next_month : $next_month) . '-' . ($next_day < 10 ? '0' . $next_day : $next_day) . ' ' . $time);
     }
 
-    static function getAttachments($object_type, $object_id) {
+    static function getAttachments($object_type, $object_id)
+    {
         $attachments = array();
-        if ((int) $object_id == 0 || $object_type == '') {
+        if ((int)$object_id == 0 || $object_type == '') {
             return $attachments;
         }
         $DBC = DBC::getInstance();
@@ -1106,7 +1254,8 @@ class SiteBill {
         return $attachments;
     }
 
-    static function appendAttachments($object_type, $object_id, $attachments) {
+    static function appendAttachments($object_type, $object_id, $attachments)
+    {
         if (count($attachments) > 0) {
             $DBC = DBC::getInstance();
             $q = 'INSERT INTO ' . DB_PREFIX . '_attachment (file_name, object_id, object_type) VALUES (?,?,?)';
@@ -1123,7 +1272,8 @@ class SiteBill {
         }
     }
 
-    function sanitize ( $value, $flags ) {
+    function sanitize($value, $flags)
+    {
         if (is_array($value)) {
             $value = $this->htmlspecialchars($value, $flags);
         } else {
@@ -1132,14 +1282,13 @@ class SiteBill {
         return $value;
     }
 
-    function escape($text) {
-        if (get_magic_quotes_gpc()) {
-            $text = stripcslashes($text);
-        }
+    function escape($text)
+    {
         return $text;
     }
 
-    public function getAdminTplFolder() {
+    public function getAdminTplFolder()
+    {
         return SITEBILL_DOCUMENT_ROOT . '/apps/admin/admin/template1';
     }
 
@@ -1148,7 +1297,8 @@ class SiteBill {
      * @param array $items
      * @return string
      */
-    function get_breadcrumbs($items) {
+    function get_breadcrumbs($items)
+    {
         if (count($items) > 0) {
             $this->template->assert('breadcrumbs_array', $items);
             return implode(' / ', $items);
@@ -1156,7 +1306,8 @@ class SiteBill {
         return '';
     }
 
-    function get_ajax_functions() {
+    function get_ajax_functions()
+    {
         $rs = '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/system/js/refresher.functions.js"></script>';
         return $rs;
     }
@@ -1168,7 +1319,8 @@ class SiteBill {
      * @param string $template_value
      * @return boolean
      */
-    function get_apps_template_full_path($apps_name, $theme, $template_value) {
+    function get_apps_template_full_path($apps_name, $theme, $template_value)
+    {
         if (!file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $theme . '/' . $apps_name . '/' . $template_value)) {
             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/' . $apps_name . '/site/template/' . $template_value)) {
                 return SITEBILL_DOCUMENT_ROOT . '/apps/' . $apps_name . '/site/template/' . $template_value;
@@ -1186,7 +1338,8 @@ class SiteBill {
      * @param string $uri uri
      * @return array
      */
-    function getPageByURI($uri) {
+    function getPageByURI($uri)
+    {
         $DBC = DBC::getInstance();
         $query = 'SELECT * FROM ' . DB_PREFIX . '_page WHERE uri=? LIMIT 1';
         $uri = str_replace('/', '', $uri);
@@ -1205,8 +1358,9 @@ class SiteBill {
      * @param void
      * @return string
      */
-    function get_session_key() {
-        return $_SESSION['key'];
+    function get_session_key()
+    {
+        return @$_SESSION['key'];
     }
 
     /**
@@ -1214,14 +1368,16 @@ class SiteBill {
      * @param string $session_key
      * @return void
      */
-    function delete_session_key($session_key) {
+    function delete_session_key($session_key)
+    {
         $DBC = DBC::getInstance();
         $query = "DELETE FROM " . DB_PREFIX . "_session WHERE session_key=?";
-        $stmt = $DBC->query($query, array((string) $session_key));
+        $stmt = $DBC->query($query, array((string)$session_key));
         return $_SESSION['key'];
     }
 
-    function setSessionUserId( $user_id ) {
+    function setSessionUserId($user_id)
+    {
         self::$Heaps['session']['user_id'] = $user_id;
         $_SESSION['user_id'] = $user_id;
         $_SESSION['user_id_value'] = $user_id;
@@ -1232,7 +1388,8 @@ class SiteBill {
      * @param void
      * @return int
      */
-    function getSessionUserId() {
+    function getSessionUserId()
+    {
         $key = (isset($_SESSION['key']) ? $_SESSION['key'] : '');
         if (isset(self::$Heaps['session']['user_id']) && self::$Heaps['session']['user_id'] != '') {
             return self::$Heaps['session']['user_id'];
@@ -1240,7 +1397,7 @@ class SiteBill {
         if ($key != '') {
             $DBC = DBC::getInstance();
             $query = "SELECT user_id FROM " . DB_PREFIX . "_session WHERE session_key=? LIMIT 1";
-            $stmt = $DBC->query($query, array((string) $key));
+            $stmt = $DBC->query($query, array((string)$key));
             if ($stmt) {
                 $ar = $DBC->fetch($stmt);
                 $user_id = $ar['user_id'];
@@ -1264,16 +1421,17 @@ class SiteBill {
      * @param string $session_code session code
      * @return array
      */
-    function load_uploadify_images($session_code = '', $element_name = '') {
+    function load_uploadify_images($session_code = '', $element_name = '')
+    {
         $ra = array();
 
         $DBC = DBC::getInstance();
         if ($element_name == '') {
             $query = 'SELECT * FROM ' . UPLOADIFY_TABLE . ' WHERE `session_code`=? AND (`element`=? or `element` is null) ORDER BY `uploadify_id`';
-            $stmt = $DBC->query($query, array((string) $session_code, ''));
+            $stmt = $DBC->query($query, array((string)$session_code, ''));
         } else {
             $query = 'SELECT * FROM ' . UPLOADIFY_TABLE . ' WHERE `session_code`=? AND `element`=? ORDER BY `uploadify_id`';
-            $stmt = $DBC->query($query, array((string) $session_code, $element_name));
+            $stmt = $DBC->query($query, array((string)$session_code, $element_name));
         }
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
@@ -1295,13 +1453,14 @@ class SiteBill {
      * @param int $record_id record ID
      * @return boolean
      */
-    function editImageMulti($action, $table_name, $key, $record_id, $name_template = '') {
+    function editImageMulti($action, $table_name, $key, $record_id, $name_template = '')
+    {
         if (!isset($record_id) or $record_id == 0) {
             return false;
         }
         $path = SITEBILL_DOCUMENT_ROOT . '/img/data/';
         $uploadify_path = SITEBILL_DOCUMENT_ROOT . $this->uploadify_dir;
-        $session_key = (string) $this->get_session_key();
+        $session_key = (string)$this->get_session_key();
         $ra = array();
         //update image
         $images = $this->load_uploadify_images($session_key);
@@ -1316,7 +1475,7 @@ class SiteBill {
         if ($action == 'data') {
             $DBC = DBC::getInstance();
 
-            $avial_count = (int) $this->getConfigValue('photo_per_data');
+            $avial_count = (int)$this->getConfigValue('photo_per_data');
             if ($avial_count == 0) {
                 $avial_count = 1000;
             } else {
@@ -1325,7 +1484,7 @@ class SiteBill {
                 $stmt = $DBC->query($query);
                 if ($stmt) {
                     $ar = $DBC->fetch($stmt);
-                    $loaded = (int) $ar['cnt'];
+                    $loaded = (int)$ar['cnt'];
                 }
                 $avial_count = $avial_count - $loaded;
                 if ($avial_count < 1) {
@@ -1365,7 +1524,7 @@ class SiteBill {
                     }
                 }
 
-                if ((1 == $this->getConfigValue('seo_photo_name_enable')) AND ( $name_template != '')) {
+                if ((1 == $this->getConfigValue('seo_photo_name_enable')) and ($name_template != '')) {
                     $name_template = substr($name_template, 0, 150);
                     if ($i == 0) {
                         $preview_name_no_ext = $name_template;
@@ -1436,7 +1595,7 @@ class SiteBill {
                         $rp = $this->makePreview($uploadify_path . $image_name, $path . $prv, $preview_width, $preview_height, $ext, 'width');
                     }
                     if ($rp && $rn) {
-                        if(1 == $this->getConfigValue('apps.watermark.printanywhere')){
+                        if (1 == $this->getConfigValue('apps.watermark.printanywhere')) {
                             $this->doWatermark($path . $preview_name, $path . $prv);
                         }
 
@@ -1457,7 +1616,8 @@ class SiteBill {
         return $ra;
     }
 
-    function doWatermark($normal_image, $preview_image) {
+    function doWatermark($normal_image, $preview_image)
+    {
         if ($this->getConfigValue('is_watermark')) {
             if (!$this->watermark_inst) {
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/watermark/watermark.php';
@@ -1486,22 +1646,26 @@ class SiteBill {
      * @param $_image_array - массив с картинками
      * @return void
      */
-    function setExternalUploadifyImageArray($_image_array) {
+    function setExternalUploadifyImageArray($_image_array)
+    {
         $this->external_uploadify_image_array = $_image_array;
     }
 
-    function getExternalUploadifyImageArray() {
+    function getExternalUploadifyImageArray()
+    {
         return $this->external_uploadify_image_array;
     }
 
-    function get_docuploads_extensions () {
-        return array('docx', 'doc', 'xls', 'pdf', 'xlsx', 'jpg', 'jpeg', 'png', 'webp');
+    function get_docuploads_extensions()
+    {
+        return array('docx', 'doc', 'xls', 'pdf', 'xlsx', 'jpg', 'jpeg', 'png', 'webp', 'mp4');
     }
 
-    function appendDocUploads($table, $field, $pk_field, $record_id) {
+    function appendDocUploads($table, $field, $pk_field, $record_id)
+    {
         $field_name = $field['name'];
         $parameters = $field['parameters'];
-        $session_key = (string) $this->get_session_key();
+        $session_key = (string)$this->get_session_key();
         $action = $table;
         if (!isset($record_id) || $record_id == 0) {
             return false;
@@ -1534,11 +1698,13 @@ class SiteBill {
         }
         //print_r($attached_yet);
         $i = 0;
-        $max_filesize = (int) str_replace('M', '', ini_get('upload_max_filesize'));
-        if (isset($parameters['max_file_size']) && (int) $parameters['max_file_size'] != 0) {
-            $max_filesize = (int) $parameters['max_file_size'];
+        $max_filesize = (int)str_replace('M', '', ini_get('upload_max_filesize'));
+        if (isset($parameters['max_file_size']) && (int)$parameters['max_file_size'] != 0) {
+            $max_filesize = (int)$parameters['max_file_size'];
         }
-        $av = explode(',', $parameters['accepted']);
+        if ( isset($parameters['accepted']) ) {
+            $av = explode(',', $parameters['accepted']);
+        }
         $allowed_exts = $this->get_docuploads_extensions();
         if (!empty($av)) {
             foreach ($av as $k => $v) {
@@ -1553,7 +1719,7 @@ class SiteBill {
         if (!empty($av)) {
             $allowed_exts = $av;
         }
-        //print_r($allowed_exts);
+
         foreach ($uploads as $image_name) {
             $i++;
 
@@ -1570,15 +1736,16 @@ class SiteBill {
                     continue;
                 }
                 if ($this->getConfigValue('use_native_file_name_on_uploadify')) {
-                    $file_name = $image_name;
+                    $path_parts = pathinfo($image_name);
+                    $file_name = $path_parts['filename'] . '.' . $path_parts['extension'];
                 } else {
                     $file_name = "doc" . uniqid() . '_' . time() . '_' . $i . '.' . $ext;
                 }
-                $file_index = '';
+                $file_index = 1;
                 while (file_exists($path . $file_name)) {
                     $i++;
                     if ($this->getConfigValue('use_native_file_name_on_uploadify')) {
-                        $file_name = $file_index . $file_name;
+                        $file_name = $path_parts['filename'] . '(' . $file_index . ')' . '.' . $path_parts['extension'];
                     } else {
                         $file_name = "doc" . uniqid() . '_' . time() . '_' . $i . '.' . $ext;
                     }
@@ -1608,10 +1775,15 @@ class SiteBill {
         return $ra;
     }
 
-    function appendUploads($table, $field, $pk_field, $record_id, $name_template = '') {
+    function appendUploads($table, $field, $pk_field, $record_id, $name_template = '')
+    {
         $field_name = $field['name'];
+        $uploadify_field_name = $field_name;
+        if (isset($field['uploadify_field_name'])) {
+            $uploadify_field_name = $field['uploadify_field_name'];
+        }
         $parameters = $field['parameters'];
-        $session_key = (string) $this->get_session_key();
+        $session_key = (string)$this->get_session_key();
 
 
         $action = $table;
@@ -1626,7 +1798,7 @@ class SiteBill {
         $uploadify_path = SITEBILL_DOCUMENT_ROOT . $this->uploadify_dir;
 
         $ra = array();
-        $uploads = $this->load_uploadify_images($session_key, $field_name);
+        $uploads = $this->load_uploadify_images($session_key, $uploadify_field_name);
         if (!$uploads) {
             $uploads = $this->getExternalUploadifyImageArray();
             if (!$uploads) {
@@ -1641,22 +1813,22 @@ class SiteBill {
             $max_img_count = -1;
         }
 
-        if(isset($parameters['max_img_count_ext']) && '' != $parameters['max_img_count_ext']){
+        if (isset($parameters['max_img_count_ext']) && '' != $parameters['max_img_count_ext']) {
             $maximgcountextendrules = $parameters['max_img_count_ext'];
-        }else{
+        } else {
             $maximgcountextendrules = '';
         }
         $controlledfields = array();
         $maxsizerules = array();
-        if($maximgcountextendrules != ''){
+        if ($maximgcountextendrules != '') {
             $rulesparts = explode(':', $maximgcountextendrules);
             $size = intval($rulesparts[0]);
-            if($size > 0 && count($rulesparts) > 1){
+            if ($size > 0 && count($rulesparts) > 1) {
                 unset($rulesparts[0]);
                 $conditions = array();
-                foreach($rulesparts as $rule){
+                foreach ($rulesparts as $rule) {
                     $oneruleparts = explode(',', $rule);
-                    if(count($oneruleparts) == 3){
+                    if (count($oneruleparts) == 3) {
                         $controlledfields[$oneruleparts[0]] = 0;
                         $conditions[] = $oneruleparts;
                     }
@@ -1671,18 +1843,18 @@ class SiteBill {
         $selectedfields = array();
 
         $selectedfields[] = '`' . $field_name . '`';
-        if(!empty($controlledfields)){
-            foreach($controlledfields as $controlledfield => $name){
+        if (!empty($controlledfields)) {
+            foreach ($controlledfields as $controlledfield => $name) {
                 $selectedfields[] = '`' . $controlledfield . '`';
             }
         }
 
         //$query = 'SELECT `' . $field_name . '` FROM ' . DB_PREFIX . '_' . $table . ' WHERE `' . $pk_field . '`=? LIMIT 1';
-        $query = 'SELECT '.implode(', ', $selectedfields).' FROM ' . DB_PREFIX . '_' . $table . ' WHERE `' . $pk_field . '`=? LIMIT 1';
+        $query = 'SELECT ' . implode(', ', $selectedfields) . ' FROM ' . DB_PREFIX . '_' . $table . ' WHERE `' . $pk_field . '`=? LIMIT 1';
 
         $stmt = $DBC->query($query, array($record_id));
         if (!$stmt) {
-            $this->riseError('db error');
+            $this->riseError('query = ' . $query . ', db error: ' . $DBC->getLastError());
             return false;
         }
         $advertdata = $DBC->fetch($stmt);
@@ -1695,40 +1867,44 @@ class SiteBill {
 
 
         $i = 0;
-        $max_filesize = (int) str_replace('M', '', ini_get('upload_max_filesize'));
-        if (isset($parameters['max_file_size']) && (int) $parameters['max_file_size'] != 0) {
-            $max_filesize = (int) $parameters['max_file_size'];
+        $max_filesize = (int)str_replace('M', '', ini_get('upload_max_filesize'));
+        if (isset($parameters['max_file_size']) && (int)$parameters['max_file_size'] != 0) {
+            $max_filesize = (int)$parameters['max_file_size'];
         }
 
         if ($max_img_count > -1) {
-            if(!empty($maxsizerules)){
-                foreach($maxsizerules as $maxsizerule){
+            if (!empty($maxsizerules)) {
+                foreach ($maxsizerules as $maxsizerule) {
                     $condsok = true;
-                    foreach ($maxsizerule['conditions'] as $condition){
+                    foreach ($maxsizerule['conditions'] as $condition) {
                         $operand = $condition[1];
                         $field = $condition[0];
                         $value = $condition[2];
-                        switch($operand){
-                            case 'eq' : {
-                                if($advertdata[$field] != $value){
+                        switch ($operand) {
+                            case 'eq' :
+                            {
+                                if ($advertdata[$field] != $value) {
                                     $condsok = false;
                                 }
                                 break;
                             }
-                            case 'neq' : {
-                                if($advertdata[$field] == $value){
+                            case 'neq' :
+                            {
+                                if ($advertdata[$field] == $value) {
                                     $condsok = false;
                                 }
                                 break;
                             }
-                            case 'gt' : {
-                                if($advertdata[$field] <= $value){
+                            case 'gt' :
+                            {
+                                if ($advertdata[$field] <= $value) {
                                     $condsok = false;
                                 }
                                 break;
                             }
-                            case 'lt' : {
-                                if($advertdata[$field] >= $value){
+                            case 'lt' :
+                            {
+                                if ($advertdata[$field] >= $value) {
                                     $condsok = false;
                                 }
                                 break;
@@ -1736,7 +1912,7 @@ class SiteBill {
                         }
                     }
 
-                    if($condsok){
+                    if ($condsok) {
                         $max_img_count = $maxsizerule['size'];
                         break;
                     }
@@ -1744,7 +1920,6 @@ class SiteBill {
                 }
             }
         }
-
 
 
         if ($max_img_count > -1) {
@@ -1836,7 +2011,6 @@ class SiteBill {
                     $ext = strtolower(end($arr));
 
 
-
                     if (function_exists('exif_read_data')) {
                         $exif = @exif_read_data($uploadify_path . $image_name, 0, true);
                         if (isset($exif['IFD0']) && isset($exif['IFD0']['Orientation']) && false === empty($exif['IFD0']['Orientation'])) {
@@ -1854,7 +2028,7 @@ class SiteBill {
                         }
                     }
                     //$ext=strtolower($arr[count($arr)-1]);
-                    if ((1 == $this->getConfigValue('seo_photo_name_enable')) AND ( $name_template != '')) {
+                    if ((1 == $this->getConfigValue('seo_photo_name_enable')) and ($name_template != '')) {
                         $name_template = substr($name_template, 0, 150);
                         if ($i == 0) {
                             $preview_name_no_ext = $name_template;
@@ -1901,20 +2075,20 @@ class SiteBill {
                             $preview_height = $this->getConfigValue('data_image_preview_height');
                         }
 
-                        if (isset($parameters['norm_width']) && (int) $parameters['norm_width'] != 0) {
-                            $big_width = (int) $parameters['norm_width'];
+                        if (isset($parameters['norm_width']) && (int)$parameters['norm_width'] != 0) {
+                            $big_width = (int)$parameters['norm_width'];
                         }
 
-                        if (isset($parameters['norm_height']) && (int) $parameters['norm_height'] != 0) {
-                            $big_height = (int) $parameters['norm_height'];
+                        if (isset($parameters['norm_height']) && (int)$parameters['norm_height'] != 0) {
+                            $big_height = (int)$parameters['norm_height'];
                         }
 
-                        if (isset($parameters['prev_width']) && (int) $parameters['prev_width'] != 0) {
-                            $preview_width = (int) $parameters['prev_width'];
+                        if (isset($parameters['prev_width']) && (int)$parameters['prev_width'] != 0) {
+                            $preview_width = (int)$parameters['prev_width'];
                         }
 
-                        if (isset($parameters['prev_height']) && (int) $parameters['prev_height'] != 0) {
-                            $preview_height = (int) $parameters['prev_height'];
+                        if (isset($parameters['prev_height']) && (int)$parameters['prev_height'] != 0) {
+                            $preview_height = (int)$parameters['prev_height'];
                         }
 
                         if ($folder_name != '') {
@@ -1922,7 +2096,7 @@ class SiteBill {
                             $prv = $folder_name . '/' . $prv;
                         }
 
-                        if (intval($parameters['normal_smart_resizing']) == 1) {
+                        if (isset($parameters['normal_smart_resizing']) && intval($parameters['normal_smart_resizing']) == 1) {
                             $rn = $this->makePreview($uploadify_path . $image_name, $path . $preview_name, $big_width, $big_height, $ext, 'smart');
                         } else {
                             $rn = $this->makePreview($uploadify_path . $image_name, $path . $preview_name, $big_width, $big_height, $ext, 1);
@@ -1947,7 +2121,7 @@ class SiteBill {
 
 
                         if ($rn && $rp) {
-                            if(1 == $this->getConfigValue('apps.watermark.printanywhere')){
+                            if (1 == $this->getConfigValue('apps.watermark.printanywhere')) {
                                 $this->doWatermark($path . $preview_name, $path . $prv);
                             }
 
@@ -1958,29 +2132,29 @@ class SiteBill {
                             $ra[$i]['preview'] = $prv;
                             $ra[$i]['normal'] = $preview_name;
                         }
-                        $preview_params = $this->get_image_info($path .$prv);
-                        $normal_params = $this->get_image_info($path .$preview_name);
+                        $preview_params = $this->get_image_info($path . $prv);
+                        $normal_params = $this->get_image_info($path . $preview_name);
 
                     } elseif (in_array($ext, array('svg'))) {
-                        if ( $folder_name != '' ) {
-                            $preview_name = $folder_name.'/'. $image_name;
+                        if ($folder_name != '') {
+                            $preview_name = $folder_name . '/' . $image_name;
                         } else {
                             $preview_name = $image_name;
                         }
                         $prv = $preview_name;
-                        $this->makeMove($uploadify_path . $image_name, $path .$preview_name);
+                        $this->makeMove($uploadify_path . $image_name, $path . $preview_name);
 
                         $ra[$i]['preview'] = $preview_name;
                         $ra[$i]['normal'] = $preview_name;
                         $rn = true;
                         $rp = true;
-                        $preview_params = $this->get_svg_info($path .$preview_name);
-                        $normal_params = $this->get_svg_info($path .$preview_name);
+                        $preview_params = $this->get_svg_info($path . $preview_name);
+                        $normal_params = $this->get_svg_info($path . $preview_name);
                     }
                     if ($rn && $rp) {
-                        if ( $this->getConfigValue('apps.sharder.enable') ) {
+                        if ($this->getConfigValue('apps.sharder.enable')) {
                             $shard_result = $this->sharding(array($preview_name, $prv));
-                            if ( $shard_result ) {
+                            if ($shard_result) {
                                 list($preview_name, $prv) = $shard_result;
                                 $remote = 'true';
                             }
@@ -1992,7 +2166,7 @@ class SiteBill {
                             'normal' => $preview_name,
                             'type' => 'graphic',
                             'mime' => $ext,
-                            'remote' =>  $remote,
+                            'remote' => $remote,
                             'preview_params' => $preview_params,
                             'normal_params' => $normal_params,
                         );
@@ -2010,20 +2184,22 @@ class SiteBill {
             // $this->riseError('empty uploads');
         }
 
-        $this->delete_uploadify_images($session_key, $field_name);
+        $this->delete_uploadify_images($session_key, $uploadify_field_name);
         return $ra;
     }
 
-    function get_svg_info ($svg_file_name) {
+    function get_svg_info($svg_file_name)
+    {
         $xmlget = simplexml_load_string(file_get_contents($svg_file_name));
         $xmlattributes = $xmlget->attributes();
         $ra = array();
-        $ra['width'] = (string) $xmlattributes->width;
-        $ra['height'] = (string) $xmlattributes->height;
+        $ra['width'] = (string)$xmlattributes->width;
+        $ra['height'] = (string)$xmlattributes->height;
         return $ra;
     }
 
-    function get_image_info ($file_name) {
+    function get_image_info($file_name)
+    {
         list($width, $height, $type, $attr) = getimagesize($file_name);
         $ra = array();
         $ra['width'] = $width;
@@ -2034,15 +2210,16 @@ class SiteBill {
         return $ra;
     }
 
-    function sharding ($files) {
-        if ( $this->getConfigValue('apps.sharder.enable') ) {
-            if ( !is_object($this->sharder) ) {
+    function sharding($files)
+    {
+        if ($this->getConfigValue('apps.sharder.enable')) {
+            if (!is_object($this->sharder)) {
                 $this->sharder = new \sharder\lib\sharder();
             }
 
             $result = $this->sharder->shard($files, $this->getServerFullUrl(true));
-            if ( $this->sharder->getError() ) {
-                $this->riseError('Error on sharding: '.$this->sharder->getError());
+            if ($this->sharder->getError()) {
+                $this->riseError('Error on sharding: ' . $this->sharder->getError());
                 return false;
             }
             return $result;
@@ -2050,7 +2227,8 @@ class SiteBill {
         return $files;
     }
 
-    function rotateImageInDestination($source_image, $destination, $degree) {
+    function rotateImageInDestination($source_image, $destination, $degree)
+    {
 
         $arr = explode('.', $source_image);
         $ext = end($arr);
@@ -2077,10 +2255,10 @@ class SiteBill {
 
         if ($ext == 'jpg' || $ext == 'jpeg') {
             $im = imagerotate($source_image_res, $degree, 0);
-            imagejpeg($im, $destination, (int) $this->getConfigValue('jpeg_quality'));
+            imagejpeg($im, $destination, (int)$this->getConfigValue('jpeg_quality'));
         } elseif ($ext == 'png') {
             $im = imagerotate($source_image_res, $degree, 0);
-            imagepng($im, $destination, (int) $this->getConfigValue('png_quality'));
+            imagepng($im, $destination, (int)$this->getConfigValue('png_quality'));
         } elseif ($ext == 'gif') {
             $im = imagerotate($source_image_res, $degree, 0);
             imagegif($im, $destination);
@@ -2100,7 +2278,8 @@ class SiteBill {
      * @param int $record_id record ID
      * @return boolean
      */
-    function editFileMulti($action, $table_name, $key, $record_id) {
+    function editFileMulti($action, $table_name, $key, $record_id)
+    {
         $path = SITEBILL_DOCUMENT_ROOT . '/img/data/';
         $uploadify_path = SITEBILL_DOCUMENT_ROOT . $this->uploadify_dir;
 
@@ -2132,8 +2311,9 @@ class SiteBill {
         return $ra;
     }
 
-    function clear_uploadify_table($session_code = '', $anyway = false) {
-        if (1 == (int) $this->getConfigValue('dontclean_uploadify_table') && !$anyway) {
+    function clear_uploadify_table($session_code = '', $anyway = false)
+    {
+        if (1 == (int)$this->getConfigValue('dontclean_uploadify_table') && !$anyway) {
             return true;
         }
 
@@ -2189,7 +2369,8 @@ class SiteBill {
         return true;
     }
 
-    function clear_captcha_session_table() {
+    function clear_captcha_session_table()
+    {
         $limit_date = date('Y-m-d H:i:s', (time() - 24 * 3600));
         $DBC = DBC::getInstance();
         $q = 'DELETE FROM ' . DB_PREFIX . '_captcha_session WHERE start_date<?';
@@ -2197,11 +2378,19 @@ class SiteBill {
         return true;
     }
 
-    function clear_session_table() {
-        $limit_date = date('Y-m-d H:i:s', (time() - 24 * 3600));
+    function clear_session_table()
+    {
+        $limit_date_anonim = date('Y-m-d H:i:s', (time() - 24 * 3600));
+        $limit_date_user = date('Y-m-d H:i:s', (time() - 90 * 24 * 3600));
+
         $DBC = DBC::getInstance();
-        $q = 'DELETE FROM ' . DB_PREFIX . '_session WHERE start_date<?';
-        $DBC->query($q, array($limit_date));
+
+        $q = 'DELETE FROM ' . DB_PREFIX . '_session WHERE start_date<? AND user_id=0';
+        $DBC->query($q, array($limit_date_anonim));
+
+        $q = 'DELETE FROM ' . DB_PREFIX . '_session WHERE start_date<? AND user_id <> 0';
+        $DBC->query($q, array($limit_date_user));
+
         return true;
     }
 
@@ -2210,19 +2399,19 @@ class SiteBill {
      * @param string $session_code session code
      * @return array
      */
-    function delete_uploadify_images($session_code, $element = '') {
+    function delete_uploadify_images($session_code, $element = '')
+    {
         $uploadify_path = SITEBILL_DOCUMENT_ROOT . $this->uploadify_dir;
         $DBC = DBC::getInstance();
 
         $ra = array();
         if ($element != '') {
             $query = 'SELECT file_name FROM ' . UPLOADIFY_TABLE . ' WHERE `session_code`=? AND `element`=?';
-            $stmt = $DBC->query($query, array((string) $session_code, $element));
+            $stmt = $DBC->query($query, array((string)$session_code, $element));
         } else {
             $query = 'SELECT file_name FROM ' . UPLOADIFY_TABLE . ' WHERE `session_code`=?';
-            $stmt = $DBC->query($query, array((string) $session_code));
+            $stmt = $DBC->query($query, array((string)$session_code));
         }
-
 
 
         if ($stmt) {
@@ -2239,10 +2428,10 @@ class SiteBill {
         }
         if ($element != '') {
             $query = 'DELETE FROM ' . UPLOADIFY_TABLE . ' WHERE `session_code`=? AND `element`=?';
-            $stmt = $DBC->query($query, array((string) $session_code, $element));
+            $stmt = $DBC->query($query, array((string)$session_code, $element));
         } else {
             $query = 'DELETE FROM ' . UPLOADIFY_TABLE . ' WHERE session_code=?';
-            $stmt = $DBC->query($query, array((string) $session_code));
+            $stmt = $DBC->query($query, array((string)$session_code));
         }
 
         return true;
@@ -2253,7 +2442,8 @@ class SiteBill {
      * @param string $image_name image_name
      * @return array
      */
-    function delete_uploadify_image($image_name) {
+    function delete_uploadify_image($image_name)
+    {
         $DBC = DBC::getInstance();
         $file_name = $image_name;
         $uploadify_path = SITEBILL_DOCUMENT_ROOT . $this->uploadify_dir;
@@ -2263,7 +2453,8 @@ class SiteBill {
         return true;
     }
 
-    function get_ajax_auth_form() {
+    function get_ajax_auth_form()
+    {
         if (SITEBILL_MAIN_URL != '') {
             $add_folder = SITEBILL_MAIN_URL . '/';
         }
@@ -2309,7 +2500,8 @@ class SiteBill {
      * @param boolean $remind
      * @return string
      */
-    function get_simple_auth_form($action = '/login/', $register = true, $remind = true) {
+    function get_simple_auth_form($action = '/login/', $register = true, $remind = true)
+    {
         if (SITEBILL_MAIN_URL != '') {
             $add_folder = '/' . SITEBILL_MAIN_URL;
         }
@@ -2398,7 +2590,8 @@ class SiteBill {
      * @param int $record_id record id
      * @return boolean
      */
-    function add_image_records($images, $table_name, $key, $record_id) {
+    function add_image_records($images, $table_name, $key, $record_id)
+    {
 
         $DBC = DBC::getInstance();
         foreach ($images as $item_id => $item_array) {
@@ -2417,7 +2610,8 @@ class SiteBill {
      * @param int $image_id image id
      * @return boolean
      */
-    function add_table_image_record($table_name, $key, $record_id, $image_id) {
+    function add_table_image_record($table_name, $key, $record_id, $image_id)
+    {
         $DBC = DBC::getInstance();
         $query = 'INSERT INTO ' . DB_PREFIX . '_' . $table_name . '_image (' . $key . ', image_id, sort_order) values (?, ?, ?)';
         $DBC->query($query, array($record_id, $image_id, $image_id));
@@ -2430,7 +2624,8 @@ class SiteBill {
      * @param string $session_code session code
      * @return string
      */
-    function getPluploaderPlugin($session_code) {
+    function getPluploaderPlugin($session_code)
+    {
         $this->clear_uploadify_table($session_code);
         global $folder;
         $rs .= '
@@ -2478,7 +2673,8 @@ class SiteBill {
      * @param string $session_code session code
      * @return string
      */
-    function getUploadifyPlugin($session_code, $params = array()) {
+    function getUploadifyPlugin($session_code, $params = array())
+    {
         $this->clear_uploadify_table($session_code);
         $uploaded_images = $this->load_uploadify_images($session_code);
         global $folder;
@@ -2497,7 +2693,7 @@ var uploadedfiles = 0;
 var maxQueueSize = 100;
 var queueSize = 0;
 $(document).ready(function() {
-	var max_item_count=' . ((int) $this->getConfigValue('photo_per_data') > 0 ? (int) $this->getConfigValue('photo_per_data') : 1000) . ';
+	var max_item_count=' . ((int)$this->getConfigValue('photo_per_data') > 0 ? (int)$this->getConfigValue('photo_per_data') : 1000) . ';
 	
 	
 	
@@ -2563,7 +2759,7 @@ $(document).ready(function() {
 	$(document).on(\'click\', \'a.kill_upl\',function(){
 	
 		var imgs_count=$("div.preview_admin").length+$("#filecollector img").length;
-		var max_item_count=' . ((int) $this->getConfigValue('photo_per_data') > 0 ? (int) $this->getConfigValue('photo_per_data') : 1000) . ';
+		var max_item_count=' . ((int)$this->getConfigValue('photo_per_data') > 0 ? (int)$this->getConfigValue('photo_per_data') : 1000) . ';
 		var url=\'/js/ajax.php?action=delete_uploadify_image&img_name=\'+$(this).attr(\'alt\');
 		$.getJSON(url,{},function(data){});
 		var parent=$(this).parent(\'div\');
@@ -2597,26 +2793,27 @@ $(document).ready(function() {
         return $rs;
     }
 
-    function getDropzonePlugin($session_code, $params = array()) {
+    function getDropzonePlugin($session_code, $params = array())
+    {
         $element = $params['element']['name'];
         $type = $params['element']['type'];
 
         //Проверяем наличие расширяющих правил для max_img_count
-        if(isset($params['element']['parameters']['max_img_count_ext']) && '' != $params['element']['parameters']['max_img_count_ext']){
+        if (isset($params['element']['parameters']['max_img_count_ext']) && '' != $params['element']['parameters']['max_img_count_ext']) {
             $maximgcountextendrules = $params['element']['parameters']['max_img_count_ext'];
-        }else{
+        } else {
             $maximgcountextendrules = '';
         }
 
         $controlledfields = array();
-        if($maximgcountextendrules != ''){
+        if ($maximgcountextendrules != '') {
             $rulesparts = explode(':', $maximgcountextendrules);
             $size = intval($rulesparts[0]);
-            if($size > 0 && count($rulesparts) > 1){
+            if ($size > 0 && count($rulesparts) > 1) {
                 unset($rulesparts[0]);
-                foreach($rulesparts as $rule){
+                foreach ($rulesparts as $rule) {
                     $oneruleparts = explode(',', $rule);
-                    if(count($oneruleparts) == 3){
+                    if (count($oneruleparts) == 3) {
                         $controlledfields[$oneruleparts[0]] = $oneruleparts[0];
                     }
                 }
@@ -2631,13 +2828,13 @@ $(document).ready(function() {
         $id = 'dz_' . md5(time() . rand(100, 999));
         $Dropzone_name = 'Dropzone_' . md5(time() . rand(100, 999));
 
-        if ((int) $params['min_img_count'] != 0) {
+        if ((int)$params['min_img_count'] != 0) {
             $src = 'var formsubmit=$("#' . $id . '").parents("form").eq(0).find("[name=submit]");
 					var vm=formsubmit.data("valid_me");
 					if(vm === undefined){
 						vm=[];
 					}
-					vm.push({id:"' . $id . '", count:' . (int) $params['min_img_count'] . '});
+					vm.push({id:"' . $id . '", count:' . (int)$params['min_img_count'] . '});
 					formsubmit.data("valid_me", vm);';
         } else {
             $src = '';
@@ -2653,7 +2850,13 @@ $(document).ready(function() {
     				{ 
     					maxFilesize: ' . $params['max_file_size'] . ',
 						url: "' . SITEBILL_MAIN_URL . '/apps/system/js/uploadify/uploadify.php?uploader_type=dropzone&element=' . $element . '&model=' . $params['element']['table_name'] . '&primary_key_value=' . $params['element']['primary_key_value'] . '&primary_key=' . $params['element']['primary_key'] . '",
-	    				' . ($params['element']['parameters']['accepted'] != '' ? 'acceptedFiles: \'' . $params['element']['parameters']['accepted'] . '\',' : '') . '
+	    				' .
+            ((
+                isset($params['element']) &&
+                isset($params['element']['parameters']) &&
+                isset($params['element']['parameters']['accepted']) &&
+                $params['element']['parameters']['accepted'] != ''
+            ) ? 'acceptedFiles: \'' . $params['element']['parameters']['accepted'] . '\',' : '') . '
 						addRemoveLinks: true,
 						customparams: {
 						    url: \'' . SITEBILL_MAIN_URL . '/apps/system/js/uploadify/uploadify.php?uploader_type=dropzone\',
@@ -2661,7 +2864,7 @@ $(document).ready(function() {
 						    model: \'' . $params['element']['table_name'] . '\',
 						    primary_key_value: \'' . $params['element']['primary_key_value'] . '\',
 						    primary_key: \'' . $params['element']['primary_key'] . '\',
-						    controls: ['.(!empty($controlledfields) ? '\''.implode('\',\'', $controlledfields).'\'' : '').']
+						    controls: [' . (!empty($controlledfields) ? '\'' . implode('\',\'', $controlledfields) . '\'' : '') . ']
 						}
 					});
 					$("div#' . $id . ' .dz-remove").click(function(){
@@ -2711,9 +2914,24 @@ $(document).ready(function() {
     					    }
     					}
     				});
+                                
+                    Dropzone.prototype.defaultOptions.dictDefaultMessage = "'._e('Переместите сюда файлы для загрузки').'";
+                    Dropzone.prototype.defaultOptions.dictFallbackMessage = "'._e('Ваш браузер не поддерживает опцию drag-n-drop').'";
+                    Dropzone.prototype.defaultOptions.dictFallbackText = "'._e('Пожалуйста, используйте форму ниже для загрузки файлов').'";
+                    Dropzone.prototype.defaultOptions.dictFileTooBig = "'._e('Файл слишком большой').' ({{filesize}}MiB). '._e('Максимальный размер файла').': {{maxFilesize}}MiB.";
+                    Dropzone.prototype.defaultOptions.dictInvalidFileType = "'._e('Формат файла не подходит').'";
+                    Dropzone.prototype.defaultOptions.dictResponseError = "'._e('Ответ сервера с ошибкой').' {{statusCode}} code.";
+                    Dropzone.prototype.defaultOptions.dictCancelUpload = "'._e('Отменить загрузку').'";
+                    Dropzone.prototype.defaultOptions.dictCancelUploadConfirmation = "'._e('Вы уверены, что хотите прервать загрузку?').'";
+                    Dropzone.prototype.defaultOptions.dictRemoveFile = "'._e('Удалить файл').'";
+                    Dropzone.prototype.defaultOptions.dictMaxFilesExceeded = "'._e('Исчерпан лимит загрузки файлов').'";
 				});
 				</script>';
         $rs .= '<div data-ii="" class="dropzone_outer' . ($type == 'docuploads' ? ' docuploads' : '') . '"><div id="' . $id . '" class="dropzone_inner"><div class="dz-default dz-message"><span><span class="bigger-50 bolder">' . ($type == 'docuploads' ? Multilanguage::_('L_DOCUPLOADS_FILE') : Multilanguage::_('L_UPLOADS_FILE')) . '</span> <br>	<i class="upload-icon icon-cloud-upload blue icon-3x"></i></span></div>';
+        if ( $this->getConfigValue('apps.realty.additional_dropzone_button') ) {
+            $rs .= '<a class="btn btn-primary" id="dropzone_add_more_files_' . $id . '"><i class="fa fa-plus"></i> '.($type == 'docuploads' ? _e('Добавить файлы') : _e('Добавить фото')).'</a>';
+        }
+
         if (false !== $uploaded_images) {
             foreach ($uploaded_images as $uplim) {
 
@@ -2750,7 +2968,7 @@ $(document).ready(function() {
                     $rs .= '<span data-dz-errormessage="">';
                     $rs .= '</span>';
                     $rs .= '</div>';
-                    $rs .= '<a class="dz-remove" href="javascript:undefined;" data-dz-remove="" alt="' . $uplim . '">'._e('Удалить').'</a>';
+                    $rs .= '<a class="dz-remove" href="javascript:undefined;" data-dz-remove="" alt="' . $uplim . '">' . _e('Удалить') . '</a>';
                     $rs .= '</div>';
                 }
             }
@@ -2766,7 +2984,8 @@ $(document).ready(function() {
      * @param string $session_code session code
      * @return string
      */
-    function getUploadifyFilePlugin($session_code, $params = array()) {
+    function getUploadifyFilePlugin($session_code, $params = array())
+    {
         $this->clear_uploadify_table($session_code);
         $id = md5(time() . rand(1000, 9999));
         global $folder;
@@ -2789,8 +3008,8 @@ $(document).ready(function() {
 	\'fileTypeExts\': \'*.doc;*.pdf;*.zip\',
 	\'multi\': true,	
 	\'queueSizeLimit\': 100,
-	\'buttonText\': \'' . ((isset($params['button_name']) && $params['button_name'] != '') ? $params['button_name'] : Multilanguage::_('L_FILE')) . '\',	
-	\'buttonImg\': \'' . $folder . '/img/button_img_upl.png\',	
+	\'buttonText\': \'' . ((isset($params['button_name']) && $params['button_name'] != '') ? $params['button_name'] : Multilanguage::_('L_FILE')) . '\',
+	\'buttonImg\': \'' . $folder . '/img/button_img_upl.png\',
     \'onUploadSuccess\': function(fileObj, response, data) {
     					queueSize++;
     					if ( response == \'max_file_size\' ) {
@@ -2807,7 +3026,7 @@ $(document).ready(function() {
     					}
     					addFileNotify(queueSize);
     				}
-                    
+
     });
 });
 function addFileNotify ( queueSize ) {
@@ -2825,7 +3044,8 @@ function addFileNotify ( queueSize ) {
      * @param void
      * @return boolean
      */
-    function isDemo() {
+    function isDemo()
+    {
         global $__user, $__db;
         if (preg_match('/rumantic_estate/', $__db)) {
             return true;
@@ -2838,7 +3058,8 @@ function addFileNotify ( queueSize ) {
      * @param void
      * @return string
      */
-    function demo_function_disabled() {
+    function demo_function_disabled()
+    {
         return Multilanguage::_('L_MESSAGE_THIS_IS_TRIAL_COMMON');
     }
 
@@ -2847,7 +3068,8 @@ function addFileNotify ( queueSize ) {
      * @param
      * @return
      */
-    function loadConfig() {
+    function loadConfig()
+    {
         if (!self::$config_loaded) {
             $SConfig = SConfig::getInstance();
             self::$config_array = $SConfig->getConfig();
@@ -2855,13 +3077,24 @@ function addFileNotify ( queueSize ) {
         }
     }
 
+    static function loadConfigStatic()
+    {
+        if (!self::$config_loaded) {
+            $SConfig = SConfig::getInstance();
+            self::$config_array = $SConfig->getConfig();
+            self::$config_loaded = true;
+        }
+    }
+
+
     /**
      * Delete image
      * @param string $table_name table name
      * @param int $image_id image id
      * @return boolean
      */
-    function deleteImage($table_name, $image_id) {
+    function deleteImage($table_name, $image_id)
+    {
         $DBC = DBC::getInstance();
         $query = 'DELETE FROM ' . DB_PREFIX . '_' . $table_name . '_image WHERE image_id=?';
         $DBC->query($query, array($image_id));
@@ -2873,7 +3106,8 @@ function addFileNotify ( queueSize ) {
         return true;
     }
 
-    function makeImageMain($action, $image_id, $key, $key_value) {
+    function makeImageMain($action, $image_id, $key, $key_value)
+    {
         $DBC = DBC::getInstance();
         $query = 'SELECT image_id FROM ' . DB_PREFIX . '_' . $action . '_image WHERE `' . $key . '`=? ORDER BY sort_order';
         $stmt = $DBC->query($query, array($key_value));
@@ -2897,7 +3131,8 @@ function addFileNotify ( queueSize ) {
         }
     }
 
-    function rotateImage2($thisimage, $isWatermark, $degree, $parameters) {
+    function rotateImage2($thisimage, $isWatermark, $degree, $parameters)
+    {
 
         if ($thisimage['normal'] == '') {
             return '';
@@ -2935,7 +3170,6 @@ function addFileNotify ( queueSize ) {
         }
 
 
-
         $preview_width = $parameters['prev_width'];
         $preview_height = $parameters['prev_height'];
 
@@ -2946,17 +3180,15 @@ function addFileNotify ( queueSize ) {
         }
 
 
-
-
         if ($isWatermark) {
             if ($ext == 'jpg' || $ext == 'jpeg') {
                 $im = imagerotate($source_image_res, $degree, 0);
-                @imagejpeg($im, SITEBILL_DOCUMENT_ROOT . '/img/data/nowatermark/' . $target_image_name, (int) $this->getConfigValue('jpeg_quality'));
-                imagejpeg($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $target_image_name, (int) $this->getConfigValue('jpeg_quality'));
+                @imagejpeg($im, SITEBILL_DOCUMENT_ROOT . '/img/data/nowatermark/' . $target_image_name, (int)$this->getConfigValue('jpeg_quality'));
+                imagejpeg($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $target_image_name, (int)$this->getConfigValue('jpeg_quality'));
             } elseif ($ext == 'png') {
                 $im = imagerotate($source_image_res, $degree, 0);
-                @imagepng($im, SITEBILL_DOCUMENT_ROOT . '/img/data/nowatermark/' . $target_image_name, (int) $this->getConfigValue('png_quality'));
-                imagepng($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $target_image_name, (int) $this->getConfigValue('png_quality'));
+                @imagepng($im, SITEBILL_DOCUMENT_ROOT . '/img/data/nowatermark/' . $target_image_name, (int)$this->getConfigValue('png_quality'));
+                imagepng($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $target_image_name, (int)$this->getConfigValue('png_quality'));
             } elseif ($ext == 'gif') {
                 $im = imagerotate($source_image_res, $degree, 0);
                 @imagegif($im, SITEBILL_DOCUMENT_ROOT . '/img/data/nowatermark/' . $target_image_name);
@@ -2984,10 +3216,10 @@ function addFileNotify ( queueSize ) {
         } else {
             if ($ext == 'jpg' || $ext == 'jpeg') {
                 $im = imagerotate($source_image_res, $degree, 0);
-                imagejpeg($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $target_image_name, (int) $this->getConfigValue('jpeg_quality'));
+                imagejpeg($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $target_image_name, (int)$this->getConfigValue('jpeg_quality'));
             } elseif ($ext == 'png') {
                 $im = imagerotate($source_image_res, $degree, 0);
-                imagepng($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $target_image_name, (int) $this->getConfigValue('png_quality'));
+                imagepng($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $target_image_name, (int)$this->getConfigValue('png_quality'));
             } elseif ($ext == 'gif') {
                 $im = imagerotate($source_image_res, $degree, 0);
                 imagegif($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $target_image_name);
@@ -3001,7 +3233,8 @@ function addFileNotify ( queueSize ) {
         return true;
     }
 
-    function rotateImage($action, $image_id, $key, $key_value, $rot_dir) {
+    function rotateImage($action, $image_id, $key, $key_value, $rot_dir)
+    {
         if ($rot_dir == 'ccw') {
             $degree = 90;
         } else {
@@ -3071,12 +3304,12 @@ function addFileNotify ( queueSize ) {
         if ($hasWatermark) {
             if ($ext == 'jpg' || $ext == 'jpeg') {
                 $im = imagerotate($source_image_res, $degree, 0);
-                imagejpeg($im, SITEBILL_DOCUMENT_ROOT . '/img/data/nowatermark/' . $thisimage['normal'], (int) $this->getConfigValue('jpeg_quality'));
+                imagejpeg($im, SITEBILL_DOCUMENT_ROOT . '/img/data/nowatermark/' . $thisimage['normal'], (int)$this->getConfigValue('jpeg_quality'));
                 imagejpeg($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $thisimage['normal'], 100);
             } elseif ($ext == 'png') {
                 $im = imagerotate($source_image_res, $degree, 0);
-                imagepng($im, SITEBILL_DOCUMENT_ROOT . '/img/data/nowatermark/' . $thisimage['normal'], (int) $this->getConfigValue('png_quality'));
-                imagepng($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $thisimage['normal'], (int) $this->getConfigValue('png_quality'));
+                imagepng($im, SITEBILL_DOCUMENT_ROOT . '/img/data/nowatermark/' . $thisimage['normal'], (int)$this->getConfigValue('png_quality'));
+                imagepng($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $thisimage['normal'], (int)$this->getConfigValue('png_quality'));
             } elseif ($ext == 'gif') {
                 $im = imagerotate($source_image_res, $degree, 0);
                 imagegif($im, SITEBILL_DOCUMENT_ROOT . '/img/data/nowatermark/' . $thisimage['normal']);
@@ -3091,10 +3324,10 @@ function addFileNotify ( queueSize ) {
         } else {
             if ($ext == 'jpg' || $ext == 'jpeg') {
                 $im = imagerotate($source_image_res, $degree, 0);
-                imagejpeg($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $thisimage['normal'], (int) $this->getConfigValue('jpeg_quality'));
+                imagejpeg($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $thisimage['normal'], (int)$this->getConfigValue('jpeg_quality'));
             } elseif ($ext == 'png') {
                 $im = imagerotate($source_image_res, $degree, 0);
-                imagepng($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $thisimage['normal'], (int) $this->getConfigValue('png_quality'));
+                imagepng($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $thisimage['normal'], (int)$this->getConfigValue('png_quality'));
             } elseif ($ext == 'gif') {
                 $im = imagerotate($source_image_res, $degree, 0);
                 imagegif($im, SITEBILL_DOCUMENT_ROOT . '/img/data/' . $thisimage['normal']);
@@ -3118,7 +3351,8 @@ function addFileNotify ( queueSize ) {
      * @return mixed
      */
 
-    function reorderImage($action, $image_id, $key, $key_value, $direction) {
+    function reorderImage($action, $image_id, $key, $key_value, $direction)
+    {
         $DBC = DBC::getInstance();
         $query = 'SELECT ' . $action . '_image_id, sort_order FROM ' . DB_PREFIX . '_' . $action . '_image WHERE image_id=?';
         $stmt = $DBC->query($query, array($image_id));
@@ -3137,7 +3371,7 @@ function addFileNotify ( queueSize ) {
                 return;
             }
             $rr = $DBC->fetch($stmt);
-            $next_record_image_id = (int) $rr[$action . '_image_id'];
+            $next_record_image_id = (int)$rr[$action . '_image_id'];
             if ($next_record_image_id == 0) {
                 return;
             }
@@ -3157,7 +3391,7 @@ function addFileNotify ( queueSize ) {
                 return;
             }
             $rr = $DBC->fetch($stmt);
-            $next_record_image_id = (int) $rr[$action . '_image_id'];
+            $next_record_image_id = (int)$rr[$action . '_image_id'];
             if ($next_record_image_id == 0) {
                 return;
             }
@@ -3170,12 +3404,13 @@ function addFileNotify ( queueSize ) {
         }
     }
 
-    function reorderTopics($orderArray) {
+    function reorderTopics($orderArray)
+    {
         if (count($orderArray) > 0) {
             $DBC = DBC::getInstance();
             $query = 'UPDATE ' . DB_PREFIX . '_topic SET `order`=? WHERE id=?';
             foreach ($orderArray as $k => $v) {
-                $DBC->query($query, array((int) $v, (int) $k));
+                $DBC->query($query, array((int)$v, (int)$k));
             }
         }
     }
@@ -3185,11 +3420,12 @@ function addFileNotify ( queueSize ) {
      * @param $image_id image id
      * @return boolean
      */
-    function deleteImageFiles($image_id) {
+    function deleteImageFiles($image_id)
+    {
         $path = SITEBILL_DOCUMENT_ROOT . $this->storage_dir;
         $DBC = DBC::getInstance();
         $query = 'SELECT * FROM ' . IMAGE_TABLE . ' WHERE image_id=?';
-        $stmt = $DBC->query($query, array((int) $image_id));
+        $stmt = $DBC->query($query, array((int)$image_id));
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
                 if (defined('STR_MEDIA') && STR_MEDIA == Sitebill::MEDIA_SAVE_FOLDER) {
@@ -3210,12 +3446,24 @@ function addFileNotify ( queueSize ) {
         return true;
     }
 
+    static function getConfigValueStatic($key, $default = false)
+    {
+        if (!self::$config_loaded) {
+            self::loadConfigStatic();
+        }
+        if (isset(self::$config_array[$key])) {
+            return self::$config_array[$key];
+        }
+        return $default;
+    }
+
     /**
      * Get config value
      * @param string $key key
      * @return string
      */
-    function getConfigValue($key, $default = false) {
+    function getConfigValue($key, $default = false)
+    {
         if (!self::$config_loaded) {
             $this->loadConfig();
         }
@@ -3225,11 +3473,13 @@ function addFileNotify ( queueSize ) {
         return $default;
     }
 
-    function setConfigValue ( $key, $value ) {
+    function setConfigValue($key, $value)
+    {
         self::$config_array[$key] = $value;
     }
 
-    function getAllConfigArray() {
+    function getAllConfigArray()
+    {
         return self::$config_array;
     }
 
@@ -3245,7 +3495,8 @@ function addFileNotify ( queueSize ) {
      * @param void
      * @return boolean
      */
-    function getDebugMode() {
+    function getDebugMode()
+    {
         return DEBUG_MODE;
     }
 
@@ -3254,11 +3505,13 @@ function addFileNotify ( queueSize ) {
      * @param boolean
      * @return void
      */
-    function setDebugMode($debug_mode) {
+    function setDebugMode($debug_mode)
+    {
         return;
     }
 
-    function htmlspecialchars($value, $flags = '') {
+    function htmlspecialchars($value, $flags = '')
+    {
         if ($flags == '') {
             $flags = ENT_COMPAT | ENT_HTML401;
         }
@@ -3278,7 +3531,8 @@ function addFileNotify ( queueSize ) {
         return $value;
     }
 
-    protected function restoreFavorites($user_id) {
+    protected function restoreFavorites($user_id)
+    {
 
         if (isset($_COOKIE['user_favorites']) && $_COOKIE['user_favorites'] != '') {
             $cc = unserialize($_COOKIE['user_favorites']);
@@ -3302,7 +3556,8 @@ function addFileNotify ( queueSize ) {
         unset($cc);
     }
 
-    function htmlspecialchars_decode($value, $flags = '') {
+    function htmlspecialchars_decode($value, $flags = '')
+    {
         if ($flags == '') {
             if (defined('ENT_HTML401')) {
                 $flags = ENT_COMPAT | ENT_HTML401;
@@ -3326,12 +3581,13 @@ function addFileNotify ( queueSize ) {
         return $value;
     }
 
-    function get_phpinput_value ( $key ) {
+    function get_phpinput_value($key)
+    {
         $flags = ENT_COMPAT | ENT_HTML401;
-        if ( empty($this->phpinput_data) ) {
+        if (empty($this->phpinput_data)) {
             $this->phpinput_data = json_decode(file_get_contents('php://input'), true);
         }
-        if ( !empty($this->phpinput_data[$key]) ) {
+        if (!empty($this->phpinput_data[$key])) {
             return $this->sanitize($this->phpinput_data[$key], $flags);
         }
         return null;
@@ -3342,35 +3598,39 @@ function addFileNotify ( queueSize ) {
      * @param string $key key
      * @return string
      */
-    function getRequestValue($key, $type = '', $from = '') {
+    function getRequestValue($key, $type = '', $from = '')
+    {
         $flags = ENT_COMPAT | ENT_HTML401;
         $value = NULL;
         switch ($from) {
-            case 'get' : {
-                    if (isset($_GET[$key])) {
-                        $value = $this->escape($_GET[$key]);
-                        $value = htmlspecialchars($_GET[$key], $flags, SITE_ENCODING);
-                    }
-                    break;
+            case 'get' :
+            {
+                if (isset($_GET[$key])) {
+                    $value = $this->escape($_GET[$key]);
+                    $value = htmlspecialchars($_GET[$key], $flags, SITE_ENCODING);
                 }
-            case 'post' : {
-                    if (isset($_POST[$key])) {
-                        $value = $this->escape($_POST[$key]);
-                    }
-                    break;
+                break;
+            }
+            case 'post' :
+            {
+                if (isset($_POST[$key])) {
+                    $value = $this->escape($_POST[$key]);
                 }
-            default : {
-                    if (isset($_GET[$key])) {
-                        $value = $_GET[$key];
-                        $value = $this->sanitize($value, $flags);
-                    } elseif (isset($_POST[$key])) {
-                        $value = $_POST[$key];
-                        $value = $this->sanitize($value, $flags);
-                    } elseif (isset($_REQUEST[$key])) {
-                        $value = $_REQUEST[$key];
-                        $value = $this->sanitize($value, $flags);
-                    }
+                break;
+            }
+            default :
+            {
+                if (isset($_GET[$key])) {
+                    $value = $_GET[$key];
+                    $value = $this->sanitize($value, $flags);
+                } elseif (isset($_POST[$key])) {
+                    $value = $_POST[$key];
+                    $value = $this->sanitize($value, $flags);
+                } elseif (isset($_REQUEST[$key])) {
+                    $value = $_REQUEST[$key];
+                    $value = $this->sanitize($value, $flags);
                 }
+            }
         }
 
         //Попробуем получить из PHP://INPUT значение
@@ -3429,29 +3689,33 @@ function addFileNotify ( queueSize ) {
         }
 
         switch ($type) {
-            case 'int' : {
-                    if (!is_array($value)) {
-                        $value = (int) $value;
-                    } else {
-                        $value = 0;
-                    }
+            case 'int' :
+            {
+                if (!is_array($value)) {
+                    $value = (int)$value;
+                } else {
+                    $value = 0;
+                }
 
-                    break;
-                }
-            case 'bool' : {
-                    $value = (bool) $value;
-                    break;
-                }
-            case 'float' : {
-                    $value = preg_replace('/[^\d\.,]/', '', $value);
-                    break;
-                }
+                break;
+            }
+            case 'bool' :
+            {
+                $value = (bool)$value;
+                break;
+            }
+            case 'float' :
+            {
+                $value = preg_replace('/[^\d\.,]/', '', $value);
+                break;
+            }
         }
 
         return $value;
     }
 
-    private function xssProtect($value) {
+    private function xssProtect($value)
+    {
         if (is_array($value)) {
             foreach ($value as $k => $v) {
                 $value[$k] = htmlspecialchars($v);
@@ -3462,7 +3726,8 @@ function addFileNotify ( queueSize ) {
         return $value;
     }
 
-    private function getSafeValue($value) {
+    private function getSafeValue($value)
+    {
         return preg_replace('/(\/\*[^\/]*\*\/)/', '', $value);
     }
 
@@ -3472,7 +3737,8 @@ function addFileNotify ( queueSize ) {
      * @param string $value value
      * @return void
      */
-    function setRequestValue($key, $value) {
+    function setRequestValue($key, $value)
+    {
         $_REQUEST[$key] = $value;
         $_POST[$key] = $value;
         return;
@@ -3483,13 +3749,15 @@ function addFileNotify ( queueSize ) {
      * @param string $error_message error message
      * @return void
      */
-    function riseError($error_message) {
-        $this->writeLog('<span class="error">error: '.$error_message.'</span>', true);
+    function riseError($error_message)
+    {
+        $this->writeLog('<span class="error">error: ' . $error_message . '</span>', true);
         $this->error_message = $error_message;
         $this->error_state = true;
     }
 
-    function clearError() {
+    function clearError()
+    {
         $this->error_message = '';
         $this->error_state = false;
     }
@@ -3499,7 +3767,8 @@ function addFileNotify ( queueSize ) {
      * @param void
      * @return boolean
      */
-    function getError() {
+    function getError()
+    {
         return $this->error_message;
     }
 
@@ -3508,7 +3777,8 @@ function addFileNotify ( queueSize ) {
      * @param void
      * @return string
      */
-    function GetErrorMessage() {
+    function GetErrorMessage()
+    {
         return $this->error_message;
     }
 
@@ -3517,8 +3787,9 @@ function addFileNotify ( queueSize ) {
      * @param string $message message
      * @return void
      */
-    function writeLog($message, $enable_trace = false) {
-        if ( $enable_trace ) {
+    function writeLog($message, $enable_trace = false)
+    {
+        if ($enable_trace) {
 
             /*
             ob_start();
@@ -3532,27 +3803,31 @@ function addFileNotify ( queueSize ) {
         self::add_debug_message($message);
 
         if ($this->getConfigValue('apps.logger.enable') and file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/logger/admin/admin.php')) {
-            require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php');
-            require_once (SITEBILL_DOCUMENT_ROOT . '/apps/logger/admin/admin.php');
+            if ( !isset($this->logger_admin) ) {
+                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php');
+                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/logger/admin/admin.php');
+                $this->logger_admin = new logger_admin();
+            }
             if (is_array($message)) {
-                logger_admin::write_log($message);
+                $this->logger_admin->write_log($message);
             } else {
                 $message_array = array('apps_name' => '', 'method' => '', 'message' => $message, 'type' => '');
-                logger_admin::write_log($message_array);
+                $this->logger_admin->write_log($message_array);
             }
             return;
         }
         return;
     }
 
-    function writeArrayLog($array, $enable_trace = false) {
+    function writeArrayLog($array, $enable_trace = false)
+    {
         $message = '<pre>' . var_export($array, true) . '</pre>';
-        if ( $enable_trace ) {
+        if ($enable_trace) {
             ob_start();
             debug_print_backtrace();
             $trace = ob_get_contents();
             ob_end_clean();
-            $message.= '<hr>Stack trace<br><pre>'.$trace.'</pre>';
+            $message .= '<hr>Stack trace<br><pre>' . $trace . '</pre>';
         }
 
         $this->writeLog($message);
@@ -3566,7 +3841,8 @@ function addFileNotify ( queueSize ) {
      * @param int $record_id record id
      * @return string
      */
-    function getImageListAdmin($action, $table_name, $key, $record_id, &$callback_count = NULL, $no_controls = false) {
+    function getImageListAdmin($action, $table_name, $key, $record_id, &$callback_count = NULL, $no_controls = false)
+    {
 
         if (SITEBILL_MAIN_URL != '') {
             $url = SITEBILL_MAIN_URL . '/' . $this->storage_dir;
@@ -3574,7 +3850,7 @@ function addFileNotify ( queueSize ) {
             $url = $this->storage_dir;
         }
 
-        $record_id = (int) $record_id;
+        $record_id = (int)$record_id;
 
         if ($record_id == 0) {
             return '';
@@ -3651,13 +3927,14 @@ function addFileNotify ( queueSize ) {
      * @param int $record_id record id
      * @return string
      */
-    function getFileListAdmin($action, $table_name, $key, $record_id) {
+    function getFileListAdmin($action, $table_name, $key, $record_id)
+    {
         if (SITEBILL_MAIN_URL != '') {
             $url = SITEBILL_MAIN_URL . '/' . $this->storage_dir;
         } else {
             $url = $this->storage_dir;
         }
-        $record_id = (int) $record_id;
+        $record_id = (int)$record_id;
         $DBC = DBC::getInstance();
         $query = 'SELECT i.* FROM ' . DB_PREFIX . '_' . $table_name . '_image AS li, ' . IMAGE_TABLE . ' AS i WHERE li.' . $key . '=? AND li.image_id=i.image_id ORDER BY li.sort_order';
         $stmt = $DBC->query($query, array($record_id));
@@ -3690,7 +3967,8 @@ function addFileNotify ( queueSize ) {
         return $rs;
     }
 
-    function get_page_links_list_default($page, $total, $per_page, $params) {
+    function get_page_links_list_default($page, $total, $per_page, $params)
+    {
         if ($total <= $per_page) {
             return '';
         }
@@ -3727,7 +4005,7 @@ function addFileNotify ( queueSize ) {
         if ($current_page == '') {
             $current_page = 1;
         } else {
-            $current_page = (int) $current_page;
+            $current_page = (int)$current_page;
         }
 
         $limit = $per_page;
@@ -3806,7 +4084,8 @@ function addFileNotify ( queueSize ) {
      * @param array $params
      * @return array
      */
-    function get_page_links_list($page, $total, $per_page, $params) {
+    function get_page_links_list($page, $total, $per_page, $params)
+    {
 
         if (defined('ADMIN_MODE')) {
             return $this->get_page_links_list_default($page, $total, $per_page, $params);
@@ -3846,7 +4125,7 @@ function addFileNotify ( queueSize ) {
         if ($current_page == '') {
             $current_page = 1;
         } else {
-            $current_page = (int) $current_page;
+            $current_page = (int)$current_page;
         }
 
         $limit = $per_page;
@@ -3948,8 +4227,8 @@ function addFileNotify ( queueSize ) {
         $smarty->assign('paging', $ret);
         $tpl = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/common_pager.tpl';
         if (!file_exists($tpl)) {
-            if ( file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/system/template/common_pager_'.$this->getConfigValue('theme').'.tpl') ) {
-                $tpl = SITEBILL_DOCUMENT_ROOT . '/apps/system/template/common_pager_'.$this->getConfigValue('theme').'.tpl';
+            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/system/template/common_pager_' . $this->getConfigValue('theme') . '.tpl')) {
+                $tpl = SITEBILL_DOCUMENT_ROOT . '/apps/system/template/common_pager_' . $this->getConfigValue('theme') . '.tpl';
             } else {
                 $tpl = SITEBILL_DOCUMENT_ROOT . '/apps/system/template/common_pager.tpl';
             }
@@ -3966,7 +4245,8 @@ function addFileNotify ( queueSize ) {
      * @param int $limit limit value
      * @return string
      */
-    function get_image_array($action, $table_name, $key, $record_id, $limit = 0) {
+    function get_image_array($action, $table_name, $key, $record_id, $limit = 0)
+    {
         return array();
     }
 
@@ -3977,7 +4257,8 @@ function addFileNotify ( queueSize ) {
      * @param string $url
      * @return string
      */
-    function get_category_breadcrumbs($params, $category_structure, $url = '') {
+    function get_category_breadcrumbs($params, $category_structure, $url = '')
+    {
         $rs = '';
 
 
@@ -3985,13 +4266,12 @@ function addFileNotify ( queueSize ) {
             return $rs;
         }
 
-        if ((int) $params['topic_id'] == 0) {
+        if ((int)$params['topic_id'] == 0) {
             return $rs;
         }
         if (!isset($category_structure['catalog'][$params['topic_id']])) {
             return $rs;
         }
-
 
 
         //foreach ( $category_structure['childs'][0] as $item_id => $catalog_id ) {
@@ -4042,29 +4322,31 @@ function addFileNotify ( queueSize ) {
         //$ra[]='<a href="'.SITEBILL_MAIN_URL.'/">'.Multilanguage::_('L_HOME').'</a>';
         $breadcrumbs_array = array_reverse($ra);
         $position = 1;
-        foreach ( $breadcrumbs_array as $item ) {
-            $li_breadcrumbs[] = '<span itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">'.$item.'<meta itemprop="position" content="'.$position.'" /></span>';
+        foreach ($breadcrumbs_array as $item) {
+            $li_breadcrumbs[] = '<span itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">' . $item . '<meta itemprop="position" content="' . $position . '" /></span>';
             $position++;
         }
         $rs = implode(' / ', $li_breadcrumbs);
-        $rs_result = '<div itemscope itemtype="https://schema.org/BreadcrumbList">'.$rs.'</div>';
+        $rs_result = '<div itemscope itemtype="https://schema.org/BreadcrumbList">' . $rs . '</div>';
 
         $this->template->assert('breadcrumbs_array', $breadcrumbs_array);
 
         return $rs_result;
     }
+
     /*
      * тестовая функция для кастомизации крошек
      */
-    function get_category_breadcrumbs_test($params, $category_structure, $url = '') {
+    function get_category_breadcrumbs_test($params, $category_structure, $url = '')
+    {
         $rs = '';
-        $bc_array=array();
+        $bc_array = array();
 
         if (!isset($params['topic_id']) || is_array($params['topic_id'])) {
             return $rs;
         }
 
-        if ((int) $params['topic_id'] == 0) {
+        if ((int)$params['topic_id'] == 0) {
             return $rs;
         }
         if (!isset($category_structure['catalog'][$params['topic_id']])) {
@@ -4072,20 +4354,19 @@ function addFileNotify ( queueSize ) {
         }
 
 
-
         //foreach ( $category_structure['childs'][0] as $item_id => $catalog_id ) {
         if ($category_structure['catalog'][$params['topic_id']]['url'] != '') {
             $ra[] = '<a href="' . rtrim($url, '/') . '/' . $category_structure['catalog'][$params['topic_id']]['url'] . (false === strpos($category_structure['catalog'][$params['topic_id']]['url'], '.') ? self::$_trslashes : '') . '">' . $category_structure['catalog'][$params['topic_id']]['name'] . '</a>';
-            $bc_array[]=array(
-                'href'=>SITEBILL_MAIN_URL . '/' . $category_structure['catalog'][$params['topic_id']]['url'] .(false===strpos($category_structure['catalog'][$params['topic_id']]['url'], '.') ? self::$_trslashes : ''),
-                'name'=>$category_structure['catalog'][$params['topic_id']]['name']
+            $bc_array[] = array(
+                'href' => SITEBILL_MAIN_URL . '/' . $category_structure['catalog'][$params['topic_id']]['url'] . (false === strpos($category_structure['catalog'][$params['topic_id']]['url'], '.') ? self::$_trslashes : ''),
+                'name' => $category_structure['catalog'][$params['topic_id']]['name']
             );
 
         } else {
             $ra[] = '<a href="' . rtrim($url, '/') . '/topic' . $params['topic_id'] . '.html">' . $category_structure['catalog'][$params['topic_id']]['name'] . '</a>';
-            $bc_array[]=array(
-                'href'=>SITEBILL_MAIN_URL . '/topic' . $params['topic_id'] . '.html',
-                'name'=>$category_structure['catalog'][$params['topic_id']]['name']
+            $bc_array[] = array(
+                'href' => SITEBILL_MAIN_URL . '/topic' . $params['topic_id'] . '.html',
+                'name' => $category_structure['catalog'][$params['topic_id']]['name']
             );
         }
 
@@ -4096,15 +4377,15 @@ function addFileNotify ( queueSize ) {
             }
             if (isset($category_structure['catalog'][$parent_category_id]) && $category_structure['catalog'][$parent_category_id]['url'] != '') {
                 $ra[] = '<a href="' . rtrim($url, '/') . '/' . $category_structure['catalog'][$parent_category_id]['url'] . (false === strpos($category_structure['catalog'][$parent_category_id]['url'], '.') ? self::$_trslashes : '') . '">' . $category_structure['catalog'][$parent_category_id]['name'] . '</a>';
-                $bc_array[]=array(
-                    'href'=>SITEBILL_MAIN_URL .  '/' . $category_structure['catalog'][$parent_category_id]['url'].(false===strpos($category_structure['catalog'][$parent_category_id]['url'], '.') ? self::$_trslashes : ''),
-                    'name'=>$category_structure['catalog'][$parent_category_id]['name']
+                $bc_array[] = array(
+                    'href' => SITEBILL_MAIN_URL . '/' . $category_structure['catalog'][$parent_category_id]['url'] . (false === strpos($category_structure['catalog'][$parent_category_id]['url'], '.') ? self::$_trslashes : ''),
+                    'name' => $category_structure['catalog'][$parent_category_id]['name']
                 );
             } else {
                 $ra[] = '<a href="' . rtrim($url, '/') . '/topic' . $parent_category_id . '.html">' . $category_structure['catalog'][$parent_category_id]['name'] . '</a>';
-                $bc_array[]=array(
-                    'href'=>SITEBILL_MAIN_URL .  '/topic' . $parent_category_id . '.html',
-                    'name'=>$category_structure['catalog'][$parent_category_id]['name']
+                $bc_array[] = array(
+                    'href' => SITEBILL_MAIN_URL . '/topic' . $parent_category_id . '.html',
+                    'name' => $category_structure['catalog'][$parent_category_id]['name']
                 );
             }
             $parent_category_id = $category_structure['catalog'][$parent_category_id]['parent_id'];
@@ -4112,34 +4393,34 @@ function addFileNotify ( queueSize ) {
         if (isset($category_structure['catalog'][$parent_category_id]) && $category_structure['catalog'][$parent_category_id]['name'] != '') {
             if ($category_structure['catalog'][$parent_category_id]['url'] != '') {
                 $ra[] = '<a href="' . rtrim($url, '/') . '/' . $category_structure['catalog'][$parent_category_id]['url'] . (false === strpos($category_structure['catalog'][$parent_category_id]['url'], '.') ? self::$_trslashes : '1') . '">' . $category_structure['catalog'][$parent_category_id]['name'] . '</a>';
-                $bc_array[]=array(
-                    'href'=>SITEBILL_MAIN_URL .  '/' . $category_structure['catalog'][$parent_category_id]['url'].(false===strpos($category_structure['catalog'][$parent_category_id]['url'], '.') ? self::$_trslashes : ''),
-                    'name'=>$category_structure['catalog'][$parent_category_id]['name']
+                $bc_array[] = array(
+                    'href' => SITEBILL_MAIN_URL . '/' . $category_structure['catalog'][$parent_category_id]['url'] . (false === strpos($category_structure['catalog'][$parent_category_id]['url'], '.') ? self::$_trslashes : ''),
+                    'name' => $category_structure['catalog'][$parent_category_id]['name']
                 );
 
             } else {
                 $ra[] = '<a href="' . rtrim($url, '/') . '/topic' . $parent_category_id . '.html">' . $category_structure['catalog'][$parent_category_id]['name'] . '</a>';
-                $bc_array[]=array(
-                    'href'=>SITEBILL_MAIN_URL .  '/topic' . $parent_category_id . '.html',
-                    'name'=>$category_structure['catalog'][$parent_category_id]['name']
+                $bc_array[] = array(
+                    'href' => SITEBILL_MAIN_URL . '/topic' . $parent_category_id . '.html',
+                    'name' => $category_structure['catalog'][$parent_category_id]['name']
                 );
 
             }
         }
         if (Multilanguage::is_set('LT_BC_HOME', '_template')) {
             $ra[] = '<a href="' . SITEBILL_MAIN_URL . '/">' . Multilanguage::_('LT_BC_HOME', '_template') . '</a>';
-            $bc_array[]=array(
-                'href'=>SITEBILL_MAIN_URL . '/',
-                'name'=>Multilanguage::_('LT_BC_HOME', '_template')
+            $bc_array[] = array(
+                'href' => SITEBILL_MAIN_URL . '/',
+                'name' => Multilanguage::_('LT_BC_HOME', '_template')
             );
         } else {
             $ra[] = '<a href="' . SITEBILL_MAIN_URL . '/">' . Multilanguage::_('L_HOME') . '</a>';
-            $bc_array[]=array(
-                'href'=>SITEBILL_MAIN_URL . '/',
-                'name'=>Multilanguage::_('L_HOME')
+            $bc_array[] = array(
+                'href' => SITEBILL_MAIN_URL . '/',
+                'name' => Multilanguage::_('L_HOME')
             );
         }
-        $bc_array= array_reverse($bc_array);
+        $bc_array = array_reverse($bc_array);
         //print_r($bc_array);
         //$ra[]='<a href="'.SITEBILL_MAIN_URL.'/">'.Multilanguage::_('L_HOME').'</a>';
         $rs = implode(' / ', array_reverse($ra));
@@ -4153,7 +4434,8 @@ function addFileNotify ( queueSize ) {
      * @param string $url
      * @return string
      */
-    function get_category_breadcrumbs_string($params, $category_structure, $url = '') {
+    function get_category_breadcrumbs_string($params, $category_structure, $url = '')
+    {
         $rs = '';
         $ra = array();
         $parent_category_id = 0;
@@ -4179,15 +4461,18 @@ function addFileNotify ( queueSize ) {
         return $rs;
     }
 
-    function set_breadcrumbs_array($breadcrumbs_array = array()) {
+    function set_breadcrumbs_array($breadcrumbs_array = array())
+    {
         $this->breadcrumbs_array = $breadcrumbs_array;
     }
 
-    function get_breadcrumbs_array() {
+    function get_breadcrumbs_array()
+    {
         return $this->breadcrumbs_array;
     }
 
-    public function go301($new_location) {
+    public function go301($new_location)
+    {
         $sapi_name = php_sapi_name();
         if ($sapi_name == 'cgi' || $sapi_name == 'cgi-fcgi') {
             header('Status: 301 Moved Permanently');
@@ -4203,10 +4488,11 @@ function addFileNotify ( queueSize ) {
      * @param
      * @return
      */
-    function makePreview($src, $dst, $width, $height, $ext = 'jpg', $md = 0, $final_ext = '') {
+    function makePreview($src, $dst, $width, $height, $ext = 'jpg', $md = 0, $final_ext = '')
+    {
         $dst_info = pathinfo($dst);
 
-        if ( !is_file($src) or empty($dst_info['extension']) ) {
+        if (!is_file($src) or empty($dst_info['extension'])) {
             return false;
         }
         $source_img = false;
@@ -4279,7 +4565,6 @@ function addFileNotify ( queueSize ) {
             $dest_height = $height;
 
 
-
             $width_proportion = $source_width / $dest_width;
             $height_proportion = $source_height / $dest_height;
 
@@ -4329,9 +4614,9 @@ function addFileNotify ( queueSize ) {
 
         if ($final_ext != '') {
             if ($final_ext == 'jpg' || $final_ext == 'jpeg') {
-                imagejpeg($tmp_img, $dst, (int) $this->getConfigValue('jpeg_quality'));
+                imagejpeg($tmp_img, $dst, (int)$this->getConfigValue('jpeg_quality'));
             } elseif ($final_ext == 'png') {
-                imagepng($tmp_img, $dst, (int) $this->getConfigValue('png_quality'));
+                imagepng($tmp_img, $dst, (int)$this->getConfigValue('png_quality'));
             } elseif ($final_ext == 'gif') {
                 imagegif($tmp_img, $dst);
             } elseif ($final_ext == 'webp') {
@@ -4339,9 +4624,9 @@ function addFileNotify ( queueSize ) {
             }
         } else {
             if ($ext == 'jpg' || $ext == 'jpeg') {
-                imagejpeg($tmp_img, $dst, (int) $this->getConfigValue('jpeg_quality'));
+                imagejpeg($tmp_img, $dst, (int)$this->getConfigValue('jpeg_quality'));
             } elseif ($ext == 'png') {
-                imagepng($tmp_img, $dst, (int) $this->getConfigValue('png_quality'));
+                imagepng($tmp_img, $dst, (int)$this->getConfigValue('png_quality'));
             } elseif ($ext == 'gif') {
                 imagegif($tmp_img, $dst);
             } elseif ($ext == 'webp') {
@@ -4360,7 +4645,8 @@ function addFileNotify ( queueSize ) {
      * @param
      * @return
      */
-    function makeMove($src, $dst) {
+    function makeMove($src, $dst)
+    {
         @rename($src, $dst);
     }
 
@@ -4369,7 +4655,8 @@ function addFileNotify ( queueSize ) {
      * @param
      * @return int
      */
-    function getAdminUserId() {
+    function getAdminUserId()
+    {
         if (isset(self::$storage['AdminUserId'])) {
             return self::$storage['AdminUserId'];
         }
@@ -4390,7 +4677,8 @@ function addFileNotify ( queueSize ) {
      * @param id integer
      * @return string
      */
-    function getVendorInfoById($id) {
+    function getVendorInfoById($id)
+    {
         $vendor_info = array();
         $DBC = DBC::getInstance();
         $query = 'SELECT * FROM ' . DB_PREFIX . '_vendor WHERE vendor_id=? LIMIT 1';
@@ -4402,7 +4690,8 @@ function addFileNotify ( queueSize ) {
         return $vendor_info;
     }
 
-    function getUnregisteredUserId() {
+    function getUnregisteredUserId()
+    {
         $user_id = 0;
         /* if(0!=(int)$this->getConfigValue('free_advs_user_id')){
           return (int)$this->getConfigValue('free_advs_user_id');
@@ -4417,7 +4706,8 @@ function addFileNotify ( queueSize ) {
         return $user_id;
     }
 
-    function growCounter($table_name, $primary_key_name, $primary_key_value, $user_id = 0) {
+    function growCounter($table_name, $primary_key_name, $primary_key_value, $user_id = 0)
+    {
         if (1 == $this->getConfigValue('use_realty_view_counter')) {
             if (!isset($_SESSION['realty_views'][$primary_key_value])) {
                 $DBC = DBC::getInstance();
@@ -4436,7 +4726,8 @@ function addFileNotify ( queueSize ) {
         }
     }
 
-    function validateEmailFormat($email) {
+    function validateEmailFormat($email)
+    {
         if (preg_match('/^[0-9a-z]+[-\._0-9a-z]*@[0-9a-z]+[-\._^0-9a-z]*[0-9a-z]+[\.]{1}[a-z]{2,6}$/', strtolower($email))) {
             return true;
         } else {
@@ -4444,7 +4735,8 @@ function addFileNotify ( queueSize ) {
         }
     }
 
-    function validateMobilePhoneNumberFormat($phone_number, $mask = '') {
+    function validateMobilePhoneNumberFormat($phone_number, $mask = '')
+    {
         if ($mask != '') {
             $clear_number = preg_replace('/[^\d]/', '', $phone_number);
 
@@ -4467,12 +4759,14 @@ function addFileNotify ( queueSize ) {
         }
     }
 
-    public static function getAttachmentsBlock() {
+    public static function getAttachmentsBlock()
+    {
         global $smarty;
         return $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/admin/admin/template/attachments_block.tpl');
     }
 
-    public static function modelSimplification($model) {
+    public static function modelSimplification($model)
+    {
         if (!empty($model)) {
             foreach ($model as $mkey => $melement) {
                 foreach ($melement as $k => $v) {
@@ -4489,7 +4783,8 @@ function addFileNotify ( queueSize ) {
         return $model;
     }
 
-    public static function iconv($in_charset, $out_charset, $string) {
+    public static function iconv($in_charset, $out_charset, $string)
+    {
         if (strtolower($in_charset) == strtolower($out_charset)) {
             return $string;
         } else {
@@ -4497,7 +4792,8 @@ function addFileNotify ( queueSize ) {
         }
     }
 
-    public static function removeDirectory($dir, &$msg = array()) {
+    public static function removeDirectory($dir, &$msg = array())
+    {
         $files = scandir($dir);
 
         if (count($files) > 2) {
@@ -4521,7 +4817,8 @@ function addFileNotify ( queueSize ) {
         }
     }
 
-    function transliteMe($str) {
+    function transliteMe($str)
+    {
         $str = str_replace(array(',', '.', '/', '\\', '"', '\'', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '|', ';', '?', '<', '>', '`', '[', ']', '{', '}', '№'), '', $str);
         $str = mb_strtolower($str, SITE_ENCODING);
         $tr = array(
@@ -4552,13 +4849,14 @@ function addFileNotify ( queueSize ) {
         return $str;
     }
 
-    public static function setLangSession() {
+    public static function setLangSession()
+    {
 
         $C = SConfig::getInstance();
 
         $langs = array();
 
-        $langlist = trim($C::getConfigValue('apps.language.languages'));
+        $langlist = trim($C::getConfigValueStatic('apps.language.languages'));
 
         if ($langlist !== '') {
             $lang_pairs = explode('|', $langlist);
@@ -4588,14 +4886,15 @@ function addFileNotify ( queueSize ) {
         }
     }
 
-    public static function getClearRequestURI($test_url = '') {
+    public static function getClearRequestURI($test_url = '')
+    {
 
         if ($test_url == '') {
             $url = $_SERVER['REQUEST_URI'];
-            if(!is_null(self::$_request['clearRequestUri'])){
+            if (!is_null(@self::$_request['clearRequestUri'])) {
                 return self::$_request['clearRequestUri'];
             }
-        }else{
+        } else {
             $url = $test_url;
         }
         $url = urldecode($url);
@@ -4610,9 +4909,11 @@ function addFileNotify ( queueSize ) {
             $REQUESTURIPATH = $url;
         }
 
-        if (1 == intval(self::getConfigValue('apps.language.use_langs'))) {
-            if(self::$_request['request_lang_prefix'] != ''){
-                $REQUESTURIPATH = preg_replace('/^(\/'.self::$_request['request_lang_prefix'].')/', '', $REQUESTURIPATH);
+        $SConfig = SConfig::getInstance();
+
+        if (1 == intval($SConfig::getConfigValueStatic('apps.language.use_langs'))) {
+            if (@self::$_request['request_lang_prefix'] != '') {
+                $REQUESTURIPATH = preg_replace('/^(\/' . self::$_request['request_lang_prefix'] . ')/', '', $REQUESTURIPATH);
                 $_SERVER['REQUEST_URI'] = $REQUESTURIPATH;
             }
         }
@@ -4650,9 +4951,10 @@ function addFileNotify ( queueSize ) {
         return $REQUESTURIPATH;
     }
 
-    public function sendFirmMail($to, $from, $subject, $body, $customtpl = '', $to_user_id = 0) {
+    public function sendFirmMail($to, $from, $subject, $body, $customtpl = '', $to_user_id = 0)
+    {
         Logger::emaillog($to, $from, $subject, $body, $to_user_id);
-        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/mailer/mailer.php');
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/mailer/mailer.php');
         $mailer = new Mailer();
         //Если указано несколько почтовых ящиков для получения в $to через запятую, то делаем из него массив
         if (is_string($to)) {
@@ -4671,7 +4973,7 @@ function addFileNotify ( queueSize ) {
         $smarty->assign('letter_content', $body);
         $smarty->assign('estate_core_url', $this->getServerFullUrl());
         $tpl = SITEBILL_DOCUMENT_ROOT . '/apps/system/template/firm_mail_wrapper.tpl';
-        if($customtpl != '' && file_exists($customtpl)){
+        if ($customtpl != '' && file_exists($customtpl)) {
             $tpl = $customtpl;
         }
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/firm_mail_wrapper.tpl')) {
@@ -4696,6 +4998,14 @@ function addFileNotify ( queueSize ) {
         */
     }
 
+    function check_access_agency($table_name, $user_id, $control_name, $primary_key_name, $primary_key_value)
+    {
+        if (!$this->agency_admin) {
+            $this->agency_admin = $this->get_api_common()->init_custom_model_object('agency');
+        }
+        return $this->agency_admin->check_access_agency($table_name, $user_id, $control_name, $primary_key_name, $primary_key_value);
+    }
+
     /**
      * Проверка владельца записи в таблице по USER_ID, если владелец совпадает с $table_name.user_id тогда возвращаем TRUE иначе FALSE
      * @param type $table_name - название таблицы
@@ -4705,10 +5015,16 @@ function addFileNotify ( queueSize ) {
      * @param type $primary_key_value - значение PRIMARY KEY
      * @return boolean
      */
-    function check_access($table_name, $user_id, $control_name, $primary_key_name, $primary_key_value) {
+    function check_access($table_name, $user_id, $control_name, $primary_key_name, $primary_key_value)
+    {
         if (!$user_id) {
             return true;
         }
+        $has_access = 0;
+        if ($this->getConfigValue('apps.agency.enable')) {
+            $has_access = intval($this->check_access_agency($table_name, $user_id, $control_name, $primary_key_name, $primary_key_value));
+        }
+
         $DBC = DBC::getInstance();
         $enable_curator_mode = false;
         if (
@@ -4717,13 +5033,12 @@ function addFileNotify ( queueSize ) {
             1 == $this->getConfigValue('enable_coworker_mode')
         ) {
             $enable_curator_mode = true;
-            $has_access = 0;
 
 
-            if(1 === intval($this->getConfigValue('curator_mode_fullaccess'))){
+            if (1 === intval($this->getConfigValue('curator_mode_fullaccess'))) {
 
-                $query = 'SELECT COUNT(d.'.$primary_key_name.') AS _cnt FROM ' . DB_PREFIX . '_'.$table_name.' d 
-                LEFT JOIN ' . DB_PREFIX . '_user u USING(user_id) WHERE d.'.$primary_key_name.'=? AND u.parent_user_id=?';
+                $query = 'SELECT COUNT(d.' . $primary_key_name . ') AS _cnt FROM ' . DB_PREFIX . '_' . $table_name . ' d 
+                LEFT JOIN ' . DB_PREFIX . '_user u USING(user_id) WHERE d.' . $primary_key_name . '=? AND u.parent_user_id=?';
                 $stmt = $DBC->query($query, array($primary_key_value, $user_id));
                 if ($stmt) {
                     $ar = $DBC->fetch($stmt);
@@ -4731,7 +5046,7 @@ function addFileNotify ( queueSize ) {
                         $has_access = 1;
                     }
                 }
-            } elseif ( $table_name == 'data' && $this->getConfigValue('apps.data.enable_city_coworker') ) {
+            } elseif ($table_name == 'data' && $this->getConfigValue('apps.data.enable_city_coworker')) {
                 $has_access = $this->check_coworker_access_by_foreign_key(
                     $table_name,
                     $user_id,
@@ -4781,18 +5096,18 @@ function addFileNotify ( queueSize ) {
         return false;
     }
 
-    function check_coworker_access_by_foreign_key($table_name, $user_id, $control_name, $primary_key_name, $primary_key_value, $foreign_table ) {
-        if ( !$this->cowork_object ) {
-            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/api/classes/class.common.php');
-            $api_common = new API_Common();
+    function check_coworker_access_by_foreign_key($table_name, $user_id, $control_name, $primary_key_name, $primary_key_value, $foreign_table)
+    {
+        if (!$this->cowork_object) {
+            $api_common = $this->get_api_common();
             $this->cowork_object = $api_common->init_custom_model_object('cowork');
         }
-        if ( $this->cowork_object ) {
+        if ($this->cowork_object) {
             try {
                 // Пока хардкодом прописываем выборку для city_id
                 $data_record = \system\lib\model\eloquent\Data::where($primary_key_name, '=', $primary_key_value)
                     ->first();
-                if ( $data_record->city_id ) {
+                if ($data_record->city_id) {
                     return $this->cowork_object->check_cowork_record($foreign_table, $data_record->city_id, $user_id);
                 }
             } catch (Exception $e) {
@@ -4802,18 +5117,21 @@ function addFileNotify ( queueSize ) {
         return 0;
     }
 
-    function need_check_access($table_name) {
-        return $_SESSION['politics'][$table_name]['check_access'];
+    function need_check_access($table_name)
+    {
+        return @$_SESSION['politics'][$table_name]['check_access'];
     }
 
-    function get_check_access_user_id($table_name) {
-        return $_SESSION['politics'][$table_name]['user_id'];
+    function get_check_access_user_id($table_name)
+    {
+        return @$_SESSION['politics'][$table_name]['user_id'];
     }
 
     /**
      * Перенаправляем неавторизованного пользователя на форму авторизации
      */
-    function go_to_login() {
+    function go_to_login()
+    {
         header('location: ' . SITEBILL_MAIN_URL . '/login/');
         exit();
     }
@@ -4825,25 +5143,28 @@ function addFileNotify ( queueSize ) {
      * @param type $name - системное название шаблона
      * @return mixed (массив с готовый с subject и message, если шаблон найдет. false - если шаблон не найден)
      */
-    function fetch_email_template($name) {
+    function fetch_email_template($name)
+    {
         global $smarty;
         $ra = array();
         if ($this->getConfigValue('apps.emailtemplates.enable')) {
-            require_once (SITEBILL_DOCUMENT_ROOT . '/apps/emailtemplates/admin/admin.php');
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/emailtemplates/admin/admin.php');
             $emailtemplates_admin = new emailtemplates_admin();
             return $emailtemplates_admin->compile_template($name);
         }
         return false;
     }
 
-    function clear_apps_cache() {
+    function clear_apps_cache()
+    {
         //Очищаем кэш apps
         $DBC = DBC::getInstance();
         $query = "TRUNCATE TABLE " . DB_PREFIX . "_apps";
         $stmt = $DBC->query($query, array(), $rows, $success);
     }
 
-    public function yandex_translate($value, $language){
+    public function yandex_translate($value, $language)
+    {
         if ($language == 'ge') {
             $language = 'ka';
         }
@@ -4867,32 +5188,33 @@ function addFileNotify ( queueSize ) {
         $output = curl_exec($ch);
         curl_close($ch);
 
-		if(false===$result){
-			return '';
-		}
-		$res=json_decode($result);
-		if($res->code=='200'){
-			return $res->text[0];
-		}elseif($res->code=='403'){
-			$err='Превышено суточное ограничение на количество запросов';
-		}elseif($res->code=='404'){
-			//resetCurrentYandexKey();
-			$err='Превышено суточное ограничение на объем переведенного текста';
-		}elseif($res->code=='413'){
-			$err='Превышен максимально допустимый размер текста';
-		}elseif($res->code=='422'){
-			$err='Текст не может быть переведен';
-		}elseif($res->code=='402'){
-			//resetCurrentYandexKey();
-			$err='Ключ API заблокирован';
-		}else{
-            $err='Другая ошибка';
+        if (false === $result) {
+            return '';
+        }
+        $res = json_decode($result);
+        if ($res->code == '200') {
+            return $res->text[0];
+        } elseif ($res->code == '403') {
+            $err = 'Превышено суточное ограничение на количество запросов';
+        } elseif ($res->code == '404') {
+            //resetCurrentYandexKey();
+            $err = 'Превышено суточное ограничение на объем переведенного текста';
+        } elseif ($res->code == '413') {
+            $err = 'Превышен максимально допустимый размер текста';
+        } elseif ($res->code == '422') {
+            $err = 'Текст не может быть переведен';
+        } elseif ($res->code == '402') {
+            //resetCurrentYandexKey();
+            $err = 'Ключ API заблокирован';
+        } else {
+            $err = 'Другая ошибка';
         }
         $this->writeLog(__METHOD__ . ', value = ' . $value . ', target_language = ' . $language . ', error = ' . $err);
         return '';
     }
 
-    public function google_translate_array($api_key, $array_values, $language) {
+    public function google_translate_array($api_key, $array_values, $language)
+    {
         //$url = 'https://translation.googleapis.com/language/translate/v2?q=Привет&q=Мир';
         $url = 'https://translation.googleapis.com/language/translate/v2';
 
@@ -4905,7 +5227,7 @@ function addFileNotify ( queueSize ) {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params)."&q=".implode('&q=', $array_values));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params) . "&q=" . implode('&q=', $array_values));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
@@ -4915,7 +5237,8 @@ function addFileNotify ( queueSize ) {
         return $output;
     }
 
-    public function google_translate_string($api_key, $value, $language) {
+    public function google_translate_string($api_key, $value, $language)
+    {
         $url = 'https://translation.googleapis.com/language/translate/v2';
 
         $params = array(
@@ -4939,9 +5262,8 @@ function addFileNotify ( queueSize ) {
     }
 
 
-
-
-    public function google_translate($value, $language) {
+    public function google_translate($value, $language)
+    {
         if ($language == 'ge') {
             $language = 'ka';
         }
@@ -4959,7 +5281,7 @@ function addFileNotify ( queueSize ) {
         if ($value == '') {
             return '';
         }
-        if ( is_array($value) ) {
+        if (is_array($value)) {
             $output = $this->google_translate_array($api_key, $value, $language);
             $langdata = json_decode($output, true);
         } else {
@@ -4967,8 +5289,8 @@ function addFileNotify ( queueSize ) {
             $langdata = json_decode($output, true);
 
         }
-        if ( isset($output['error']) ) {
-            $this->riseError('Google translation error: '.$output['error']['message']);
+        if (isset($output['error'])) {
+            $this->riseError('Google translation error: ' . $output['error']['message']);
         }
         $this->writeLog(__METHOD__ . ', value = ' . $value . ', target_language = ' . $language . ', langdata = ' . var_export($langdata, true));
 
@@ -4980,23 +5302,26 @@ function addFileNotify ( queueSize ) {
         return '';
     }
 
-    function api_translate ($value, $language) {
-        if(1 == intval($this->getRequestValue('apps.language.autotrans_api'))){
+    function api_translate($value, $language)
+    {
+        if (1 == intval($this->getRequestValue('apps.language.autotrans_api'))) {
             return $this->yandex_translate($value, $language);
-        }else{
+        } else {
             return $this->google_translate($value, $language);
         }
     }
 
-    private function parse_pure_array_from_google_tranlations( $translations ) {
-        foreach ( $translations as $key => $value ) {
+    private function parse_pure_array_from_google_tranlations($translations)
+    {
+        foreach ($translations as $key => $value) {
             $ra[] = $value['translatedText'];
         }
         return $ra;
     }
 
-    public function mtphn($s) {
-        if (!function_exists('transliterator_transliterate') or ! function_exists('metaphone')) {
+    public function mtphn($s)
+    {
+        if (!function_exists('transliterator_transliterate') or !function_exists('metaphone')) {
             echo 'Для работы функции метафона нужно установить (PHP 5 >= 5.4.0, PHP 7, PECL intl >= 2.0.0';
             exit;
         }
@@ -5007,12 +5332,14 @@ function addFileNotify ( queueSize ) {
         return metaphone($key);
     }
 
-    public static function get_microtime_float() {
+    public static function get_microtime_float()
+    {
         list($usec, $sec) = explode(" ", microtime());
-        return ((float) $usec + (float) $sec);
+        return ((float)$usec + (float)$sec);
     }
 
-    function load_topic_links() {
+    function load_topic_links()
+    {
         if ($this->loaded_links) {
             return $this->ral;
         }
@@ -5046,7 +5373,8 @@ function addFileNotify ( queueSize ) {
         return $this->ral;
     }
 
-    function reachEventStat($events) {
+    function reachEventStat($events)
+    {
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/statoid/admin/admin.php') && 1 == $this->getConfigValue('apps.statoid.enable')) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/statoid/admin/admin.php';
             $S = new statoid_admin();
@@ -5056,7 +5384,8 @@ function addFileNotify ( queueSize ) {
         }
     }
 
-    function reachTargetStat($targets) {
+    function reachTargetStat($targets)
+    {
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/statoid/admin/admin.php') && 1 == $this->getConfigValue('apps.statoid.enable')) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/statoid/admin/admin.php';
             $S = new statoid_admin();
@@ -5066,9 +5395,10 @@ function addFileNotify ( queueSize ) {
         }
     }
 
-    protected function executeHTTPRequest ($queryUrl, array $params = array(), $disable_http_build = false) {
+    protected function executeHTTPRequest($queryUrl, array $params = array(), $disable_http_build = false)
+    {
         $result = array();
-        if ( !$disable_http_build ) {
+        if (!$disable_http_build) {
             $queryData = http_build_query($params);
         } else {
             $queryData = $params;
@@ -5091,50 +5421,53 @@ function addFileNotify ( queueSize ) {
         if ($curlResult != '') {
             $result = json_decode($curlResult, true);
         } else {
-            $result = array('state' => 'error','message' => 'query failed');
+            $result = array('state' => 'error', 'message' => 'query failed');
         }
 
         return $result;
     }
 
 
-    function generateSocials($params){
+    function generateSocials($params)
+    {
 
         $social = '';
 
         // twitter card
-		$social.='<meta name="twitter:card" content="'.$params['tw:cardtype'].'">';
-		$social.='<meta name="twitter:title" content="'.htmlspecialchars(strip_tags($params['title'])).'">';
-		$social.='<meta name="twitter:description" content="'.htmlspecialchars(strip_tags($params['description'])).'">';
-        if($params['image'] != ''){
-            $social.='<meta name="twitter:image" content="'.$this->getServerFullUrl(true).'/img/data/'.$params['image'].'">';
+        $social .= '<meta name="twitter:card" content="' . $params['tw:cardtype'] . '">';
+        $social .= '<meta name="twitter:title" content="' . htmlspecialchars(strip_tags($params['title'])) . '">';
+        $social .= '<meta name="twitter:description" content="' . htmlspecialchars(strip_tags($params['description'])) . '">';
+        if ($params['image'] != '') {
+            $social .= '<meta name="twitter:image" content="' . $this->getServerFullUrl(true) . '/img/data/' . $params['image'] . '">';
         }
 
         // open graph
-		$social.='<meta property="og:title" content="'.htmlspecialchars(strip_tags($params['title'])).'" />';
-		$social.='<meta property="og:type" content="'.$params['og:type'].'" />';
-		$social.='<meta property="og:url" content="'.$params['url'].'" />';
-        if($params['image'] != ''){
-            $social.='<meta property="og:image" content="'.$this->getServerFullUrl(true).'/img/data/'.$params['image'].'" />';
+        $social .= '<meta property="og:title" content="' . htmlspecialchars(strip_tags($params['title'])) . '" />';
+        $social .= '<meta property="og:type" content="' . $params['og:type'] . '" />';
+        $social .= '<meta property="og:url" content="' . $params['url'] . '" />';
+        if ($params['image'] != '') {
+            $social .= '<meta property="og:image" content="' . $this->getServerFullUrl(true) . '/img/data/' . $params['image'] . '" />';
         }
-		$social.='<meta property="og:description" content="'.htmlspecialchars(strip_tags($params['description'])).'" />';
+        $social .= '<meta property="og:description" content="' . htmlspecialchars(strip_tags($params['description'])) . '" />';
 
         // schema
-		$social.='<meta itemprop="name" content="'.htmlspecialchars(strip_tags($params['title'])).'">';
-		$social.='<meta itemprop="description" content="'.htmlspecialchars(strip_tags($params['description'])).'">';
-        if($params['image'] != ''){
-            $social.='<meta itemprop="image" content="'.$this->getServerFullUrl(true).'/img/data/'.$params['image'].'">';
+        $social .= '<meta itemprop="name" content="' . htmlspecialchars(strip_tags($params['title'])) . '">';
+        $social .= '<meta itemprop="description" content="' . htmlspecialchars(strip_tags($params['description'])) . '">';
+        if ($params['image'] != '') {
+            $social .= '<meta itemprop="image" content="' . $this->getServerFullUrl(true) . '/img/data/' . $params['image'] . '">';
         }
 
         return $social;
 
     }
 
-    function get_cache_hash ($query, $params) {
+    function get_cache_hash($query, $params)
+    {
         return md5($query . implode('', $params));
     }
 
-    function get_query_cache_value ($query, $params) {
+    function get_query_cache_value($query, $params)
+    {
         $result['result'] = false;
         if (!$this->getConfigValue('query_cache_enable')) {
             return $result;
@@ -5154,7 +5487,8 @@ function addFileNotify ( queueSize ) {
         return $result;
     }
 
-    function insert_query_cache_value ($query, $params, $value) {
+    function insert_query_cache_value($query, $params, $value)
+    {
         $DBC = DBC::getInstance();
         if ($this->getConfigValue('query_cache_enable')) {
             $md5_query_sum = $this->get_cache_hash($query, $params);
@@ -5163,7 +5497,9 @@ function addFileNotify ( queueSize ) {
         }
 
     }
-    function delete_query_cache () {
+
+    function delete_query_cache()
+    {
         $DBC = DBC::getInstance();
         if ($this->getConfigValue('query_cache_enable')) {
             //Очищаем старые записи кэша
@@ -5172,7 +5508,8 @@ function addFileNotify ( queueSize ) {
         }
     }
 
-    function get_tooltip_script() {
+    function get_tooltip_script()
+    {
         $rs = "
  <script>
         $(document).ready(function () {
@@ -5186,46 +5523,52 @@ function addFileNotify ( queueSize ) {
         return $rs;
     }
 
-    function reducer_text($text, $max_length = 500) {
-        if ( strlen($text) > $max_length ) {
+    function reducer_text($text, $max_length = 500)
+    {
+        if (strlen($text) > $max_length) {
             $text = '<div 
                 style="display: block; width: 100%; overflow: hidden;"
-                rel="popover" class="tooltipe_block" data-content="'.strip_tags($text).'"
-                >'.substr(strip_tags($text), 0, $max_length).'</div>';
+                rel="popover" class="tooltipe_block" data-content="' . strip_tags($text) . '"
+                >' . substr(strip_tags($text), 0, $max_length) . '</div>';
         }
         return $text;
     }
 
-    public static function old_template_files_array() {
+    public static function old_template_files_array()
+    {
         return array('realty_grid.tpl', 'error_message.tpl', 'map.tpl', 'realty_view.tpl');
     }
 
-    function enable_vue () {
-        $this->template->assign('enable_vue', true);
-    }
-    function disable_vue () {
-        $this->template->assign('enable_vue', false);
+    function enable_vue()
+    {
+        $this->template->assert('enable_vue', true);
     }
 
-    function checkReCaptcha($token){
+    function disable_vue()
+    {
+        $this->template->assert('enable_vue', false);
+    }
+
+    function checkReCaptcha($token)
+    {
 
         $secret = trim($this->getConfigValue('google_recaptcha_secret'));
 
-        if($secret != ''){
-            $url='https://www.google.com/recaptcha/api/siteverify';
+        if ($secret != '') {
+            $url = 'https://www.google.com/recaptcha/api/siteverify';
             $curl = curl_init();
             curl_setopt($curl, CURLOPT_URL, $url);
             curl_setopt($curl, CURLOPT_FOLLOWLOCATION, 1);
             curl_setopt($curl, CURLOPT_POST, true);
-            curl_setopt($curl, CURLOPT_POSTFIELDS, "secret='.$secret.'&response=".$token);
+            curl_setopt($curl, CURLOPT_POSTFIELDS, "secret='.$secret.'&response=" . $token);
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
             $result = curl_exec($curl);
-            curl_close( $curl );
-            if(false !== $result){
-                $resp=json_decode($result, true);
-                if(!isset($resp['success']) || !$resp['success']){
+            curl_close($curl);
+            if (false !== $result) {
+                $resp = json_decode($result, true);
+                if (!isset($resp['success']) || !$resp['success']) {
                     return false;
-                }else{
+                } else {
                     return true;
                 }
             }
@@ -5234,16 +5577,46 @@ function addFileNotify ( queueSize ) {
         return false;
 
     }
+
+    function exec_sql_query_array($query_data)
+    {
+        $DBC = DBC::getInstance();
+        $rs = '';
+
+        foreach ($query_data as $query) {
+            $success = false;
+            $stmt = $DBC->query($query, array(), $rows, $success);
+            if (!$success) {
+                $rs .= $DBC->getLastError() . ': ' . $query . '<br>';
+            } else {
+                $rs .= Multilanguage::_('QUERY_SUCCESS', 'system') . ': ' . $query . '<br>';
+            }
+        }
+        return $rs;
+    }
+
+    function getSessionLanguage () {
+        return $_SESSION['_lang'];
+    }
+
+    function get_cookie_duration_in_sec () {
+        return 60*60*24*100;
+    }
 }
+
 //Helpers
-function store($key) {
+function store($key)
+{
     return Sitebill::get_template_store($key);
 }
-function set_store($key, $value) {
+
+function set_store($key, $value)
+{
     return Sitebill::set_template_store($key, $value);
 }
 
-function extract_scripts_and_styles ($content) {
+function extract_scripts_and_styles($content)
+{
     preg_match_all('#<script(.*?)</script>#is', $content, $matches);
     foreach ($matches[0] as $value) {
         $js[] = $value;
@@ -5259,20 +5632,22 @@ function extract_scripts_and_styles ($content) {
  * Проверяем не является ли main_file_tpl устаревшим (для blade-шаблонов)
  * @return bool
  */
-function safe_check_main_file_tpl () {
+function safe_check_main_file_tpl()
+{
     $deprecated_tpl_files = SiteBill::old_template_files_array();
     if (in_array(Sitebill::get_template_store('main_file_tpl'), $deprecated_tpl_files)) {
         return false;
     }
-    if ( Sitebill::get_template_store('main_file_tpl') == '' ) {
+    if (Sitebill::get_template_store('main_file_tpl') == '') {
         return false;
     }
     return true;
 }
 
-function get_blade_analog_for_tpl_file ( $template_name ) {
-    if ( in_array($template_name, SiteBill::old_template_files_array()) ) {
-        return 'pages.'.str_replace('.tpl', '', $template_name);
+function get_blade_analog_for_tpl_file($template_name)
+{
+    if (in_array($template_name, SiteBill::old_template_files_array())) {
+        return 'pages.' . str_replace('.tpl', '', $template_name);
     }
     return false;
 }

@@ -7,6 +7,8 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
 class data_admin extends Object_Manager {
+    use \system\traits\blade\BladeTrait;
+
 
     public $save_url = 'empty';
     /**
@@ -15,10 +17,26 @@ class data_admin extends Object_Manager {
     protected $permission;
 
     /**
+     * Корневой каталог приложения
+     * @var string
+     */
+    private $app_root;
+
+    /**
+     * @var bool
+     */
+    private $full_access_mode = false;
+
+    /**
+     * @var agency_admin
+     */
+    protected $agency_admin;
+
+    /**
      * Constructor
      */
     function __construct($realty_type = false) {
-        $this->SiteBill();
+        parent::__construct();
         Multilanguage::appendAppDictionary('data');
         $this->table_name = 'data';
         $this->action = 'data';
@@ -53,6 +71,13 @@ class data_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.data.disable_format_grid')) {
             $config_admin->addParamToConfig('apps.data.disable_format_grid', '0', 'Выключить функцию выбора колонок в таблице в ЛК', 1);
         }
+
+        $config_admin->addParamToConfig(
+            'apps.data.predefined_grid_items',
+            '',
+            'Список колонок по-умолчанию Пример: <strong>id, topic_id, city_id, district_id, street_id, price, image</strong>',
+            0);
+
         if (!$config_admin->check_config_item('apps.data.disable_pdf')) {
             $config_admin->addParamToConfig('apps.data.disable_pdf', '0', 'Выключить функцию экспорта в PDF в ЛК', 1);
         }
@@ -96,6 +121,13 @@ class data_admin extends Object_Manager {
                 1);
         }
 
+        $config_admin->addParamToConfig(
+            'apps.data.remove_only_all_button',
+            '0',
+            'Скрыть кнопку Все, но остановить функцию вывода Всех (для режима куратора полезно)',
+            SConfig::$fieldtypeCheckbox
+        );
+
         if (!$config_admin->check_config_item('apps.data.disable_memory_button')) {
             $config_admin->addParamToConfig('apps.data.disable_memory_button', '0', 'Выключить кнопку Сохраненные списки в ЛК', 1);
         }
@@ -124,6 +156,27 @@ class data_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.data.default_sort')) {
             $config_admin->addParamToConfig('apps.data.default_sort', '', 'Сортировка по-умолчанию. Указывается в виде системное имя поля|направление сортировки');
         }
+
+        $config_admin->addParamToConfig(
+            'apps.data.use_in_admin',
+            '0',
+            'Использовать интерфейс apps.data в админке',
+            1);
+
+        $config_admin->addParamToConfig(
+            'apps.data.allow_postponded',
+            '0',
+            'Включить отложенные объявления',
+            1);
+
+
+        $this->add_apps_local_and_root_resource_paths('data');
+        if ( $this->getConfigValue('apps.agency.enable') ) {
+            $api_common = new \api\aliases\API_common_alias();
+            $this->agency_admin = $api_common->init_custom_model_object('agency');
+        }
+
+
     }
 
     public function _preload() {
@@ -155,7 +208,7 @@ class data_admin extends Object_Manager {
         $_SESSION['politics']['data']['check_access'] = true;
         $_SESSION['politics']['data']['user_id'] = $this->getSessionUserId();
 
-        $default_params['grid_item'] = array('id', 'topic_id', 'city_id', 'district_id', 'street_id', 'price', 'image');
+        $default_params['grid_item'] = $this->get_grid_items();
         //$default_params['render_user_id'] = $this->getSessionUserId();
         if (!preg_match('/all[\/]?$/', $REQUESTURIPATH)) {
             //$params['grid_conditions']['user_id'] = $this->getSessionUserId();
@@ -199,6 +252,17 @@ class data_admin extends Object_Manager {
         return $rs;
     }
 
+    function get_grid_items () {
+        if ( $this->getConfigValue('apps.data.predefined_grid_items') != '' ) {
+            $grid_items = explode(',', $this->getConfigValue('apps.data.predefined_grid_items'));
+        }
+        if ( is_array($grid_items) and count($grid_items) > 0 ) {
+            return $grid_items;
+        } else {
+            return array('id', 'topic_id', 'city_id', 'district_id', 'street_id', 'price', 'image');
+        }
+    }
+
     /**
      * Delete data
      * @param string $table_name
@@ -234,6 +298,20 @@ class data_admin extends Object_Manager {
         return false;
     }
 
+    function need_moderate_first ($user_id, $primary_key_value) {
+        if ( $this->getConfigValue('apps.agency.enable') ) {
+            $has_access = intval($this->check_access_agency($this->table_name, $user_id, 'edit', $this->primary_key, $primary_key_value));
+            if ( $has_access ) {
+                return false;
+            }
+        }
+
+        if (1 == $this->getConfigValue('moderate_first')) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Edit data
      * @param array $form_data form data
@@ -255,10 +333,7 @@ class data_admin extends Object_Manager {
         }
         $status_changed = false;
 
-        $moderate_first = false;
-        if (1 == $this->getConfigValue('moderate_first')) {
-            $moderate_first = true;
-        }
+        $moderate_first = $this->need_moderate_first($this->getSessionUserId(), $id);
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
@@ -345,7 +420,7 @@ class data_admin extends Object_Manager {
 
 
 
-        if (1 == $this->getConfigValue('moderate_first')) {
+        if ($moderate_first) {
             $this->notifyAboutModerationNeed($id, 'edit');
         }
 
@@ -717,28 +792,98 @@ class data_admin extends Object_Manager {
                     $Logger = new realtylogv2_admin();
                     $Logger->addLog($form_data['data']['id']['value'], $user_id, 'edit', 'data', 'id');
                 }
-                header('Location: ' . SITEBILL_MAIN_URL . '/account/data/');
+                header('Location: ' . SITEBILL_MAIN_URL . '/'.self::getClearRequestURI());
                 die();
             }
         }
         return $rs;
     }
 
-    function checkUniquety($form_data) {
-        $unque_fields = trim($this->getConfigValue('apps.realty.uniq_params'));
-        //$unque_fields='city_id,topic_id,price';
+    /**
+     * Получение списка свойств, используемых для поиска совпадений
+     * @param array $form_data - данные объекта
+     * @return array - массив имен свойств
+     */
+    function getUniquetyCheckFields($form_data){
 
         $fields = array();
-        if ('' !== $unque_fields) {
-            $matches = array();
-            preg_match_all('/([^,\s]+)/i', $unque_fields, $matches);
-            if (!empty($matches[1])) {
-                $fields = $matches[1];
+
+        $topic_id = intval($form_data['topic_id']['value']);
+        // Подбираем ограничители из данных раздела
+        if($topic_id != 0){
+            $St = new Structure_Manager();
+            $chains = $St->createCatalogChains();
+            $chain = $chains['ar'][$topic_id];
+
+            if(is_array($chain) && !empty($chain)){
+                $chain = array_reverse($chain);
+
+                $rules = array();
+                $DBC = DBC::getInstance();
+                $query = 'SELECT `id`, `data_uniq_fields` FROM '.DB_PREFIX.'_topic WHERE id IN ('.implode(',', $chain).')';
+                $stmt = $DBC->query($query);
+                if($stmt){
+                    while($ar = $DBC->fetch($stmt)){
+                        if($ar['data_uniq_fields'] != ''){
+                            $matches = array();
+                            preg_match_all('/([^,\s]+)/i', $ar['data_uniq_fields'], $matches);
+                            if (!empty($matches[1])) {
+                                $rules[$ar['id']] = $matches[1];
+                            }
+                        }
+                    }
+                }
+
+                foreach ($chain as $chainitem){
+                    if(isset($rules[$chainitem])){
+                        $fields = $rules[$chainitem];
+                        break;
+                    }
+                }
+            }
+
+        }
+
+        // Устанавливаем ограничители из общих настроек
+        if(empty($fields)){
+            $unque_fields = trim($this->getConfigValue('apps.realty.uniq_params'));
+
+            if ('' !== $unque_fields) {
+                $matches = array();
+                preg_match_all('/([^,\s]+)/i', $unque_fields, $matches);
+                if (!empty($matches[1])) {
+                    $fields = $matches[1];
+                }
             }
         }
 
+        // Устанавливаем умолчательные ограничители
+        if (empty($fields)) {
+            $fields = array('city_id', 'street_id', 'number');
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Получение ID объектов совпадающих по определенным параметрам
+     * @param array $form_data - данные объекта
+     * @return array - массив ID совпавших объектов
+     */
+    function getNonUniqIds($form_data){
+        $ids = array();
+
+        $fields = $this->getUniquetyCheckFields($form_data);
+
+        $id = 0;
+        if(intval($form_data['id']['value']) != 0){
+            $id = intval($form_data['id']['value']);
+        }
+
+        $where = array();
+        $where_val = array();
+
         if (!empty($fields)) {
-            $where = array();
             foreach ($fields as $f) {
                 if (isset($form_data[$f])) {
                     if ($form_data[$f]['dbtype'] == 1 || ($form_data[$f]['dbtype'] != 'notable' && $form_data[$f]['dbtype'] != '0')) {
@@ -747,28 +892,60 @@ class data_admin extends Object_Manager {
                     }
                 }
             }
-        } elseif (isset($form_data['city_id']) && isset($form_data['street_id']) && isset($form_data['number'])) {
-            $where[] = '`city_id`=?';
-            $where_val[] = (int) $form_data['city_id']['value'];
-            $where[] = '`street_id`=?';
-            $where_val[] = (int) $form_data['street_id']['value'];
-            $where[] = '`number`=?';
-            $where_val[] = $form_data['number']['value'];
-        } else {
-            return TRUE;
         }
 
-        $DBC = DBC::getInstance();
+        if(!empty($where)){
+            if($id > 0){
+                $where[] = '`id`<>?';
+                $where_val[] = $id;
+            }
 
-        $uns = array();
-        $query = 'SELECT id FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE ' . implode(' AND ', $where);
+            if ( $this->getConfigValue('apps.agency.enable') && $this->getConfigValue('apps.agency.unique_in_agency') ) {
+                // id агенства пользователя
+                $thisuseragencyid = $this->agency_admin->get_agency_id($this->getSessionUserId());
+                if($thisuseragencyid != 0){
+                    // id родительского агенства пользователя
+                    $parentagencyid = $this->agency_admin->get_parent_agency_id($thisuseragencyid);
+                    if($parentagencyid != 0){
+                        $thisuseragencyid = $parentagencyid;
+                    }
 
-        $stmt = $DBC->query($query, $where_val);
-        if ($stmt) {
-            while ($ar = $DBC->fetch($stmt)) {
-                $uns[] = $ar['id'];
+                    // массив всех агенств, входящих в родительское агентсво, включая само родительское
+                    $agencies = array();
+                    $agencies[] = $thisuseragencyid;
+                    $child_agency_array = $this->agency_admin->get_child_agency_array_id($thisuseragencyid);
+                    if ( $child_agency_array ) {
+                        $agencies = array_merge($agencies, $child_agency_array);
+                    }
+
+                    // массив всех членов агентств всей ветви
+                    $agency_user_id_array = $this->agency_admin->get_user_id_array_by_agency_id_array($agencies);
+                    $where[] = '`user_id` IN ('.implode(',', $agency_user_id_array).')';
+                }
+            }
+
+            $DBC = DBC::getInstance();
+
+            $query = 'SELECT id FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE ' . implode(' AND ', $where);
+
+            $stmt = $DBC->query($query, $where_val);
+            if ($stmt) {
+                while ($ar = $DBC->fetch($stmt)) {
+                    $ids[] = $ar['id'];
+                }
             }
         }
+
+        return $ids;
+    }
+
+    /**
+     * Проверка на уникальность данных объекта
+     * @param array $form_data - данные объекта
+     * @return bool
+     */
+    function checkUniquety($form_data) {
+        $uns = $this->getNonUniqIds($form_data);
         if (count($uns) > 0) {
             $this->riseError(Multilanguage::_('ADVUNIQUETY_ERROR', 'system').' ('.implode(',', $uns).')');
             return FALSE;
@@ -899,7 +1076,7 @@ class data_admin extends Object_Manager {
                     $Logger = new realtylogv2_admin();
                     $Logger->addLog($new_record_id, $user_id, 'new', 'data', 'id');
                 }
-                header('Location: ' . SITEBILL_MAIN_URL . '/account/data/');
+                header('Location: ' . SITEBILL_MAIN_URL . '/'.$this->get_app_root());
                 die();
             }
         }
@@ -940,7 +1117,7 @@ class data_admin extends Object_Manager {
             }
             $this->delete_data('data', 'id', $id);
         }
-        header('location: ' . SITEBILL_MAIN_URL . '/account/data/');
+        header('location: ' . SITEBILL_MAIN_URL . '/'.$this->get_app_root());
         exit();
         $rs .= $this->grid($user_id, $this->getRequestValue('topic_id'));
         return $rs;
@@ -1043,6 +1220,8 @@ class data_admin extends Object_Manager {
             return _e('Функция удаления отключена');
         }
 
+        $rs = '';
+
 
         $cuser_id = (int) $_SESSION['user_id'];
 
@@ -1060,7 +1239,7 @@ class data_admin extends Object_Manager {
         }
 
         if(count($ids)==0){
-            header('location: '.SITEBILL_MAIN_URL.'/account/data/');
+            header('location: '.SITEBILL_MAIN_URL.'/'.$this->get_app_root());
             exit();
         }
 
@@ -1068,7 +1247,7 @@ class data_admin extends Object_Manager {
             $DBC = DBC::getInstance();
             $query = 'UPDATE ' . DB_PREFIX . '_data SET archived=1 WHERE `id` IN (' . implode(',', $ids) . ')';
             $stmt = $DBC->query($query);
-            header('location: '.SITEBILL_MAIN_URL.'/account/data/');
+            header('location: '.SITEBILL_MAIN_URL.'/'.$this->get_app_root());
             exit();
         } else {
             foreach ($ids as $id) {
@@ -1099,7 +1278,7 @@ class data_admin extends Object_Manager {
             if ($errors != '') {
                 $rs .= $errors . '<div align="center"><a href="'.SITEBILL_MAIN_URL.'/accoutn/data/">ОК</a></div>';
             } else {
-                header('location: '.SITEBILL_MAIN_URL.'/account/data/');
+                header('location: '.SITEBILL_MAIN_URL.'/'.$this->get_app_root());
                 exit();
             }
             return $rs;
@@ -1114,6 +1293,15 @@ class data_admin extends Object_Manager {
      * @return boolean
      */
     function check_access_to_data($user_id, $data_id) {
+        if ( $this->get_full_access_mode() ) {
+            return true;
+        }
+        if ( $this->getConfigValue('apps.agency.enable') ) {
+            if ( $this->check_access_agency($this->table_name, $user_id, 'edit', $this->primary_key, $data_id) ) {
+                return true;
+            }
+        }
+
         $DBC = DBC::getInstance();
         $enable_curator_mode=false;
         if (
@@ -1211,6 +1399,12 @@ class data_admin extends Object_Manager {
     function check_access_to_aggregated_data($user_id, $data_id) {
         $DBC = DBC::getInstance();
 
+        if ( $this->getConfigValue('apps.agency.enable') ) {
+            if ( $this->check_access_agency($this->table_name, $user_id, 'edit', $this->primary_key, $data_id) ) {
+                return true;
+            }
+        }
+
         $query = 'SELECT user_id FROM ' . DB_PREFIX . '_user WHERE puser_id=?';
         if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
             $query = "SELECT id FROM " . DB_PREFIX . "_data WHERE user_id IN (SELECT user_id FROM " . DB_PREFIX . "_user WHERE puser_id=? OR user_id=?) AND id=? AND archived=0";
@@ -1237,11 +1431,7 @@ class data_admin extends Object_Manager {
      */
     function add_data($form_data, $language_id = 0) {
 
-        $moderate_first = false;
-
-        if (1 == $this->getConfigValue('moderate_first')) {
-            $moderate_first = true;
-        }
+        $moderate_first = $this->need_moderate_first($this->getSessionUserId(), 0);
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
@@ -1282,7 +1472,7 @@ class data_admin extends Object_Manager {
         }
 
 
-        if (1 == $this->getConfigValue('moderate_first')) {
+        if ($moderate_first) {
             if(isset($form_data['active'])){
                 $form_data['active']['value'] = 0;
             }
@@ -1462,16 +1652,16 @@ class data_admin extends Object_Manager {
 
         /* require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
           $mailer = new Mailer(); */
-        $subject = $_SERVER['SERVER_NAME'] . ': объявление требует модерации';
+        $subject = $_SERVER['SERVER_NAME'] . ': '._e('объявление требует модерации');
         $from = $this->getConfigValue('system_email');
         $useremail = $this->getConfigValue('order_email_acceptor');
         $body = '';
         if ($action == 'edit') {
-            $body .= 'Было изменено объявление с ID ' . $id . '<br />';
-            $body .= 'Объявление снято с публикации и ожидает модерации.<br />';
+            $body .= _e('Было изменено объявление с ID ') . $id . '<br />';
+            $body .= _e('Объявление снято с публикации и ожидает модерации').'.<br />';
         } else {
-            $body .= 'Было добавлено объявление с ID ' . $id . '<br />';
-            $body .= 'Объявление ожидает модерации.<br />';
+            $body .= _e('Было добавлено объявление с ID ') . $id . '<br />';
+            $body .= _e('Объявление ожидает модерации').'.<br />';
         }
 
 
@@ -1592,7 +1782,7 @@ class data_admin extends Object_Manager {
           } */
 
         $this->template->assign('target_url', $href);
-        $this->template->assign('edit_url', $this->getServerFullUrl() . '/account/data/?do=edit&id=' . $id);
+        $this->template->assign('edit_url', $this->getServerFullUrl() . '/'.$this->get_app_root().'/?do=edit&id=' . $id);
         $this->template->assign('moderate_first', $this->getConfigValue('moderate_first'));
         $this->template->assign('HTTP_HOST', $_SERVER['HTTP_HOST']);
         $email_template_fetched = $this->fetch_email_template('user_notify_about_adding');
@@ -1622,5 +1812,33 @@ class data_admin extends Object_Manager {
         }
         return false;
     }
+
+    function set_app_root ( $app_root ) {
+        $this->app_root = $app_root;
+    }
+
+    function get_app_root () {
+        if ( $this->app_root  ) {
+            return $this->app_root;
+        }
+        return 'account/data';
+    }
+
+    function is_default_app_root () {
+        if ( $this->get_app_root() == 'account/data' ) {
+            return true;
+        }
+        return false;
+    }
+
+    function get_full_access_mode () {
+        return $this->full_access_mode;
+    }
+
+    function set_full_access_mode ($mode) {
+        $this->full_access_mode = $mode;
+    }
+
+
 
 }

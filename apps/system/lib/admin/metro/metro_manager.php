@@ -9,8 +9,8 @@ class Metro_Manager extends Object_Manager {
     /**
      * Constructor
      */
-    function Metro_Manager() {
-        $this->SiteBill();
+    function __construct() {
+        parent::__construct();
         $this->table_name = 'metro';
         $this->action = 'metro';
         $this->app_title = Multilanguage::_('METRO_APP_NAME', 'system');
@@ -50,7 +50,7 @@ class Metro_Manager extends Object_Manager {
         $default_params['grid_item'] = array('metro_id', 'name', 'city_id');
         return parent::grid(array(), $default_params);
     }
-    
+
     /**
      * Delete data
      * @param string $table_name
@@ -81,7 +81,7 @@ class Metro_Manager extends Object_Manager {
             $this->riseError(implode('<br />', $ans));
         }
     }
-    
+
 
     /**
      * Get metro model

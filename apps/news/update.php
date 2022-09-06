@@ -5,12 +5,12 @@ class news_update extends SiteBill {
      * Construct
      */
     function __construct() {
-        $this->sitebill();
+        parent::__construct();
     }
-    
+
     function main () {
         $query_data[] = "ALTER TABLE ".DB_PREFIX."_news ADD COLUMN news_topic_id INT(11)";
-        
+
         $query_data[] = "ALTER TABLE ".DB_PREFIX."_news ADD COLUMN meta_h1 text";
         $query_data[] = "ALTER TABLE ".DB_PREFIX."_news ADD COLUMN meta_title text";
         $query_data[] = "ALTER TABLE ".DB_PREFIX."_news ADD COLUMN meta_description text";
@@ -18,18 +18,18 @@ class news_update extends SiteBill {
         $query_data[] = "ALTER TABLE ".DB_PREFIX."_news ADD COLUMN newsalias text";
 
         $query_data[] = "ALTER TABLE ".DB_PREFIX."_news ADD COLUMN user_id INT(11)";
-        
+
         $query_data[] = "CREATE TABLE IF NOT EXISTS `".DB_PREFIX."_news_topic` (
 				  `id` int(11) NOT NULL AUTO_INCREMENT,
 				  `name` varchar(255) NOT NULL,
 				  `url` varchar(255) NOT NULL,
 				  PRIMARY KEY (`id`)
 				) ENGINE=MyISAM  DEFAULT CHARSET=".DB_ENCODING." ;";
-        
-        
+
+
         $rs = '<h3>'.Multilanguage::_('SQL_NOW','system').'</h3>';
         $DBC=DBC::getInstance();
-        
+
         foreach ( $query_data as $query ) {
         	$success=false;
         	$stmt=$DBC->query($query, array(), $rows, $success);

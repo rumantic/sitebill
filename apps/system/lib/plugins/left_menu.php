@@ -9,9 +9,9 @@ class left_menu extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
     }
-    
+
     /**
      * Main
      */
@@ -28,7 +28,7 @@ class left_menu extends Object_Manager {
         		$i++;
         	}
         }
-        
+
         $smarty->assign('left_menu', $ra);
         return true;
     }

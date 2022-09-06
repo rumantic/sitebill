@@ -8,7 +8,7 @@ class Estate_Checker extends SiteBill {
 	 * Construct
 	 */
 	function __construct() {
-		$this->SiteBill();
+		parent::__construct();
 	}
 	
 	/**

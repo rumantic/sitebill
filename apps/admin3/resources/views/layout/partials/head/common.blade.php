@@ -1,9 +1,13 @@
 <!-- Mobile Metas -->
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1.0, shrink-to-fit=no">
 @if($sitebill)
-<base href="{{SITEBILL_MAIN_URL}}/{{$sitebill->getConfigValue('apps.admin3.alias')}}?{{$_SERVER['QUERY_STRING']}}">
+<base href="{{SITEBILL_MAIN_URL}}/{{\Sitebill::getConfigValueStatic('apps.admin3.alias')}}?{{$_SERVER['QUERY_STRING']}}">
 @endif
-<title>@if (store('meta_title') != ''){{store('meta_title')}}@else{{store('title')}}@endif</title>
+@if(defined('BRANDING') and BRANDING == true)
+    <title>{{\Sitebill::getConfigValueStatic('site_title')}}</title>
+@else
+    <title>@if (store('meta_title') != ''){{store('meta_title')}}@else{{store('title')}}@endif</title>
+@endif
 <meta name="description" content="{{store('meta_description')}}" />
 <meta name="keywords" content="{{store('meta_keywords')}}" />
 @if (store('_socialtags')){!! store('_socialtags') !!}@endif
@@ -36,7 +40,11 @@
 <!--end::Global Stylesheets Bundle-->
 
 <!-- Favicons -->
-<link rel="icon" href="{{$template_root}}assets/media/logos/favicon_a.ico">
+@if(defined('BRANDING') and BRANDING == true)
+    <link rel="icon" href="/favicon.ico">
+@else
+    <link rel="icon" href="{{$template_root}}assets/media/logos/favicon_a.ico">
+@endif
 
 @if(store('map_type') == 'yandex')
     <script>

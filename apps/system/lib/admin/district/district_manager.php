@@ -7,18 +7,18 @@ class District_Manager extends Object_Manager {
     /**
      * Constructor
      */
-    function District_Manager() {
-        $this->SiteBill();
+    function __construct() {
+        parent::__construct();
         $this->table_name = 'district';
         $this->action = 'district';
         $this->app_title = Multilanguage::_('DISTRICT_APP_NAME','system');
         $this->primary_key = 'id';
-	    
+
         require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
 	    $data_model = new Data_Model();
         $this->data_model = $data_model->get_district_model();
     }
-    
+
     /**
      * Get data by district
      * @param int $district_id
@@ -27,7 +27,7 @@ class District_Manager extends Object_Manager {
     function getDataByDistrict ( $district_id ) {
 		global $__db_prefix;
 		$DBC=DBC::getInstance();
-		
+
 		$query = "select count(*) as cid from ".$__db_prefix."_data where district_id=$district_id";
         $stmt=$DBC->query($query);
         if($stmt){
@@ -38,7 +38,7 @@ class District_Manager extends Object_Manager {
         }
         return false;
     }
-    
+
     /**
      * Add record
      * @param void
@@ -54,7 +54,7 @@ class District_Manager extends Object_Manager {
         }
         return $district_id;
     }
-    
+
     /**
      * Load
      * @param int $record_id record ID
@@ -71,7 +71,7 @@ class District_Manager extends Object_Manager {
         }
         $this->setRequestValue('name', $ar['name']);
     }
-    
+
 	/**
 	 * Delete data
 	 * @param string $table_name
@@ -103,6 +103,6 @@ class District_Manager extends Object_Manager {
 		}else{
 			$this->riseError(implode('<br />',$ans));
 		}
-		
+
 	}
 }

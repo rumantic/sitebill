@@ -4,7 +4,8 @@
  * Construct grid
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
-class Common_Grid extends Sitebill {
+class Common_Grid extends Sitebill
+{
 
     /**
      * Array with list of grid items
@@ -61,18 +62,21 @@ class Common_Grid extends Sitebill {
      */
     private $API_standalone_runner;
 
-    function __construct($grid_object) {
-        $this->SiteBill();
+    function __construct($grid_object)
+    {
+        parent::__construct();
         $this->grid_object = $grid_object;
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $this->data_model_controller = new Data_Model();
     }
 
-    function setBatchUpdateUrl($batch_update_url){
+    function setBatchUpdateUrl($batch_update_url)
+    {
         $this->batchUpdateUrl = $batch_update_url;
     }
 
-    function setMAssDeleteUrl($mass_delete_url){
+    function setMAssDeleteUrl($mass_delete_url)
+    {
         $this->massDeleteUrl = $mass_delete_url;
     }
 
@@ -81,9 +85,10 @@ class Common_Grid extends Sitebill {
      * @param string $name
      * @return void
      */
-    function add_grid_item($name, $item_render_object = false) {
+    function add_grid_item($name, $item_render_object = false)
+    {
         array_push($this->grid_items, $name);
-        if ( $item_render_object != false ) {
+        if ($item_render_object != false) {
             $this->grid_items_render_objects[$name] = $item_render_object;
         }
     }
@@ -91,40 +96,47 @@ class Common_Grid extends Sitebill {
     /**
      * Set action name
      */
-    function set_action($action = '') {
+    function set_action($action = '')
+    {
         $this->action = $action;
     }
 
     /**
      * Get action name
      */
-    function get_action() {
+    function get_action()
+    {
         return $this->action;
     }
 
     /**
      * Set table name
      */
-    function set_table_name($table_name = '') {
+    function set_table_name($table_name = '')
+    {
         $this->table_name = $table_name;
     }
 
     /**
      * Get table name
      */
-    function get_table_name() {
+    function get_table_name()
+    {
         return $this->table_name;
     }
 
-    public function enableBatchUpdate(){
+    public function enableBatchUpdate()
+    {
         $this->batchUpdate = true;
     }
 
-    public function enableMassDelete(){
+    public function enableMassDelete()
+    {
         $this->massDelete = true;
     }
 
-    public function enableBatchActivate(){
+    public function enableBatchActivate()
+    {
         $this->batchActivate = true;
     }
 
@@ -133,15 +145,18 @@ class Common_Grid extends Sitebill {
      * @param string $name
      * @return void
      */
-    function add_grid_control($name) {
+    function add_grid_control($name)
+    {
         array_push($this->grid_controls, $name);
     }
 
-    function add_control_param($name, $value) {
+    function add_control_param($name, $value)
+    {
         $this->controls_params[$name] = $value;
     }
 
-    function set_grid_url($url) {
+    function set_grid_url($url)
+    {
         $this->grid_url = $url;
     }
 
@@ -150,41 +165,50 @@ class Common_Grid extends Sitebill {
      * @param string $query
      * @return void
      */
-    function set_grid_query($query) {
+    function set_grid_query($query)
+    {
         //echo $query.'<br>';
         $this->grid_query = $query;
     }
 
-    function set_grid_table($table) {
+    function set_grid_table($table)
+    {
         $this->grid_table = $table;
     }
 
-    function set_conditions($conditions) {
+    function set_conditions($conditions)
+    {
         $this->conditions = $conditions;
     }
 
-    function set_conditions_sql($conditions) {
+    function set_conditions_sql($conditions)
+    {
         $this->conditions_sql = $conditions;
     }
 
-    function set_conditions_left_join($conditions) {
+    function set_conditions_left_join($conditions)
+    {
         $this->conditions_left_join = $conditions;
     }
 
 
-    function extended_items() {
+    function extended_items()
+    {
         //echo $this->get_action();
         $this->template->assign('action', $this->get_action());
         $this->template->assign('total_count', $this->get_total_count());
-        return $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/system/template/grid/extended_items_row.tpl');
+        $this->grid_object->set_extended_items($this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/system/template/grid/extended_items_row.tpl'));
+        return '';
         //return 'extended items';
     }
 
-    function get_grid_query() {
+    function get_grid_query()
+    {
         return $this->grid_query;
     }
 
-    function construct_query() {
+    function construct_query()
+    {
         $pager_params = $this->pager_params;
         foreach ($pager_params as $key => $value) {
             if ($key != 'per_page') {
@@ -226,12 +250,13 @@ class Common_Grid extends Sitebill {
         $this->set_grid_query($query);
     }
 
-    function parse_id_values_from_model($column_name, $column_values, $data_model) {
+    function parse_id_values_from_model($column_name, $column_values, $data_model)
+    {
         if ($data_model[$this->grid_object->table_name][$column_name]['type'] == 'select_by_query') {
             foreach ($column_values as $idx => $value) {
                 $langpostfix = $this->getLangPostfix($this->getCurrentLang());
                 $namefield = $data_model[$this->grid_object->table_name][$column_name]['value_name'];
-                $namefield = $namefield.$langpostfix;
+                $namefield = $namefield . $langpostfix;
 
                 $val = $this->data_model_controller->get_value_id_by_name(
                     $data_model[$this->grid_object->table_name][$column_name]['primary_key_table'],
@@ -240,7 +265,7 @@ class Common_Grid extends Sitebill {
                     $value
                 );
 
-                if (0 != (int) $val) {
+                if (0 != (int)$val) {
                     $column_values[$idx] = $val;
                 } else {
                     unset($column_values[$idx]);
@@ -276,17 +301,18 @@ class Common_Grid extends Sitebill {
         return $column_values;
     }
 
-    function add_tags_params($params = array()) {
+    function add_tags_params($params = array())
+    {
 
         if (isset($_SESSION['model_tags']) && is_array($_SESSION['model_tags'][$this->grid_object->table_name]['tags_array'])) {
             foreach ($_SESSION['model_tags'][$this->grid_object->table_name]['tags_array'] as $column_name => $column_values) {
                 $model = $this->grid_object->data_model[$this->grid_object->table_name];
 
                 $column_values = $this->parse_id_values_from_model($column_name, $column_values, $this->grid_object->data_model);
-                if($model[$column_name]['type'] == 'select_by_query_multi'){
+                if ($model[$column_name]['type'] == 'select_by_query_multi') {
                     $pkname = '';
-                    foreach ($model as $k => $v){
-                        if($v['type'] == 'primary_key'){
+                    foreach ($model as $k => $v) {
+                        if ($v['type'] == 'primary_key') {
                             $pkname = $k;
                             break;
                         }
@@ -294,7 +320,7 @@ class Common_Grid extends Sitebill {
                     unset($params[$column_name]);
                     $params[$pkname] = $column_values;
                     //$params['id'] = $column_values;
-                }elseif (isset($params[$column_name]) and ! is_array($params[$column_name])) {
+                } elseif (isset($params[$column_name]) and !is_array($params[$column_name])) {
                     if ($params[$column_name] != 0) {
                         array_push($column_values, $params[$column_name]);
                     }
@@ -309,15 +335,18 @@ class Common_Grid extends Sitebill {
         return $params;
     }
 
-    function set_total_count($total_count) {
+    function set_total_count($total_count)
+    {
         $this->total_count = $total_count;
     }
 
-    function get_total_count() {
+    function get_total_count()
+    {
         return $this->total_count;
     }
 
-    function add_tagged_parms_to_where($where_array, $tagged_params, $table_name) {
+    function add_tagged_parms_to_where($where_array, $tagged_params, $table_name)
+    {
         foreach ($tagged_params as $column_name => $column_values) {
             if (is_array($column_values) && count($column_values) > 0) {
                 //$column_values=array_filter($column_values, function($a){if($a!=''){return $a;}});
@@ -349,15 +378,18 @@ class Common_Grid extends Sitebill {
         return $where_array;
     }
 
-    function set_render_user_id($user_id) {
+    function set_render_user_id($user_id)
+    {
         $this->render_user_id = $user_id;
     }
 
-    function get_render_user_id() {
+    function get_render_user_id()
+    {
         return $this->render_user_id;
     }
 
-    function get_pre_header () {
+    function get_pre_header()
+    {
         $rs = '';
         if (is_array($this->grid_controls)) {
             if (in_array('memorylist', $this->grid_controls)) {
@@ -366,6 +398,7 @@ class Common_Grid extends Sitebill {
         }
 
         $rs .= '
+        <script src="' . SITEBILL_MAIN_URL . '/apps/api/js/legacy_api.js"></script>
 <link rel="stylesheet" href="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template1/assets/css/colorbox.css" />
 <script src="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template1/assets/js/jquery.colorbox-min.js"></script>
 					
@@ -470,7 +503,7 @@ $(document).ready(function(){
 			});
 			var min=null;
 			var max=null;
-			var txt=\''._e('не задано').'\';
+			var txt=\'' . _e('не задано') . '\';
 			
 			_this.find(\'input\').each(function(e){
 				var iname=$(this).attr(\'name\');
@@ -547,7 +580,7 @@ $(document).ready(function(){
 
 
 </script>';
-        if($this->batchUpdate){
+        if ($this->batchUpdate) {
             $rs .= '<script>$(document).ready(function(){
       $(\'.batch_update\').click(function () {
         var ids = [];
@@ -556,7 +589,7 @@ $(document).ready(function(){
             ids.push($(this).val());
         });
         if(ids.length>0){
-            window.location.replace(\''.$this->batchUpdateUrl.'?action=\' + action + \'&do=batch_update&batch_ids=\' + ids.join(\',\'));
+            window.location.replace(\'' . $this->batchUpdateUrl . '?action=\' + action + \'&do=batch_update&batch_ids=\' + ids.join(\',\'));
         }else{
             return false;
         }
@@ -570,7 +603,7 @@ $(document).ready(function(){
     <div class="modal-content">
     <div class="modal-header">
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h3>'._e('Быстрый просмотр').' <a target="_blank" class="btn btn-success newwin" href="#">'._e('открыть в новом окне').'</a></h3>
+        <h3>' . _e('Быстрый просмотр') . ' <a target="_blank" class="btn btn-success newwin" href="#">' . _e('открыть в новом окне') . '</a></h3>
     </div>
     <div class="modal-body"></div>
     <div class="modal-footer"></div>
@@ -580,16 +613,24 @@ $(document).ready(function(){
         return $rs;
     }
 
-    function get_tags_input ($item_name) {
-        if ( $this->getConfigValue('use_vue') ) {
+    function get_tags_input($item_name)
+    {
+        if ($this->getConfigValue('use_vue')) {
             return $this->vue_tags_input($this->grid_object->table_name, $item_name);
         } else {
             return $this->classic_tags_input($item_name);
         }
     }
 
-    function vue_tags_input ( $model_name, $item_name  ) {
-        if (isset($_SESSION['model_tags']) && is_array($_SESSION['model_tags'][$model_name]['tags_array'][$item_name])) {
+    function vue_tags_input($model_name, $item_name)
+    {
+        if (
+            isset($_SESSION['model_tags']) &&
+            isset($_SESSION['model_tags'][$model_name]) &&
+            isset($_SESSION['model_tags'][$model_name]['tags_array']) &&
+            isset($_SESSION['model_tags'][$model_name]['tags_array'][$item_name]) &&
+            is_array($_SESSION['model_tags'][$model_name]['tags_array'][$item_name])
+        ) {
             $input_tags_array = json_encode($_SESSION['model_tags'][$model_name]['tags_array'][$item_name]);
         } else {
             $input_tags_array = '';
@@ -598,7 +639,8 @@ $(document).ready(function(){
         return "<tags-input column_name='$item_name' model_name='$model_name' input_tags_array='$input_tags_array'></tags-input>";
     }
 
-    function classic_tags_input ($item_name) {
+    function classic_tags_input($item_name)
+    {
         $tags_input = '
                         <div class="inline-tags">
                             <input type="text" name="' . $item_name . '" id="' . $item_name . '" class="input-tag tagged" value="" placeholder="..." />
@@ -685,7 +727,8 @@ $(document).ready(function(){
         return $tags_input;
     }
 
-    function construct_grid($control_params = false, $disable_mass_delete = false) {
+    function construct_grid($control_params = false, $disable_mass_delete = false)
+    {
 
         //Регистрируем hook для обработки элементов грида при выводе
         if (function_exists('BeforePrintGridItem')) {
@@ -698,6 +741,9 @@ $(document).ready(function(){
 
             return $this->_construct_grid($control_params, $disable_mass_delete);
         } else {
+            if ( $this->grid_object->primary_key == '' ) {
+                return _e('Для таблицы').' '.$this->grid_object->primary_key.' '._e('не задан ').'primary_key';
+            }
 
 
             $DBC = DBC::getInstance();
@@ -715,7 +761,7 @@ $(document).ready(function(){
                 }
             }
 
-            $table_and_prefix = DB_PREFIX.'_'.$this->grid_object->table_name;
+            $table_and_prefix = DB_PREFIX . '_' . $this->grid_object->table_name;
 
             $sort_params[] = 'page=1';
             if ($this->getRequestValue('_sortby') == '') {
@@ -729,15 +775,15 @@ $(document).ready(function(){
             }
             $pager_params['_sortby'] = $sortby;
             $pager_params['_sortdir'] = $sortdir;
-            $sortby = $table_and_prefix.'.'.$sortby;
+            $sortby = $table_and_prefix . '.' . $sortby;
 
             $where = array();
 
             if (!empty($this->conditions)) {
                 foreach ($this->conditions as $key => $value) {
-                    if(is_numeric($key)){
-                        $sub=array();
-                        foreach($value as $k=>$subv){
+                    if (is_numeric($key)) {
+                        $sub = array();
+                        foreach ($value as $k => $subv) {
                             if (is_array($subv)) {
                                 $sub[] = '(`' . $table_and_prefix . '`.`' . $k . '` IN (' . implode(', ', $subv) . '))';
                             } else {
@@ -746,12 +792,12 @@ $(document).ready(function(){
                             }
                         }
                         $where[] = '(' . implode(' OR ', $sub) . ')';
-                    }else{
+                    } else {
                         if (is_array($value)) {
                             $where[] = '(`' . $table_and_prefix . '`.`' . $key . '` in (\'' . implode('\', \'', $value) . '\'))';
                         } else {
                             $where[] = '(`' . $table_and_prefix . '`.`' . $key . '`=\'' . $value . '\')';
-                            $sort_params[] = $table_and_prefix.'.'.$key . '=' . $value;
+                            $sort_params[] = $table_and_prefix . '.' . $key . '=' . $value;
                         }
                     }
 
@@ -771,9 +817,9 @@ $(document).ready(function(){
             $tagged_params = $this->add_tags_params();
             $where = $this->add_tagged_parms_to_where($where, $tagged_params, $this->grid_object->table_name);
 
-            $query_no_limit = 'SELECT `'. DB_PREFIX . '_' . $this->grid_object->table_name. '`.* FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name . $left_join_tables . (!empty($where) ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY ' . $sortby . ' ' . $sortdir . ' ';
-            $query_no_limit_total_count = 'SELECT count(`'. DB_PREFIX . '_' . $this->grid_object->table_name. '`' .'.`'.$this->grid_object->primary_key.'`) as total FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name . $left_join_tables . (!empty($where) ? ' WHERE ' . implode(' AND ', $where) : '');
-            $query =          'SELECT `'. DB_PREFIX . '_' . $this->grid_object->table_name. '`.* FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name . $left_join_tables . (!empty($where) ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY ' . $sortby . ' ' . $sortdir . ' ' . (isset($this->per_page) ? 'LIMIT ' . (($this->current_page - 1) * $this->per_page) . ', ' . $this->per_page : '');
+            $query_no_limit = 'SELECT `' . DB_PREFIX . '_' . $this->grid_object->table_name . '`.* FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name . $left_join_tables . (!empty($where) ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY ' . $sortby . ' ' . $sortdir . ' ';
+            $query_no_limit_total_count = 'SELECT count(`' . DB_PREFIX . '_' . $this->grid_object->table_name . '`' . '.`' . $this->grid_object->primary_key . '`) as total FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name . $left_join_tables . (!empty($where) ? ' WHERE ' . implode(' AND ', $where) : '');
+            $query = 'SELECT `' . DB_PREFIX . '_' . $this->grid_object->table_name . '`.* FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name . $left_join_tables . (!empty($where) ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY ' . $sortby . ' ' . $sortdir . ' ' . (isset($this->per_page) ? 'LIMIT ' . (($this->current_page - 1) * $this->per_page) . ', ' . $this->per_page : '');
             //$this->writeLog($query);
             //$this->writeLog($query_no_limit);
             //$this->writeLog($query_no_limit_total_count);
@@ -781,7 +827,7 @@ $(document).ready(function(){
 
             $result = $this->get_query_cache_value($query_no_limit_total_count, array());
             $total_count = 0;
-            if ( $result['result'] === true ) {
+            if ($result['result'] === true) {
                 $total_count = $result['value'];
             } else {
                 $stmt = $DBC->query($query_no_limit_total_count);
@@ -793,7 +839,6 @@ $(document).ready(function(){
             }
 
 
-
             $this->set_total_count($total_count);
 
             $this->set_grid_query($query_no_limit);
@@ -801,7 +846,7 @@ $(document).ready(function(){
             $stmt = $DBC->query($query);
             if (!$stmt && $this->current_page != 1) {
                 $this->current_page = 1;
-                $query = 'SELECT `'. DB_PREFIX . '_' . $this->grid_object->table_name. '`.* FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name .$left_join_tables . (!empty($where) ? ' WHERE ' . implode('AND', $where) : '') .' ORDER BY ' . $sortby . ' ' . $sortdir . ' ' . (isset($this->per_page) ? 'LIMIT ' . (($this->current_page - 1) * $this->per_page) . ', ' . $this->per_page : '');
+                $query = 'SELECT `' . DB_PREFIX . '_' . $this->grid_object->table_name . '`.* FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name . $left_join_tables . (!empty($where) ? ' WHERE ' . implode('AND', $where) : '') . ' ORDER BY ' . $sortby . ' ' . $sortdir . ' ' . (isset($this->per_page) ? 'LIMIT ' . (($this->current_page - 1) * $this->per_page) . ', ' . $this->per_page : '');
                 $stmt = $DBC->query($query);
             }
             $empty_data = false;
@@ -818,22 +863,22 @@ $(document).ready(function(){
                 $ra = array();
             }
 
-            if(!empty($ra) && $this->grid_object->table_name=='data'){
-                if(1==intval($this->getConfigValue('use_topic_actual_days'))){
-                    $DBC=DBC::getInstance();
-                    $topic_actuals=array();
+            if (!empty($ra) && $this->grid_object->table_name == 'data') {
+                if (1 == intval($this->getConfigValue('use_topic_actual_days'))) {
+                    $DBC = DBC::getInstance();
+                    $topic_actuals = array();
 
-                    $query='SELECT id, actual_days FROM '.DB_PREFIX.'_topic';
-                    $stmt=$DBC->query($query);
-                    if($stmt){
-                        while($ar=$DBC->fetch($stmt)){
-                            $topic_actuals[$ar['id']]=$ar['actual_days'];
+                    $query = 'SELECT id, actual_days FROM ' . DB_PREFIX . '_topic';
+                    $stmt = $DBC->query($query);
+                    if ($stmt) {
+                        while ($ar = $DBC->fetch($stmt)) {
+                            $topic_actuals[$ar['id']] = $ar['actual_days'];
                         }
                     }
-                    foreach($ra as $k=>$v){
-                        $actual_adv_days=floor((time()-strtotime($v['date_added']))/(24*3600));
-                        if(isset($topic_actuals[$v['topic_id']]) && intval($topic_actuals[$v['topic_id']])>0 && $actual_adv_days>$topic_actuals[$v['topic_id']]){
-                            $ra[$k]['_classes']='actuality_expired';
+                    foreach ($ra as $k => $v) {
+                        $actual_adv_days = floor((time() - strtotime($v['date_added'])) / (24 * 3600));
+                        if (isset($topic_actuals[$v['topic_id']]) && intval($topic_actuals[$v['topic_id']]) > 0 && $actual_adv_days > $topic_actuals[$v['topic_id']]) {
+                            $ra[$k]['_classes'] = 'actuality_expired';
                         }
 
                     }
@@ -853,7 +898,7 @@ $(document).ready(function(){
                 $rs .= '<th><input type="checkbox" class="grid_check_all" /></td>';
             }
             //echo $sortby;
-            $sort_url = $this->grid_url;
+            $sort_url = @$this->grid_url;
             if ($sort_url == '') {
                 $sort_url = SITEBILL_MAIN_URL . '/admin/index.php';
             }
@@ -871,7 +916,7 @@ $(document).ready(function(){
                 if ($this->grid_object->data_model[$this->grid_object->table_name][$item_name]['type'] == 'primary_key') {
                     $rs .= 'width="1%"';
                 }
-                if ($sortby == $table_and_prefix.'.'.$item_name) {
+                if ($sortby == $table_and_prefix . '.' . $item_name) {
                     if (strtolower($sortdir) == 'asc') {
                         $sortdirn = 'desc';
                         $sorted = 'common-grid-sorted-asc';
@@ -909,7 +954,7 @@ $(document).ready(function(){
 
 
             if (count($this->grid_controls) > 0) {
-                $rs .= '<th  width="1%"><a class="tags-clear" href="">'._e('Очистить').'</a></th>';
+                $rs .= '<th  width="1%"><a class="tags-clear" href="">' . _e('Очистить') . '</a></th>';
             }
             $rs .= '</tr>';
             $rs .= '</thead>';
@@ -918,9 +963,8 @@ $(document).ready(function(){
             if (count($ra) > 0) {
 
 
-
                 foreach ($ra as $primary_key_value => $item_array) {
-                    $ids[]=$primary_key_value;
+                    $ids[] = $primary_key_value;
                 }
 
                 $row_datas = $this->grid_object->load_by_id($ids);
@@ -929,18 +973,42 @@ $(document).ready(function(){
                 //echo count($row_datas);
 
 
-                $checked_accesses=array();
-              //var_dump($row_data);
-            //exit();
+                $checked_accesses = array();
+                //var_dump($row_data);
+                //exit();
                 foreach ($ra as $primary_key_value => $item_array) {
                     //$row_data = $this->grid_object->load_by_id($primary_key_value);
                     $row_data = $row_datas[$primary_key_value];
                     if ($BeforePrintGridItem) {
                         $row_data = BeforePrintGridItem($row_data, $control_params);
                     }
-                    $has_access = $this->check_access($this->grid_object->action, $this->get_render_user_id(), $check_control_name, $this->grid_object->primary_key, $primary_key_value);
+                    if ( !isset($check_control_name) ) {
+                        $check_control_name = '';
+                    }
+                    $has_access = $this->check_access(
+                        $this->grid_object->action,
+                        $this->get_render_user_id(),
+                        $check_control_name,
+                        $this->grid_object->primary_key,
+                        $primary_key_value);
 
-                    $rs .= '<tr class="'.((isset($item_array['active']) && $item_array['active']==0) ? 'notactive danger alert-danger' : '').((isset($item_array['_classes']) && $item_array['_classes']!='') ? ' '.$item_array['_classes'] : '').'">';
+                    $tr_class = ((isset($item_array['active']) && $item_array['active'] == 0) ?
+                            'notactive danger alert-danger' :
+                            '') .
+                        ((isset($item_array['_classes']) && $item_array['_classes'] != '') ?
+                            ' ' . $item_array['_classes'] : '');
+
+                    if (
+                        $this->getConfigValue('apps.data.allow_postponded') and
+                        isset($row_data['postponded_to']) and
+                        strtotime($row_data['postponded_to']['value']) > time()
+                    ) {
+                        $tr_class = 'warning alert-warning';
+
+                    }
+
+                    $rs .= '<tr class="' . $tr_class . '">';
+
                     $grid_counter = 0;
                     if (!$disable_mass_delete) {
                         $grid_counter = 1;
@@ -950,8 +1018,8 @@ $(document).ready(function(){
                     foreach ($this->grid_items as $item_id => $item_name) {
                         $grid_counter++;
 
-                        if ( isset($row_data[$item_name]['parameters']['only_owner_access']) && $row_data[$item_name]['parameters']['only_owner_access'] == 1 ) {
-                            if ( !$has_access and $_SESSION['current_user_group_name'] != 'admin') {
+                        if (isset($row_data[$item_name]['parameters']['only_owner_access']) && $row_data[$item_name]['parameters']['only_owner_access'] == 1) {
+                            if (!$has_access and $_SESSION['current_user_group_name'] != 'admin') {
                                 $row_data[$item_name]['value'] = _e('скрыто');
                                 $row_data[$item_name]['value_string'] = _e('скрыто');
                             }
@@ -959,6 +1027,24 @@ $(document).ready(function(){
                             //print_r($row_data[$item_name]);
                             //print_r($this->grid_object->data_model[$this->grid_object->table_name]);
                             //echo '</pre>';
+                        }
+                        if (is_array($row_data[$item_name]) and
+                            isset($row_data[$item_name]['parameters']) and
+                            is_array($row_data[$item_name]['parameters']) and
+                            isset($row_data[$item_name]['parameters']['api_version']) ) {
+
+                            $this->template->assign('api', $row_data[$item_name]['api']);
+                            $this->template->assign('model_item', $row_data);
+
+                            $row_data[$item_name]['value_string'] = $row_data[$item_name]['value_string'].
+                                $this->template->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/system/fields/api_call.tpl');
+
+                        }
+                        if (isset($row_data[$item_name]['parameters']) and
+                            is_array($row_data[$item_name]['parameters']) and
+                            isset($row_data[$item_name]['parameters']['whatstapp_decorator']) and
+                            $row_data[$item_name]['parameters']['whatstapp_decorator'] == 1 ) {
+                            $row_data[$item_name]['value'] = '<a href="https://wa.me/'.$row_data[$item_name]['value'].'" target="_blank">'.$row_data[$item_name]['value'].'</a>';
                         }
 
 
@@ -982,9 +1068,9 @@ $(document).ready(function(){
                         } elseif ($row_data[$item_name]['type'] == 'client_id') {
                             $rs .= '<td>' . $row_data[$item_name]['value_string'] . '</td>';
                         } elseif ($row_data[$item_name]['type'] == 'select_box') {
-                            if(isset($row_data[$item_name]['parameters']) && isset($row_data[$item_name]['parameters']['multiselect']) && $row_data[$item_name]['parameters']['multiselect'] == 1){
+                            if (isset($row_data[$item_name]['parameters']) && isset($row_data[$item_name]['parameters']['multiselect']) && $row_data[$item_name]['parameters']['multiselect'] == 1) {
                                 $rs .= '<td>' . (!empty($row_data[$item_name]['value_variants_array']) ? implode('<br>', $row_data[$item_name]['value_variants_array']) : '') . '</td>';
-                            }else{
+                            } else {
                                 $rs .= '<td>' . $row_data[$item_name]['select_data'][$row_data[$item_name]['value']] . '</td>';
                             }
                         } elseif ($row_data[$item_name]['type'] == 'photo') {
@@ -1006,7 +1092,7 @@ $(document).ready(function(){
 
                                 foreach ($row_data[$item_name]['value'] as $vv) {
                                     $preview_url = $this->createMediaIncPath($vv, 'preview');
-                                        //echo $preview_url.'<br>';
+                                    //echo $preview_url.'<br>';
                                     $normal_url = $this->createMediaIncPath($vv);
                                     if ($counter == 0) {
                                         $rs .= '<li><img src="' . $preview_url . '" style="min-width: 40px; max-width: 100px;">
@@ -1037,7 +1123,7 @@ $(document).ready(function(){
                             }
                             $rs .= '</td>';
                         } elseif ($row_data[$item_name]['type'] == 'docuploads') {
-                            $rs .= '<td>' . @count($row_data[$item_name]['value']) . '</td>';
+                            $rs .= '<td>' . (is_array($row_data[$item_name]['value'])?@count($row_data[$item_name]['value']):0) . '</td>';
                         } else {
                             if (is_array($row_data[$item_name]['value'])) {
                                 $rs .= '<td>' . implode(';', $row_data[$item_name]['value']) . '</td>';
@@ -1048,7 +1134,7 @@ $(document).ready(function(){
                     }
 
                     if (count($this->grid_controls) > 0) {
-                        $rs .= '<td nowrap class="account-grid-controls '.((isset($item_array['active']) && $item_array['active']==0) ? 'notactive danger alert-danger' : '').'">';
+                        $rs .= '<td nowrap class="account-grid-controls ' . ((isset($item_array['active']) && $item_array['active'] == 0) ? 'notactive danger alert-danger' : '') . '">';
                         foreach ($this->grid_controls as $control_id => $control_name) {
                             if (is_array($control_name)) {
                                 $check_control_name = $control_name['name'];
@@ -1059,7 +1145,7 @@ $(document).ready(function(){
                                 $rs .= $this->compile_memory_control($primary_key_value);
                                 continue;
                             } elseif ($control_name == 'fast_preview') {
-                                $rs .= ' <button data-id="'.$primary_key_value.'" class="fast_preview btn btn-danger btn-mini"><i class="icon-white icon-eye-open"></i></button> ';
+                                $rs .= ' <button data-id="' . $primary_key_value . '" class="fast_preview btn btn-danger btn-mini"><i class="icon-white icon-eye-open"></i></button> ';
                                 continue;
                             }
 
@@ -1092,9 +1178,11 @@ $(document).ready(function(){
                                 /* if(!empty($this->controls_params)){
                                   $control_params_delete_string.='&'.http_build_query($this->controls_params);
                                   } */
-                                $rs .= ' <a href="?action=' . $this->grid_object->action . '&do=delete&' . $this->grid_object->primary_key . '=' . $primary_key_value . $control_params_delete_string . '" onclick="if ( confirm(\''._e('Действительно хотите удалить запись?').'\') ) {return true;} else {return false;}" class="btn btn-danger"><i class="icon-white icon-remove"></i></a> ';
-                            }  elseif ($control_name == 'reservation') {
-                                $rs .= ' <a href="' . SITEBILL_MAIN_URL . '/account/reservation/my/'.$primary_key_value.self::$_trslashes.'" class="btn btn-info"><i class="fa fa-usd" aria-hidden="true"></i></a> ';
+                                $rs .= ' <a href="?action=' . $this->grid_object->action . '&do=delete&' . $this->grid_object->primary_key . '=' . $primary_key_value . $control_params_delete_string . '" onclick="if ( confirm(\'' . _e('Действительно хотите удалить запись?') . '\') ) {return true;} else {return false;}" class="btn btn-danger"><i class="icon-white icon-remove"></i></a> ';
+                            } elseif ($control_name == 'reservation') {
+                                if (  $this->getConfigValue('apps.reservation.control_button_in_grid') ) {
+                                    $rs .= ' <a href="' . SITEBILL_MAIN_URL . '/account/reservation/my/' . $primary_key_value . self::$_trslashes . '" class="btn btn-info"><i class="fa fa-usd" aria-hidden="true"></i></a> ';
+                                }
                             } else {
                                 $control_params_oth_string = '';
 
@@ -1102,8 +1190,22 @@ $(document).ready(function(){
                                   $control_params_oth_string.='&'.http_build_query($this->controls_params);
                                   } */
                                 if (is_array($control_name)) {
-                                    if ( $control_name['type'] == 'iframe_modal' ) {
+                                    if ($control_name['type'] == 'iframe_modal') {
                                         $rs .= $this->iframe_modal_control($this->grid_object->primary_key, $primary_key_value, $control_name);
+                                    } elseif($control_name['type'] == 'conditional'){
+                                        // условная кнопка со стандартным генератором ссылки
+                                        $res = call_user_func(array($control_name['object'], $control_name['func']), $row_data);
+                                        if($res && isset($control_name['variants']['1'])){
+                                            $cdata = $control_name['variants']['1'];
+                                            $rs .= ' <a href="?action=' . $this->grid_object->action . '&do=' . $cdata['name'] . '&' . $this->grid_object->primary_key . '=' . $primary_key_value . $control_params_oth_string . '" class="btn ' . ($cdata['btnclass'] != '' ? $cdata['btnclass'] : 'btn-warning') . '"><i class="icon-white ' . ($cdata['btnicon'] != '' ? $cdata['btnicon'] : 'icon-tasks') . '"></i>' . ($cdata['btntext'] != '' ? ' ' . $cdata['btntext'] : '') . '</a> ';
+                                        }elseif(!$res && isset($control_name['variants']['0'])){
+                                            $cdata = $control_name['variants']['0'];
+                                            $rs .= ' <a href="?action=' . $this->grid_object->action . '&do=' . $cdata['name'] . '&' . $this->grid_object->primary_key . '=' . $primary_key_value . $control_params_oth_string . '" class="btn ' . ($cdata['btnclass'] != '' ? $cdata['btnclass'] : 'btn-warning') . '"><i class="icon-white ' . ($cdata['btnicon'] != '' ? $cdata['btnicon'] : 'icon-tasks') . '"></i>' . ($cdata['btntext'] != '' ? ' ' . $cdata['btntext'] : '') . '</a> ';
+                                        }
+
+                                    } elseif($control_name['type'] == 'custom'){
+                                        // пользовательская кнопка с генератором, определенным в локализации
+                                        $rs .= call_user_func(array($control_name['object'], $control_name['func']), $row_data);
                                     } else {
                                         $rs .= ' <a href="?action=' . $this->grid_object->action . '&do=' . $control_name['name'] . '&' . $this->grid_object->primary_key . '=' . $primary_key_value . $control_params_oth_string . '" class="btn ' . ($control_name['btnclass'] != '' ? $control_name['btnclass'] : 'btn-warning') . '"><i class="icon-white ' . ($control_name['btnicon'] != '' ? $control_name['btnicon'] : 'icon-tasks') . '"></i>' . ($control_name['btntext'] != '' ? ' ' . $control_name['btntext'] : '') . '</a> ';
                                     }
@@ -1122,34 +1224,34 @@ $(document).ready(function(){
                     }
                     $rs .= '</tr>';
                     $admin_mode = false;
-                    if ( defined('ADMIN_MODE') and ADMIN_MODE == 1 ) {
+                    if (defined('ADMIN_MODE') and ADMIN_MODE == 1) {
                         $admin_mode = true;
                     }
 
-                    if ((!$admin_mode && $this->grid_object->table_name == 'complex' && intval($this->getConfigValue('apps.complex.use_billing'))==1) || ($this->getConfigValue('apps.billing.enable') and $this->grid_object->table_name == 'data' and $this->check_access($this->grid_object->action, $this->get_render_user_id(), 'edit', $this->grid_object->primary_key, $primary_key_value)) ) {
+                    if ((!$admin_mode && $this->grid_object->table_name == 'complex' && intval($this->getConfigValue('apps.complex.use_billing')) == 1) || ($this->getConfigValue('apps.billing.enable') and $this->grid_object->table_name == 'data' and $this->check_access($this->grid_object->action, $this->get_render_user_id(), 'edit', $this->grid_object->primary_key, $primary_key_value))) {
 
                         $rs .= '<tr>';
-                        $rs .= '<td colspan="' . (count($this->grid_controls) + $grid_counter) . '">'.$this->billing_controls($row_data).'</td>';
+                        $rs .= '<td colspan="' . (count($this->grid_controls) + $grid_counter) . '">' . $this->billing_controls($row_data) . '</td>';
                         $rs .= '</tr>';
                     }
 
                 }
 
-                if(!$disable_mass_delete || $this->batchUpdate || $this->batchActivate){
+                if (!$disable_mass_delete || $this->batchUpdate || $this->batchActivate) {
                     $rs .= '<tr><td colspan="' . (count($this->grid_controls) + $grid_counter) . '">';
                     if (!$disable_mass_delete) {
-                        if($this->massDeleteUrl != ''){
+                        if ($this->massDeleteUrl != '') {
                             $rs .= '<button data-url="' . $this->massDeleteUrl . '" class="mass_delete btn btn-danger"><i class="icon-white icon-remove"></i> ' . Multilanguage::_('L_DELETE_CHECKED') . '</button> ';
-                        }else{
+                        } else {
                             $rs .= '<button alt="' . $this->grid_object->action . '" class="delete_checked btn btn-danger"><i class="icon-white icon-remove"></i> ' . Multilanguage::_('L_DELETE_CHECKED') . '</button> ';
                         }
                     }
-                    if($this->batchUpdate){
-                        $rs .= '<button alt="' . $this->grid_object->action . '" class="batch_update btn btn-inverse"><i class="icon-white icon-th"></i> '._e('Пакетная обработка').'</button> ';
+                    if ($this->batchUpdate) {
+                        $rs .= '<button alt="' . $this->grid_object->action . '" class="batch_update btn btn-inverse"><i class="icon-white icon-th"></i> ' . _e('Пакетная обработка') . '</button> ';
                     }
-                    if($this->batchActivate){
-                        $rs .= '<button alt="' . $this->grid_object->action . '" data-action="activate" class="mass_action btn btn-inverse">'._e('Активировать').'</button> ';
-                        $rs .= '<button alt="' . $this->grid_object->action . '" data-action="deactivate" class="mass_action btn btn-inverse">'._e('Архивировать').'</button> ';
+                    if ($this->batchActivate) {
+                        $rs .= '<button alt="' . $this->grid_object->action . '" data-action="activate" class="mass_action btn btn-inverse">' . _e('Активировать') . '</button> ';
+                        $rs .= '<button alt="' . $this->grid_object->action . '" data-action="deactivate" class="mass_action btn btn-inverse">' . _e('Архивировать') . '</button> ';
                     }
                     $rs .= '</td></tr>';
                 }
@@ -1159,7 +1261,7 @@ $(document).ready(function(){
                 $query = 'SELECT COUNT(' . $this->grid_object->primary_key . ') AS _cnt FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name . (!empty($where) ? ' WHERE ' . implode('AND', $where) : '');
 
                 $result = $this->get_query_cache_value($query, array());
-                if ( $result['result'] === true ) {
+                if ($result['result'] === true) {
                     $total = $result['value'];
                 } else {
                     $stmt = $DBC->query($query);
@@ -1172,8 +1274,8 @@ $(document).ready(function(){
                     }
                 }
 
-                $page_links_list=$this->get_page_links_list($this->current_page, $total, $this->per_page, $pager_params);
-                if($page_links_list!=''){
+                $page_links_list = $this->get_page_links_list($this->current_page, $total, $this->per_page, $pager_params);
+                if ($page_links_list != '') {
                     $rs .= '<tr><td colspan="' . (count($this->grid_controls) + $grid_counter) . '" class="pager"><div align="center">';
                     $rs .= $page_links_list;
                     $rs .= '</div></td></tr>';
@@ -1181,7 +1283,7 @@ $(document).ready(function(){
 
             } else {
                 $rs .= '<tr>';
-                $rs .= '<td colspan="' . (count($this->grid_controls) + count($this->grid_items)) . '"><p align="center" class="alert">'._e('Ничего не найдено').'</p></td>';
+                $rs .= '<td colspan="' . (count($this->grid_controls) + count($this->grid_items)) . '"><p align="center" class="alert">' . _e('Ничего не найдено') . '</p></td>';
                 $rs .= '</tr>';
             }
 
@@ -1190,19 +1292,19 @@ $(document).ready(function(){
             $rs .= '</table>';
             $rs .= '';
 
-            if($this->grid_object->table_name == 'complex' && intval($this->getConfigValue('apps.complex.use_billing'))==1){
+            if ($this->grid_object->table_name == 'complex' && intval($this->getConfigValue('apps.complex.use_billing')) == 1) {
                 $rs .= $this->getB();
             }
             $rs .= $this->get_tooltip_script();
-
 
 
             return $rs;
         }
     }
 
-    private function iframe_modal_control ( $primary_key, $primary_key_value, $params ) {
-        if ( !$this->API_standalone_runner ) {
+    private function iframe_modal_control($primary_key, $primary_key_value, $params)
+    {
+        if (!$this->API_standalone_runner) {
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/api/classes/class.common.php');
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/api/classes/class.standalone_runner.php');
             $this->API_standalone_runner = new API_standalone_runner();
@@ -1219,24 +1321,25 @@ $(document).ready(function(){
     }
 
 
-    private function getB(){
-        $status_cost=array();
+    private function getB()
+    {
+        $status_cost = array();
         $custom_statuses = array();
-        if($this->grid_object->table_name == 'complex'){
-            $status_cost['vip']= floatval($this->getConfigValue('apps.complex.complex_vip_cost'));
-            $status_cost['premium']= floatval($this->getConfigValue('apps.complex.complex_premium_cost'));
-            $status_cost['bold']= floatval($this->getConfigValue('apps.complex.complex_bold_cost'));
+        if ($this->grid_object->table_name == 'complex') {
+            $status_cost['vip'] = floatval($this->getConfigValue('apps.complex.complex_vip_cost'));
+            $status_cost['premium'] = floatval($this->getConfigValue('apps.complex.complex_premium_cost'));
+            $status_cost['bold'] = floatval($this->getConfigValue('apps.complex.complex_bold_cost'));
         }
 
 
-        $ret='';
-        $ret.='<div class="modal fade" class="makeSpec" id="makeSpec" tabindex="-1" role="dialog" aria-labelledby="makeSpecOk" aria-hidden="true">
+        $ret = '';
+        $ret .= '<div class="modal fade" class="makeSpec" id="makeSpec" tabindex="-1" role="dialog" aria-labelledby="makeSpecOk" aria-hidden="true">
   <div class="modal-header">
     <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
     <h3 id="makeSpecModalLabel">
-    	<span class="spec_title spec_title_premium">'.Multilanguage::_('BPREMIUM_MAKE_TIT', 'system').'</span>
-    	<span class="spec_title spec_title_bold">'.Multilanguage::_('BBOLD_MAKE_TIT', 'system').'</span>
-    	<span class="spec_title spec_title_vip">'.Multilanguage::_('BVIP_MAKE_TIT', 'system').'</span>
+    	<span class="spec_title spec_title_premium">' . Multilanguage::_('BPREMIUM_MAKE_TIT', 'system') . '</span>
+    	<span class="spec_title spec_title_bold">' . Multilanguage::_('BBOLD_MAKE_TIT', 'system') . '</span>
+    	<span class="spec_title spec_title_vip">' . Multilanguage::_('BVIP_MAKE_TIT', 'system') . '</span>
     </h3>
   </div>
   <div class="modal-body">
@@ -1244,20 +1347,20 @@ $(document).ready(function(){
   		<input type="hidden" value="" name="realty_id" />
   		<input type="hidden" value="" name="per_day_price" />
   		<input type="hidden" value="" name="type" />
-        <input type="hidden" value="'.$this->grid_object->table_name.'" name="object_name" />
-            <input type="hidden" value="'.$this->grid_object->primary_key.'" name="object_key" />
+        <input type="hidden" value="' . $this->grid_object->table_name . '" name="object_name" />
+            <input type="hidden" value="' . $this->grid_object->primary_key . '" name="object_key" />
   		
-  		<input type="hidden" value="'.$status_cost['premium'].'" id="pdp_premium" />
-  		<input type="hidden" value="'.$status_cost['vip'].'" id="pdp_vip" />
-  		<input type="hidden" value="'.$status_cost['bold'].'" id="pdp_bold" />
+  		<input type="hidden" value="' . $status_cost['premium'] . '" id="pdp_premium" />
+  		<input type="hidden" value="' . $status_cost['vip'] . '" id="pdp_vip" />
+  		<input type="hidden" value="' . $status_cost['bold'] . '" id="pdp_bold" />
 		  <div class="control-group">
-		    <label class="control-label">'.Multilanguage::_('B_MAKE_DAYS', 'system').'</label>
+		    <label class="control-label">' . Multilanguage::_('B_MAKE_DAYS', 'system') . '</label>
 		    <div class="controls">
 		      <input type="text" value="1" name="days" />
 		    </div>
 		  </div>
 		  <div class="control-group">
-		    <label class="control-label">'.Multilanguage::_('$L_PRICE', 'system').'</label>
+		    <label class="control-label">' . Multilanguage::_('$L_PRICE', 'system') . '</label>
 		    <div class="controls">
 		      <span class="calc_price"></span>
 		    </div>
@@ -1266,22 +1369,23 @@ $(document).ready(function(){
 	<div class="answer" style="display: none;"></div>
   </div>
   <div class="modal-footer">
-  	<button class="btn use_own">'.Multilanguage::_('B_MAKE_USEPACKETS', 'system').'</button>
-	<button class="btn ok">'.Multilanguage::_('OK_NM', 'system').'</button>
-    <button class="btn" data-dismiss="modal" aria-hidden="true">'.Multilanguage::_('CANCEL_NM', 'system').'</button>
+  	<button class="btn use_own">' . Multilanguage::_('B_MAKE_USEPACKETS', 'system') . '</button>
+	<button class="btn ok">' . Multilanguage::_('OK_NM', 'system') . '</button>
+    <button class="btn" data-dismiss="modal" aria-hidden="true">' . Multilanguage::_('CANCEL_NM', 'system') . '</button>
   </div>
 </div>';
 
-        $ret.='<script src="'.SITEBILL_MAIN_URL.'/apps/billing/js/grid_billing.js"></script>';
+        $ret .= '<script src="' . SITEBILL_MAIN_URL . '/apps/billing/js/grid_billing.js"></script>';
         return $ret;
     }
 
-    private function billing_controls ($row_data) {
+    private function billing_controls($row_data)
+    {
 
         $custom_statuses = array();
 
-        if($this->grid_object->table_name == 'data'){
-            require_once SITEBILL_DOCUMENT_ROOT.'/apps/billing/admin/admin.php';
+        if ($this->grid_object->table_name == 'data') {
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/billing/admin/admin.php';
             $billing = new billing_admin();
 
             $custom_statuses = $billing->loadCustomStatuses();
@@ -1297,66 +1401,65 @@ $(document).ready(function(){
         $status_fileds[] = 'premium_status_end';
         $status_fileds[] = 'bold_status_end';
 
-        if(!empty($custom_statuses)){
-            foreach($custom_statuses as $key => $custom_status){
+        if (!empty($custom_statuses)) {
+            foreach ($custom_statuses as $key => $custom_status) {
                 $status_fileds[] = $custom_status['field_name'];
             }
         }
 
 
-
-        $query = 'SELECT '.implode(', ', $status_fileds).' FROM ' . DB_PREFIX . '_'.$this->grid_object->table_name.' WHERE `'.$this->grid_object->primary_key.'` = ? LIMIT 1';
+        $query = 'SELECT ' . implode(', ', $status_fileds) . ' FROM ' . DB_PREFIX . '_' . $this->grid_object->table_name . ' WHERE `' . $this->grid_object->primary_key . '` = ? LIMIT 1';
 
         $stmt = $DBC->query($query, array($row_data[$this->grid_object->primary_key]['value']));
         if ($stmt) {
             $current_statuses = $DBC->fetch($stmt);
         }
 
-        if ( $current_statuses['vip_status_end'] > time() ) {
-            $rs .= ' <span class="vb btn btn-small btn-info btn-disabled"><i class="icon-star icon-black"></i> '.Multilanguage::_('GB_BVIP_TO', 'system').' '.date('d.m.Y H:i', $current_statuses['vip_status_end']).'</span>';
+        if ($current_statuses['vip_status_end'] > time()) {
+            $rs .= ' <span class="vb btn btn-small btn-info btn-disabled"><i class="icon-star icon-black"></i> ' . Multilanguage::_('GB_BVIP_TO', 'system') . ' ' . date('d.m.Y H:i', $current_statuses['vip_status_end']) . '</span>';
         } else {
-            $rs .= ' <a class="btn btn-small make_spec" data-type="vip" data-object="'.$this->grid_object->table_name.'" alt="'.$row_data[$this->grid_object->primary_key]['value'].'"><i class="icon-star icon-black"></i> '.Multilanguage::_('GB_BVIP_MAKE', 'system').'</a>';
+            $rs .= ' <a class="btn btn-small make_spec" data-type="vip" data-object="' . $this->grid_object->table_name . '" alt="' . $row_data[$this->grid_object->primary_key]['value'] . '"><i class="icon-star icon-black"></i> ' . Multilanguage::_('GB_BVIP_MAKE', 'system') . '</a>';
         }
 
-        if ( $current_statuses['premium_status_end'] > time() ) {
-            $rs .= ' <span class="vb btn btn-small btn-info btn-disabled"><i class="icon-fire icon-black"></i> '.Multilanguage::_('GB_BPREMIUM_TO', 'system').' '.date('d.m.Y H:i', $current_statuses['premium_status_end']).'</span>';
+        if ($current_statuses['premium_status_end'] > time()) {
+            $rs .= ' <span class="vb btn btn-small btn-info btn-disabled"><i class="icon-fire icon-black"></i> ' . Multilanguage::_('GB_BPREMIUM_TO', 'system') . ' ' . date('d.m.Y H:i', $current_statuses['premium_status_end']) . '</span>';
         } else {
-            $rs .= ' <a class="btn btn-small make_spec" data-type="premium" data-object="'.$this->grid_object->table_name.'" alt="'.$row_data[$this->grid_object->primary_key]['value'].'"><i class="icon-fire icon-black"></i> '.Multilanguage::_('GB_BPREMIUM_MAKE', 'system').'</a>';
+            $rs .= ' <a class="btn btn-small make_spec" data-type="premium" data-object="' . $this->grid_object->table_name . '" alt="' . $row_data[$this->grid_object->primary_key]['value'] . '"><i class="icon-fire icon-black"></i> ' . Multilanguage::_('GB_BPREMIUM_MAKE', 'system') . '</a>';
         }
 
-        if ( $current_statuses['bold_status_end'] > time() ) {
-            $rs .= ' <span class="vb btn btn-small btn-info btn-disabled"><i class="icon-heart icon-black"></i> '.Multilanguage::_('GB_BBOLD_TO', 'system').' '.date('d.m.Y H:i', $current_statuses['bold_status_end']).'</span>';
+        if ($current_statuses['bold_status_end'] > time()) {
+            $rs .= ' <span class="vb btn btn-small btn-info btn-disabled"><i class="icon-heart icon-black"></i> ' . Multilanguage::_('GB_BBOLD_TO', 'system') . ' ' . date('d.m.Y H:i', $current_statuses['bold_status_end']) . '</span>';
         } else {
-            $rs .= ' <a class="btn btn-small make_spec" data-type="bold" data-object="'.$this->grid_object->table_name.'" alt="'.$row_data[$this->grid_object->primary_key]['value'].'"><i class="icon-heart icon-black"></i> '.Multilanguage::_('GB_BBOLD_MAKE', 'system').'</a>';
+            $rs .= ' <a class="btn btn-small make_spec" data-type="bold" data-object="' . $this->grid_object->table_name . '" alt="' . $row_data[$this->grid_object->primary_key]['value'] . '"><i class="icon-heart icon-black"></i> ' . Multilanguage::_('GB_BBOLD_MAKE', 'system') . '</a>';
         }
-        if ( $this->grid_object->table_name == 'data' && $_SESSION['billing']['upps_left'] > 0 or $_SESSION['billing']['packs_left'] > 0 ) {
-            $rs .= '<a class="btn btn-small go_up" href="'.SITEBILL_MAIN_URL.'/upper/realty'.$row_data['id']['value'].'/"><i class="icon-arrow-up icon-black"></i> Поднять</a>';
+        if ($this->grid_object->table_name == 'data' && $_SESSION['billing']['upps_left'] > 0 or $_SESSION['billing']['packs_left'] > 0) {
+            $rs .= '<a class="btn btn-small go_up" href="' . SITEBILL_MAIN_URL . '/upper/realty' . $row_data['id']['value'] . '/"><i class="icon-arrow-up icon-black"></i> Поднять</a>';
         }
 
 
-        if(!empty($custom_statuses)){
-            foreach($custom_statuses as $key => $custom_status){
-                if ( strtotime($current_statuses[$custom_status['field_name']]) > time() ) {
+        if (!empty($custom_statuses)) {
+            foreach ($custom_statuses as $key => $custom_status) {
+                if (strtotime($current_statuses[$custom_status['field_name']]) > time()) {
                     $text = sprintf($custom_status['grid_btn_selected'], date('d.m.Y H:i', strtotime($current_statuses[$custom_status['field_name']])));
-                    $rs .= ' <span class="btn btn-small btn-info btn-disabled">'.($custom_status['faicon_class'] != '' ? '<i class="'.$custom_status['faicon_class'].'"></i> ' : '').$text.'</span>';
+                    $rs .= ' <span class="btn btn-small btn-info btn-disabled">' . ($custom_status['faicon_class'] != '' ? '<i class="' . $custom_status['faicon_class'] . '"></i> ' : '') . $text . '</span>';
                 } else {
-                    $rs .= ' <a class="btn btn-small make_spec" data-type="'.$key.'" data-object="'.$this->grid_object->table_name.'" alt="'.$row_data[$this->grid_object->primary_key]['value'].'">'.($custom_status['faicon_class'] != '' ? '<i class="'.$custom_status['faicon_class'].'"></i> ' : '').' '.$custom_status['grid_btn_title'].'</a>';
+                    $rs .= ' <a class="btn btn-small make_spec" data-type="' . $key . '" data-object="' . $this->grid_object->table_name . '" alt="' . $row_data[$this->grid_object->primary_key]['value'] . '">' . ($custom_status['faicon_class'] != '' ? '<i class="' . $custom_status['faicon_class'] . '"></i> ' : '') . ' ' . $custom_status['grid_btn_title'] . '</a>';
                 }
             }
         }
 
 
-
-
         return $rs;
     }
 
-    private function compile_memory_control($id) {
+    private function compile_memory_control($id)
+    {
         $this->template->assign('id', $id);
         return $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/template/memorylist_item_control.tpl');
     }
 
-    private function get_memory_header() {
+    private function get_memory_header()
+    {
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/memory_list.php';
         $ML = new Memory_List();
         $memory_lists = $ML->getUserMemoryLists($this->get_render_user_id());
@@ -1371,7 +1474,8 @@ $(document).ready(function(){
         return $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/template/memorylist_header.tpl');
     }
 
-    private function _construct_grid($control_params = false, $disable_mass_delete = false) {
+    private function _construct_grid($control_params = false, $disable_mass_delete = false)
+    {
         $ra = array();
         $query = $this->grid_query . ' ' . (isset($this->per_page) ? 'LIMIT ' . (($this->current_page - 1) * $this->per_page) . ', ' . $this->per_page : '');
 
@@ -1421,8 +1525,8 @@ $(document).ready(function(){
                 $grid_counter = 0;
                 foreach ($this->grid_items as $item_id => $item_name) {
                     $grid_counter++;
-                    if ( $this->grid_items_render_objects[$item_name] ) {
-                        $rs .= '<td>' .$this->grid_items_render_objects[$item_name]->fetch_template($item_name, $row_data).'</td>';
+                    if ($this->grid_items_render_objects[$item_name]) {
+                        $rs .= '<td>' . $this->grid_items_render_objects[$item_name]->fetch_template($item_name, $row_data) . '</td>';
                     } elseif ($row_data[$item_name]['type'] == 'select_by_query') {
                         $rs .= '<td>' . $row_data[$item_name]['value_string'] . '</td>';
                     } elseif ($row_data[$item_name]['type'] == 'structure') {
@@ -1430,11 +1534,11 @@ $(document).ready(function(){
                     } elseif ($row_data[$item_name]['type'] == 'date') {
                         $rs .= '<td  >' . $row_data[$item_name]['value_string'] . '</td>';
                     } elseif ($row_data[$item_name]['type'] == 'select_box') {
-						if(isset($row_data[$item_name]['parameters']) && isset($row_data[$item_name]['parameters']['multiselect']) && $row_data[$item_name]['parameters']['multiselect'] == 1){
-                        	$rs .= '<td>' . (!empty($row_data[$item_name]['value_variants_array']) ? implode('<br>', $row_data[$item_name]['value_variants_array']) : '') . '</td>';
-                  		}else{
-                        	$rs .= '<td>' . $row_data[$item_name]['select_data'][$row_data[$item_name]['value']] . '</td>';
-                    	}
+                        if (isset($row_data[$item_name]['parameters']) && isset($row_data[$item_name]['parameters']['multiselect']) && $row_data[$item_name]['parameters']['multiselect'] == 1) {
+                            $rs .= '<td>' . (!empty($row_data[$item_name]['value_variants_array']) ? implode('<br>', $row_data[$item_name]['value_variants_array']) : '') . '</td>';
+                        } else {
+                            $rs .= '<td>' . $row_data[$item_name]['select_data'][$row_data[$item_name]['value']] . '</td>';
+                        }
                     } elseif ($row_data[$item_name]['type'] == 'checkbox') {
                         $rs .= '<td>' . ($row_data[$item_name]['value'] == 1 ? '<img src="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template/img/radio_yes.png">' : '<img src="' . SITEBILL_MAIN_URL . '/apps/admin/admin/template/img/radio_no.png">') . '</td>';
                     } else {
@@ -1466,7 +1570,7 @@ $(document).ready(function(){
                                 $control_params_delete_string = $control_params['delete'];
                             }
 
-                            $rs .= ' <a href="?action=' . $this->grid_object->action . '&do=delete&' . $this->grid_object->primary_key . '=' . $primary_key_value . $control_params_delete_string . '" onclick="if ( confirm(\''._e('Действительно хотите удалить запись?').'\') ) {return true;} else {return false;}" class="btn btn-danger"><i class="icon-white icon-remove"></i></a> ';
+                            $rs .= ' <a href="?action=' . $this->grid_object->action . '&do=delete&' . $this->grid_object->primary_key . '=' . $primary_key_value . $control_params_delete_string . '" onclick="if ( confirm(\'' . _e('Действительно хотите удалить запись?') . '\') ) {return true;} else {return false;}" class="btn btn-danger"><i class="icon-white icon-remove"></i></a> ';
                         }
                         if (is_array($control_name)) {
                             $rs .= ' <a href="?action=' . $this->grid_object->action . '&do=' . $control_name['name'] . '&' . $this->grid_object->primary_key . '=' . $primary_key_value . $control_params_oth_string . '" class="btn ' . ($control_name['btnclass'] != '' ? $control_name['btnclass'] : 'btn btn-warning') . '"><i class="icon-white ' . ($control_name['btnicon'] != '' ? $control_name['btnicon'] : 'icon-tasks') . '"></i>' . ($control_name['btntext'] != '' ? ' ' . $control_name['btntext'] : '') . '</a> ';
@@ -1486,7 +1590,7 @@ $(document).ready(function(){
 
             $rs .= '</table>';
         } else {
-            $rs .= '<br><br>'._e('Записей не найдено');
+            $rs .= '<br><br>' . _e('Записей не найдено');
         }
         return $rs;
     }
@@ -1494,9 +1598,10 @@ $(document).ready(function(){
     /*
      * Временная функция
      */
-    function degradate_grid($grid){
+    function degradate_grid($grid)
+    {
 
-        foreach($grid as $k=>$row_data){
+        foreach ($grid as $k => $row_data) {
             //$row_data = $this->grid_object->load_by_id($primary_key_value);
             $data = array();
             foreach ($row_data as $item_name => $v) {
@@ -1527,7 +1632,8 @@ $(document).ready(function(){
         return $ret;
     }
 
-    function construct_grid_array() {
+    function construct_grid_array()
+    {
         $ra = array();
         $DBC = DBC::getInstance();
 
@@ -1540,19 +1646,19 @@ $(document).ready(function(){
                 $ra[$ar[$this->grid_object->primary_key]] = $ar;
             }
         } else {
-            $this->writeLog(__METHOD__.', query = '.$query.', query error = '.$DBC->getLastError());
+            $this->writeLog(__METHOD__ . ', query = ' . $query . ', query error = ' . $DBC->getLastError());
         }
 
         $ret = array();
-        $ids=array();
+        $ids = array();
         foreach ($ra as $primary_key_value => $item_array) {
-            $ids[$primary_key_value]=$primary_key_value;
+            $ids[$primary_key_value] = $primary_key_value;
         }
-        if(!empty($ids)){
-            $row_datas=$this->grid_object->load_by_id($ids);
+        if (!empty($ids)) {
+            $row_datas = $this->grid_object->load_by_id($ids);
         }
 
-        if(!empty($row_datas)){
+        if (!empty($row_datas)) {
             foreach ($row_datas as $primary_key_value => $item_array) {
                 $data = array();
                 foreach ($this->grid_items as $item_id => $item_name) {
@@ -1563,41 +1669,10 @@ $(document).ready(function(){
         }
         //print_r($ret);
         return $ret;
-        /*return $row_datas;
-        if (!empty($ra)) {
-            foreach ($ra as $primary_key_value => $item_array) {
-                $row_data = $this->grid_object->load_by_id($primary_key_value);
-                $data = array();
-                foreach ($this->grid_items as $item_id => $item_name) {
-                    if ($row_data[$item_name]['type'] == 'select_by_query') {
-                        $data[$item_name]['value'] = $row_data[$item_name]['value'];
-                        $data[$item_name]['value_string'] = $row_data[$item_name]['value_string'];
-                    } elseif ($row_data[$item_name]['type'] == 'date') {
-                        $data[$item_name] = $row_data[$item_name]['value'];
-                    } elseif ($row_data[$item_name]['type'] == 'uploadify_image') {
-                        $data['image_array'] = $this->get_image_array($this->get_action(), $this->get_table_name(), $this->grid_object->primary_key, (int) $primary_key_value);
-                    } elseif ($row_data[$item_name]['type'] == 'select_box') {
-                        if ($row_data[$item_name]['parameters']['multiselect'] == 1) {
-                            $data[$item_name]['value'] = $row_data[$item_name]['value'];
-                            $data[$item_name]['value_string'] = $row_data[$item_name]['value_string'];
-                        } else {
-                            $data[$item_name]['value'] = $row_data[$item_name]['value'];
-                            $data[$item_name]['value_string'] = $row_data[$item_name]['select_data'][$row_data[$item_name]['value']];
-                        }
-                    } elseif ($row_data[$item_name]['type'] == 'geodata') {
-                        $data[$item_name] = implode(',', $row_data[$item_name]['value']);
-                    } else {
-                        $data[$item_name] = $row_data[$item_name]['value'];
-                    }
-                }
-                $ret[] = $data;
-            }
-        }
-
-        return $ret;*/
     }
 
-    function getPager() {
+    function getPager()
+    {
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($this->grid_query);
         $total = 0;
@@ -1611,15 +1686,16 @@ $(document).ready(function(){
         return $ret;
     }
 
-    function setPagerParams($params = array()) {
-        if (isset($params['per_page']) AND ( $params['per_page'] != 0)) {
-            $this->per_page = (int) $params['per_page'];
+    function setPagerParams($params = array())
+    {
+        if (isset($params['per_page']) and ($params['per_page'] != 0)) {
+            $this->per_page = (int)$params['per_page'];
         } else {
             $this->per_page = 10;
         }
 
-        if (isset($params['page']) AND ( $params['page'] != 0)) {
-            $this->current_page = (int) $params['page'];
+        if (isset($params['page']) and ($params['page'] != 0)) {
+            $this->current_page = (int)$params['page'];
         } else {
             $this->current_page = 1;
         }

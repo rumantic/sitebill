@@ -23,7 +23,7 @@ class Watermark extends SiteBill
      */
     public function __construct()
     {
-        $this->SiteBill();
+        parent::__construct();
         if (is_file(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/watermark/watermark.ini')) {
             $this->settings = parse_ini_file(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/watermark/watermark.ini');
         }

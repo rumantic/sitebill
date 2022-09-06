@@ -5,7 +5,11 @@
         @if(!empty($tpldata['logo']))
             <img alt="Logo" src="{{$tpldata['logo']}}" class="h-40px logo" />
         @else
-            <img alt="Logo" src="/apps/admin/admin/template1/img/dragon.png" class="h-25px logo" />
+            @if(defined('BRANDING') and BRANDING == true)
+                <img src="/template/frontend/local/mysite/resources/images/logo.png">
+            @else
+                <img alt="Logo" src="/apps/admin/admin/template1/img/dragon.png" class="h-25px logo" />
+            @endif
         @endif
     </a>
     <!--end::Logo-->

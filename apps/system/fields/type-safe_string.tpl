@@ -15,11 +15,13 @@
 
 <script type="text/javascript">
 $(document).ready(function () {literal}{{/literal}
-    $("#{$id}").suggestions({literal}{{/literal}
-        token: "f26c98c6b12d1deb3c1ea1205db88e5cf6e652a0",
-        type: "ADDRESS",
-        onSelect: showSelected
-    {literal}}{/literal});
+    if (typeof showSelected === 'function') {
+        $("#{$id}").suggestions({literal}{{/literal}
+            token: "f26c98c6b12d1deb3c1ea1205db88e5cf6e652a0",
+            type: "ADDRESS",
+            onSelect: showSelected
+            {literal}}{/literal});
+    }
 {literal}}{/literal});
 </script>
 

@@ -4,17 +4,19 @@
  * User add (not login)
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
-class User_Add extends Object_Manager {
+class User_Add extends Object_Manager
+{
 
     public $new_record_id = 0;
 
     /**
      * Constructor
      */
-    function __construct() {
+    function __construct()
+    {
         global $smarty;
         $smarty->assign('search_form_template', '');
-        $this->SiteBill();
+        parent::__construct();
         $this->table_name = 'data';
         $this->action = 'data';
         $this->primary_key = 'id';
@@ -34,7 +36,6 @@ class User_Add extends Object_Manager {
         if (empty($form_data)) {
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
             $data_model = new Data_Model();
-
 
 
             $this->data_model = $data_model->get_kvartira_model($this->getConfigValue('ajax_form_in_user'));
@@ -83,7 +84,8 @@ class User_Add extends Object_Manager {
      * @param void
      * @return string
      */
-    function main() {
+    function main()
+    {
 
         $user_id = intval($_SESSION['user_id']);
         if ($user_id > 0) {
@@ -114,101 +116,30 @@ class User_Add extends Object_Manager {
         $this->template->assign('is_account', 1);
 
         switch ($this->getRequestValue('do')) {
-            case 'new_done' : {
-                    $rs .= $this->_new_doneAction();
-                    break;
-                    /* $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
-                      $new_values=$this->getRequestValue('_new_value');
-                      if(1==$this->getConfigValue('use_combobox') && count($new_values)>0){
-                      $remove_this_names=array();
-                      foreach($form_data[$this->table_name] as $fd){
-                      if(isset($new_values[$fd['name']]) && $new_values[$fd['name']]!='' && $fd['combo']==1){
-                      $id=md5(time().'_'.rand(100,999));
-                      $remove_this_names[]=$id;
-                      $form_data[$this->table_name][$id]['value'] = $new_values[$fd['name']];
-                      $form_data[$this->table_name][$id]['type'] = 'auto_add_value';
-                      $form_data[$this->table_name][$id]['dbtype'] = 'notable';
-                      $form_data[$this->table_name][$id]['value_table'] = $form_data[$this->table_name][$fd['name']]['primary_key_table'];
-                      $form_data[$this->table_name][$id]['value_primary_key'] = $form_data[$this->table_name][$fd['name']]['primary_key_name'];
-                      $form_data[$this->table_name][$id]['value_field'] = $form_data[$this->table_name][$fd['name']]['value_name'];
-                      $form_data[$this->table_name][$id]['assign_to'] = $fd['name'];
-                      $form_data[$this->table_name][$id]['required'] = 'off';
-                      $form_data[$this->table_name][$id]['unique'] = 'off';
-                      }
-                      }
-                      }
-                      $data_model->forse_auto_add_values($form_data[$this->table_name]);
-                      if (!$this->check_data($form_data[$this->table_name]) || (1==$this->getConfigValue('filter_double_data') && !$this->checkUniquety($form_data[$this->table_name]))) {
-                      $form_data[$this->table_name]=$this->removeTemporaryFields($form_data[$this->table_name],$remove_this_names);
-                      $rs .= $this->get_form($form_data[$this->table_name], 'new', 0, '', SITEBILL_MAIN_URL.'/add/');
+            case 'new_done' :
+            {
+                $rs .= $this->_new_doneAction();
+                break;
+            }
 
-                      } else {
-                      unset($form_data[$this->table_name]['captcha']);
-                      //$form_data[$this->table_name]['fio']['title'] = "<b>ФИО заявителя</b>";
-                      //$form_data[$this->table_name]['phone']['title'] = "<b>Телефон заявителя</b>";
-                      $form_data[$this->table_name]['active']['value'] = 0;
-                      $form_data[$this->table_name]['date_added']['value'] = date('Y-m-d H:i:s',time());
-
-                      if(1==$this->getConfigValue('autoreg_enable')){
-                      $uid=$this->quickAddUser($form_data[$this->table_name]['email']['value']);
-                      //unset($form_data[$this->table_name]['email']);			        	//var_dump($uid);
-                      if($uid==='error'){
-                      $rs = '<h1>'.Multilanguage::_('L_ERROR_ON_AUTOREGISTER').'</h1>';
-                      }elseif($uid===FALSE){
-                      $rs = '<h1>'.sprintf(Multilanguage::_('L_REGISTERED_EMAIL'),$form_data[$this->table_name]['email']['value']).'</h1>';
-                      }else{
-                      $form_data[$this->table_name]['user_id']['value']=$uid;
-                      $order_table = $this->add_data($form_data[$this->table_name]);
-                      if($order_table!==FALSE){
-                      $subject = $_SERVER['SERVER_NAME'].': '.Multilanguage::_('NEW_ORDER','system');
-                      $to = ($this->getConfigValue('add_notification_email')!='' ? $this->getConfigValue('add_notification_email') : $this->getConfigValue('order_email_acceptor'));
-                      $from = $this->getConfigValue('system_email');
-                      $this->sendFirmMail($to, $from, $subject, $order_table);
-                      $rs = '<h1>'.Multilanguage::_('L_MESSAGE_ORDER_ACCEPTED').'</h1>';
-                      $rs .= '<p>'.Multilanguage::_('L_MESSAGE_ON_MODERATION').'</p>';
-                      $rs .= '<form action="'.SITEBILL_MAIN_URL.'/"><input type="submit" value="OK" /></form>';
-                      $rs .= $order_table;
-                      }else{
-                      $rs = '<h1>Произошла ошибка при добавлении. Попробуйте еще раз.</h1>';
-                      }
-                      }
-                      }else{
-                      //unset($form_data[$this->table_name]['email']);
-                      $form_data[$this->table_name]['user_id']['value']=$this->getUnregisteredUserId();
-                      $order_table = $this->add_data($form_data[$this->table_name]);
-                      if($order_table!==FALSE){
-                      $subject = $_SERVER['SERVER_NAME'].': '.Multilanguage::_('NEW_ORDER','system');
-                      $to = ($this->getConfigValue('add_notification_email')!='' ? $this->getConfigValue('add_notification_email') : $this->getConfigValue('order_email_acceptor'));
-                      $from = $this->getConfigValue('system_email');
-                      $this->sendFirmMail($to, $from, $subject, $order_table);
-                      $rs = '<h1>'.Multilanguage::_('L_MESSAGE_ORDER_ACCEPTED').'</h1>';
-                      $rs .= '<p>'.Multilanguage::_('L_MESSAGE_ON_MODERATION').'</p>';
-                      $rs .= '<form action="'.SITEBILL_MAIN_URL.'/"><input type="submit" value="OK" /></form>';
-                      $rs .= $order_table;
-                      }else{
-                      $rs = '<h1>'.Multilanguage::_('L_ERROR_ON_ADD').'. '.Multilanguage::_('L_MESSAGE_TRY_AGAIN_LATER').'.</h1>';
-                      }
-                      }
-                      }
-                      break; */
-                }
-
-            default : {
-                    $rs .= $this->_defaultAction();
-                    //$rs .= $this->get_form($form_data[$this->table_name], 'new', 0, '', SITEBILL_MAIN_URL.'/add/');
-                }
+            default :
+            {
+                $rs .= $this->_defaultAction();
+            }
         }
         return $rs;
     }
 
-    protected function _defaultAction() {
+    protected function _defaultAction()
+    {
         $rs = '';
         $form_data = $this->data_model;
         $rs .= $this->get_form($form_data[$this->table_name], 'new', 0, Multilanguage::_('L_TEXT_SEND'), SITEBILL_MAIN_URL . '/add/');
         return $rs;
     }
 
-    protected function _new_doneAction() {
+    protected function _new_doneAction()
+    {
 
         $rs = '';
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
@@ -344,7 +275,6 @@ class User_Add extends Object_Manager {
                     $from = $this->getConfigValue('system_email');
 
 
-
                     $tpl = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/system/template/mails/add_advert_added.tpl';
                     global $smarty;
 
@@ -434,13 +364,14 @@ class User_Add extends Object_Manager {
      * @param array $form_data
      * @return boolean
      */
-    function check_data($form_data/* , &$error_fields=array() */) {
+    function check_data($form_data/* , &$error_fields=array() */)
+    {
         $check_status = parent::check_data($form_data);
         if (!$check_status) {
             return $check_status;
         }
         if ($this->getConfigValue('apps.akismet.enable')) {
-            require_once (SITEBILL_DOCUMENT_ROOT . '/apps/akismet/admin/admin.php');
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/akismet/admin/admin.php');
             $akismet_admin = new akismet_admin();
 
             if ($akismet_admin->akismet_check($form_data['text']['value'] . ' ' . $form_data['fio']['value'] . ' ' . $form_data['email']['value'] . ' ' . $form_data['phone']['value'])) {
@@ -451,7 +382,8 @@ class User_Add extends Object_Manager {
         return true;
     }
 
-    function checkUniquety($form_data) {
+    function checkUniquety($form_data)
+    {
         $unque_fields = trim($this->getConfigValue('apps.realty.uniq_params'));
 
         $fields = array();
@@ -475,9 +407,9 @@ class User_Add extends Object_Manager {
             }
         } elseif (isset($form_data['city_id']) && isset($form_data['street_id']) && isset($form_data['number'])) {
             $where[] = '`city_id`=?';
-            $where_val[] = (int) $form_data['city_id']['value'];
+            $where_val[] = (int)$form_data['city_id']['value'];
             $where[] = '`street_id`=?';
-            $where_val[] = (int) $form_data['street_id']['value'];
+            $where_val[] = (int)$form_data['street_id']['value'];
             $where[] = '`number`=?';
             $where_val[] = $form_data['number']['value'];
         } else {
@@ -498,7 +430,8 @@ class User_Add extends Object_Manager {
         return TRUE;
     }
 
-    function quickAddUser($email) {
+    function quickAddUser($email)
+    {
 
 
         $email = strip_tags($email);
@@ -515,7 +448,7 @@ class User_Add extends Object_Manager {
             $password = substr(md5(time()), 1, 6);
             $DBC = DBC::getInstance();
             $query = 'INSERT INTO ' . DB_PREFIX . '_user (login, password, email, active, fio, reg_date, group_id) VALUES (?,?,?,1,?,?,?)';
-            $stmt = $DBC->query($query, array($login, md5($password), $email, $fio, date('Y-m-d H:i:s', time()), (int) $this->getConfigValue('newuser_autoregistration_groupid')));
+            $stmt = $DBC->query($query, array($login, md5($password), $email, $fio, date('Y-m-d H:i:s', time()), (int)$this->getConfigValue('newuser_autoregistration_groupid')));
 
             if (!$stmt) {
                 return 'error';
@@ -560,17 +493,18 @@ class User_Add extends Object_Manager {
 
     /**
      * Get top menu
-     * @param void 
+     * @param void
      * @return string
      */
-    function getTopMenu() {
+    function getTopMenu()
+    {
         $rs = '';
         $this->template->assign('title', Multilanguage::_('PLEASE_PUT_ORDER', 'system'));
-        if('' != Multilanguage::_('PLEASE_PUT_ORDER_2','system')){
+        if ('' != Multilanguage::_('PLEASE_PUT_ORDER_2', 'system')) {
             //$rs .= '<h1>'.Multilanguage::_('PLEASE_PUT_ORDER_2','system').'</h1>';
         }
-        if(Multilanguage::is_set('LT_PUBLICADD_FORM_PRETEXT', '_template') && ''!=Multilanguage::_('LT_PUBLICADD_FORM_PRETEXT', '_template')){
-            $rs .= '<div class="publicadd_form_pretext">'.Multilanguage::_('LT_PUBLICADD_FORM_PRETEXT', '_template').'</div>';
+        if (Multilanguage::is_set('LT_PUBLICADD_FORM_PRETEXT', '_template') && '' != Multilanguage::_('LT_PUBLICADD_FORM_PRETEXT', '_template')) {
+            $rs .= '<div class="publicadd_form_pretext">' . Multilanguage::_('LT_PUBLICADD_FORM_PRETEXT', '_template') . '</div>';
         }
         return $rs;
     }
@@ -580,7 +514,8 @@ class User_Add extends Object_Manager {
      * @param array $form_data form data
      * @return boolean
      */
-    function add_data($form_data, $language_id = 0) {
+    function add_data($form_data, $language_id = 0)
+    {
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
@@ -663,7 +598,8 @@ class User_Add extends Object_Manager {
      * @param string $button_title
      * @return string
      */
-    function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
+    function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php')
+    {
 
         if (1 == $this->getConfigValue('divide_step_form')) {
             return $this->_get_form_step_divided($form_data, $do, $language_id, $button_title);
@@ -672,9 +608,8 @@ class User_Add extends Object_Manager {
         }
     }
 
-    function _get_form_step_divided($form_data = array(), $do = 'new', $language_id = 0, $button_title = '') {
-
-
+    function _get_form_step_divided($form_data = array(), $do = 'new', $language_id = 0, $button_title = '')
+    {
 
 
         $requesturi = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
@@ -682,7 +617,7 @@ class User_Add extends Object_Manager {
             preg_replace('/^' . trim(SITEBILL_MAIN_URL, '/') . '/', '', $requesturi);
         }
         if (preg_match('/step(\d+)$/', $requesturi, $matches)) {
-            $step = (int) $matches[1];
+            $step = (int)$matches[1];
         } else {
             $step = 1;
         }
@@ -710,7 +645,6 @@ class User_Add extends Object_Manager {
         $Sitebill_Registry->addFeedback('step', $step);
 
 
-
         if ($button_title == '') {
             $button_title = Multilanguage::_('L_TEXT_SEND');
         }
@@ -735,17 +669,20 @@ class User_Add extends Object_Manager {
         foreach ($steps_names as $stepn) {
 
             switch ($stepn['status']) {
-                case 'current' : {
-                        $rs .= '<div class="current"><a class="go_to_step" alt="' . $stepn['step'] . '" href="/add/step' . $stepn['step'] . '">' . $stepn['name'] . '</a></div>';
-                        break;
-                    }
-                case 'done' : {
-                        $rs .= '<div class="done"><a class="go_to_step" alt="' . $stepn['step'] . '" href="/add/step' . $stepn['step'] . '">' . $stepn['name'] . '</a></div>';
-                        break;
-                    }
-                default : {
-                        $rs .= '<div class="future">' . $stepn['name'] . '</div>';
-                    }
+                case 'current' :
+                {
+                    $rs .= '<div class="current"><a class="go_to_step" alt="' . $stepn['step'] . '" href="/add/step' . $stepn['step'] . '">' . $stepn['name'] . '</a></div>';
+                    break;
+                }
+                case 'done' :
+                {
+                    $rs .= '<div class="done"><a class="go_to_step" alt="' . $stepn['step'] . '" href="/add/step' . $stepn['step'] . '">' . $stepn['name'] . '</a></div>';
+                    break;
+                }
+                default :
+                {
+                    $rs .= '<div class="future">' . $stepn['name'] . '</div>';
+                }
             }
 
 
@@ -845,7 +782,8 @@ class User_Add extends Object_Manager {
         return $rs;
     }
 
-    function getSteps($form_data, $step) {
+    function getSteps($form_data, $step)
+    {
 
         $default_tab_name = $this->getConfigValue('default_tab_name');
         $tabs = array($default_tab_name);
@@ -884,7 +822,8 @@ class User_Add extends Object_Manager {
         return $tabs_array;
     }
 
-    function _get_form_standart($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
+    function _get_form_standart($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php')
+    {
         $_SESSION['allow_disable_root_structure_select'] = true;
         global $smarty;
         if ($button_title == '') {
@@ -932,8 +871,6 @@ class User_Add extends Object_Manager {
         }
         $el['private'][] = array('html' => '<input type="hidden" name="action" value="' . $this->action . '">');
         $el['private'][] = array('html' => '<input type="hidden" name="language_id" value="' . $language_id . '">');
-
-
 
 
         $el['form_header'] = $rs;
@@ -993,13 +930,14 @@ class User_Add extends Object_Manager {
             }
 
             if (defined('RUN_WITH3BOOTSTRAP') && RUN_WITH3BOOTSTRAP == 1) {
-                
+
             } else {
-                
+
             }
             $el['pre_controls'] = $rs;
 
-            $el['form_footer'] = /* $rs. */'</form>';
+            $el['form_footer'] = /* $rs. */
+                '</form>';
             $rs = '';
         } else {
             $el['form_footer'] = '</form>';
@@ -1010,7 +948,6 @@ class User_Add extends Object_Manager {
             $el['controls']['apply'] = array('html' => '<button id="apply_changes" class="btn btn-info">' . Multilanguage::_('L_TEXT_APPLY') . '</button>');
         }
         $el['controls']['submit'] = array('html' => '<button id="formsubmit" onClick="return SitebillCore.formsubmit(this);" name="submit" class="btn btn-primary">' . $button_title . '</button>');
-
 
 
         $smarty->assign('form_elements', $el);

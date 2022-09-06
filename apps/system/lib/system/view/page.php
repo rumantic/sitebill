@@ -14,7 +14,7 @@ class Common_Page extends SiteBill {
 	protected $grid;
 	
 	public function __construct(){
-		$this->SiteBill();
+		parent::__construct();
 	}
 	
 	/**

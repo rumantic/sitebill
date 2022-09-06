@@ -5,6 +5,7 @@
         "jenssegers/blade": "^1.4",
         "illuminate/database": "^5.8",
         "illuminate/routing": "^5.8",
-        "maximebf/debugbar": "^1.16"
+        "maximebf/debugbar": "^1.16",
+        "vonage/client": "^2.4"
     }
 }

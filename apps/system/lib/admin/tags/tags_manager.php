@@ -6,9 +6,9 @@
 class Tags_Manager extends SiteBill {
 
 	public function __construct(){
-		$this->SiteBill();
+		parent::__construct();
 	}
-	
+
 	public function prepareTags($tagsString){
 		$temp=array();
 		$tags=array();
@@ -29,7 +29,7 @@ class Tags_Manager extends SiteBill {
 					}
 				}
 			}
-			
+
 			$query="SELECT * FROM ".DB_PREFIX."_tag WHERE tag_name IN ('".implode('\',\'',$tags)."')";
 			$DBC=DBC::getInstance();
 			$stmt=$DBC->query($query);
@@ -42,7 +42,7 @@ class Tags_Manager extends SiteBill {
 		return $tags_id;
 		print_r($tags_id);
 	}
-	
+
 	public function connectTags($id,$tagsId,$mode='news',$primary_value='news'){
 		$table=DB_PREFIX.'_'.$mode.'_tag';
 		$field=$primary_value.'_id';
@@ -56,7 +56,7 @@ class Tags_Manager extends SiteBill {
 			}
 		}
 	}
-	
+
 	public function disconnectTags($id,$mode='news',$primary_value='news'){
 		$table=DB_PREFIX.'_'.$mode.'_tag';
 		$field=$primary_value.'_id';
@@ -64,7 +64,7 @@ class Tags_Manager extends SiteBill {
 		$DBC=DBC::getInstance();
 		$stmt=$DBC->query($query);
 	}
-	
+
 	private function addTag($tagName){
 		$query="INSERT INTO ".DB_PREFIX."_tag (tag_name) VALUES ('".$tagName."')";
 		$DBC=DBC::getInstance();
@@ -75,7 +75,7 @@ class Tags_Manager extends SiteBill {
 			return FALSE;
 		}
 	}
-	
+
 	private function getTagList(){
 		$tagsList=array();
 		$query="SELECT * FROM ".DB_PREFIX."_tag";
@@ -90,7 +90,7 @@ class Tags_Manager extends SiteBill {
 			return $tagList;
 		}
 	}
-	
+
 	public function getRandomTags($count=2){
 		$tagList=array();
 		$query='SELECT * FROM '.DB_PREFIX.'_tag ORDER BY RAND() LIMIT 0, '.$count;
@@ -103,7 +103,7 @@ class Tags_Manager extends SiteBill {
 		}
         return $tagList;
 	}
-	
+
 	public function getTagGroupMinPrice($tagList){
 		$ret=0;
 		if(count($tagList)>0){
@@ -120,7 +120,7 @@ class Tags_Manager extends SiteBill {
 		}
 		return $ret;
 	}
-	
+
 	public function getNewsTags($id){
 		$tagList=array();
 		$query = "SELECT ".DB_PREFIX."_tag.tag_name, ".DB_PREFIX."_tag.tag_id FROM ".DB_PREFIX."_tag LEFT JOIN ".DB_PREFIX."_news_tag ON ".DB_PREFIX."_news_tag.tag_id=".DB_PREFIX."_tag.tag_id WHERE ".DB_PREFIX."_news_tag.news_id=".$id;
@@ -133,7 +133,7 @@ class Tags_Manager extends SiteBill {
 		}
         return $tagList;
 	}
-	
+
 	public function getTagName($id){
 		$ret='';
 		$query='SELECT tag_name FROM '.DB_PREFIX.'_tag WHERE tag_id='.$id;

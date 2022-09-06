@@ -15,6 +15,11 @@ spl_autoload_register(function ($className) {
         include_once $file_name;
     } elseif ( @file_exists(strtolower($file_name)) ) {
         include_once strtolower($file_name);
+    } elseif ( preg_match("/^sitebill/", $className) ) {
+        $className = str_replace('sitebill\\apps\\', '', $className);
+        $file_name = $document_root . '/apps/' . $className . '.php';
+        include_once $file_name;
+        return;
     } else {
         $file_name = $document_root . '/apps/' . $className . '.class.php';
         if ( @file_exists($file_name) ) {
@@ -32,5 +37,10 @@ spl_autoload_register(function ($className) {
     }
 
 });
+if ( defined('BOOTSTRAP_LARAVEL') and BOOTSTRAP_LARAVEL ) {
+    $l_root = str_replace('/packages/sitebill', '', SITEBILL_DOCUMENT_ROOT);
+    require_once $l_root.'/vendor/autoload.php';
+} else {
+    require_once SITEBILL_DOCUMENT_ROOT . '/apps/third/vendor/autoload.php';
+}
 
-require_once SITEBILL_DOCUMENT_ROOT . '/apps/third/vendor/autoload.php';

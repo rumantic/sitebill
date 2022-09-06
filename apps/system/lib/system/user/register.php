@@ -8,7 +8,7 @@ class Register extends Login {
      * Constructor
      */
     function Register () {
-        $this->SiteBill();
+        parent::__construct();
     }
 
     /**

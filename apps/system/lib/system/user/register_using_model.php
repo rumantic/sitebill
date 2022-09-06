@@ -490,6 +490,18 @@ class Register_Using_Model extends User_Object_Manager
         return $rs;
     }
 
+    public function newuser_registration_shared_groupid_array () {
+        $shared_groups = $this->getConfigValue('newuser_registration_shared_groupid');
+        $shared_groups = preg_replace('/[^\d,]/', '', $shared_groups);
+        if ( $shared_groups != '' ) {
+            $groups = explode(',', $shared_groups);
+            if ( is_array($groups) and count($groups) > 0 ) {
+                return $groups;
+            }
+        }
+        return false;
+    }
+
     protected function send_registration_notice($form_data)
     {
         $to = $form_data['email']['value'];
@@ -543,7 +555,7 @@ class Register_Using_Model extends User_Object_Manager
         $this->sendFirmMail($to, $from, $subject, $message);
     }
 
-    protected function notify_admin_about_register($new_user_id)
+    public function notify_admin_about_register($new_user_id)
     {
         $DBC = DBC::getInstance();
         $q = "SELECT * FROM " . DB_PREFIX . "_user WHERE user_id=? LIMIT 1";
@@ -774,6 +786,7 @@ class Register_Using_Model extends User_Object_Manager
         unset($form_data[$this->table_name]['active']);
 
         $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
+        $form_data[$this->table_name]['login']['value'] = trim($form_data[$this->table_name]['login']['value']);
 
 
         if (1 == intval($this->getConfigValue('email_as_login')) && isset($form_data[$this->table_name]['login']) && $form_data[$this->table_name]['login']['value'] == '') {
@@ -1147,6 +1160,11 @@ class Register_Using_Model extends User_Object_Manager
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
 
+        if (!$data_model->check_data($form_data)) {
+            $this->riseError($data_model->GetErrorMessage());
+            return false;
+        }
+
         if (isset($form_data['email']) && $form_data['email']['value'] != '') {
             $email = $form_data['email']['value'];
             if (strlen($email) < 5) {
@@ -1203,12 +1221,6 @@ class Register_Using_Model extends User_Object_Manager
                 $this->riseError(Multilanguage::_('REG_LOGIN_USED', 'system'));
                 return false;
             }
-        }
-
-
-        if (!$data_model->check_data($form_data)) {
-            $this->riseError($data_model->GetErrorMessage());
-            return false;
         }
 
         if ($form_data['newpass']['value'] != '') {

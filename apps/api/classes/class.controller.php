@@ -36,7 +36,7 @@ class API_Controller extends API_Common {
         ) {
             require_once (SITEBILL_DOCUMENT_ROOT . '/apps/api/classes/class.oauth.php');
             $oauth = new API_oauth();
-            $result = $oauth->_check_session_key();
+            $result = @$oauth->_check_session_key();
             if ($oauth->GetErrorMessage() == 'check_session_key_failed') {
                 echo $result;
                 exit;

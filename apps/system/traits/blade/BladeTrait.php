@@ -38,6 +38,9 @@ trait BladeTrait
     }
 
     function view ($template, $params = array()): string {
+        if ( defined('BOOTSTRAP_LARAVEL') and BOOTSTRAP_LARAVEL ) {
+            return view($template, $params);
+        }
         $this->factory();
         try {
             return $this->blade->render($template, $params);

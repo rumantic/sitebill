@@ -14,7 +14,7 @@ class excelfree_admin extends Object_Manager {
      * Constructor
      */
     function __construct($realty_type = false) {
-        $this->SiteBill();
+        parent::__construct();
         Multilanguage::appendAppDictionary('excelfree');
 
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');

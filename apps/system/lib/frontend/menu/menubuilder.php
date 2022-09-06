@@ -1,7 +1,7 @@
 <?php
 class Menu_Builder extends Structure_Manager {
 	function __construct() {
-		$this->SiteBill();
+		parent::__construct();
 	}
 	
 	function get_menu () {

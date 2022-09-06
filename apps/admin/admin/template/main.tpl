@@ -6,8 +6,8 @@
 {else}
     <meta http-equiv="Content-Type" content="text/html; charset=windows-1251" />
 {/if}
-     <title>CMS Sitebill</title>
-    <!-- <link rel="stylesheet" href="{$MAIN_URL}/css/admin.css"> --> 
+     <title>{if $smarty.const.BRANDING==1}{getConfig key='site_title'}{else}CMS Sitebill{/if}</title>
+    <!-- <link rel="stylesheet" href="{$MAIN_URL}/css/admin.css"> -->
    <link rel="stylesheet" href="{$MAIN_URL}/css/system.css">
     <link rel="stylesheet" href="{$MAIN_URL}/css/menu.css">
     <!-- <link rel="stylesheet" href="{$MAIN_URL}/css/form_decorator.css"> -->
@@ -16,7 +16,7 @@
     <!-- <script src="{$MAIN_URL}/js/jquery.js"></script> -->
     <script type="text/javascript" src="{$MAIN_URL}/apps/system/js/jquery/jquery.js"></script>
     <script src="{$MAIN_URL}/apps/system/js/bootstrap/js/bootstrap.min.js"></script>
-    
+
 	<script src="{$MAIN_URL}/apps/system/js/bootstrap-editable/js/bootstrap-editable.min.js"></script>
 	<link rel="stylesheet" href="{$MAIN_URL}/apps/system/js/bootstrap-editable/css/bootstrap-editable.css" />
 	<link href="http://www.sitebill.ru/css/nano.css" rel="stylesheet" type="text/css" />
@@ -34,11 +34,11 @@
     <script type="text/javascript" src="{$MAIN_URL}/apps/system/js/mycombobox.js"></script>
     <link rel="stylesheet" href="{$MAIN_URL}/apps/system/css/jquery-ui.custom.css" />
     <link rel="stylesheet" href="{$MAIN_URL}/apps/system/css/mycombobox.css" />
-          
+
     <!-- <script type="text/javascript" src="{$MAIN_URL}/js/jquery.ui.datepicker.js"></script> -->
     <script type="text/javascript" src="http://api-maps.yandex.ru/2.0-stable/?load=package.standard&lang=ru-RU"></script>
 	<script type="text/javascript" src="https://maps.google.com/maps/api/js?sensor=true"></script>
-    
+
 	<script>
 		var estate_folder='{$estate_folder}';
 		</script>
@@ -47,24 +47,24 @@
 <div class="container-fluid">
 <div class="row-fluid">
     <div class="span12">
-        <div class="top_text"><a href="?action=logout">{$L_LOGOUT_BUTTON}</a></div> 
+        <div class="top_text"><a href="?action=logout">{$L_LOGOUT_BUTTON}</a></div>
         <div class="top_image"><a href="?action=logout"><img src="{$MAIN_URL}/img/logout.png" border="0"></a></div>
         <div class="top_help">
             <div class="fl"><a href="{$MAIN_URL}/admin/?_lang=ru"><img src="{$MAIN_URL}/apps/admin/admin/template/img/flag_ru.gif" alt="Русский" title="Русский"/></a>
-            <a href="{$MAIN_URL}/admin/?_lang=en"><img src="{$MAIN_URL}/apps/admin/admin/template/img/flag_en.png" alt="Английский" title="Английский"/></a></div>        
+            <a href="{$MAIN_URL}/admin/?_lang=en"><img src="{$MAIN_URL}/apps/admin/admin/template/img/flag_en.png" alt="Английский" title="Английский"/></a></div>
             <div class="fl"><a href="http://www.sitebill.ru/doc.html" target="_blank"><img src="{$MAIN_URL}/apps/admin/admin/template/img/help.png" border="0"></a></div>
         </div>
-    
+
     </div>
 </div>
 
 <div class="row-fluid">
     <div class="span12">
 
-    <div class="navbar">    
+    <div class="navbar">
     <div class="navbar-inner">
         <a class="brand" href="{$estate_folder}/admin/">CMS Sitebill</a>
-        
+
     	<ul class="nav nav-pills">
     	{assign var=a value=1}
     	{foreach from=$admin_menua item=ama}
@@ -82,11 +82,11 @@
     	{/foreach}
 		</ul>
 
-		
+
 	</div>
-	</div>	  
 	</div>
-</div>   
+	</div>
+</div>
 <div class="row-fluid">
 <div class="span2">
 <ul class="nav nav-tabs nav-stacked">

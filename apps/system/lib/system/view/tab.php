@@ -4,17 +4,17 @@
  * @author Abushyk Kostyantyn <abushyk@gmail.com> http://www.sitebill.ru
  */
 class Common_Tab extends SiteBill {
-	
+
 	/**
      * Tabs collector
      * @var array
      */
 	private $_tabs=array();
-	
+
 	public function __construct(){
-		$this->SiteBill();
+		parent::__construct();
 	}
-	
+
 	/**
      * Add tab to Tab Collector
      * @param array $params settings hash-array (title|url|oth params)
@@ -25,25 +25,25 @@ class Common_Tab extends SiteBill {
 			$this->_tabs[]=array('title'=>$params['title'],'url'=>$params['url'],'current'=>(isset($params['current'])? TRUE : FALSE ));
 		}
 	}
-	
+
 	/**
      * Add styles to tab item
      * Add containers to each tab here
      * @param string $data data to adding styles
      * @param array $params any special parameters
      * @return string
-     */	
+     */
 	private function addStyles($data,$params=array()){
 		return $data;
 	}
-	
+
 	/**
      * Return tabs string in div-block with elements divided by |
      * @return string
      */
 	public function getTabs(){
 	    global $smarty;
-	    
+
 		if(count($this->_tabs)>0){
 			$ret='';
 			foreach($this->_tabs as $t){
@@ -52,7 +52,7 @@ class Common_Tab extends SiteBill {
 				}else{
 					$ret[]=$this->addStyles('<a href="'.$t['url'].'">'.$t['title'].'</a>');
 				}
-				
+
 			}
 			$smarty->assign('tabs', $this->_tabs);
 			$rs = $smarty->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template/tabs.tpl');

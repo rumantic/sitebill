@@ -7,7 +7,7 @@ class dropzone_model_adapter extends Data_Manager_Export
 
     function __construct($table_name, $action, $primary_key, $data_model)
     {
-        $this->SiteBill();
+        parent::__construct();
         $this->user_mode = $user_mode;
         $this->table_name = $table_name;
         $this->action = $action;
@@ -155,6 +155,7 @@ class dropzone_model_adapter extends Data_Manager_Export
         $result = array();
         if ( is_array($items) and count($items) > 0 ) {
             foreach ( $items as $string_value ) {
+                $string_value = trim($string_value);
                 $result[] = $this->get_value_id_by_name(
                     $model_item['primary_key_table'],
                     $model_item['value_name'],

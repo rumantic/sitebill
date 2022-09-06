@@ -28,6 +28,12 @@ class frontend_client_manager extends client_admin {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/comment/site/site.php';
             $this->comment_site = new comment_site();
         }
+        if ( $this->data_model[$this->table_name]['user_id'] ) {
+            $this->data_model[$this->table_name]['user_id']['type'] = 'hidden';
+            $this->data_model[$this->table_name]['user_id']['name'] = 'user_id';
+            $this->data_model[$this->table_name]['user_id']['value'] = $this->getSessionUserId();
+        }
+
 
     }
 

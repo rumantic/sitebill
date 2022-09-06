@@ -5,16 +5,7 @@
  */
 
 class SiteBill_Krascap_Admin extends SiteBill_Krascap {
-    /**
-     * Constructor
-     */
-    function SiteBill_Krascap_Admin() {
-        global $sitebill_document_root;
-        
-        $this->SiteBill();
-        //$this->template->setTemplateFile(SITEBILL_DOCUMENT_ROOT.'/template/frontend/estate/admin.html');
-    }
-    
+
     /**
      * Main
      * @param void
@@ -34,7 +25,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
                     }
                 }
             break;
-            
+
             default:
                 $rs = $this->getLoadForm();
             break;
@@ -45,7 +36,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         $rs = $this->template->toHTML();
         return $rs;*/
     }
-    
+
     /**
      * Clear items
      * @param int $topic_id topic id
@@ -56,7 +47,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         $DBC=DBC::getInstance();
     	$stmt=$DBC->query($query);
     }*/
-    
+
     /**
      * Import data
      * @param array $csv_strings csv string
@@ -97,7 +88,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         $rs .= Multilanguage::_('L_MESSAGE_RECORDS_SKIPED_BY_ERROR').' '.$error_number.'<br>';
         return $rs;
     }*/
-    
+
     /**
      * Get disrtict ID by name
      * @param string $name name
@@ -115,7 +106,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
 		}
 		return false;
     }*/
-    
+
     /**
      * Get type by name for rent
      * @param string $name name
@@ -123,22 +114,22 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
      */
     /*function getTypeByNameForRent ( $name ) {
         $rent_type_hash = array();
-        $rent_type_hash['гостинка'] = 12; 
-        $rent_type_hash['комната'] = 10; 
-        $rent_type_hash['секционка'] = 11; 
-        $rent_type_hash['1'] = 13; // 1-комн. квартира 
-        $rent_type_hash['2'] = 14; // 2-комн. квартира 
-        $rent_type_hash['3'] = 15; // 3-комн. квартира 
-        $rent_type_hash['4'] = 16; // 4-комн. квартира 
+        $rent_type_hash['гостинка'] = 12;
+        $rent_type_hash['комната'] = 10;
+        $rent_type_hash['секционка'] = 11;
+        $rent_type_hash['1'] = 13; // 1-комн. квартира
+        $rent_type_hash['2'] = 14; // 2-комн. квартира
+        $rent_type_hash['3'] = 15; // 3-комн. квартира
+        $rent_type_hash['4'] = 16; // 4-комн. квартира
         $rent_type_hash['5'] = 16; // 5-комн. квартира
 
         if ( $rent_type_hash[$name] == '' ) {
-            return $rent_type_hash['1']; 
+            return $rent_type_hash['1'];
         } else {
-            return $rent_type_hash[$name]; 
+            return $rent_type_hash[$name];
         }
     }*/
-    
+
     /**
      * Get rent room count
      * @param string $name name
@@ -146,22 +137,22 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
      */
     /*function getRentRoomCount ( $name ) {
         $rent_room_count_hash = array();
-        $rent_room_count_hash['гостинка'] = 0; 
-        $rent_room_count_hash['комната'] = 0; 
-        $rent_room_count_hash['секционка'] = 0; 
-        $rent_room_count_hash['1'] = 1; // 1-комн. квартира 
-        $rent_room_count_hash['2'] = 2; // 2-комн. квартира 
-        $rent_room_count_hash['3'] = 3; // 3-комн. квартира 
-        $rent_room_count_hash['4'] = 4; // 4-комн. квартира 
+        $rent_room_count_hash['гостинка'] = 0;
+        $rent_room_count_hash['комната'] = 0;
+        $rent_room_count_hash['секционка'] = 0;
+        $rent_room_count_hash['1'] = 1; // 1-комн. квартира
+        $rent_room_count_hash['2'] = 2; // 2-комн. квартира
+        $rent_room_count_hash['3'] = 3; // 3-комн. квартира
+        $rent_room_count_hash['4'] = 4; // 4-комн. квартира
         $rent_room_count_hash['5'] = 5; // 5-комн. квартира
 
         if ( $rent_room_count_hash[$name] == '' ) {
-            return $rent_room_count_hash['1']; 
+            return $rent_room_count_hash['1'];
         } else {
-            return $rent_room_count_hash[$name]; 
+            return $rent_room_count_hash[$name];
         }
     }*/
-    
+
     /**
      * Add rent record
      * @param array $items items
@@ -180,7 +171,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         //echo '<pre>';
         //print_r($items);
         //echo '</pre>';
-        
+
         $type_id = $this->getTypeByNameForRent($items[0]);
         //$type = $this->getRequestValue('type_id');
         $topic_id = 1;
@@ -202,18 +193,18 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         $active = 1;
         $floor = $items[5];
         $floor_count = $items[6];
-        
+
         //$balcony = $items[8];
         $walls = $items[4];
         $square_all = $items[8];
         $square_live = $items[9];
         $square_kitchen = $items[10];
         $bathroom = $items[11];
-        
-        
+
+
         $query = "
-            insert 
-                into re_data 
+            insert
+                into re_data
                         (`type_id`, `topic_id`, `sub_id1`,  `sub_id2`,  `district_id`, `price`, `text`,         `contact`,  `agent_tel`,  `room_count`,  `street`, `elite`, `session_id`, `active`, `date_added`, `hot`, `floor`,  `floor_count`,  `balcony`,  `square_all`,  `square_live`,  `square_kitchen`,  `bathroom`,  `walls`)
                 values  ($type_id,  $topic_id,  $topic_id1, $topic_id2, $distr,        $price, '$description', '$contact', '$agent_tel','$room_count', '$street', $elite, '$sessid',     $active,   now(),       $hot, '$floor', '$floor_count', '$balcony', '$square_all', '$square_live', '$square_kitchen', '$bathroom', '$walls')
             ";
@@ -221,7 +212,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
     	$stmt=$DBC->query($query);
     	return true;
     }*/
-    
+
     /**
      * Check rent format
      * @param array $items items
@@ -231,7 +222,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         //echo '<pre>';
         //print_r($items);
         //echo '</pre>';
-        
+
         if ( $items[0] != 'Комн' ) {
             return false;
         }
@@ -282,7 +273,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         }
         return true;
     }*/
-    
+
     /**
      * Check sales format
      * @param array $items items
@@ -355,7 +346,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         }
         return true;
     }*/
-    
+
     /**
      * Get type by name
      * @param string $name name
@@ -380,7 +371,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
             return $type_hash[$name];
         }
     }*/
-    
+
     /**
      * Get type_id by room count
      * @param int $topic_id topic ID
@@ -399,7 +390,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
 		}
         return false;
     }*/
-    
+
     /**
      * Add record
      * @param array $items items
@@ -418,7 +409,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         //echo '<pre>';
         //print_r($items);
         //echo '</pre>';
-        
+
         //$type = $this->getTypeByName($items[7]);
         //$type = $this->getRequestValue('type_id');
         $topic_id = 2;
@@ -446,14 +437,14 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         $square_live = $items[10];
         $square_kitchen = $items[11];
         $bathroom = $items[12];
-        
+
         $elite = 0;
         $hot = 0;
         $sessid = '';
         $active = 1;
         $query = "
-            insert 
-                into re_data 
+            insert
+                into re_data
                         (`type_id`, `topic_id`, `sub_id1`, `sub_id2`,  `district_id`, `price`, `text`,         `contact`,  `agent_tel`, `room_count`,  `street`, `elite`, `session_id`, `active`, `date_added`, `hot`, `walls`,  `floor`,  `floor_count`,  `balcony`,  `square_all`,  `square_live`,  `square_kitchen`,  `bathroom`)
                 values  ($type_id,  $topic_id,  $topic_id1, $topic_id2, $distr,       $price, '$description', '$contact', '$agent_tel', '$room_count', '$street', $elite, '$sessid',     $active,   now(),       $hot, '$walls', '$floor', '$floor_count', '$balcony', '$square_all', '$square_live', '$square_kitchen', '$bathroom')
             ";
@@ -461,7 +452,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
 		$stmt=$DBC->query($query);
 		return true;
     }*/
-    
+
     //-----------------------------------------------------------------------------
     /*function gramm_correct ($txt) {
         $txt = preg_replace("/([\w]+)([\s]*)([,.!:)]+)/", "\$1\$3 ", $txt);
@@ -472,7 +463,7 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
 
     //-----------------------------------------------------------------------------
     /*function add_info($active = 1) {
-        global $topic_id, $topic_id1, $topic_id2, $jump_page;   
+        global $topic_id, $topic_id1, $topic_id2, $jump_page;
 
         $id = $_REQUEST['id'];
         $room_count = (int)($_REQUEST['room_count']);
@@ -501,8 +492,8 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         if ($id <= 0)
         {
             $query = "
-                insert 
-                    into re_data 
+                insert
+                    into re_data
                     (`type_id`, `topic_id`, `sub_id1`, `sub_id2`, `district_id`, `price`, `text`, `contact`, `room_count`, `street`, `elite`, `session_id`, `active`, `date_added`, `hot`)
                     values  ($type, $topic_id, $topic_id1, $topic_id2, $distr, $price, '$description', '$contact', '$room_count', '$street', $elite, '$sessid', $active, '$date_added', $hot)
             ";
@@ -510,18 +501,18 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         else
         {
             $query = "
-                update 
-                    re_data 
+                update
+                    re_data
                     set
                         `type_id` = $type,
                         `topic_id` = $topic_id,
                         `sub_id1` = $topic_id1,
                         `sub_id2` = $topic_id2,
-                        `district_id` = '$distr', 
-                        `price` = $price, 
-                        `street` = '$street', 
-                        `elite` = $elite, 
-                        `text` = '$description', 
+                        `district_id` = '$distr',
+                        `price` = $price,
+                        `street` = '$street',
+                        `elite` = $elite,
+                        `text` = '$description',
                         `contact` = '$contact',
                         `room_count` =  '$room_count',
                         `active` = $active,
@@ -535,9 +526,9 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
             $id = $_REQUEST['id'] = mysql_insert_id();
         }
     }*/
-    
-    
-    
+
+
+
     /**
      * Check data
      * @param void
@@ -550,56 +541,56 @@ class SiteBill_Krascap_Admin extends SiteBill_Krascap {
         }
         $content = file_get_contents($_FILES['csv']['tmp_name']);
         $this->csv_strings = explode("\n", $content);
-        
+
         if ( !is_array($this->csv_strings) ) {
             $this->riseError(Multilanguage::_('L_ERROR_BAD_FILE_FORMAT'));
             return false;
         }
-        
+
         return $this->csv_strings;
     }*/
-    
+
     /**
      * Get load form
      * @param void
      * @return string
      */
     /*function getLoadForm () {
-        
+
         $rs .= '<form method="post" action="index.php" name="rentform" enctype="multipart/form-data">';
         $rs .= '<table border="0">';
-        
+
         $rs .= '<tr>';
         $rs .= '<td colspan="2" style="text-align: center;"><b>'.sprintf(Multilanguage::_('L_NEED_REQUIERD_FIELDS').'<span class="error">*</span>').'</b></td>';
         $rs .= '</tr>';
-        
+
         if ( $this->GetError() ) {
             $rs .= '<tr>';
             $rs .= '<td></td>';
             $rs .= '<td><span class="error">'.$this->GetError().'</span></td>';
             $rs .= '</tr>';
         }
-        
+
         $rs .= '<tr>';
         $rs .= '<td class="left_column">'.Multilanguage::_('CSV_FORMAT_FILE','system').'<span class="error">*</span>:</td>';
         $rs .= '<td><input type="file" name="csv"></td>';
         $rs .= '</tr>';
-        
+
         $rs .= '<tr>';
         $rs .= '<td class="left_column">'.Multilanguage::_('DELETE_1','system').':</td>';
         $rs .= '<td><input type="checkbox" name="clear" value="yes"></td>';
         $rs .= '</tr>';
-        
+
         $rs .= '<tr>';
         $rs .= '<td></td>';
         $rs .= '<input type="hidden" name="do" value="load_done">';
         $rs .= '<input type="hidden" name="topic_id" value="'.$this->getRequestValue('topic_id').'">';
-        
+
         $rs .= '<td><input type="submit" value="'.Multilanguage::_('L_TEXT_LOAD').'"></td>';
         $rs .= '</tr>';
         $rs .= '</table>';
         $rs .= '</form>';
-        
+
         return $rs;
     }*/
 }

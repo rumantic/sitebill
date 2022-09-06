@@ -1,13 +1,6 @@
 <?php
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/sitebill_krascap_admin.php');
 class SiteBill_Rent_Editor extends SiteBill_Krascap_Admin {
-    /**
-     * Constructor
-     */
-    function SiteBill_Rent_Editor() {
-        $this->SiteBill_Krascap_Admin();
-
-    }
 
     /**
      * Main

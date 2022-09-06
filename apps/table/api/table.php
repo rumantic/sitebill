@@ -4,6 +4,7 @@
 namespace table\api;
 
 
+use api\aliases\API_common_alias;
 use system\lib\system\apps\traits\ContextTrait;
 use api\traits\DirectDbTraits;
 
@@ -83,16 +84,37 @@ class table extends \API_Common
         return $this->json_string($response->get());
     }
 
-    function _get_columns_list () {
-        $params = $this->request()->get('params');
-        $tables_list = $this->table_admin->getOnlyTableFields($params['table_name']);
+    function get_columns_array ($table_name) {
+        $api_common = new API_common_alias();
+
+        $model_object = $api_common->init_custom_model_object($table_name);
+        $tables_list = $this->table_admin->getOnlyTableFields($table_name);
         if ( is_array($tables_list) ) {
-            foreach ( $tables_list as $key => $value ) {
+            foreach ($tables_list as $key => $value) {
+                if ($model_object and $model_object->data_model[$table_name][$key]) {
+                    $title = $model_object->data_model[$table_name][$key]['title'];
+                } else {
+                    $title = '';
+                }
+
                 $result[] = array(
                     'id' => $key,
-                    'value' => $value
+                    'value' => $value,
+                    'title' => $title
                 );
             }
+            return $result;
+        }
+        return false;
+    }
+
+    function _get_columns_list () {
+        $params = $this->request()->get('params');
+        $table_name = $params['table_name'];
+
+        $result = $this->get_columns_array($table_name);
+
+        if ( $result ) {
             $response = new \API_Response('success', $this->request()->get('params'), $result);
         } else {
             $response = new \API_Response('error', 'tables list load failed', null);

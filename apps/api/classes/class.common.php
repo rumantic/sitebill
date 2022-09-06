@@ -20,10 +20,30 @@ class API_Common extends SiteBill {
     private $check_permission_mode = false;
 
     /**
+     * @var \api\entities\messages
+     */
+    private $messages_object;
+
+    /**
+     * @var \api\entities\messages_client_report
+     */
+    private $messages_client_report;
+
+    /**
+     * @var \api\entities\messages_data_report
+     */
+    private $messages_data_report;
+
+    /**
+     * @var deal_admin
+     */
+    private $deal_object;
+
+    /**
      * Constructor
      */
     function __construct() {
-        $this->Sitebill();
+        parent::__construct();
         $this->request = new API_Request($this->request());
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/login.php');
         $Login = new Login();
@@ -69,7 +89,7 @@ class API_Common extends SiteBill {
             $action = '_default';
         }
 
-        $rs .= $this->$action();
+        $rs = $this->$action();
         return $rs;
     }
 
@@ -270,6 +290,60 @@ class API_Common extends SiteBill {
 
             case 'files_queue':
                 return new \api\entities\files_queue();
+                break;
+
+            case 'messages':
+                if ( !$this->messages_object ) {
+                    $this->messages_object = new \api\entities\messages();
+                }
+                return $this->messages_object;
+                break;
+
+            case 'messages_client_report':
+                if ( !$this->messages_client_report ) {
+                    $this->messages_client_report = new \api\entities\messages_client_report();
+                }
+                return $this->messages_client_report;
+                break;
+
+            case 'messages_data_report':
+                if ( !$this->messages_data_report ) {
+                    $this->messages_data_report = new \api\entities\messages_data_report();
+                }
+                return $this->messages_data_report;
+                break;
+
+            case 'messages_summary_report':
+                if ( !$this->messages_summary_report ) {
+                    $this->messages_summary_report = new \api\entities\messages_summary_report();
+                }
+                return $this->messages_summary_report;
+                break;
+
+            case 'agency':
+                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/agency/admin/admin.php');
+                return new agency_admin();
+                break;
+
+            case 'fake_config':
+                return new \api\entities\fake_config();
+                break;
+
+            case 'schedule_tour':
+                return new \api\entities\schedule_tour();
+                break;
+
+            case 'view_order':
+                return new \api\entities\view_order();
+                break;
+
+            case 'deal':
+                if ( !$this->deal_object ) {
+                    require_once(SITEBILL_DOCUMENT_ROOT . '/apps/deal/admin/admin.php');
+                    $this->deal_object = new deal_admin();
+                }
+
+                return $this->deal_object;
                 break;
 
         }

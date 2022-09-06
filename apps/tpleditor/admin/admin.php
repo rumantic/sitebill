@@ -14,7 +14,7 @@ class tpleditor_admin extends Object_Manager
 
     function __construct($realty_type = false)
     {
-        $this->SiteBill();
+        parent::__construct();
         Multilanguage::appendAppDictionary('tpleditor');
         $this->current_theme = $this->getConfigValue('theme');
         $this->action = 'tpleditor';
@@ -68,9 +68,6 @@ class tpleditor_admin extends Object_Manager
                     if (!in_array($file, $this->filelist)) {
                         $f = fopen($this->path . $file, 'w');
                         $content = $this->request()->get('content');
-                        if (get_magic_quotes_gpc()) {
-                            $content = stripslashes($content);
-                        }
                         fwrite($f, $content);
                         fclose($f);
                     }
@@ -90,9 +87,6 @@ class tpleditor_admin extends Object_Manager
                         }
                         //$f=fopen($this->path.$file,'w');
                         $content = $this->request()->get('content');
-                        if (get_magic_quotes_gpc()) {
-                            $content = stripslashes($content);
-                        }
                         fwrite($f, $content);
                         fclose($f);
                     }

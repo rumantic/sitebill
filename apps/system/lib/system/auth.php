@@ -1,17 +1,17 @@
 <?php
 /**
- * SiteBill auth class 
+ * SiteBill auth class
  * @author Kondin Dmitriy <kondin@etown.ru>
  *
- */ 
+ */
 class Sitebill_Auth extends SiteBill {
     /**
      * Constructor
      */
     function Sitebill_Auth() {
-        $this->SiteBill();
+        parent::__construct();
     }
-    
+
     /**
      * Main
      */
@@ -26,7 +26,7 @@ class Sitebill_Auth extends SiteBill {
         }
         return true;
     }
-    
+
     /**
      * Check auth
      * @param string $login login
@@ -35,7 +35,7 @@ class Sitebill_Auth extends SiteBill {
      */
     function checkAuth ( $login, $password ) {
         $password = md5($password);
-        
+
         $sql = "SELECT user_id FROM ".DB_PREFIX."_user WHERE login=? and password=? and group_id = ?";
         $DBC=DBC::getInstance();
         $stmt=$DBC->query($sql, array($login, $password, $this->getGroupID('admin')));
@@ -47,7 +47,7 @@ class Sitebill_Auth extends SiteBill {
         }
         return false;
     }
-    
+
     /**
      * Get group ID
      * @param string
@@ -56,7 +56,7 @@ class Sitebill_Auth extends SiteBill {
     function getGroupID ( $group_name ) {
         return 1;
     }
-    
+
     /**
      * Get auth form
      * @param
@@ -98,7 +98,7 @@ class Sitebill_Auth extends SiteBill {
         ';
         return $rs;
     }
-    
-    
+
+
 }
 ?>

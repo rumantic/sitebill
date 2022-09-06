@@ -10,11 +10,11 @@ class Logout extends SiteBill {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
     }
 
     /**
-     * Main 
+     * Main
      */
     function main() {
         $this->clear_session_and_cookies();
@@ -25,8 +25,8 @@ class Logout extends SiteBill {
     }
 
     function clear_session_and_cookies() {
-        setcookie('logged_user_id', '', time() - 60 * 60 * 24 * 5, '/', self::$_cookiedomain);
-        setcookie('logged_user_token', '', time() - 60 * 60 * 24 * 5, '/', self::$_cookiedomain);
+        setcookie('logged_user_id', '', time() - $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+        setcookie('logged_user_token', '', time() - $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
         $_SESSION['key'] = '';
         $this->oauth_logout($_SESSION['user_id']);
         $this->delete_session_key($_SESSION['session_key']);

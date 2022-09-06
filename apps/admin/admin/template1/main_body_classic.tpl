@@ -15,10 +15,16 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <div class="brand">
-                <div class="dragon"></div>
-                <div class="ttl">CMS Sitebill</div>
-            </div>
+            {if $smarty.const.BRANDING==1}
+                <div class="brand mybrand">
+                    <img src="/template/frontend/local/mysite/resources/images/logo.png">
+                </div>
+            {else}
+                <div class="brand">
+                    <div class="dragon"></div>
+                    <div class="ttl">CMS Sitebill</div>
+                </div>
+            {/if}
 
             {assign var="local_top" value=$SITEBILL_DOCUMENT_ROOT|cat:'/template/frontend/local/admin/data/top_nav_notify.tpl'}
             {if file_exists($local_top)}
@@ -69,8 +75,11 @@
                 {/if}
             {/if}
             <div class="pull-right">
+
+                {assign var=admin3_enable value="{getConfig key='apps.admin3.enable'}"}
                 {assign var=admin3_alias value="{getConfig key='apps.admin3.alias'}"}
-                <a href="{$MAIN_URL}/{if $admin3_alias}{$admin3_alias}{else}apps/admin{/if}/" target="_blank" class="btn btn-small btn-warning"><i class="icon-dashboard"></i> Новая админка</a>
+                <a href="{$MAIN_URL}/{if $admin3_alias and $admin3_enable}{$admin3_alias}{else}apps/admin{/if}/" target="_blank" class="btn btn-small btn-warning"><i class="icon-dashboard"></i> Новая админка</a>
+
                 <a href="{$MAIN_URL}/" target="_blank" class="btn btn-small btn-primary"><i class="icon-eye-open"></i> {$L_SITE}</a>
 
 
@@ -126,7 +135,13 @@
 
                         {foreach item=ln from=$available_langs key=k}
                             {if ($k != 'ru' and $k != 'en') }
-                                <li><a href="{$MAIN_URL}/admin/?_lang={$k}">{$ln}</a></li>
+                                {if $k != 'ar'}
+                                    <li><a href="{$MAIN_URL}/admin/?_lang={$k}">{$ln}</a></li>
+                                {else}
+                                    <li>
+                                        <a href="{$MAIN_URL}/admin/?_lang=ar"><img src="{$MAIN_URL}/apps/admin/admin/template/img/flag_ar.png" alt="Arabian" title="Arabian"/> Arabian</a>
+                                    </li>
+                                {/if}
                             {/if}
                         {/foreach}
 
@@ -134,40 +149,47 @@
                     </ul>
                 </div>
 
-                <div class="btn-group">
-                    <button data-toggle="dropdown" class="btn btn-info dropdown-toggle">
-                        <i class="icon-question-sign icon-on-right"></i>
-                    </button>
+                {if $smarty.const.BRANDING!=1}
+                    <div class="btn-group">
+                        <button data-toggle="dropdown" class="btn btn-info dropdown-toggle">
+                            <i class="icon-question-sign icon-on-right"></i>
+                        </button>
 
-                    <ul class="dropdown-menu">
-                        <li>
-                            <a href="http://wiki.sitebill.ru/" target="_blank"><i class="icon-white icon-book"></i> База знаний</a>
-                        </li>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a href="http://wiki.sitebill.ru/" target="_blank"><i class="icon-white icon-book"></i> База знаний</a>
+                            </li>
 
-                        <li>
-                            <a href="https://www.sitebill.ru/s/" target="_blank"><i class="icon-white icon-comment"></i> Форум</a>
-                        </li>
+                            <li>
+                                <a href="https://www.sitebill.ru/s/" target="_blank"><i class="icon-white icon-comment"></i> Форум</a>
+                            </li>
 
-                        <li>
-                            <a href="http://www.youtube.com/user/DMn1c" target="_blank"><i class="icon-white icon-film"></i> Видео-уроки</a>
-                        </li>
+                            <li>
+                                <a href="http://www.youtube.com/user/DMn1c" target="_blank"><i class="icon-white icon-film"></i> Видео-уроки</a>
+                            </li>
 
-                        <li>
-                            <a href="http://www.sitebill.ru/" target="_blank"><i class="icon-white icon-heart"></i> Наш сайт</a>
-                        </li>
+                            <li>
+                                <a href="http://www.sitebill.ru/" target="_blank"><i class="icon-white icon-heart"></i> Наш сайт</a>
+                            </li>
 
-                        <li>
-                            <a href="https://play.google.com/store/apps/details?id=ru.sitebill.mobilecms" target="_blank"><i class="icon-white icon-camera"></i> Мобильное приложение</a>
-                        </li>
-                    </ul>
-                </div>
+                            <li>
+                                <a href="https://play.google.com/store/apps/details?id=ru.sitebill.mobilecms" target="_blank"><i class="icon-white icon-camera"></i> Мобильное приложение</a>
+                            </li>
+                        </ul>
+                    </div>
+                {/if}
             </div>
         </div><!-- /.container-fluid -->
     </div><!-- /.navbar-inner -->
 </div>
 
 <div class="main-container container-fluid">
-    {include file='sidebar.tpl'}
+    {assign var="local_sidebar" value=$SITEBILL_DOCUMENT_ROOT|cat:'/template/frontend/local/admin/sidebar.tpl'}
+    {if file_exists($local_sidebar)}
+        {include file=$local_sidebar}
+    {else}
+        {include file='sidebar.tpl'}
+    {/if}
     <div class="main-content">
         <div class="breadcrumbs" id="breadcrumbs">
 
@@ -181,6 +203,13 @@
         </div>
 
         <div class="page-content">
+            {if $search_form}
+                <div class="row-fluid">
+                    <div class="col-xs-12">
+                        {$search_form}
+                    </div>
+                </div>
+            {/if}
             {$content}
         </div>
 

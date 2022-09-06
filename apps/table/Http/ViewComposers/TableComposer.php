@@ -7,7 +7,7 @@ class TableComposer extends \SiteBill {
     use BladeTrait;
     function __construct()
     {
-        parent::SiteBill();
+        parent::__construct();
         $this->add_apps_local_and_root_resource_paths('table');
     }
 

@@ -15,7 +15,7 @@ class seo_admin extends Object_Manager {
         $this->action = 'seo';
         $this->app_title = 'SEO-Оптимизация';
 
-        $this->SiteBill();
+        parent::__construct();
 
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
@@ -62,7 +62,7 @@ class seo_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.seo.no_city_url')) {
             $config_admin->addParamToConfig('apps.seo.no_city_url', 0, 'Не перехватывать алиасы городов', 1);
         }
-        
+
         if (!$config_admin->check_config_item('apps.seo.no_district_url')) {
             $config_admin->addParamToConfig('apps.seo.no_district_url', 1, 'Не перехватывать алиасы районов', 1);
         }
@@ -78,9 +78,9 @@ class seo_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.seo.realty_alias')) {
             $config_admin->addParamToConfig('apps.seo.realty_alias', 'realty', 'Подстановочная часть стандартного алиаса объявления');
         }
-        
+
         $config_admin->addParamToConfig('apps.seo.city_title_postfix', '', 'Текст после заголовка на странице города');
-        
+
 
         if ( !$config_admin->check_config_item('apps.seo.user_alias') ) {
             $config_admin->addParamToConfig('apps.seo.user_alias', 'user', 'Подстановочная часть стандартного алиаса пользователя');

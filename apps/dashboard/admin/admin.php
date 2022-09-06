@@ -12,7 +12,7 @@ class dashboard_admin extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
         //Multilanguage::appendAppDictionary('dashboard');
         $this->action = 'dashboard';
 
@@ -155,9 +155,6 @@ class dashboard_admin extends Object_Manager {
         $file_parts[1] = mb_substr($data, $pos, $pos2 - $pos, 'utf-8');
         $file_parts[2] = mb_substr($data, $pos2, mb_strlen($data, 'utf-8'), 'utf-8');
         $content = $_POST['edit_content'];
-        if (get_magic_quotes_gpc()) {
-            $content = stripslashes($content);
-        }
         $file_parts[1] = $content;
         $data = implode('', $file_parts);
         //print_r($file_parts);

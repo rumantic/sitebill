@@ -204,7 +204,8 @@ $(document).ready(function () {
     /*
      * Событие смены состояния активности поля
      */
-    $('a.state_change').click(function () {
+    $('a.state_change').click(function (e) {
+        e.preventDefault();
         var ops = $(this).attr('href');
         var id = $(this).attr('alt');
         var a = this;
@@ -270,58 +271,82 @@ $(document).ready(function () {
      * Управление видимостью колонки в разрезе групп
      * В данный момент не подключено
      */
-    $('.columns_list .show_groups').click(function (e) {
+    $('.app-table-tablelist .show_groups').click(function (e) {
         e.preventDefault();
-        var cid = $(this).data('cid');
         var _this = $(this);
+        var cid = _this.data('cid');
+        
         $.ajax({
-            url: estate_folder + '/apps/table/js/ajax.php',
+            url: estate_folder + '/js/ajax.php',
             type: 'POST',
             dataType: 'json',
-            data: 'action=show_groups&columns_id=' + cid,
+            data: {
+                _app: 'table',
+                action: 'show_groups',
+                columns_id: cid
+            },
             success: function (json) {
                 if (typeof json != 'object') {
                     return;
                 }
-                $('#group_ed input[name=cid]').val(cid);
-                $('#group_ed .group_ed_ch input').each(function () {
-                    var val = $(this).val();
-
+                $('#group-restriction-edit input[name=cid]').val(cid);
+                $('#group-restriction-edit .group_ed_ch input').each(function () {
+                    var val = Number($(this).val());
                     if (json.indexOf(val) === -1) {
                         $(this).prop('checked', false);
                     } else {
                         $(this).prop('checked', true);
                     }
-                    $('#group_ed').modal('show');
+                    $('#group-restriction-edit').modal('show');
                 });
             }
         });
     });
-
-    $('#group_ed .ok').click(function (e) {
+    
+    // Clear all selected groups excepted 0 (nobody)
+    $('#group-restriction-edit .clear').click(function (e) {
         e.preventDefault();
-        var ids = [];
-        $('#group_ed .group_ed_ch input:checked').each(function () {
-            ids.push($(this).val());
-        });
-        var data = {};
-        data.ids = ids;
-        data.action = 'change_groups';
-        data.columns_id = $('#group_ed input[name=cid]').val();
-        $.ajax({
-            url: estate_folder + '/apps/table/js/ajax.php',
-            type: 'POST',
-            dataType: 'json',
-            data: data,
-            success: function (json) {
-
+        $('#group-restriction-edit .group_ed_ch input').each(function () {
+            if($(this).val() == '0'){
+                $(this).prop('checked', true);
+            }else{
+                $(this).prop('checked', false);
             }
         });
     });
 
-    $('#group_ed').on('hide', function () {
-        $('#group_ed input[name=cid]').val('');
-        $('#group_ed .group_ed_ch input').each(function () {
+    // Store selected groups
+    $('#group-restriction-edit .ok').click(function (e) {
+        e.preventDefault();
+        const columnId = $('#group-restriction-edit input[name=cid]').val();
+        let btn = $('.show_groups_' + columnId);
+        let ids = [];
+        $('#group-restriction-edit .group_ed_ch input:checked').each(function () {
+            ids.push($(this).val());
+        });
+        $.ajax({
+            url: estate_folder + '/js/ajax.php',
+            type: 'POST',
+            dataType: 'json',
+            data: {
+                _app: 'table',
+                ids: ids,
+                action: 'change_groups',
+                columns_id: columnId
+            },
+            success: function (json) {
+                if(json.status == 1){
+                    btn.data('popover').options.content = json.data.joined;
+                    btn.text(json.data.count);
+                    $('#group-restriction-edit').modal('hide');
+                }
+            }
+        });
+    });
+
+    $('#group-restriction-edit').on('hide', function () {
+        $('#group-restriction-edit input[name=cid]').val('');
+        $('#group-restriction-edit .group_ed_ch input').each(function () {
             $(this).prop('checked', false);
         });
     })

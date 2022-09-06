@@ -10,7 +10,7 @@ class PureCSS_Menu extends Structure_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
     }
 
     /**

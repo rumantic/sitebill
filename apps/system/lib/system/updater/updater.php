@@ -10,9 +10,9 @@ class Updater extends SiteBill {
      * @return void
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
     }
-    
+
     /**
      * Main
      */
@@ -28,20 +28,20 @@ $(document).ready(function() {
         ';
         $rs .= '<div id="admin_area">';
         $rs .= sprintf(Multilanguage::_('REGISTER_FOR_ACCESS','system'),'<a href="http://www.sitebill.ru/">sitebill.ru</a>');
-        
+
         $rs .= '</div>';
-        
+
         return $rs;
-        
-        
+
+
         return $rs;
     }
-    
+
     /**
      * Get version
      */
     function get_version () {
         return 1;
     }
-    
+
 }

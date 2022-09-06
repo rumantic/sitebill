@@ -1,6 +1,7 @@
 <?php
 
 defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
+use system\lib\system\cache\RedisCache;
 
 /**
  * Vendors admin backend
@@ -21,7 +22,7 @@ class config_admin extends Object_Manager
      */
     function __construct($realty_type = false)
     {
-        $this->SiteBill();
+        parent::__construct();
 
         $this->table_name = 'config';
         $this->action = 'config';
@@ -30,32 +31,13 @@ class config_admin extends Object_Manager
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/config_model.php');
         $model = new Config_Model();
         $this->data_model = $model->get_model();
-        //$this->install();
-        //$this->install_hidden_config();
         $this->check_config_structure();
     }
 
     function ajax()
     {
-        /*if ($this->getRequestValue('action') == 'resort') {
-            return $this->resort();
-        }*/
         return false;
     }
-
-    /*function resort() {
-        $ids = trim($this->getRequestValue('ids'));
-        if ($ids != '') {
-            $DBC = DBC::getInstance();
-            $ids_array = explode(',', $ids);
-            $i = 1;
-            foreach ($ids_array as $id) {
-                $query = 'UPDATE ' . DB_PREFIX . '_' . $this->table_name . ' SET sort_order=' . $i . ' WHERE ' . $this->primary_key . '=' . $id;
-                $stmt = $DBC->query($query);
-                $i++;
-            }
-        }
-    }*/
 
     function main()
     {
@@ -336,18 +318,29 @@ class config_admin extends Object_Manager
 
 
                     $ret['value'] = $d['value'];
-                    if ($d['vtype'] == 0) {
+                    if ( $d['vtype'] == SConfig::$fieldtypeString ) {
                         $ret['type'] = 'safe_string';
-                    } elseif ($d['vtype'] == 1) {
+                    } elseif ( $d['vtype'] == SConfig::$fieldtypeCheckbox ) {
                         $ret['type'] = 'checkbox';
-                    } elseif ($d['vtype'] == 2) {
+                    } elseif ( $d['vtype'] == SConfig::$fieldtypeSelectbox ) {
                         $ret['type'] = 'select_box';
-                    } elseif ($d['vtype'] == 3) {
+                    } elseif ( $d['vtype'] == SConfig::$fieldtypeTextarea ) {
                         $ret['type'] = 'textarea';
+                    } elseif ( $d['vtype'] == SConfig::$fieldtypeUploads ) {
+                        $ret['type'] = 'uploads';
+                        $ret['value'] = unserialize($ret['value']);
                     } else {
                         $ret['type'] = 'safe_string';
                     }
 
+                    if(isset($d['params']['select_data'])){
+                        $ret['select_data'] = $d['params']['select_data'];
+                        $select_data_indexed = array();
+                        foreach ( $ret['select_data'] as $key_s => $value_s ) {
+                            array_push($select_data_indexed, array('id'=>$key_s, 'value' => $value_s));
+                        }
+                        $ret['select_data_indexed'] = $select_data_indexed;
+                    }
 
                     $ret['sort_order'] = $d['sort_order'];
                 } else {
@@ -395,16 +388,12 @@ class config_admin extends Object_Manager
         $rs = '';
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/apps/apps_processor.php');
         $APP = new Apps_Processor();
-        $apps = $APP->load_apps_menu(true);
+        $apps = $APP->load_apps_menu(true, 'admin', false);
         foreach ($apps as $ak => $av) {
             $apps_array['apps.' . $ak] = $av;
-            //$apps_array_names['apps.'.$ak]=$av['title'];
         }
         $apps_array['apps.realty'] = array('title' => 'Дополнительно');
         $apps_array['apps.contact'] = array('title' => 'Контакты');
-        //$apps_array_names['apps.realty']='Дополнительно';
-        //asort($apps_array_names);
-        //print_r($apps_array_names);
 
 
         $data = $this->createConfigStructure();
@@ -412,17 +401,11 @@ class config_admin extends Object_Manager
         $current_tab_nr = (int)$this->getRequestValue('tab_nr');
 
         $keys = array_keys($data);
-        //$keys=array_keys($apps_array_names);
-        //print_r($keys);
         $keys_fl = array_flip($keys);
 
 
         $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/config/js/utils.js"></script>';
         $rs .= '<style>.form-horizontal .control-label {width: 460px;} .form-horizontal .controls {margin-left: 480px;}</style>';
-
-
-        //TABS
-        //print_r($keys_fl);
 
 
         $codenames_to_names = array();
@@ -441,11 +424,6 @@ class config_admin extends Object_Manager
         unset($codenames_to_names[Multilanguage::_('L_COMMON')]);
 
         asort($codenames_to_names);
-        /* $_codenames_to_names=$codenames_to_names;
-          $codenames_to_names=array();
-          $codenames_to_names[$primary_tab]=$primary_tab;
-          $codenames_to_names=array_merge($codenames_to_names, $_codenames_to_names);
-          unset($_codenames_to_names); */
 
         $rs .= '<div class="tabbable tabs-left">';
         $rs .= '<ul class="nav nav-tabs">';
@@ -459,23 +437,6 @@ class config_admin extends Object_Manager
         }
 
 
-        /* foreach($keys_fl as $k=>$v){
-          if(strpos($k, 'apps.')!==FALSE){
-          if(isset($apps_array[$k])){
-          $rs.='<li'.($v==$current_tab_nr ? ' class="active"' : '').'><a href="#config-tabs-left-'.$v.'" data-toggle="tab">'.$apps_array[$k]['title'].'</a></li>';
-          $codenames_to_names[$k]=$apps_array[$k]['title'];
-          }else{
-          unset($data[$k]);
-          }
-
-          }else{
-          $rs.='<li'.($keys_fl[$k]==$current_tab_nr ? ' class="active"' : '').'><a href="#config-tabs-left-'.$keys_fl[$k].'" data-toggle="tab">'.$k.'</a></li>';
-          $codenames_to_names[$k]=$k;
-          }
-          } */
-
-
-        //print_r($data);
         $tf = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/main/settings.php';
         if (file_exists($tf)) {
             $rs .= '<li><a href="#config-tabs-left-template-sets" data-toggle="tab">Настройки Шаблона</a></li>';
@@ -501,18 +462,6 @@ class config_admin extends Object_Manager
             $rs .= '</div>';
             $ti++;
         }
-        //$i=0;
-        /* foreach($data as $k=>$v){
-          $rs.='<div id="config-tabs-left-'.$keys_fl[$k].'" class="tab-pane fade in'.($keys_fl[$k]==$current_tab_nr ? ' active' : '').'">';
-          if(isset($apps_array[$k])){
-          $rs.='<h3>'.$apps_array[$k]['title'].'</h3>';
-          }else{
-          $rs.='<h3>'.$k.'</h3>';
-          }
-          $rs.=$this->getTabForm($v, $keys_fl[$k]);
-          $rs.='</div>';
-          //$i++;
-          } */
         if (file_exists($tf)) {
             $rs .= '<div id="config-tabs-left-template-sets" class="tab-pane fade in">';
             $rs .= '<h3>Настройки шаблона</h3>';
@@ -525,48 +474,11 @@ class config_admin extends Object_Manager
         $rs .= '</div>';
 
 
-        //ACCORDION
-
-        /*
-          $rs.='<div class="accordion" id="accordion2">';
-          foreach($keys_fl as $k=>$v){
-          //var_dump($current_tab_nr==$v);
-          $rs.='<div class="accordion-group">';
-          $rs.='<div class="accordion-heading">';
-          if(strpos($k, 'apps.')!==FALSE){
-          if(isset($apps_array[$k])){
-          $rs.='<a href="#config-tabs-left-'.$v.'" class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="#config-tabs-left-'.$v.'">'.$apps_array[$k]['title'].'</a>';
-          }else{
-          unset($data[$k]);
-          }
-
-          }else{
-          $rs.='<a href="#config-tabs-left-'.$keys_fl[$k].'" class="accordion-toggle" data-toggle="collapse" data-parent="#accordion2" href="#config-tabs-left-'.$keys_fl[$k].'">'.$k.'</a>';
-          }
-          $rs.='</div>';
-          $rs.='<div id="config-tabs-left-'.$keys_fl[$k].'" class="accordion-body'.($current_tab_nr==$v ? ' in' : '').' collapse">';
-          $rs.='<div class="accordion-inner">';
-          $rs.=$this->getTabForm($data[$k], $keys_fl[$k]);
-          $rs.='</div>';
-          $rs.='</div>';
-          $rs.='</div>';
-          }
-          $rs.='</div>';
-         */
-
-
         return $rs;
     }
 
     private function customSort($a, $b)
     {
-        /* if($a['nr']==0){
-          return -1;
-          }elseif($b['nr']==0){
-          return -1;
-          }elseif($a['name']<$b['name']){
-          return -1;
-          } */
         if ($a['name'] < $b['name']) {
             return -1;
         }
@@ -694,37 +606,11 @@ class config_admin extends Object_Manager
         return $rs;
     }
 
-    /*
-      function getTabForm_old($data){
-      $rs .= '<form method="post" action="'.SITEBILL_MAIN_URL.'/admin/index.php?action='.$this->action.'">';
-      $rs .= '<table border="0" width="600">';
-      $rs .= '<thead><th>Описание</th><th>Значение</th><th>Имя параметра</th><th></th><th></th></thead>';
-      foreach($data as $d){
-      if ( $this->is_demo() and  $d['config_key'] == 'license_key' ) {
-
-      } else {
-      $rs .= '<tr>';
-      $rs .= '<td>'.$d['title'].'</td>';
-      $rs .= '<td><input type="text" size="20" name="conf_param_value['.$d['id'].']" value="'.htmlspecialchars($d['value']).'"></td>';
-      $rs .= '<td>'.$d['config_key'].'</td>';
-      $rs .= '<td>'.($this->dev_status?'<a href="?action='.$this->action.'&do=delete&'.$this->primary_key.'='.$d['id'].'">Удалить</a>':'').'</td>';
-      $rs .= '<td>'.($this->dev_status?'<a href="?action='.$this->action.'&do=edit&'.$this->primary_key.'='.$d['id'].'">Править</a>':'').'</td>';
-      $rs .= '</tr>';
-      }
-      }
-      $rs .= '<tr>';
-      $rs .= '<td></td><td></td><td><input type="submit" name="cnf_submit" value="Сохранить"></td>';
-      $rs .= '</tr>';
-      //$rs .= '<input type="hidden" name="action" value="'.$this->action.'">';
-      $rs .= '<input type="hidden" name="do" value="save">';
-      $rs .= '</table>';
-      $rs .= '</form>';
-      return $rs;
-      }
-     */
-
     function updateParamToConfig($conf_param_id, $conf_param_value)
     {
+        if ( SConfig::getConfigTypeById($conf_param_id) == SConfig::$fieldtypeUploads ) {
+            return false;
+        }
         $DBC = DBC::getInstance();
         $query = "UPDATE `" . DB_PREFIX . "_" . $this->table_name . "` SET `value`=? WHERE `" . $this->primary_key . "`=?";
         if(is_array($conf_param_value)){
@@ -756,22 +642,11 @@ class config_admin extends Object_Manager
 
     function validateParam($param)
     {
-        /* echo '<pre>';
-          var_dump($param);
-          echo '</pre>'; */
         $rs = $param;
-        if (get_magic_quotes_gpc()) {
-            $rs = stripslashes($rs);
-        }
         $rs = str_replace(array('\'', '"', '`'), '', $rs);
-        $rs = trim($rs);
-        //$rs=addslashes($rs);
-        //$rs=mysql_real_escape_string($rs);
-        /* if($quotes==1){
-          $rs=mysql_real_escape_string(stripcslashes($rs));
-          }else{
-          $rs=mysql_real_escape_string($rs);
-          } */
+        if ( is_scalar($rs) ) {
+            $rs = trim($rs);
+        }
         return $rs;
     }
 
@@ -780,13 +655,6 @@ class config_admin extends Object_Manager
         $rs = $param;
         $rs = str_replace(array('`'), '', $rs);
         $rs = trim($rs);
-        if (get_magic_quotes_gpc()) {
-            $rs = stripslashes($rs);
-            //$rs=mysql_real_escape_string(stripcslashes($rs));
-        } else {
-            //$rs=mysql_real_escape_string($rs);
-        }
-        //$rs=addslashes($rs);
         return $rs;
     }
 
@@ -829,10 +697,10 @@ class config_admin extends Object_Manager
 
         if($vtype == SConfig::$fieldtypeSelectbox){
             $selectdata = array();
-            if(isset($params['select_data']) && !is_array($params['select_data']) && !empty($params['select_data'])){
-                $selectdata = $params['select_data'];
+            if(!empty($params)){
+                $selectdata = $params;
             }
-            $query = "INSERT INTO " . DB_PREFIX . "_" . $this->table_name . " (`config_key`, `value`, `title`, `vtype`, `select_data`) VALUES (?,?,?,?,?)";
+            $query = "INSERT INTO " . DB_PREFIX . "_" . $this->table_name . " (`config_key`, `value`, `title`, `vtype`, `params`) VALUES (?,?,?,?,?)";
             $stmt = $DBC->query($query, array($this->validateParam($conf_new_param_name), $this->validateParam($conf_new_param_value), $this->validateParamTitle($conf_new_param_title), $vtype, json_encode($selectdata)), $row, $success);
         }else{
             $query = "INSERT INTO " . DB_PREFIX . "_" . $this->table_name . " (`config_key`, `value`, `title`, `vtype`) VALUES (?,?,?,?)";
@@ -873,6 +741,7 @@ class config_admin extends Object_Manager
      */
     function check_config_structure()
     {
+        $this->reloadCheckConfigStructure();
         if (empty(self::$check_config_array)) {
             self::$check_config_array = SConfig::$check_config_array;
         }
@@ -919,8 +788,14 @@ class config_admin extends Object_Manager
 
         $this->addParamToConfig('bootstrap_version', '', 'Версия Bootstrap');
 
-        $this->addParamToConfig('use_google_map', '0', 'Использовать карту Google', SConfig::$fieldtypeSelectbox, array(
-            'select_data' => array('0'=>'Yаndex','1'=>'Google','2'=>'Leaflet OSM')
+        $this->addParamToConfig(
+            'use_google_map',
+            '0',
+            'Использовать карту Google',
+            SConfig::$fieldtypeSelectbox,
+            array(
+            'select_data' => array('0'=>'Yаndex','1'=>'Google','2'=>'Leaflet OSM'
+            )
         ));
 
         $this->addParamToConfig('google_api_key', '', 'Ключ API Google');
@@ -1132,7 +1007,7 @@ class config_admin extends Object_Manager
 
         $this->addParamToConfig('jpeg_quality', '80', 'Коэффициент качества для JPEG/JPG (от 0 до 100)');
 
-        $this->addParamToConfig('png_quality', '0', 'Степень сжатия для PNG: от 0 (нет сжатия) до 9');
+        $this->addParamToConfig('png_quality', '5', 'Степень сжатия для PNG: от 0 (нет сжатия) до 9');
 
         $this->addParamToConfig('robokassa_koef', '1', 'Коэффициент перевода валюты сайта в RUR');
 
@@ -1409,37 +1284,6 @@ class config_admin extends Object_Manager
 
         $this->addParamToConfig('gallery_image_preview_height', '300', 'Галерея - высота превью картинки');
 
-        //$this->addParamToConfig('use_topic_actual_days', '0', 'Использовать настраиваемую актуальность объявлений по категориям', 1);
-
-        /*
-          if ( !$this->check_config_item('autoreg_enable') ) {
-          $this->addParamToConfig('autoreg_enable','0','Включить авторегистрацию <a href="http://www.sitebill.ru/autoreg.html" target="_blank">что это такое?</a>');
-          }
-         */
-
-        /* images */
-        /*
-          if ( !$this->check_config_item('shop_product_image_big_width') ) {
-          $this->addParamToConfig('shop_product_image_big_width','800','Ширина большой картинки товара');
-          }
-          if ( !$this->check_config_item('shop_product_image_big_height') ) {
-          $this->addParamToConfig('shop_product_image_big_height','600','Высота большой картинки товара');
-          }
-          if ( !$this->check_config_item('shop_product_image_preview_width') ) {
-          $this->addParamToConfig('shop_product_image_preview_width','180','Ширина маленькой картинки товара');
-          }
-          if ( !$this->check_config_item('shop_product_image_preview_height') ) {
-          $this->addParamToConfig('shop_product_image_preview_height','180','Высота маленькой картинки товара');
-          }
-         */
-        /* images */
-
-        /*
-          if ( !$this->check_config_item('city_in_form') ) {
-          $this->addParamToConfig('city_in_form','1','Выбор города в форме объявления');
-          }
-         */
-
         $this->addParamToConfig('robokassa_server', 'https://auth.robokassa.ru/Merchant/Index.aspx', 'Адрес службы приема платежей robokassa.ru');
 
         $this->addParamToConfig('robokassa_login', 'robokassa_login', 'Логин для robokassa.ru');
@@ -1472,7 +1316,7 @@ class config_admin extends Object_Manager
 
         $this->addParamToConfig('show_demo_banners', '0', 'Показывать рекламные баннеры sitebill.ru', SConfig::$fieldtypeCheckbox);
 
-        $this->addParamToConfig('use_topic_publish_status', '0', 'Использовать переключатель активности для категорий', SConfig::$fieldtypeCheckbox);
+        $this->addParamToConfig('use_topic_publish_status', '1', 'Использовать переключатель активности для категорий', SConfig::$fieldtypeCheckbox);
 
         $this->addParamToConfig('use_topic_linker', '0', 'Включить переадресацию категорий <a href="http://wiki.sitebill.ru/index.php?title=Use_topic_linker" target="_blank">?</a>');
 
@@ -1485,6 +1329,10 @@ class config_admin extends Object_Manager
         $this->addParamToConfig('query_cache_time', '60', 'Длительность хранения кэша SQL-запросов в секундах');
 
         $this->addParamToConfig('apps.contact.phone', '', 'Телефон на сайте');
+        $this->addParamToConfig('apps.contact.phone2', '', 'Телефон на сайте (2)');
+        $this->addParamToConfig('apps.contact.phone3', '', 'Телефон на сайте (3)');
+        $this->addParamToConfig('apps.contact.whatsapp', '', 'Whatsapp на сайте');
+        $this->addParamToConfig('apps.contact.whatsapp.text', '', 'Текст в сообщении WhatsApp по-умолчанию');
 
         $this->addParamToConfig('apps.contact.email', '', 'Email на сайте');
 
@@ -1514,7 +1362,7 @@ class config_admin extends Object_Manager
         $this->addParamToConfig('dadata_autocomplete_force', '0', 'Принудительно добавить параметр autocomplete для гео-параметров, если в форме есть опция dadata=1. <a href=http://wiki.sitebill.ru/index.php?title=%D0%A0%D0%B0%D1%81%D0%BF%D0%BE%D0%B7%D0%BD%D0%B0%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5_%D0%B0%D0%B4%D1%80%D0%B5%D1%81%D0%BE%D0%B2_%D1%87%D0%B5%D1%80%D0%B5%D0%B7_dadata.ru>?</a>', SConfig::$fieldtypeCheckbox);
 
         $this->addParamToConfig('apps.realty.default_frontend_route', '/grid/data', 'Маршрут по-умолчанию для angular-фронтенда', 0, array('public' => true));
-        $this->addParamToConfig('apps.realty.enable_guest_mode', '0', 'Включить guest-mode для angular-фронтенда', SConfig::$fieldtypeCheckbox, array('public' => true));
+        $this->addParamToConfig('apps.realty.enable_guest_mode', '1', 'Включить guest-mode для angular-фронтенда', SConfig::$fieldtypeCheckbox, array('public' => true));
         $this->addParamToConfig('apps.realty.enable_toolbar', '0', 'Включить toolbar для angular-фронтенда', SConfig::$fieldtypeCheckbox, array('public' => true));
         $this->addParamToConfig('apps.realty.enable_navbar', '0', 'Включить navbar для angular-фронтенда', SConfig::$fieldtypeCheckbox, array('public' => true));
         $this->addParamToConfig('apps.realty.show_home_icon', '0', 'Выводить иконку Home для angular-фронтенда', SConfig::$fieldtypeCheckbox, array('public' => true));
@@ -1557,6 +1405,34 @@ class config_admin extends Object_Manager
             SConfig::$fieldtypeCheckbox,
             array('public' => false)
         );
+        $this->addParamToConfig(
+            'apps.realty.logo',
+            '',
+            'Логотип (основной)',
+            SConfig::$fieldtypeUploads,
+            array('public' => true)
+        );
+        $this->addParamToConfig(
+            'apps.realty.logo-white',
+            '',
+            'Логотип (светлая версия)',
+            SConfig::$fieldtypeUploads,
+            array('public' => true)
+        );
+        $this->addParamToConfig(
+            'apps.realty.additional_dropzone_button',
+            '0',
+            'Дополнительная кнопка загрузки dropzone',
+            SConfig::$fieldtypeCheckbox
+        );
+        $this->addParamToConfig(
+            'apps.realty.mobilephone_old_mask',
+            '0',
+            'Использовать старую маску ввода для mobilephone',
+            SConfig::$fieldtypeCheckbox
+        );
+
+
 
 
         //if (!$this->check_config_item('use_metaphone')) {
@@ -1567,6 +1443,11 @@ class config_admin extends Object_Manager
 
     private function reloadCheckConfigStructure()
     {
+        $redis_cache = RedisCache::getArray('reloadCheckConfigStructure');
+        if ( $redis_cache ) {
+            self::$check_config_array = $redis_cache;
+            return;
+        }
         $DBC = DBC::getInstance();
         $query = "select * from " . DB_PREFIX . "_config";
         $stmt = $DBC->query($query);
@@ -1575,6 +1456,7 @@ class config_admin extends Object_Manager
                 self::$check_config_array[$ar['config_key']] = '1';
             }
         }
+        RedisCache::setArray('reloadCheckConfigStructure', self::$check_config_array);
     }
 
 }

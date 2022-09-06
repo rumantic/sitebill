@@ -9,7 +9,6 @@ class data_update extends data_admin {
 
 	$DBC = DBC::getInstance();
     $query_data[] = "ALTER TABLE " . DB_PREFIX . "_data ADD column `land_area` int(10) not null default 0";
-
 	$query_data[] = "CREATE TABLE `" . DB_PREFIX . "_data_note` (
   `data_note_id` int(11) NOT NULL AUTO_INCREMENT,
   `id` int(11) NOT NULL,

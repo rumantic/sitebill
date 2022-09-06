@@ -17,6 +17,9 @@ class User_Profile_Model extends User_Profile {
             if ($this->getConfigValue('email_as_login')) {
                 unset($form_data[$this->table_name]['email']);
             }
+            if ( $this->getConfigValue('apps.agency.enable') and isset($form_data[$this->table_name]['agency_id']) ) {
+                unset($form_data[$this->table_name]['agency_id']);
+            }
             $rs .= '<h1>' . Multilanguage::_('PROFILE', 'system') . '</h1>';
             $rs .= $this->getTopMenu();
 
@@ -312,8 +315,8 @@ class User_Profile_Model extends User_Profile {
 
         $form_data1 = array();
         $form_data1['group_id']['type'] = 'safe_string';
-        $form_data1['group_id']['title'] = 'Группа';
-        $form_data1['group_id']['value'] = $_SESSION['current_user_group_title'];
+        $form_data1['group_id']['title'] = _e('Группа');
+        $form_data1['group_id']['value'] = _e($_SESSION['current_user_group_title']);
         foreach ($form_data as $k => $v) {
             $form_data1[$k] = $v;
         }

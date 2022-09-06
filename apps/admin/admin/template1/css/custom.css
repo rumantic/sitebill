@@ -28,7 +28,7 @@
 div.custom_modal {
     width: 90%;
     left: 5%;
-   
+
     margin-left: 0;
 }
 
@@ -83,4 +83,13 @@ a.scrollup {
     left: 50%;
     margin-top: -9px;
     margin-left: -9px;
+}
+.postponded {
+    color: #d56400 !important;
+    font-weight: bold !important;
+    background-color: #fcf8e3;
+}
+.postponded td {
+    color: #d56400 !important;
+    font-weight: bold !important;
 }

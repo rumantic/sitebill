@@ -17,7 +17,7 @@ class rss_admin extends Object_Manager
      */
     function __construct($realty_type = false)
     {
-        $this->SiteBill();
+        parent::__construct();
         Multilanguage::appendAppDictionary('rss');
         $this->checkConfiguration();
         $this->app_title = Multilanguage::_('APPLICATION_NAME', 'rss');
@@ -130,7 +130,12 @@ class rss_admin extends Object_Manager
             }
 
             if (!$CF->check_config_item('apps.rss.data_mode')) {
-                $CF->addParamToConfig('apps.rss.data_mode', '0', 'Тип формирования фида объявлений (0-стандартный, 1-расширенный)');
+                $CF->addParamToConfig(
+                    'apps.rss.data_mode',
+                    '0',
+                    'Расширенный режим генерации описания объявления data',
+                    SConfig::$fieldtypeCheckbox
+                );
             }
 
             if (!$CF->check_config_item('apps.rss.data_length')) {
@@ -169,6 +174,13 @@ class rss_admin extends Object_Manager
             if (!$CF->check_config_item('apps.rss.data_imgcount')) {
                 $CF->addParamToConfig('apps.rss.data_imgcount', '', 'Количество фото прикрепляемых к объекту (по-умолчанию - 1)');
             }
+            $CF->addParamToConfig(
+                'apps.rss.data_user_info',
+                '0',
+                'Добавлять информацию об агенте в фид',
+                SConfig::$fieldtypeCheckbox
+            );
+
         }
         unset($CF);
     }
@@ -773,7 +785,7 @@ class rss_admin extends Object_Manager
                 } elseif ($image_field_type == 'uploadify_image' && isset($form_data_shared['image']['image_array'][0])) {
                     $image = $form_data_shared['image']['image_array'][0];
                 }
-                if ($image['normal'] != '') {
+                if (is_array($image) and $image['normal'] != '') {
                     $fn = explode('.', $image['normal']);
                     $ext = end($fn);
                     $mime = '';
@@ -821,6 +833,11 @@ class rss_admin extends Object_Manager
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
         $category_structure = $Structure_Manager->loadCategoryStructure();
+
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php');
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/users/user_object_manager.php');
+        $user_object_manager = new User_Object_Manager();
+
 
         $Kvartira_View = new Kvartira_View();
         $data_model = new Data_Model();
@@ -946,6 +963,10 @@ class rss_admin extends Object_Manager
         foreach ($ids as $id) {
             $form_data_shared = $base_form_data;
             $form_data_shared = $data_model->init_model_data_from_db('data', 'id', $id, $form_data_shared, true);
+            if ($this->getConfigValue('apps.rss.data_user_info') and isset($form_data_shared['user_id']) and $form_data_shared['user_id']['value'] > 0) {
+                $user_data = $user_object_manager->load_by_id($form_data_shared['user_id']['value']);
+                $smarty->assign('user_data', $user_data);
+            }
 
             if ($hasTlocation) {
                 $form_data_shared['country_id']['value_string'] = $form_data[$tlocationElement]['value_string']['country_id'];

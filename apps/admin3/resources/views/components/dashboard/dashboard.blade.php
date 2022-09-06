@@ -1,7 +1,7 @@
 @extends('apps.admin3.resources.views.layout.default')
 @section('content')
     <div class="row g-5 g-xl-8">
-            @include('apps.table.resources.views.table', ['component' => empty($component) ? $sitebill->getConfigValue('apps.admin3.default_app') : $component])
+            @include('apps.table.resources.views.table', ['component' => empty($component) ? \SConfig::getConfigValueStatic('apps.admin3.default_app') : $component])
     </div>
 
 @endsection

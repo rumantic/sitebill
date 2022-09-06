@@ -15,7 +15,7 @@ class watermark_admin extends Object_Manager {
         $this->app_title = 'Watermark';
         $this->action = 'watermark';
 
-        $this->SiteBill();
+        parent::__construct();
         Multilanguage::appendAppDictionary('watermark');
         if ($this->getConfigValue('apps.watermark.enable') == 1) {
             $this->watermark_position = '';
@@ -174,7 +174,7 @@ class watermark_admin extends Object_Manager {
         imagedestroy($image);
         imagedestroy($watermark);
         return TRUE;
-         * 
+         *
          */
     }
 

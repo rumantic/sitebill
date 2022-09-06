@@ -5,9 +5,10 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * Language admin backend
  * @author Abushyk Kostyantyn <abushyk@gmail.com> http://www.sitebill.ru
  */
-require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php');
+require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php');
 
-class language_admin extends Object_Manager {
+class language_admin extends Object_Manager
+{
 
     private $apps_path;
     protected $_lang_codes = array();
@@ -15,8 +16,9 @@ class language_admin extends Object_Manager {
     /**
      * Constructor
      */
-    function __construct($realty_type = false) {
-        $this->SiteBill();
+    function __construct($realty_type = false)
+    {
+        parent::__construct();
         $this->apps_path = SITEBILL_DOCUMENT_ROOT . '/apps/';
         $this->action = 'language';
 
@@ -30,7 +32,7 @@ class language_admin extends Object_Manager {
             'en' => 'English'
         );
 
-        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
         $config_admin->addParamToConfig('apps.language.use_langs', '0', 'Использовать мультиязычность', SConfig::$fieldtypeCheckbox);
         $config_admin->addParamToConfig('apps.language.languages', '', 'Список языков (Пример: ru=Русский|en=English)');
@@ -39,7 +41,7 @@ class language_admin extends Object_Manager {
         $config_admin->addParamToConfig('apps.language.google_translate_api_key', '', 'Google Translate API key <a href=https://cloud.google.com/translate/docs/getting-started target=_blank>получить</a>');
         $config_admin->addParamToConfig('apps.language.autotrans_enable', '1', 'Активировать автоперевод', SConfig::$fieldtypeCheckbox);
         $config_admin->addParamToConfig('apps.language.autotrans_api', '0', 'API переводов', SConfig::$fieldtypeSelectbox, array(
-            'select_data' => array('0'=>'Google', '1'=>'Yandex')
+            'select_data' => array('0' => 'Google', '1' => 'Yandex')
         ));
         $config_admin->addParamToConfig('apps.language.yandex_translate_api_key', '', 'Yandex Translate API key <a href=https://translate.yandex.ru/developers/keys target=_blank>получить</a>');
         $config_admin->addParamToConfig('apps.language.prefixmode', '0', 'Префиксный режим', SConfig::$fieldtypeCheckbox);
@@ -48,14 +50,15 @@ class language_admin extends Object_Manager {
         $config_admin->addParamToConfig('apps.language.fulltransmode', '0', 'Полный перевод', SConfig::$fieldtypeCheckbox);
     }
 
-    function _preload() {
+    function _preload()
+    {
         //echo 1;
         $this->template->assert('available_langs', $this->getLanguages());
         //
 
         $links = array();
 
-        if(1 == intval($this->getConfigValue('apps.language.use_langs'))){
+        if (1 == intval($this->getConfigValue('apps.language.use_langs'))) {
 
             $REQUESTURIPATH = self::getClearRequestURI();
             $locales = Multilanguage::availableLanguages();
@@ -77,7 +80,7 @@ class language_admin extends Object_Manager {
 
 
             //Набор ссылок для языковых версий текущей страницы
-            foreach ($locales as $locale){
+            foreach ($locales as $locale) {
                 $links['currenturl'][] = array(
                     'href' => $this->createUrlTpl($REQUESTURIPATH, false, false, $prefix_list[$locale]),
                     'name' => mb_strtoupper($locale),
@@ -86,7 +89,7 @@ class language_admin extends Object_Manager {
             }
 
             //Набор ссылок для языковых версий главной страницы
-            foreach ($locales as $locale){
+            foreach ($locales as $locale) {
                 $links['homeurl'][] = array(
                     'href' => $this->createUrlTpl('', false, false, $prefix_list[$locale]),
                     'name' => mb_strtoupper($locale),
@@ -94,8 +97,8 @@ class language_admin extends Object_Manager {
                 );
             }
 
-            foreach ($locales as $locale){
-                if($currentlocale != $locale){
+            foreach ($locales as $locale) {
+                if ($currentlocale != $locale) {
                     $links['hreflangs'][$locale] = array(
                         'href' => $this->createUrlTpl('', true, false, $prefix_list[$locale]),
                         'hreflang' => $locale
@@ -108,15 +111,16 @@ class language_admin extends Object_Manager {
         }
 
     }
-    
-    
-    function getApps(){
+
+
+    function getApps()
+    {
         $apps = array();
         $apps_dir = SITEBILL_DOCUMENT_ROOT . '/apps';
         if (is_dir($apps_dir)) {
             if ($dh = opendir($apps_dir)) {
                 while (($app_dir = readdir($dh)) !== false) {
-                    if (is_dir($apps_dir . '/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
+                    if (is_dir($apps_dir . '/' . $app_dir) and !preg_match('/\./', $app_dir)) {
                         if (is_file($apps_dir . '/' . $app_dir . '/' . $app_dir . '.xml')) {
 
                             $xml = @simplexml_load_file($apps_dir . '/' . $app_dir . '/' . $app_dir . '.xml');
@@ -129,14 +133,15 @@ class language_admin extends Object_Manager {
         }
         return $apps;
     }
-    
-    function getTpls(){
+
+    function getTpls()
+    {
         $tpls = array();
         $tpl_dir = SITEBILL_DOCUMENT_ROOT . '/template/frontend';
         if (is_dir($tpl_dir)) {
             if ($dh = opendir($tpl_dir)) {
                 while (($app_dir = readdir($dh)) !== false) {
-                    if (is_dir($tpl_dir . '/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
+                    if (is_dir($tpl_dir . '/' . $app_dir) and !preg_match('/\./', $app_dir)) {
                         $tpls[] = trim($app_dir);
                     }
                 }
@@ -146,47 +151,48 @@ class language_admin extends Object_Manager {
         return $tpls;
     }
 
-    function main() {
+    function main()
+    {
         $rs = $this->getTopMenu();
         switch ($this->getRequestValue('do')) {
             /*case 'rebuild' : {
-                
-                
+
+
                 $system_dictionary = array();
                 $apps_dictionary = array();
                 $tpl_dictionary = array();
                 $tpl_app_dictionary = array();
-                
-                
+
+
                 $apps_dir = SITEBILL_DOCUMENT_ROOT . '/apps';
-                
+
                 if (is_file($apps_dir . '/language/' . $app_dir . '.xml')) {
-                    
+
                 }
-                
+
                 //Load all langs
                 $langs = Multilanguage::availableLanguages();
-                
+
                 if(empty($langs)){
                     $langs['ru'] = 'ru';
                 }
-                
+
                 //Load all apps
                 $apps = $this->getApps();
-                
+
                 //load all tpls
                 $tpls = $this->getTpls();
-                
+
                 print_r($langs);
                 print_r($apps);
                 print_r($tpls);
                 exit();
-        
-        
+
+
                     $themes = '1';
-                    
+
                 $apps = array();
-                
+
                 $this->apps_dir = SITEBILL_DOCUMENT_ROOT . '/apps';
         if (is_dir($this->apps_dir)) {
             if ($dh = opendir($this->apps_dir)) {
@@ -202,27 +208,27 @@ class language_admin extends Object_Manager {
                 closedir($dh);
             }
         }
-        
+
         $words = array();
-        
+
         if(!empty($apps)){
             foreach($apps as $app){
                 $lang_files_dir = $this->apps_dir . '/' . $app . '/language';
-                
+
                 foreach($langs as $lang){
                     $dic_file = $lang_files_dir.'/'.$lang.'/dictionary.ini';
-                    
+
                     if(file_exists($dic_file)){
                         $words[$app][$lang] = parse_ini_file($dic_file, true);
                     }
-                    
-                    
+
+
                 }
             }
         }
-        
+
         $tr = array();
-        
+
         foreach ($words as $app => $appwords){
             foreach ($appwords as $lang => $word){
                 foreach ($word as $wordcode => $wordvalue){
@@ -236,131 +242,143 @@ class language_admin extends Object_Manager {
             $stmt = $DBC->query($query, $t);
             echo $DBC->getLastError();
         }
-        
+
         echo '<pre>';
         print_r($tr);
         print_r($words);
-                
+
                     break;
                 }*/
-            case 'structure' : {
-                    break;
-                }
-
-            case 'edit_done' : {
-                    break;
-                }
-
-            case 'edit_dictionary' : {
-                    $rs .= $this->getAppDictionaryEditForm($this->getRequestValue('app_name'), $this->getRequestValue('dictionary'));
-                    break;
-                }
-            case 'save_words' : {
-                    //echo '<pre>';
-                    //print_r($_POST);
-                    //dictionary_key
-                    //dictionary_value
-                    $app_name = $this->getRequestValue('app_name');
-                    $this->saveWords($app_name, $this->getRequestValue('dictionary_key'), $_POST['dictionary_value']);
-                    $rs .= $this->grid();
-                    //$rs.=$this->getAppDictionaryEditForm($this->getRequestValue('app_name'), $this->getRequestValue('dictionary'));
-                    break;
-                }
-            case 'all_words' : {
-                    $rs .= $this->getAllWordsEditForm($this->getRequestValue('app_name'));
-                    break;
-                }
-
-            case 'edit' : {
-                    break;
-                }
-            case 'delete' : {
-                    break;
-                }
-
-            case 'new_done' : {
-                    break;
-                }
-
-            case 'new' : {
-                    break;
-                }
-            case 'mass_delete' : {
-                    break;
-                }
-                /*case 'synchro' : {
-                    
-                    $app_name = 'system';
-                    if (file_exists($path = $this->apps_path . $app_name . '/language/')) {
-            $path = $this->apps_path . $app_name . '/language/';
-            $dictionary = array();
-            $skip = array('.', '..');
-            $langs = scandir($path);
-            
-            //print_r($langs);
-            
-            foreach ($langs as $lang) {
-                if (!in_array($lang, $skip)) {
-                    $words = array();
-                    
-                    $words = array();
-                    if (file_exists($this->apps_path . $app_name . '/language/' . $dictionary . '/dictionary.ini')) {
-                        $words = parse_ini_file($this->apps_path . $app_name . '/language/' . $dictionary . '/dictionary.ini', true);
-                    }
-        
-        
-                    $words = $this->getAppDictionary($app_name, $lang);
-                    $dictionary[$lang] = $words;
-                }
+            case 'structure' :
+            {
+                break;
             }
-     
-            
-        }
-        
-        $controlwords = array();
-        $langs = array_keys($dictionary);
-        
-        foreach($langs as $lng){
-            foreach($dictionary[$lng] as $wm => $wv){
-                if(!isset($controlwords[$wm])){
-                    foreach($langs as $l){
-                        $controlwords[$wm][$l] = 0;
-                    }
-                    
+
+            case 'edit_done' :
+            {
+                break;
+            }
+
+            case 'edit_dictionary' :
+            {
+                $rs .= $this->getAppDictionaryEditForm($this->getRequestValue('app_name'), $this->getRequestValue('dictionary'));
+                break;
+            }
+            case 'save_words' :
+            {
+                //echo '<pre>';
+                //print_r($_POST);
+                //dictionary_key
+                //dictionary_value
+                $app_name = $this->getRequestValue('app_name');
+                $this->saveWords($app_name, $this->getRequestValue('dictionary_key'), $_POST['dictionary_value']);
+                $rs .= $this->grid();
+                //$rs.=$this->getAppDictionaryEditForm($this->getRequestValue('app_name'), $this->getRequestValue('dictionary'));
+                break;
+            }
+            case 'all_words' :
+            {
+                $rs .= $this->getAllWordsEditForm($this->getRequestValue('app_name'));
+                break;
+            }
+
+            case 'edit' :
+            {
+                break;
+            }
+            case 'delete' :
+            {
+                break;
+            }
+
+            case 'new_done' :
+            {
+                break;
+            }
+
+            case 'new' :
+            {
+                break;
+            }
+            case 'mass_delete' :
+            {
+                break;
+            }
+            /*case 'synchro' : {
+
+                $app_name = 'system';
+                if (file_exists($path = $this->apps_path . $app_name . '/language/')) {
+        $path = $this->apps_path . $app_name . '/language/';
+        $dictionary = array();
+        $skip = array('.', '..');
+        $langs = scandir($path);
+
+        //print_r($langs);
+
+        foreach ($langs as $lang) {
+            if (!in_array($lang, $skip)) {
+                $words = array();
+
+                $words = array();
+                if (file_exists($this->apps_path . $app_name . '/language/' . $dictionary . '/dictionary.ini')) {
+                    $words = parse_ini_file($this->apps_path . $app_name . '/language/' . $dictionary . '/dictionary.ini', true);
                 }
-                $controlwords[$wm][$lng] = 1;
+
+
+                $words = $this->getAppDictionary($app_name, $lang);
+                $dictionary[$lang] = $words;
             }
         }
-        
-        //print_r($controlwords);
-        $rs = '';
-        $rs .= '<table>';
-        foreach($controlwords as $w => $lp){
-            $rs .= '<tr>';
-            $rs .= '<td>'.$w.'</td>';
-            foreach($lp as $l => $v){
-                if($v == 1){
-                    $rs .= '<td><span class="label">'.$l.'</span></td>';
-                }else{
-                    $rs .= '<td><span class="label label-important">'.$l.'</span></td>';
-                }
-            }
-            $rs .= '</tr>';
-        }
-        $rs .= '</table>';
-                    break;
-                }*/
-            default : {
 
-                    $rs .= $this->grid();
+
+    }
+
+    $controlwords = array();
+    $langs = array_keys($dictionary);
+
+    foreach($langs as $lng){
+        foreach($dictionary[$lng] as $wm => $wv){
+            if(!isset($controlwords[$wm])){
+                foreach($langs as $l){
+                    $controlwords[$wm][$l] = 0;
                 }
+
+            }
+            $controlwords[$wm][$lng] = 1;
+        }
+    }
+
+    //print_r($controlwords);
+    $rs = '';
+    $rs .= '<table>';
+    foreach($controlwords as $w => $lp){
+        $rs .= '<tr>';
+        $rs .= '<td>'.$w.'</td>';
+        foreach($lp as $l => $v){
+            if($v == 1){
+                $rs .= '<td><span class="label">'.$l.'</span></td>';
+            }else{
+                $rs .= '<td><span class="label label-important">'.$l.'</span></td>';
+            }
+        }
+        $rs .= '</tr>';
+    }
+    $rs .= '</table>';
+                break;
+            }*/
+            default :
+            {
+
+                $rs .= $this->grid();
+            }
         }
         $rs_new = $this->get_app_title_bar();
         $rs_new .= $rs;
         return $rs_new;
     }
 
-    function getLanguages() {
+    function getLanguages()
+    {
         $langs = array();
         if (intval($this->getConfigValue('apps.language.use_langs')) === 0) {
             return $langs;
@@ -387,7 +405,6 @@ class language_admin extends Object_Manager {
         }
 
 
-
         $path = SITEBILL_DOCUMENT_ROOT . '/apps/system/language/';
         $skip = array('.', '..', '.svn');
         $files = scandir($path);
@@ -408,7 +425,8 @@ class language_admin extends Object_Manager {
         return $langs;
     }
 
-    private function saveWords($app_name, $terms, $values) {
+    private function saveWords($app_name, $terms, $values)
+    {
         //echo '<pre>';
         //print_r($terms);
         //print_r($values);
@@ -451,15 +469,14 @@ class language_admin extends Object_Manager {
         //print_r($langs);
         //$langs=array_keys(array);
     }
-    
-    protected function clear($val) {
-        if (get_magic_quotes_gpc()) {
-            $val = stripslashes($val);
-        }
+
+    protected function clear($val)
+    {
         return trim($val);
     }
 
-    private function getAllWordsEditForm($app_name) {
+    private function getAllWordsEditForm($app_name)
+    {
         if (file_exists($path = $this->apps_path . $app_name . '/language/')) {
             $path = $this->apps_path . $app_name . '/language/';
             $dictionary = array();
@@ -484,15 +501,15 @@ class language_admin extends Object_Manager {
             }
             //Попробуем перевести, если нет соответствующих значений.
             //Основной язык RU
-            foreach ( $x as $key => $item ) {
-                foreach ( $langs_array as $lang ) {
-                    if ( !isset($x[$key][$lang]) and $x[$key]['ru'] != '' ) {
+            foreach ($x as $key => $item) {
+                foreach ($langs_array as $lang) {
+                    if (!isset($x[$key][$lang]) and $x[$key]['ru'] != '') {
                         $x[$key][$lang] = $this->google_translate($x[$key]['ru'], $lang);
                     }
                     //echo $key.'<br>';
                 }
             }
-            
+
             $keys = array_keys($x);
         }
         /*
@@ -501,7 +518,7 @@ class language_admin extends Object_Manager {
         print_r($x);
         print_r($langs_array);
         echo '</pre>';
-         * 
+         *
          */
 
 
@@ -516,8 +533,9 @@ class language_admin extends Object_Manager {
 
         return $rs;
     }
-    
-    private function getAppDictionaryEditForm($app_name, $dictionary) {
+
+    private function getAppDictionaryEditForm($app_name, $dictionary)
+    {
         global $smarty;
         $rs = '';
         $words = $this->getAppDictionary($app_name, $dictionary);
@@ -527,7 +545,8 @@ class language_admin extends Object_Manager {
         return $rs;
     }
 
-    private function getAppDictionary($app_name, $dictionary) {
+    private function getAppDictionary($app_name, $dictionary)
+    {
         $words = array();
         if (file_exists($this->apps_path . $app_name . '/language/' . $dictionary . '/dictionary.ini')) {
             $words = parse_ini_file($this->apps_path . $app_name . '/language/' . $dictionary . '/dictionary.ini', true);
@@ -605,14 +624,15 @@ class language_admin extends Object_Manager {
       print_r($_words);
       } */
 
-    //function 
+    //function
 
     /**
      * Get top menu
      * @param void
      * @return string
      */
-    function getTopMenu() {
+    function getTopMenu()
+    {
         $rs = '';
         $rs .= '<a href="?action=' . $this->action . '" class="btn btn-primary">Список</a>';
         return $rs;
@@ -623,7 +643,8 @@ class language_admin extends Object_Manager {
      * @param void
      * @return string
      */
-    function grid($params = array(), $default_params = array()) {
+    function grid($params = array(), $default_params = array())
+    {
         global $smarty;
         $apps = array();
         $path = $this->apps_path;

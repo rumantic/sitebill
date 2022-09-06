@@ -6,13 +6,15 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * Banner admin backend
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
-class banner_admin extends Object_Manager {
+class banner_admin extends Object_Manager
+{
 
     /**
      * Constructor
      */
-    function __construct() {
-        $this->SiteBill();
+    function __construct()
+    {
+        parent::__construct();
         $this->table_name = 'banner';
         $this->action = 'banner';
         $this->primary_key = 'banner_id';
@@ -41,7 +43,8 @@ class banner_admin extends Object_Manager {
         $this->data_model = $form_data;
     }
 
-    function getTopMenu() {
+    function getTopMenu()
+    {
         $rs = '<p>';
         $rs .= '<a href="?action=' . $this->action . '" class="btn btn-primary">Баннеры</a> ';
         $rs .= '<a href="?action=' . $this->action . '&do=new" class="btn btn-primary">Добавить баннер</a> ';
@@ -51,11 +54,12 @@ class banner_admin extends Object_Manager {
         return $rs;
     }
 
-    function getInformer() {
+    function getInformer()
+    {
         $client = $_GET['client'];
 
-        $informer_cache = SITEBILL_DOCUMENT_ROOT . '/cache/informer_cache_'.$client.'.txt';
-        if(file_exists($informer_cache) && (time()-filemtime($informer_cache)) < 3600){
+        $informer_cache = SITEBILL_DOCUMENT_ROOT . '/cache/informer_cache_' . $client . '.txt';
+        if (file_exists($informer_cache) && (time() - filemtime($informer_cache)) < 3600) {
             return file_get_contents($informer_cache);
             exit();
         }
@@ -76,14 +80,14 @@ class banner_admin extends Object_Manager {
                 return '';
             }
         }
-        if ((int) $client_info['is_active'] === 0) {
+        if ((int)$client_info['is_active'] === 0) {
             return '';
         }
         //echo $referer;
 
         $site_url = $this->getServerFullUrl();
         $DBC = DBC::getInstance();
-        $num = (int) $client_info['informer_parameters']['num'];
+        $num = (int)$client_info['informer_parameters']['num'];
         if ($num === 0) {
             $num = 1;
         }
@@ -136,24 +140,24 @@ class banner_admin extends Object_Manager {
             if (empty($form_data)) {
                 return '';
             }
-            $form_data=$form_data['complex'];
-            $search_params=array();
+            $form_data = $form_data['complex'];
+            $search_params = array();
             $filter = trim($client_info['informer_parameters']['filters']);
-            if($filter!=''){
+            if ($filter != '') {
                 parse_str($filter, $result);
                 //print_r($result);
-                foreach($result as $pname=>$pval){
-                    if(isset($form_data[$pname])){
-                        if($form_data[$pname]['type']=='checkbox' && in_array($pval, array(0,1))){
-                            $search_params[]='`'.$pname.'`='.$pval;
+                foreach ($result as $pname => $pval) {
+                    if (isset($form_data[$pname])) {
+                        if ($form_data[$pname]['type'] == 'checkbox' && in_array($pval, array(0, 1))) {
+                            $search_params[] = '`' . $pname . '`=' . $pval;
                         }
                     }
                 }
             }
 
-            $ids=array();
+            $ids = array();
 
-            $query = 'SELECT complex_id FROM ' . DB_PREFIX . '_complex'.(!empty($search_params) ? ' WHERE '.implode(' AND ', $search_params) : '').' ORDER BY name DESC LIMIT ' . $num;
+            $query = 'SELECT complex_id FROM ' . DB_PREFIX . '_complex' . (!empty($search_params) ? ' WHERE ' . implode(' AND ', $search_params) : '') . ' ORDER BY name DESC LIMIT ' . $num;
 
             $stmt = $DBC->query($query);
             if ($stmt) {
@@ -162,7 +166,7 @@ class banner_admin extends Object_Manager {
                 }
             }
 
-            if(empty($ids)){
+            if (empty($ids)) {
                 return '';
             }
 
@@ -214,7 +218,6 @@ class banner_admin extends Object_Manager {
         }
 
 
-
         if (empty($form_data)) {
             return '';
         }
@@ -243,7 +246,6 @@ class banner_admin extends Object_Manager {
                 $form_data[$item_id]['_textblock'] = $textblock;
             }
         }
-
 
 
         global $smarty;
@@ -294,7 +296,8 @@ class banner_admin extends Object_Manager {
           return $text; */
     }
 
-    protected function getClientInfo($access_code) {
+    protected function getClientInfo($access_code)
+    {
         $DBC = DBC::getInstance();
         $query = 'SELECT * FROM ' . DB_PREFIX . '_banner_informer WHERE `access_code`=?';
         $stmt = $DBC->query($query, array($access_code));
@@ -316,7 +319,8 @@ class banner_admin extends Object_Manager {
         }
     }
 
-    function _preload() {
+    function _preload()
+    {
         $requesturi = ltrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
         $banners = array();
         $banners = $this->get_banners_list();
@@ -356,7 +360,8 @@ class banner_admin extends Object_Manager {
      * Enter description here ...
      * @return unknown
      */
-    function get_banners_list() {
+    function get_banners_list()
+    {
         $DBC = DBC::getInstance();
         $query = "SELECT * FROM " . DB_PREFIX . "_banner WHERE published=1 ORDER BY " . $this->primary_key . " ASC";
         $ra = array();
@@ -369,73 +374,84 @@ class banner_admin extends Object_Manager {
         return $ra;
     }
 
-    function main() {
+    function main()
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         $form_data = $this->data_model;
         $rs = $this->getTopMenu();
 
         switch ($this->getRequestValue('do')) {
-            case 'structure' : {
-                    $rs = $this->structure_processor();
-                    break;
-                }
+            case 'structure' :
+            {
+                $rs = $this->structure_processor();
+                break;
+            }
 
-            case 'edit_done' : {
-                    $rs .= $this->_edit_doneAction();
-                    break;
-                }
+            case 'edit_done' :
+            {
+                $rs .= $this->_edit_doneAction();
+                break;
+            }
 
-            case 'edit' : {
-                    $rs .= $this->_editAction();
-                    break;
-                }
-            case 'delete' : {
+            case 'edit' :
+            {
+                $rs .= $this->_editAction();
+                break;
+            }
+            case 'delete' :
+            {
                 $rs .= $this->_deleteAction();
                 break;
             }
 
-            case 'new_done' : {
+            case 'new_done' :
+            {
                 $rs .= $this->_new_doneAction();
                 break;
             }
 
-            case 'new' : {
+            case 'new' :
+            {
                 $rs .= $this->_newAction();
                 break;
             }
-            case 'informers' : {
-                    $rs .= $this->Informer();
+            case 'informers' :
+            {
+                $rs .= $this->Informer();
 
-                    break;
+                break;
+            }
+            case 'mass_delete' :
+            {
+                $id_array = array();
+                $ids = trim($this->getRequestValue('ids'));
+                if ($ids != '') {
+                    $id_array = explode(',', $ids);
                 }
-            case 'mass_delete' : {
-                    $id_array = array();
-                    $ids = trim($this->getRequestValue('ids'));
-                    if ($ids != '') {
-                        $id_array = explode(',', $ids);
-                    }
-                    $rs .= $this->mass_delete_data($this->table_name, $this->primary_key, $id_array);
-                    break;
-                }
-            case 'change_param' : {
-                    $id_array = array();
-                    $ids = trim($this->getRequestValue('ids'));
-                    $param_name = trim($this->getRequestValue('param_name'));
-                    $param_value = trim($this->getRequestValue('new_param_value'));
+                $rs .= $this->mass_delete_data($this->table_name, $this->primary_key, $id_array);
+                break;
+            }
+            case 'change_param' :
+            {
+                $id_array = array();
+                $ids = trim($this->getRequestValue('ids'));
+                $param_name = trim($this->getRequestValue('param_name'));
+                $param_value = trim($this->getRequestValue('new_param_value'));
 
-                    if (isset($form_data[$this->table_name][$param_name]) && $ids != '') {
-                        //echo 1;
-                        $id_array = explode(',', $ids);
-                        $rs .= $this->mass_change_param($this->table_name, $this->primary_key, $id_array, $param_name, $param_value);
-                    } else {
-                        $rs .= $this->grid();
-                    }
-                    break;
+                if (isset($form_data[$this->table_name][$param_name]) && $ids != '') {
+                    //echo 1;
+                    $id_array = explode(',', $ids);
+                    $rs .= $this->mass_change_param($this->table_name, $this->primary_key, $id_array, $param_name, $param_value);
+                } else {
+                    $rs .= $this->grid();
                 }
-            default : {
-                    $rs .= $this->grid($user_id);
-                }
+                break;
+            }
+            default :
+            {
+                $rs .= $this->grid($user_id);
+            }
         }
         $rs_new = $this->get_app_title_bar();
         $rs_new .= $rs;
@@ -443,7 +459,8 @@ class banner_admin extends Object_Manager {
     }
 
 
-    protected function Informer_CreateCode() {
+    protected function Informer_CreateCode()
+    {
         //$codes=array();
         $code = substr(md5(time() . rand(100, 999)), 0, 10);
         $DBC = DBC::getInstance();
@@ -455,7 +472,8 @@ class banner_admin extends Object_Manager {
         return $code;
     }
 
-    protected function Informer_grid() {
+    protected function Informer_grid()
+    {
         $bi = array();
         $DBC = DBC::getInstance();
         $query = 'SELECT * FROM ' . DB_PREFIX . '_banner_informer';
@@ -472,81 +490,34 @@ class banner_admin extends Object_Manager {
         return $rs;
     }
 
-    protected function Informer() {
+    protected function Informer()
+    {
         $subdo = $this->getRequestValue('subdo');
         switch ($subdo) {
-            case 'edit' : {
-                    $id = (int) $this->getRequestValue('biid');
-                    if (isset($_POST['submit'])) {
-                        $bi = array();
-                        $bi['is_active'] = (int) $this->getRequestValue('is_active');
-                        $bi['access_code'] = trim($this->getRequestValue('access_code'));
-                        if ('' === $bi['access_code']) {
-                            $bi['access_code'] = $this->Informer_CreateCode();
-                        }
-                        $informer_parameters = $_POST['informer_parameters'];
-                        if ('' !== trim($informer_parameters['domain'])) {
-                            $domain = trim($informer_parameters['domain']);
-                            $domain = preg_replace('/^(http:\/\/)/', '', $domain);
-                            $domain = trim($domain, '/');
-                            //preg_replace('/^(http)/', '', $domain);
-                            $informer_parameters['domain'] = $domain;
-                        }
-                        $bi['informer_parameters'] = serialize($informer_parameters);
-                        $DBC = DBC::getInstance();
-                        $query = 'UPDATE ' . DB_PREFIX . '_banner_informer SET `is_active`=?, `access_code`=?, `informer_parameters`=? WHERE biid=?';
-                        $stmt = $DBC->query($query, array($bi['is_active'], $bi['access_code'], $bi['informer_parameters'], $id));
-                        $rs = $this->Informer_grid();
-                    } else {
-                        $DBC = DBC::getInstance();
-                        $query = 'SELECT * FROM ' . DB_PREFIX . '_banner_informer WHERE biid=?';
-                        $stmt = $DBC->query($query, array($id));
-                        if ($stmt) {
-                            $ar = $DBC->fetch($stmt);
-                            $ar['informer_parameters'] = unserialize($ar['informer_parameters']);
-                            $bi = $ar;
-                        }
-
-                        global $smarty;
-                        $smarty->assign('bi', $bi);
-                        $rs = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/banner/admin/template/informer_form.tpl');
+            case 'edit' :
+            {
+                $id = (int)$this->getRequestValue('biid');
+                if (isset($_POST['submit'])) {
+                    $bi = array();
+                    $bi['is_active'] = (int)$this->getRequestValue('is_active');
+                    $bi['access_code'] = trim($this->getRequestValue('access_code'));
+                    if ('' === $bi['access_code']) {
+                        $bi['access_code'] = $this->Informer_CreateCode();
                     }
-
-                    break;
-                }
-            case 'new' : {
-                    //$id=(int)$this->getRequestValue('biid');
-                    if (isset($_POST['submit'])) {
-                        $bi = array();
-                        $bi['is_active'] = (int) $this->getRequestValue('is_active');
-                        $bi['access_code'] = trim($this->getRequestValue('access_code'));
-                        if ('' === $bi['access_code']) {
-                            $bi['access_code'] = $this->Informer_CreateCode();
-                        }
-                        $informer_parameters = $_POST['informer_parameters'];
-                        if ('' !== trim($informer_parameters['domain'])) {
-                            $domain = trim($informer_parameters['domain']);
-                            $domain = preg_replace('/^(http:\/\/)/', '', $domain);
-                            $domain = trim($domain, '/');
-                            $informer_parameters['domain'] = $domain;
-                        }
-                        $bi['informer_parameters'] = serialize($informer_parameters);
-                        $DBC = DBC::getInstance();
-                        $query = 'INSERT INTO ' . DB_PREFIX . '_banner_informer (`is_active`, `access_code`, `informer_parameters`) VALUES (?,?,?)';
-                        $stmt = $DBC->query($query, array($bi['is_active'], $bi['access_code'], $bi['informer_parameters']));
-                        $rs = $this->Informer_grid();
-                    } else {
-                        $bi = array();
-                        global $smarty;
-                        $smarty->assign('bi', $bi);
-                        $rs = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/banner/admin/template/informer_form.tpl');
+                    $informer_parameters = $_POST['informer_parameters'];
+                    if ('' !== trim($informer_parameters['domain'])) {
+                        $domain = trim($informer_parameters['domain']);
+                        $domain = preg_replace('/^(http:\/\/)/', '', $domain);
+                        $domain = trim($domain, '/');
+                        //preg_replace('/^(http)/', '', $domain);
+                        $informer_parameters['domain'] = $domain;
                     }
-
-                    break;
-                }
-            case 'code' : {
-                    $id = (int) $this->getRequestValue('biid');
-
+                    $bi['informer_parameters'] = serialize($informer_parameters);
+                    $DBC = DBC::getInstance();
+                    $query = 'UPDATE ' . DB_PREFIX . '_banner_informer SET `is_active`=?, `access_code`=?, `informer_parameters`=? WHERE biid=?';
+                    $stmt = $DBC->query($query, array($bi['is_active'], $bi['access_code'], $bi['informer_parameters'], $id));
+                    $rs = $this->Informer_grid();
+                } else {
                     $DBC = DBC::getInstance();
                     $query = 'SELECT * FROM ' . DB_PREFIX . '_banner_informer WHERE biid=?';
                     $stmt = $DBC->query($query, array($id));
@@ -555,23 +526,76 @@ class banner_admin extends Object_Manager {
                         $ar['informer_parameters'] = unserialize($ar['informer_parameters']);
                         $bi = $ar;
                     }
-                    $c .= '<!-- Sitebill informer START -->' . "\n";
-                    $c .= '<div id="sInformer' . $bi['biid'] . '"></div>' . "\n";
-                    $c .= '<script src="' . $this->getServerFullUrl() . '/apps/banner/informer.php?client=' . $bi['access_code'] . '"></script>' . "\n";
-                    $c .= '<!-- Sitebill informer END -->';
-                    $rs = '<textarea style="height: 200px; width: 100%;">' . $c . '</textarea>';
 
-                    break;
+                    global $smarty;
+                    $smarty->assign('bi', $bi);
+                    $rs = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/banner/admin/template/informer_form.tpl');
                 }
-            default : {
+
+                break;
+            }
+            case 'new' :
+            {
+                //$id=(int)$this->getRequestValue('biid');
+                if (isset($_POST['submit'])) {
+                    $bi = array();
+                    $bi['is_active'] = (int)$this->getRequestValue('is_active');
+                    $bi['access_code'] = trim($this->getRequestValue('access_code'));
+                    if ('' === $bi['access_code']) {
+                        $bi['access_code'] = $this->Informer_CreateCode();
+                    }
+                    $informer_parameters = $_POST['informer_parameters'];
+                    if ('' !== trim($informer_parameters['domain'])) {
+                        $domain = trim($informer_parameters['domain']);
+                        $domain = preg_replace('/^(http:\/\/)/', '', $domain);
+                        $domain = trim($domain, '/');
+                        $informer_parameters['domain'] = $domain;
+                    }
+                    $bi['informer_parameters'] = serialize($informer_parameters);
+                    $DBC = DBC::getInstance();
+                    $query = 'INSERT INTO ' . DB_PREFIX . '_banner_informer (`is_active`, `access_code`, `informer_parameters`) VALUES (?,?,?)';
+                    $stmt = $DBC->query($query, array($bi['is_active'], $bi['access_code'], $bi['informer_parameters']));
                     $rs = $this->Informer_grid();
+                } else {
+                    $bi = array();
+                    global $smarty;
+                    $smarty->assign('bi', $bi);
+                    $rs = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/banner/admin/template/informer_form.tpl');
                 }
+
+                break;
+            }
+            case 'code' :
+            {
+                $id = (int)$this->getRequestValue('biid');
+
+                $DBC = DBC::getInstance();
+                $query = 'SELECT * FROM ' . DB_PREFIX . '_banner_informer WHERE biid=?';
+                $stmt = $DBC->query($query, array($id));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+                    $ar['informer_parameters'] = unserialize($ar['informer_parameters']);
+                    $bi = $ar;
+                }
+                $c .= '<!-- Sitebill informer START -->' . "\n";
+                $c .= '<div id="sInformer' . $bi['biid'] . '"></div>' . "\n";
+                $c .= '<script src="' . $this->getServerFullUrl() . '/apps/banner/informer.php?client=' . $bi['access_code'] . '"></script>' . "\n";
+                $c .= '<!-- Sitebill informer END -->';
+                $rs = '<textarea style="height: 200px; width: 100%;">' . $c . '</textarea>';
+
+                break;
+            }
+            default :
+            {
+                $rs = $this->Informer_grid();
+            }
         }
 
         return $rs;
     }
 
-    function install() {
+    function install()
+    {
         $DBC = DBC::getInstance();
         //create tables
         $query = "
@@ -591,8 +615,7 @@ CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_banner` (
         if (!$success) {
             $rs = Multilanguage::_('L_APPLICATION_INSTALLED_ERROR');
         } else {
-            $rs = Multilanguage::_('L_APPLICATION_INSTALLED');
-            ;
+            $rs = Multilanguage::_('L_APPLICATION_INSTALLED');;
         }
         return $rs;
     }
@@ -602,11 +625,11 @@ CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_banner` (
      * @param void
      * @return string
      */
-    function grid($params = array(), $default_params = array()) {
+    function grid($params = array(), $default_params = array())
+    {
 
         $params = array();
         $params['action'] = $this->action;
-
 
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/grid.php');
@@ -648,7 +671,8 @@ CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_banner` (
      * @param
      * @return
      */
-    function get_banner_model() {
+    function get_banner_model()
+    {
         $form_banner = array();
 
         $form_banner['banner']['banner_id']['name'] = 'banner_id';
@@ -712,7 +736,7 @@ CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_banner` (
         $form_banner['banner']['image']['type'] = 'uploads';
         $form_banner['banner']['image']['required'] = 'off';
         $form_banner['banner']['image']['unique'] = 'off';
-        $form_banner['banner']['image']['parameters'] = array (
+        $form_banner['banner']['image']['parameters'] = array(
             'norm_width' => 1920,
             'norm_height' => 1080,
         );

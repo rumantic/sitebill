@@ -7,7 +7,7 @@
         {else}
             <meta charset="windows-1251" />
         {/if}
-        <title>CMS Sitebill</title>
+        <title>{if $smarty.const.BRANDING==1}{getConfig key='site_title'}{else}CMS Sitebill{/if}</title>
 
 
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -70,6 +70,7 @@
         <link rel="stylesheet" href="{$MAIN_URL}/apps/system/css/mycombobox.css" />
         <link rel="stylesheet" href="{$MAIN_URL}/apps/admin/admin/template1/assets/css/jquery.gritter.css" />
 
+
         <script>
             var yandex_map_version = '2.1';
         </script>
@@ -82,7 +83,7 @@
             {if $map_type=='yandex'}
                 <script type="text/javascript" src="https://api-maps.yandex.ru/2.1/?lang=ru-RU{if $y_api_key!=''}&apikey={$y_api_key}{/if}"></script>
             {elseif $map_type=='google'}
-                <script type="text/javascript" src="https://maps.google.com/maps/api/js{if $g_api_key!=''}?key={$g_api_key}{/if}"></script>
+                <script type="text/javascript" src="https://maps.google.com/maps/api/js{if $g_api_key!=''}?key={$g_api_key}{/if}{if {getConfig key='apps.geodata.use_google_places_api'} eq 1}&libraries=places{/if}"></script>
             {elseif $map_type=='leaflet_osm'}
                 <link rel="stylesheet" type="text/css" href="{$estate_folder}/apps/system/js/leaflet/leaflet.css" />
                 <script type="text/javascript" src="{$estate_folder}/apps/system/js/leaflet/leaflet.js"></script>
@@ -110,7 +111,7 @@
         <script src="{$assets_folder}/assets/js/ace-elements.min.js"></script>
         <script src="{$assets_folder}/assets/js/ace.min.js"></script>
 
-        <link rel="stylesheet" href="{$assets_folder}/css/custom.css" />
+        <link rel="stylesheet" href="{$assets_folder}/css/custom.css?v=1" />
         {literal}
             <style>
                 .modal.fade{top: -200%;}
@@ -158,6 +159,10 @@
         <script src="{$MAIN_URL}/apps/vue/dist/js/main.js"></script>
     </app>
     {/if}
+    <script src="{$assets_folder}/assets/js/ace/ace.js"></script>
+    <script src="{$assets_folder}/assets/js/ace/ace.widget-box.js"></script>
+    <script src="{$assets_folder}/assets/js/ace/ace.widget-on-reload.js"></script>
+    <script src="{$MAIN_URL}/apps/api/js/legacy_api.js"></script>
 
     </body>
 </html>

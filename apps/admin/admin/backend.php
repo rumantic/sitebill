@@ -189,15 +189,7 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
                     $realty_pro_admin = new realtypro_admin();
                     $rs = $realty_pro_admin->main();
                 } else {
-                    require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/data/data_manager.php');
-                    if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php') ) {
-                        require_once (SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php');
-                        $data_manager_local = new Data_Manager_Local();
-                        $rs = $data_manager_local->main();
-                    } else {
-                        $Data_Manager = new Data_Manager();
-                        $rs = $Data_Manager->main();
-                    }
+                    $rs = data_manager($sitebill, $permission);
                 }
             } elseif( $_REQUEST['action'] == 'group' ) {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/group/group_manager.php');
@@ -290,8 +282,8 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
                 unset($_SESSION['current_user_group_id']);
                 unset($_SESSION['current_user_name']);
                 //unset($_COOKIE['logged_user_id'])
-                setcookie('logged_user_id', '', time()-60*60*24*5, '/', SiteBill::$_cookiedomain);
-                setcookie('logged_user_token', '', time()-60*60*24*5, '/', SiteBill::$_cookiedomain);
+                setcookie('logged_user_id', '', time()-$sitebill->get_cookie_duration_in_sec(), '/', SiteBill::$_cookiedomain);
+                setcookie('logged_user_token', '', time()-$sitebill->get_cookie_duration_in_sec(), '/', SiteBill::$_cookiedomain);
                 header('Location: '.SITEBILL_ADMIN_BASE);
                 exit;
             } elseif( $_REQUEST['action'] == 'loginasuser' ) {
@@ -311,8 +303,8 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
                 unset($_SESSION['current_user_group_id']);
                 unset($_SESSION['current_user_name']);
                 //unset($_COOKIE['logged_user_id'])
-                setcookie('logged_user_id', '', time()-60*60*24*5, '/', SiteBill::$_cookiedomain);
-                setcookie('logged_user_token', '', time()-60*60*24*5, '/', SiteBill::$_cookiedomain);
+                setcookie('logged_user_id', '', time()-$sitebill->get_cookie_duration_in_sec(), '/', SiteBill::$_cookiedomain);
+                setcookie('logged_user_token', '', time()-$sitebill->get_cookie_duration_in_sec(), '/', SiteBill::$_cookiedomain);
 
                 require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/user/login.php';
                 $Login = new Login();
@@ -333,7 +325,11 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
                 } catch ( Exception $e ) {
                     if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/customentity/admin/admin.php')){
                         require_once(SITEBILL_DOCUMENT_ROOT.'/apps/customentity/admin/admin.php');
-                        if(customentity_admin::checkEntity($_REQUEST['action'])){
+                        $api_common = new \api\aliases\API_common_alias();
+                        $api_common_object = $api_common->init_custom_model_object($_REQUEST['action']);
+                        if ( $api_common_object ) {
+                            $rs = $api_common_object->main();
+                        }elseif(customentity_admin::checkEntity($_REQUEST['action'])){
                             $CE=new customentity_admin();
                             $rs = $CE->main();
                         } else {
@@ -346,15 +342,7 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
 
             }
         } else {
-            require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/data/data_manager.php');
-            if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php') ) {
-                require_once (SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php');
-                $data_manager_local = new Data_Manager_Local();
-                $rs = $data_manager_local->main();
-            } else {
-                $Data_Manager = new Data_Manager();
-                $rs = $Data_Manager->main();
-            }
+            $rs = data_manager($sitebill, $permission);
         }
     }
 
@@ -383,5 +371,42 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
 	$smarty->display(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/template/main.tpl');
 } else {
 	$smarty->display("main.tpl");
+}
+
+/**
+ * @param SiteBill $sitebill
+ * @param Permission $permission
+ * @return string
+ */
+function data_manager ($sitebill, $permission) {
+    if (
+        !$permission->is_admin($sitebill->getSessionUserId()) &&
+        $sitebill->getConfigValue('apps.data.use_in_admin') &&
+        $permission->get_access($sitebill->getSessionUserId(), 'data', 'admin_interface')
+    ) {
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/data/admin/admin.php');
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/data/site/site.php');
+        $data_site = new data_site();
+        if (
+            $permission->is_admin($sitebill->getSessionUserId()) or
+            $permission->get_access($sitebill->getSessionUserId(), 'data', 'admin_access')
+        ) {
+            $data_site->set_full_access_mode(true);
+        }
+        $data_site->set_app_root('admin');
+        return $data_site->main();
+
+    } else {
+        require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/data/data_manager.php');
+        if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php') ) {
+            require_once (SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php');
+            $data_manager_local = new Data_Manager_Local();
+            $rs = $data_manager_local->main();
+        } else {
+            $Data_Manager = new Data_Manager();
+            $rs = $Data_Manager->main();
+        }
+        return $rs;
+    }
 }
 exit;

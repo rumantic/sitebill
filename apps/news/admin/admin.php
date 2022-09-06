@@ -6,26 +6,28 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * News admin backend
  * @author Abushyk Kostyantyn <abushyk@gmail.com> http://www.sitebill.ru
  */
-class news_admin extends Object_Manager {
+class news_admin extends Object_Manager
+{
 
     /**
      * Constructor
      */
-    function __construct($mod_name = '') {
-        $this->SiteBill();
+    function __construct($mod_name = '')
+    {
+        parent::__construct();
         Multilanguage::appendAppDictionary('news');
         $this->action = 'news';
         $this->use_topics = false;
         $this->app_title = Multilanguage::_('APPLICATION_NAME', 'news');
 
         parent::set_mod($mod_name);
-        if($this->mod_name=='topic'){
+        if ($this->mod_name == 'topic') {
             $this->initNewsTopicModel();
-        }else{
+        } else {
             $this->initNewsModel();
         }
 
-        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
 
         $config_admin->addParamToConfig('apps.news.enable', '1', 'Включить News.Apps', SConfig::$fieldtypeCheckbox);
@@ -75,24 +77,26 @@ class news_admin extends Object_Manager {
 
     }
 
-    protected function checkOwning($id, $user_id) {
+    protected function checkOwning($id, $user_id)
+    {
         $DBC = DBC::getInstance();
         $query = 'SELECT COUNT(`' . $this->primary_key . '`) AS _cnt FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE `' . $this->primary_key . '`=? AND `user_id`=?';
         $stmt = $DBC->query($query, array($id, $user_id));
         $res = false;
         if ($stmt) {
             $ar = $DBC->fetch($stmt);
-            if ((int) $ar['_cnt'] === 1) {
+            if ((int)$ar['_cnt'] === 1) {
                 $res = true;
             }
         }
         return $res;
     }
 
-    public function sitemapHTML($sitemap) {
+    public function sitemapHTML($sitemap)
+    {
         $urls = array();
         $DBC = DBC::getInstance();
-        $page = ((int) $this->getRequestValue('page') > 0 ? (int) $this->getRequestValue('page') : 1);
+        $page = ((int)$this->getRequestValue('page') > 0 ? (int)$this->getRequestValue('page') : 1);
         $per_page = $this->getConfigValue('apps.page.per_page');
 
         $start = ($page - 1) * $per_page;
@@ -117,10 +121,11 @@ class news_admin extends Object_Manager {
         return $urls;
     }
 
-    public function sitemap_pages_count($sitemap) {
+    public function sitemap_pages_count($sitemap)
+    {
         $cnt = 0;
-        if (1 == (int) $this->getConfigValue('apps.news.enable')) {
-            if (1 == (int) $this->getConfigValue('apps.news.sitemaproot')) {
+        if (1 == (int)$this->getConfigValue('apps.news.enable')) {
+            if (1 == (int)$this->getConfigValue('apps.news.sitemaproot')) {
                 $cnt += 1;
             }
             if (1 === intval($this->getConfigValue('apps.news.sitemaptopics')) && 1 === intval($this->getConfigValue('apps.news.use_news_topics'))) {
@@ -129,7 +134,7 @@ class news_admin extends Object_Manager {
                     $cnt += count($ntl);
                 }
             }
-            if (1 == (int) $this->getConfigValue('apps.news.sitemapitems')) {
+            if (1 == (int)$this->getConfigValue('apps.news.sitemapitems')) {
                 $DBC = DBC::getInstance();
                 if ($this->data_model[$this->table_name]['date']['type'] == 'dtdatetime') {
                     $date = date('Y-m-d H:i:s', time());
@@ -145,25 +150,26 @@ class news_admin extends Object_Manager {
                 }
             }
         }
-        if($cnt > 0){
-            $cnt = intval(ceil($cnt/$sitemap->getPerPageCount()));
+        if ($cnt > 0) {
+            $cnt = intval(ceil($cnt / $sitemap->getPerPageCount()));
         }
         return $cnt;
     }
 
-    public function sitemap($sitemap, $page = 0) {
+    public function sitemap($sitemap, $page = 0)
+    {
 
         //$perpagecount = $sitemap->getPerPageCount();
         $offset = 0;
 
         $orderstring = '';
-        if($page == 0){
+        if ($page == 0) {
             $orderstring = ' ORDER BY `' . $this->primary_key . '` ASC';
         }
 
         $news = array();
-        if (1 == (int) $this->getConfigValue('apps.news.enable')) {
-            if (1 == (int) $this->getConfigValue('apps.news.sitemaproot')) {
+        if (1 == (int)$this->getConfigValue('apps.news.enable')) {
+            if (1 == (int)$this->getConfigValue('apps.news.sitemaproot')) {
                 if ('' != $this->getConfigValue('apps.news.alias')) {
                     $app_alias = $this->getConfigValue('apps.news.alias');
                 } else {
@@ -179,14 +185,14 @@ class news_admin extends Object_Manager {
                     }
                 }
             }
-            if (1 == (int) $this->getConfigValue('apps.news.sitemapitems')) {
+            if (1 == (int)$this->getConfigValue('apps.news.sitemapitems')) {
                 $DBC = DBC::getInstance();
                 if ($this->data_model[$this->table_name]['date']['type'] == 'dtdatetime') {
                     $date = date('Y-m-d H:i:s', time());
                 } else {
                     $date = time();
                 }
-                $query = 'SELECT `' . $this->primary_key . '`, `newsalias` FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE `date`<=?'.$orderstring;
+                $query = 'SELECT `' . $this->primary_key . '`, `newsalias` FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE `date`<=?' . $orderstring;
                 $stmt = $DBC->query($query, array($date));
 
                 if ($stmt) {
@@ -201,15 +207,16 @@ class news_admin extends Object_Manager {
         return $news;
     }
 
-    protected function _deleteAction() {
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && $this->mod_name === 'topic' && ($_SESSION['current_user_group_name'] !== 'admin')) {
+    protected function _deleteAction()
+    {
+        if ((1 === (int)$this->getConfigValue('check_permissions')) && $this->mod_name === 'topic' && ($_SESSION['current_user_group_name'] !== 'admin')) {
             return '';
         }
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && (1 === (int) $this->getConfigValue('apps.news.share_access')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
+        if ((1 === (int)$this->getConfigValue('check_permissions')) && (1 === (int)$this->getConfigValue('apps.news.share_access')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
             $rs = '';
 
-            $news_id = (int) $this->getRequestValue($this->primary_key);
-            $user_id = (int) $_SESSION['user_id_value'];
+            $news_id = (int)$this->getRequestValue($this->primary_key);
+            $user_id = (int)$_SESSION['user_id_value'];
 
             if ($this->checkOwning($news_id, $user_id)) {
                 $this->delete_data($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key));
@@ -231,17 +238,17 @@ class news_admin extends Object_Manager {
         }
     }
 
-    protected function _editAction() {
-        $news_id = (int) $this->getRequestValue($this->primary_key);
-        $user_id = (int) $_SESSION['user_id_value'];
+    protected function _editAction()
+    {
+        $news_id = (int)$this->getRequestValue($this->primary_key);
+        $user_id = (int)$_SESSION['user_id_value'];
 
 
-
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && $this->mod_name === 'topic' && ($_SESSION['current_user_group_name'] !== 'admin')) {
+        if ((1 === (int)$this->getConfigValue('check_permissions')) && $this->mod_name === 'topic' && ($_SESSION['current_user_group_name'] !== 'admin')) {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
 
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && (1 === (int) $this->getConfigValue('apps.news.share_access')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
+        if ((1 === (int)$this->getConfigValue('check_permissions')) && (1 === (int)$this->getConfigValue('apps.news.share_access')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
             if ($this->checkOwning($news_id, $user_id)) {
                 return parent::_editAction();
             } else {
@@ -252,14 +259,15 @@ class news_admin extends Object_Manager {
         }
     }
 
-    protected function _edit_doneAction() {
-        $news_id = (int) $this->getRequestValue($this->primary_key);
-        $user_id = (int) $_SESSION['user_id_value'];
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && $this->mod_name === 'topic') {
+    protected function _edit_doneAction()
+    {
+        $news_id = (int)$this->getRequestValue($this->primary_key);
+        $user_id = (int)$_SESSION['user_id_value'];
+        if ((1 === (int)$this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && $this->mod_name === 'topic') {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
 
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && (1 === (int) $this->getConfigValue('apps.news.share_access')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
+        if ((1 === (int)$this->getConfigValue('check_permissions')) && (1 === (int)$this->getConfigValue('apps.news.share_access')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
             if ($this->checkOwning($news_id, $user_id)) {
                 $rs = '';
                 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
@@ -308,23 +316,22 @@ class news_admin extends Object_Manager {
                 }
                 return $rs;
             } else {
-                return Multilanguage::_('L_ACCESS_DENIED');
-                ;
+                return Multilanguage::_('L_ACCESS_DENIED');;
             }
         } else {
             return parent::_edit_doneAction();
         }
     }
 
-    protected function _newAction() {
+    protected function _newAction()
+    {
         $rs = '';
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && $this->mod_name === 'topic') {
+        if ((1 === (int)$this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && $this->mod_name === 'topic') {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && (1 !== (int) $this->getConfigValue('apps.news.share_access'))) {
+        if ((1 === (int)$this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && (1 !== (int)$this->getConfigValue('apps.news.share_access'))) {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
-
 
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
@@ -338,19 +345,19 @@ class news_admin extends Object_Manager {
         return $rs;
     }
 
-    protected function _new_doneAction() {
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && $this->mod_name === 'topic') {
+    protected function _new_doneAction()
+    {
+        if ((1 === (int)$this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && $this->mod_name === 'topic') {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
 
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && (1 === (int) $this->getConfigValue('apps.news.share_access'))) {
+        if ((1 === (int)$this->getConfigValue('check_permissions')) && (1 === (int)$this->getConfigValue('apps.news.share_access'))) {
 
             $rs = '';
 
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
             $data_model = new Data_Model();
             $form_data = $this->data_model;
-
 
 
             $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
@@ -403,7 +410,8 @@ class news_admin extends Object_Manager {
       }
      */
 
-    protected function initNewsModel() {
+    protected function initNewsModel()
+    {
         $this->action = 'news';
         $this->table_name = 'news';
         $this->primary_key = 'news_id';
@@ -434,7 +442,8 @@ class news_admin extends Object_Manager {
         $this->data_model = $form_data;
     }
 
-    protected function initNewsTopicModel() {
+    protected function initNewsTopicModel()
+    {
         $this->action = 'news:topic';
         $this->table_name = 'news_topic';
         $this->primary_key = 'id';
@@ -465,7 +474,8 @@ class news_admin extends Object_Manager {
     }
 
 
-    public function _before_check_action($form_data, $type = 'new') {
+    public function _before_check_action($form_data, $type = 'new')
+    {
         $form_data = parent::_before_check_action($form_data, $type);
         if (isset($form_data['date'])) {
             if ($form_data['date']['type'] == 'date') {
@@ -487,15 +497,15 @@ class news_admin extends Object_Manager {
                 $form_data['url']['value'] = $this->transliteMe($form_data['name']['value']);
             }
             $form_data['url']['value'] = preg_replace('/[^a-zA-Z0-9-_]/', '', $form_data['url']['value']);
-        }else{
+        } else {
             if (isset($form_data['newsalias']['value']) && $form_data['newsalias']['value'] != '') {
                 $form_data['newsalias']['value'] = preg_replace('/[^a-zA-Z0-9-_]/', '', $form_data['newsalias']['value']);
-            }elseif (isset($form_data['newsalias']) && $form_data['newsalias']['value'] == '') {
+            } elseif (isset($form_data['newsalias']) && $form_data['newsalias']['value'] == '') {
                 $f = trim($this->getConfigValue('apps.news.alias_source_field'));
-                if($f == ''){
+                if ($f == '') {
                     $f = 'title';
                 }
-                if(isset($form_data[$f]) && $form_data[$f]['value'] != ''){
+                if (isset($form_data[$f]) && $form_data[$f]['value'] != '') {
                     $form_data['newsalias']['value'] = $this->get_transliteration($form_data[$f]['value']);
                 }
             }
@@ -503,7 +513,8 @@ class news_admin extends Object_Manager {
         return $form_data;
     }
 
-    function install() {
+    function install()
+    {
         $success_result = true;
         $DBC = DBC::getInstance();
 
@@ -557,17 +568,20 @@ class news_admin extends Object_Manager {
 
     }
 
-    function getTopMenu() {
+    function getTopMenu()
+    {
         $rs = '';
         $rs .= '<a href="?action=news" class="btn btn-primary">Все новости</a>';
         $rs .= ' <a href="?action=news&do=new" class="btn btn-primary">Добавить новость</a>';
 
         if ($this->use_topics) {
-            if (((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] === 'admin')) || (0 === (int) $this->getConfigValue('check_permissions'))) {
+            if (((1 === (int)$this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] === 'admin')) || (0 === (int)$this->getConfigValue('check_permissions'))) {
                 $rs .= ' <a href="?action=news:topic" class="btn btn-primary">Структура новостей</a>';
                 $rs .= ' <a href="?action=news:topic&do=new" class="btn btn-primary">Добавить раздел</a>';
             }
         }
+        $rs .= $this->get_extended_items();
+
         return $rs;
     }
 
@@ -576,14 +590,15 @@ class news_admin extends Object_Manager {
      * @param void
      * @return string
      */
-    function grid($params = array(), $default_params = array()) {
+    function grid($params = array(), $default_params = array())
+    {
 
         $rs = '';
         $params = array();
 
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && $this->mod_name === 'topic' && ($_SESSION['current_user_group_name'] !== 'admin')) {
+        if ((1 === (int)$this->getConfigValue('check_permissions')) && $this->mod_name === 'topic' && ($_SESSION['current_user_group_name'] !== 'admin')) {
             return '';
-        } elseif ((1 === (int) $this->getConfigValue('check_permissions')) && (1 === (int) $this->getConfigValue('apps.news.share_access')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
+        } elseif ((1 === (int)$this->getConfigValue('check_permissions')) && (1 === (int)$this->getConfigValue('apps.news.share_access')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
             $params['grid_conditions'] = array('user_id' => $_SESSION['user_id_value']);
         }
 
@@ -591,7 +606,8 @@ class news_admin extends Object_Manager {
         return $rs;
     }
 
-    function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
+    function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php')
+    {
 
         $rs = '';
 
@@ -667,9 +683,10 @@ class news_admin extends Object_Manager {
         return $smarty->fetch($tpl_name);
     }
 
-    function _preload() {
+    function _preload()
+    {
         global $smarty;
-        if ($this->getConfigValue('apps.news.enable') && 1 == (int) $this->getConfigValue('apps.news.preload_column')) {
+        if ($this->getConfigValue('apps.news.enable') && 1 == (int)$this->getConfigValue('apps.news.preload_column')) {
             $smarty->assign('apps_news_appsnewsalias', $this->getConfigValue('apps.news.alias'));
             $smarty->assign('news_list_column_html', $this->getNewsListBlock());
         } else {
@@ -678,7 +695,8 @@ class news_admin extends Object_Manager {
         return true;
     }
 
-    function ajax() {
+    function ajax()
+    {
         if ($this->getRequestValue('action') == 'get_transliteration') {
             $word = $this->getRequestValue('word');
             return $this->get_transliteration($word);
@@ -686,11 +704,13 @@ class news_admin extends Object_Manager {
         return false;
     }
 
-    private function get_transliteration($word) {
+    private function get_transliteration($word)
+    {
         return $this->transliteMe($word);
     }
 
-    function getNewsListBlock() {
+    function getNewsListBlock()
+    {
         global $smarty;
         $news = $this->getNewsList();
         $smarty->assign('news_list_column', $news);
@@ -701,7 +721,8 @@ class news_admin extends Object_Manager {
         }
     }
 
-    function getNewsList() {
+    function getNewsList()
+    {
         $where = array();
         $news = array();
         if (isset($this->data_model[$this->table_name]['spec'])) {
@@ -756,7 +777,7 @@ class news_admin extends Object_Manager {
           }
           print_r($ids); */
 
-        if (isset($_SESSION['user_domain_owner']) && (int) $_SESSION['user_domain_owner']['user_id'] != 0) {
+        if (isset($_SESSION['user_domain_owner']) && (int)$_SESSION['user_domain_owner']['user_id'] != 0) {
             $where[] = 'n.`user_id`=' . $_SESSION['user_domain_owner']['user_id'];
         }
 
@@ -772,7 +793,6 @@ class news_admin extends Object_Manager {
         } else {
             $query = 'SELECT n.* FROM ' . DB_PREFIX . '_' . $this->table_name . ' n' . (!empty($where) ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY n.`date` DESC LIMIT ' . $count;
         }
-
 
 
         $DBC = DBC::getInstance();
@@ -819,6 +839,7 @@ class news_admin extends Object_Manager {
                     $ims = $news[$k][$uploads];
                     if ($ims != '') {
                         $ims = unserialize($ims);
+                        $ims = $data_model->sharder_mirror($ims, true);
                     } else {
                         $ims = array();
                     }
@@ -831,7 +852,8 @@ class news_admin extends Object_Manager {
         return $news;
     }
 
-    public function detectNewsTopic($url) {
+    public function detectNewsTopic($url)
+    {
         $DBC = DBC::getInstance();
         $query = 'SELECT id, name, url FROM ' . DB_PREFIX . '_news_topic WHERE url=? LIMIT 1';
         $stmt = $DBC->query($query, array($url));
@@ -843,7 +865,8 @@ class news_admin extends Object_Manager {
         return false;
     }
 
-    public function detectNews($url) {
+    public function detectNews($url)
+    {
         $DBC = DBC::getInstance();
         $query = 'SELECT news_id FROM ' . DB_PREFIX . '_news WHERE newsalias=? AND `date`<=? LIMIT 1';
         if ($this->data_model[$this->table_name]['date']['type'] == 'dtdatetime') {
@@ -859,7 +882,8 @@ class news_admin extends Object_Manager {
         return false;
     }
 
-    public function getNewsTopicsList() {
+    public function getNewsTopicsList()
+    {
         if ('' != $this->getConfigValue('apps.news.alias')) {
             $app_alias = $this->getConfigValue('apps.news.alias');
         } else {
@@ -897,7 +921,8 @@ class news_admin extends Object_Manager {
      * 2 - trimmd internal link without SITEBILL_MAIN_URL
      */
 
-    public function getNewsRoute($news_id, $news_alias = '', $external = false) {
+    public function getNewsRoute($news_id, $news_alias = '', $external = false)
+    {
         if ('' != $this->getConfigValue('apps.news.alias')) {
             $app_news_alias = $this->getConfigValue('apps.news.alias');
         } else {

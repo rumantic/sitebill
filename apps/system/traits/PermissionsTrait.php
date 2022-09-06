@@ -25,4 +25,19 @@ trait PermissionsTrait
         return $this->permission_instance;
     }
 
+    function enableNobodyAccess ( $component = false ) {
+        if ( $component ) {
+            $component_name = $component;
+        } else {
+            $component_name = $this->action;
+        }
+        $this->init_instance();
+        $this->permission_instance->add_group_permission(
+            $this->permission_instance->get_nobody_group_id(),
+            $component_name,
+            $this->app_title,
+            'access'
+        );
+    }
+
 }

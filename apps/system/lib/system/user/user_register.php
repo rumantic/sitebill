@@ -3,7 +3,7 @@ require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/users/user_object_ma
 class User_Register extends User_Object_Manager {
 	
     function User_Register() {
-        $this->SiteBill();
+        parent::__construct();
         $this->table_name = 'user';
         $this->action = 'register';
         $this->primary_key = 'user_id';

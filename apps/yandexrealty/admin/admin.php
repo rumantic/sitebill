@@ -7,7 +7,14 @@ require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php
  * Yandex.Realty generator backend
  * @author Abushyk Kostyantyn <abushyk@gmail.com> http://www.sitebill.ru
  */
-class yandexrealty_admin extends Object_Manager {
+class yandexrealty_admin extends Object_Manager
+{
+
+    /**
+     * @var \yandexrealty\lib\CommonExporter
+     */
+    protected $commonExporter;
+
 
     public static $EXP_T_NOTYPE = 0;
     public static $EXP_T_ROOM = 2;
@@ -97,27 +104,33 @@ class yandexrealty_admin extends Object_Manager {
 
     protected $export_log_file_label = 'yandexrealty';
 
-    function setExportedIds($ids) {
+    function setExportedIds($ids)
+    {
         $this->exported_ids = $ids;
     }
 
-    function setExportedConditions($conditions) {
+    function setExportedConditions($conditions)
+    {
         $this->exported_conditions = $conditions;
     }
 
-    public function setActivityFiltering($status) {
+    public function setActivityFiltering($status)
+    {
         $this->activity_filtering = $status;
     }
 
-    public function setTimeFiltering($status) {
+    public function setTimeFiltering($status)
+    {
         $this->time_filtering = $status;
     }
 
-    public function setFieldFiltering($status) {
+    public function setFieldFiltering($status)
+    {
         $this->field_filtering = $status;
     }
 
-    public function getMegetuaCategoryName($type) {
+    public function getMegetuaCategoryName($type)
+    {
         $names = array(
             'm_room' => 'комнаты',
             'm_1r_flat' => '1-ком.',
@@ -156,7 +169,8 @@ class yandexrealty_admin extends Object_Manager {
         return '';
     }
 
-    public function getEstuaCategoryName($type) {
+    public function getEstuaCategoryName($type)
+    {
         $names = array(
             't_carwash' => 'автомойка',
             't_carservice' => 'автосервис',
@@ -217,7 +231,8 @@ class yandexrealty_admin extends Object_Manager {
     /**
      * Constructor
      */
-    function __construct($realty_type = false) {
+    function __construct($realty_type = false)
+    {
 
         $this->op_types = array('0' => 'Игнорировать', '1' => 'продажа', '2' => 'аренда');
         $this->realty_types = array(
@@ -274,7 +289,7 @@ class yandexrealty_admin extends Object_Manager {
             $this->export_mode = 'ETOWN';
         }
         $this->action = 'yandexrealty';
-        $this->SiteBill();
+        parent::__construct();
         Multilanguage::appendAppDictionary('yandexrealty');
         $this->site_url = 'http://' . $_SERVER['SERVER_NAME'] . (SITEBILL_MAIN_URL != '' ? SITEBILL_MAIN_URL . '/' : '/');
         //$this->filename=date('YmdHis',time()).'.'.$this->fileextension;
@@ -291,7 +306,7 @@ class yandexrealty_admin extends Object_Manager {
         //$this->file_start.='<site>'.$this->site_url.'</site>'."\n";
         $this->file_end = '</realty-feed>';
 
-        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
 
         if (!$config_admin->check_config_item('apps.yandexrealty.sell')) {
@@ -665,7 +680,7 @@ class yandexrealty_admin extends Object_Manager {
         }
         if (!$config_admin->check_config_item('apps.yandexrealty.newflat')) {
             $config_admin->addParamToConfig('apps.yandexrealty.newflat', '0', 'Определять принадлежность к новостройкам по', SConfig::$fieldtypeSelectbox, array(
-                'select_data' => array('0'=>'полю new_flat', '1'=>'из приложения ЖК', '2'=>'другому полю')
+                'select_data' => array('0' => 'полю new_flat', '1' => 'из приложения ЖК', '2' => 'другому полю')
             ));
         }
         if (!$config_admin->check_config_item('apps.yandexrealty.newflat_cond')) {
@@ -694,7 +709,7 @@ class yandexrealty_admin extends Object_Manager {
             $config_admin->addParamToConfig('apps.yandexrealty.allow_personal_feeds', '0', 'Разрешить персональные фиды пользователей', 1);
         }
         if (!$config_admin->check_config_item('apps.yandexrealty.allow_personal_feeds_token')) {
-            $config_admin->addParamToConfig('apps.yandexrealty.allow_personal_feeds_token', md5(time().rand(1,9999)), 'Токен доступа к персональным фидам пользователей');
+            $config_admin->addParamToConfig('apps.yandexrealty.allow_personal_feeds_token', md5(time() . rand(1, 9999)), 'Токен доступа к персональным фидам пользователей');
         }
         if (!$config_admin->check_config_item('apps.yandexrealty.rooms_offered_field')) {
             $config_admin->addParamToConfig('apps.yandexrealty.rooms_offered_field', '', 'Системное имя поля со значением комнат, которые участвуют в сделке');
@@ -735,15 +750,14 @@ class yandexrealty_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.yandexrealty.lot_type_field')) {
             $config_admin->addParamToConfig('apps.yandexrealty.lot_type_field', '', 'Системное имя поля содержащее тип участка (если не указано, используется lot_type)');
         }
-        
+
         if (!$config_admin->check_config_item('apps.yandexrealty.lottype_izhs')) {
             $config_admin->addParamToConfig('apps.yandexrealty.lottype_izhs', '', 'Условия соотвествующие типу участка ИЖС', 3);
         }
         if (!$config_admin->check_config_item('apps.yandexrealty.lottype_farm')) {
             $config_admin->addParamToConfig('apps.yandexrealty.lottype_farm', '', 'Условия соотвествующие типу участка садоводство', 3);
         }
-        
-    
+
 
         if (!$config_admin->check_config_item('apps.yandexrealty.dealstatus_sale')) {
             $config_admin->addParamToConfig('apps.yandexrealty.dealstatus_sale', '', 'Вторичка. Тип сделки - для всех объектов (1 - прямая продажа, 2 - первичная продажа вторички, 3 - встречная продажа)');
@@ -795,35 +809,35 @@ class yandexrealty_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.yandexrealty.video_field')) {
             $config_admin->addParamToConfig('apps.yandexrealty.video_field', '', 'Системное имя поля с кодом видео YouTube');
         }
-        
+
         if (!$config_admin->check_config_item('apps.yandexrealty.descriptionfrom')) {
             $config_admin->addParamToConfig('apps.yandexrealty.descriptionfrom', '', 'Системное имя поля с описанием объекта');
         }
-        
+
         if (!$config_admin->check_config_item('apps.yandexrealty.pricefrom')) {
             $config_admin->addParamToConfig('apps.yandexrealty.pricefrom', '', 'Системное имя поля с ценой объекта');
         }
-        
+
         if (!$config_admin->check_config_item('apps.yandexrealty.area_field')) {
             $config_admin->addParamToConfig('apps.yandexrealty.area_field', '', 'Системное имя поля с общей площадью объекта');
         }
-        
+
         if (!$config_admin->check_config_item('apps.yandexrealty.arealive_field')) {
             $config_admin->addParamToConfig('apps.yandexrealty.arealive_field', '', 'Системное имя поля с жилой площадью объекта');
         }
-        
+
         if (!$config_admin->check_config_item('apps.yandexrealty.areakitchen_field')) {
             $config_admin->addParamToConfig('apps.yandexrealty.areakitchen_field', '', 'Системное имя поля с площадью кухни объекта');
         }
-        
+
         if (!$config_admin->check_config_item('apps.yandexrealty.area_field_houses')) {
             $config_admin->addParamToConfig('apps.yandexrealty.area_field_houses', '', 'Системное имя поля с площадью дома');
         }
-        
+
         if (!$config_admin->check_config_item('apps.yandexrealty.area_field_garage')) {
             $config_admin->addParamToConfig('apps.yandexrealty.area_field_garage', '', 'Системное имя поля с площадью гаража');
         }
-        
+
         if (!$config_admin->check_config_item('apps.yandexrealty.area_field_comm')) {
             $config_admin->addParamToConfig('apps.yandexrealty.area_field_comm', '', 'Системное имя поля с площадью коммерческого объекта');
         }
@@ -831,33 +845,49 @@ class yandexrealty_admin extends Object_Manager {
         if (!$config_admin->check_config_item('apps.yandexrealty.objphotolimit')) {
             $config_admin->addParamToConfig('apps.yandexrealty.objphotolimit', '', 'Кол-во выгружаемых фото');
         }
-        
-                
+        $config_admin->addParamToConfig(
+            'apps.yandexrealty.force_pass',
+            md5(uniqid()),
+            'Пароль для режима выгрузки всего подряд (можно составлять условия через checkbox-значения в запросе)'
+        );
+
+
         /*if (!$config_admin->check_config_item('apps.yandexrealty.defaultphones')) {
             $config_admin->addParamToConfig('apps.yandexrealty.defaultphones', '', 'Набор номеров для замены телефонов', 3);
         }*/
 
-        if (file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/hooks/hooks.php') ) {
-            include_once (SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/hooks/hooks.php');
-            if ( function_exists('yandex_data_hook') ) {
+        if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/hooks/hooks.php')) {
+            include_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/hooks/hooks.php');
+            if (function_exists('yandex_data_hook')) {
                 $this->setHookEnable();
             }
         }
     }
 
-    function setHookEnable () {
+
+    function getPropertyDictionaryExtended()
+    {
+        $propertyDictionary = new \yandexrealty\lib\PropertyDictionary();
+        return $propertyDictionary->get();
+    }
+
+
+    function setHookEnable()
+    {
         $this->hook_enable = true;
     }
 
-    function isHookEnabled () {
+    function isHookEnabled()
+    {
         return $this->hook_enable;
     }
 
-    protected function presetCommonParams(&$data_item) {
+    protected function presetCommonParams(&$data_item)
+    {
 
         $operational_type = '';
 
-        $data_topic = (int) $data_item['topic_id'];
+        $data_topic = (int)$data_item['topic_id'];
 
         if (!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['operation_type'] != 0) {
             if ($this->associations[$data_topic]['operation_type'] == 2) {
@@ -1000,7 +1030,7 @@ class yandexrealty_admin extends Object_Manager {
 
         $data_item['__is_studio'] = 0;
         $data_item['__is_openplan'] = 0;
-        if($this->export_mode = 'YANDEX'){
+        if ($this->export_mode = 'YANDEX') {
             $studio = false;
             if (!empty($this->studioConditions)) {
                 $res_cond = false;
@@ -1046,9 +1076,9 @@ class yandexrealty_admin extends Object_Manager {
                     }
                 }
             }
-            if(!$openplan){
+            if (!$openplan) {
                 if (isset($this->form_data_shared['open_plan']) && isset($data_item['open_plan'])) {
-                    if ((int) $data_item['open_plan'] == 1) {
+                    if ((int)$data_item['open_plan'] == 1) {
                         $openplan = true;
                     }
                 }
@@ -1092,7 +1122,7 @@ class yandexrealty_admin extends Object_Manager {
             }
         } else {
             if (isset($this->form_data_shared['new_flat']) && isset($data_item['new_flat'])) {
-                if ((int) $data_item['new_flat'] == 1) {
+                if ((int)$data_item['new_flat'] == 1) {
                     $data_item['__new_flat'] = 1;
                 }
             }
@@ -1101,16 +1131,16 @@ class yandexrealty_admin extends Object_Manager {
         $yandex_association_id = 0;
         if (!empty($this->associations) && isset($this->associations[$data_topic]) && $this->associations[$data_topic]['realty_category'] != 0) {
             $yandex_association_id = $this->associations[$data_topic]['realty_category'];
-            if (in_array($yandex_association_id, array(2,6))) {
+            if (in_array($yandex_association_id, array(2, 6))) {
 
                 $data_item['__rooms_offered'] = 0;
 
                 $rooms_offered_filed = trim($this->getConfigValue('apps.yandexrealty.rooms_offered_field'));
-                if(is_numeric($rooms_offered_filed) && $rooms_offered_filed>0){
+                if (is_numeric($rooms_offered_filed) && $rooms_offered_filed > 0) {
                     $data_item['__rooms_offered'] = $rooms_offered_filed;
                     //return '<rooms-offered>' . $rooms_offered_filed . '</rooms-offered>';
-                }else{
-                    if($rooms_offered_filed=='' || !isset($this->form_data_shared[$rooms_offered_filed])){
+                } else {
+                    if ($rooms_offered_filed == '' || !isset($this->form_data_shared[$rooms_offered_filed])) {
                         $rooms_offered_filed = 'rooms_offered';
                     }
 
@@ -1128,23 +1158,26 @@ class yandexrealty_admin extends Object_Manager {
 
     }
 
-    function getInfo() {
+    function getInfo()
+    {
         /* $rs = "<p>URL для выгрузки: <a href=\"".$this->site_url."yandexrealty/\" target=\"_blank\">".$this->site_url."yandexrealty/</a></p>
           <p>Выгрузка Yandex.Realty – необходима для того, чтобы вы могли выгружать свои объявления на сайт Яндекс.Недвижимость: <a href=\"http://realty.yandex.ru/\" target=\"_blank\">http://realty.yandex.ru/</a></p>
           <p>Также вы можете выгружать объявления на сайт <a href=\"http://www.etown.ru/\" target=\"_blank\">«Недвижимость всех городов»</a>.<br> Преимущества выгрузки на этот сайта заключаются в том, что ваши объявления отображаются на сайте с полной информацией, но вместо контактов выводится ссылка на ваш сайт.<br> Для этого необходимо зарегистрироваться на сайте <a href=\"http://www.etown.ru/\" target=\"_blank\">«Недвижимость всех городов»</a> и в личном кабинете добавить адрес XML-файла с данными с вашего сайта, он находится тут: <a href=\"".$this->site_url."yandexrealty/\" target=\"_blank\">".$this->site_url."yandexrealty/</a></p>
           "; */
-        $rs = 'Export log: <a href="'.$this->site_url . "cache/yandexrealty.last.log.xml".'" target="_blank">'.$this->site_url . "cache/yandexrealty.last.log.xml".'</a><br>';
-        $rs .= sprintf(Multilanguage::_('INFO', 'yandexrealty'), $this->site_url . "yandexrealty/", $this->site_url . "yandexrealty/", $this->site_url . "yandexrealty/", $this->site_url . "yandexrealty/").'<br>';
+        $rs = 'Export log: <a href="' . $this->site_url . "cache/yandexrealty.last.log.xml" . '" target="_blank">' . $this->site_url . "cache/yandexrealty.last.log.xml" . '</a><br>';
+        $rs .= sprintf(Multilanguage::_('INFO', 'yandexrealty'), $this->site_url . "yandexrealty/", $this->site_url . "yandexrealty/", $this->site_url . "yandexrealty/", $this->site_url . "yandexrealty/") . '<br>';
         return $rs;
     }
 
-    protected function _assoc_table_showAction() {
+    protected function _assoc_table_showAction()
+    {
         $rs = '';
         $rs .= $this->showAssocTable();
         return $rs;
     }
 
-    protected function _assoc_table_show_saveAction() {
+    protected function _assoc_table_show_saveAction()
+    {
         $rs = '';
         $request = $this->request();
         $this->saveChanges($request->request->get('data'));
@@ -1152,7 +1185,8 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    public function _update_modelAction() {
+    public function _update_modelAction()
+    {
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/columns/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php')) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
             $form_data = $this->get_yandex_model();
@@ -1166,13 +1200,15 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    protected function _make_tableAction() {
+    protected function _make_tableAction()
+    {
         $rs = '';
         $this->x();
         return $rs;
     }
 
-    protected function _create_tableAction() {
+    protected function _create_tableAction()
+    {
         $rs = '';
         if ($this->createAssocTable()) {
             $rs .= 'Таблица ассоциаций создана';
@@ -1182,7 +1218,8 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    protected function _exportAction($input_params = array()) {
+    protected function _exportAction($input_params = array())
+    {
         $rs = '';
         if (file_exists($this->export_file_storage . '/' . $this->export_file)) {
             unlink($this->export_file_storage . '/' . $this->export_file);
@@ -1201,7 +1238,8 @@ class yandexrealty_admin extends Object_Manager {
       }
      */
 
-    protected function _defaultAction() {
+    protected function _defaultAction()
+    {
         //$rs = $this->getTopMenu();
         $rs .= $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/yandexrealty/admin/template/sponsors.tpl');
         //$rs.=parent::_defaultAction();
@@ -1249,7 +1287,8 @@ class yandexrealty_admin extends Object_Manager {
       return $rs;
       } */
 
-    private function saveChanges($data) {
+    private function saveChanges($data)
+    {
         if (!empty($data)) {
             $DBC = DBC::getInstance();
 
@@ -1267,7 +1306,8 @@ class yandexrealty_admin extends Object_Manager {
         }
     }
 
-    function showAssocTable() {
+    function showAssocTable()
+    {
         $DBC = DBC::getInstance();
         $names = $this->getCategoriesNameArray();
 
@@ -1296,7 +1336,8 @@ class yandexrealty_admin extends Object_Manager {
         return $ret;
     }
 
-    function x() {
+    function x()
+    {
         $names = $this->getCategoriesNameArray();
         $query = 'SELECT id FROM ' . DB_PREFIX . '_topic';
         $DBC = DBC::getInstance();
@@ -1320,16 +1361,18 @@ class yandexrealty_admin extends Object_Manager {
      * @param void
      * @return boolean (true - if file delete success and false - if file not deleted)
      */
-    protected function remove_old_file($cachefile) {
+    protected function remove_old_file($cachefile)
+    {
         if (1 == $this->getConfigValue('apps.yandexrealty.tofile') && file_exists($cachefile)) {
-            if ((time() - filemtime($cachefile) ) > $this->getConfigValue('apps.yandexrealty.filetime')) {
+            if ((time() - filemtime($cachefile)) > $this->getConfigValue('apps.yandexrealty.filetime')) {
                 return unlink($cachefile);
             }
         }
         return false;
     }
 
-    private function codify($string) {
+    private function codify($string)
+    {
         $string = json_encode($string);
         //echo $string.'<br>';
         //echo $string.'<br>';
@@ -1343,7 +1386,7 @@ class yandexrealty_admin extends Object_Manager {
         $rs = '';
         foreach ($string as $s) {
             preg_match('/\\\u([0-9a-z]{4})/', $html, $matches);
-            if ((int) $matches[1] > 31) {
+            if ((int)$matches[1] > 31) {
                 $rs .= '&#x' . $matches[1] . ';';
             }
         }
@@ -1352,7 +1395,8 @@ class yandexrealty_admin extends Object_Manager {
         return json_decode($string);
     }
 
-    protected function mappingContract(){
+    protected function mappingContract()
+    {
         $contracts = array();
 
         if ('' != trim($this->getConfigValue('apps.yandexrealty.sell'))) {
@@ -1384,7 +1428,8 @@ class yandexrealty_admin extends Object_Manager {
         $this->contracts = $contracts;
     }
 
-    protected function mappingCommBldTypes() {
+    protected function mappingCommBldTypes()
+    {
         $this->comm_building_types = array();
 
         $bt = trim($this->getConfigValue('apps.yandexrealty.cbt_bc'));
@@ -1463,7 +1508,8 @@ class yandexrealty_admin extends Object_Manager {
         }
     }
 
-    protected function parseCommTypesConditions($configval) {
+    protected function parseCommTypesConditions($configval)
+    {
         $codsf = array();
         $conds = trim($this->getConfigValue($configval));
         if ($conds != '') {
@@ -1488,7 +1534,8 @@ class yandexrealty_admin extends Object_Manager {
         return $condsf;
     }
 
-    protected function mappingESTUARenovationTypesConditions() {
+    protected function mappingESTUARenovationTypesConditions()
+    {
 
         $ret = array();
         $condsf = $this->parseRenovationTypesConditions('apps.yandexrealty.renovation_est_needcosm_cond');
@@ -1543,7 +1590,8 @@ class yandexrealty_admin extends Object_Manager {
         $this->renovationESTUATypesConditions = $ret;
     }
 
-    protected function mappingGarageTypes() {
+    protected function mappingGarageTypes()
+    {
 
         $ret = array();
         $condsf = $this->parseRenovationTypesConditions('apps.yandexrealty.garage_ga');
@@ -1561,7 +1609,8 @@ class yandexrealty_admin extends Object_Manager {
         $this->garage_types = $ret;
     }
 
-    protected function mappingRenovationTypesConditions() {
+    protected function mappingRenovationTypesConditions()
+    {
 
         $ret = array();
         $condsf = $this->parseRenovationTypesConditions('apps.yandexrealty.renovation_design_cond');
@@ -1596,7 +1645,8 @@ class yandexrealty_admin extends Object_Manager {
         $this->renovationTypesConditions = $ret;
     }
 
-    protected function mappingStudioConditions() {
+    protected function mappingStudioConditions()
+    {
         $ret = array();
         $condsf = $this->parseAbstractTypesConditions('apps.yandexrealty.studio_cond');
         if (!empty($condsf)) {
@@ -1605,7 +1655,8 @@ class yandexrealty_admin extends Object_Manager {
         $this->studioConditions = $ret;
     }
 
-    protected function mappingOpenPlanConditions() {
+    protected function mappingOpenPlanConditions()
+    {
         $ret = array();
         $condsf = $this->parseAbstractTypesConditions('apps.yandexrealty.openplan_cond');
         if (!empty($condsf)) {
@@ -1614,7 +1665,8 @@ class yandexrealty_admin extends Object_Manager {
         $this->openPlanConditions = $ret;
     }
 
-    protected function mappingNewflatConditions() {
+    protected function mappingNewflatConditions()
+    {
         $ret = array();
         $condsf = $this->parseAbstractTypesConditions('apps.yandexrealty.newflat_cond');
         if (!empty($condsf)) {
@@ -1623,7 +1675,8 @@ class yandexrealty_admin extends Object_Manager {
         $this->newflatConditions = $ret;
     }
 
-    protected function mappingApartmentConditions() {
+    protected function mappingApartmentConditions()
+    {
         $ret = array();
         $condsf = $this->parseAbstractTypesConditions('apps.yandexrealty.apartment_cond');
         if (!empty($condsf)) {
@@ -1632,7 +1685,8 @@ class yandexrealty_admin extends Object_Manager {
         $this->apartmentConditions = $ret;
     }
 
-    protected function mappingQualityTypesConditions() {
+    protected function mappingQualityTypesConditions()
+    {
 
         $ret = array();
         $condsf = $this->parseAbstractTypesConditions('apps.yandexrealty.quality_best_cond');
@@ -1655,7 +1709,8 @@ class yandexrealty_admin extends Object_Manager {
         $this->qualityTypesConditions = $ret;
     }
 
-    protected function mappingSpecialCommercialOptionsConditions() {
+    protected function mappingSpecialCommercialOptionsConditions()
+    {
         $ret = array();
         $condsf = $this->parseAbstractTypesConditions('apps.yandexrealty.rent_cleaning_yes');
         if (!empty($condsf)) {
@@ -1673,7 +1728,8 @@ class yandexrealty_admin extends Object_Manager {
         $this->specialCommercialOptionsConditions = $ret;
     }
 
-    protected function mappingTaxationTypesConditions() {
+    protected function mappingTaxationTypesConditions()
+    {
 
         $ret = array();
         $condsf = $this->parseAbstractTypesConditions('apps.yandexrealty.taxation_nds');
@@ -1688,7 +1744,8 @@ class yandexrealty_admin extends Object_Manager {
         $this->taxationTypesConditions = $ret;
     }
 
-    protected function mappingLotType() {
+    protected function mappingLotType()
+    {
         $ret = array();
 
 
@@ -1705,8 +1762,8 @@ class yandexrealty_admin extends Object_Manager {
     }
 
 
-
-    protected function mappingDealStatusConditions() {
+    protected function mappingDealStatusConditions()
+    {
 
         $ret = array();
 
@@ -1725,7 +1782,6 @@ class yandexrealty_admin extends Object_Manager {
         }
 
 
-
         $condsf = $this->parseAbstractTypesConditions('apps.yandexrealty.dealstatus_n_primarysale');
         if (!empty($condsf)) {
             $ret['n_primarysale'] = $condsf;
@@ -1740,7 +1796,6 @@ class yandexrealty_admin extends Object_Manager {
         if (!empty($condsf)) {
             $ret['n_reassignment'] = $condsf;
         }
-
 
 
         $condsf = $this->parseAbstractTypesConditions('apps.yandexrealty.dealstatus_directrent');
@@ -1760,8 +1815,8 @@ class yandexrealty_admin extends Object_Manager {
     }
 
 
-
-    protected function parseAbstractTypesConditions($configval) {
+    protected function parseAbstractTypesConditions($configval)
+    {
         $codsf = array();
         $conds = trim($this->getConfigValue($configval));
         if ($conds != '') {
@@ -1786,7 +1841,8 @@ class yandexrealty_admin extends Object_Manager {
         return $condsf;
     }
 
-    protected function parseRenovationTypesConditions($configval) {
+    protected function parseRenovationTypesConditions($configval)
+    {
         $codsf = array();
         $conds = trim($this->getConfigValue($configval));
         if ($conds != '') {
@@ -1811,7 +1867,8 @@ class yandexrealty_admin extends Object_Manager {
         return $condsf;
     }
 
-    protected function mappingCommTypesConditions() {
+    protected function mappingCommTypesConditions()
+    {
         $ret = array();
         $condsf = $this->parseCommTypesConditions('apps.yandexrealty.comm_office_cond');
         if (!empty($condsf)) {
@@ -1861,21 +1918,23 @@ class yandexrealty_admin extends Object_Manager {
         $this->commTypesConditions = $ret;
     }
 
-    public function getAdvDescription($data_item) {
+    public function getAdvDescription($data_item)
+    {
         $from = trim($this->getConfigValue('apps.yandexrealty.descriptionfrom'));
-        if($from == ''){
+        if ($from == '') {
             $from = 'text';
         }
         $text = '';
-        if(isset($data_item[$from])){
-           $text = $data_item[$from]; 
-        }        
+        if (isset($data_item[$from])) {
+            $text = $data_item[$from];
+        }
         $text = strip_tags($text);
         $text = self::symbolsClear($text);
         return $text;
     }
 
-    protected function mapContactsMode(){
+    protected function mapContactsMode()
+    {
         /*
          * 0 Standart mode
          * 1 Group based
@@ -1968,14 +2027,15 @@ class yandexrealty_admin extends Object_Manager {
         }
     }
 
-    public function export() {
+    public function export()
+    {
 
 
         $excode = md5(self::getClearRequestURI());
-        $cachefile = $this->export_file_storage . '/' . $excode.'.' . $this->export_file;
+        $cachefile = $this->export_file_storage . '/' . $excode . '.' . $this->export_file;
 
         if (isset($_GET['page'])) {
-            $page = (int) $_GET['page'];
+            $page = (int)$_GET['page'];
         }
 
         if (isset($_GET['user_id'])) {
@@ -2083,7 +2143,6 @@ class yandexrealty_admin extends Object_Manager {
         $this->mappingLotType();
 
 
-
         $this->mapContactsMode();
 
         if ($this->contacts_export_mode == 1) {
@@ -2156,9 +2215,9 @@ class yandexrealty_admin extends Object_Manager {
 
         foreach ($data as $data_item) {
             $rs = '';
-            if ($data_item['price'] > 0 AND $data_item['city'] !== '') {
+            if ($data_item['price'] > 0 and $data_item['city'] !== '') {
                 $count++;
-                $rs .= '<offer internal-id="' . (int) $data_item['id'] . '">' . "\n";
+                $rs .= '<offer internal-id="' . (int)$data_item['id'] . '">' . "\n";
 
                 $this->presetCommonParams($data_item);
 
@@ -2276,7 +2335,7 @@ class yandexrealty_admin extends Object_Manager {
                             $rs .= '<type>аренда</type>';
                         }
                         $operational_type = 'rent';
-                    } elseif (isset($data_item['optype']) && (int) $data_item['optype'] == 1) {
+                    } elseif (isset($data_item['optype']) && (int)$data_item['optype'] == 1) {
                         if ($this->export_mode == 'EST.UA') {
                             $rs .= '<type>сдача</type>';
                         } else {
@@ -2355,18 +2414,21 @@ class yandexrealty_admin extends Object_Manager {
 
                                 if ($garage_category) {
                                     switch ($garage_category) {
-                                        case 'ga' : {
-                                                $rs .= '<garage-type>гараж</garage-type>';
-                                                break;
-                                            }
-                                        case 'pp' : {
-                                                $rs .= '<garage-type>машиноместо</garage-type>';
-                                                break;
-                                            }
-                                        case 'bx' : {
-                                                $rs .= '<garage-type>бокс</garage-type>';
-                                                break;
-                                            }
+                                        case 'ga' :
+                                        {
+                                            $rs .= '<garage-type>гараж</garage-type>';
+                                            break;
+                                        }
+                                        case 'pp' :
+                                        {
+                                            $rs .= '<garage-type>машиноместо</garage-type>';
+                                            break;
+                                        }
+                                        case 'bx' :
+                                        {
+                                            $rs .= '<garage-type>бокс</garage-type>';
+                                            break;
+                                        }
                                     }
                                 } else {
                                     $errors[] = $data_item['id'] . ' DECLINED: Garage type unknown';
@@ -2488,7 +2550,6 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
 
-
                 //if($this_realty_supertype==self::$EXP_TY_RESIDENTIAL){
 
                 /* if($this->export_mode=='ETOWN'){
@@ -2506,17 +2567,17 @@ class yandexrealty_admin extends Object_Manager {
                 $date_timestamp = strtotime($data_item['date_added']);
 
                 $rs .= '<creation-date>' . $this->formdate($date_timestamp) . '</creation-date>' . "\n";
-                if($data_item['__operational_type'] == 'rent'){
+                if ($data_item['__operational_type'] == 'rent') {
                     $critical_term = $this->critical_term_rent;
-                }else{
+                } else {
                     $critical_term = $this->critical_term;
                 }
 
                 $luf = trim($this->getConfigValue('apps.yandexrealty.last_upd_field'));
                 if (isset($form_data_shared[$luf]) && isset($data_item[$luf])) {
-                    if($form_data_shared[$luf]['type'] == 'date' && $data_item[$luf] != '' && $data_item[$luf] != 0){
+                    if ($form_data_shared[$luf]['type'] == 'date' && $data_item[$luf] != '' && $data_item[$luf] != 0) {
                         return '<last-update-date>' . $this->formdate($data_item[$luf]) . '</last-update-date>';
-                    }elseif($form_data_shared[$luf]['type'] == 'dtdatetime' && $data_item[$luf] != '' && $data_item[$luf] != '0000-00-00 00:00:00'){
+                    } elseif ($form_data_shared[$luf]['type'] == 'dtdatetime' && $data_item[$luf] != '' && $data_item[$luf] != '0000-00-00 00:00:00') {
                         return '<last-update-date>' . $this->formdate(strtotime($data_item[$luf])) . '</last-update-date>';
                     }
                 }
@@ -2530,7 +2591,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['payed_adv']) && isset($data_item['payed_adv'])) {
-                    if ((int) $data_item['payed_adv'] == 1) {
+                    if ((int)$data_item['payed_adv'] == 1) {
                         $rs .= '<payed-adv>1</payed-adv>' . "\n";
                     } else {
                         $rs .= '<payed-adv>0</payed-adv>' . "\n";
@@ -2538,7 +2599,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['manually_added']) && isset($data_item['manually_added'])) {
-                    if ((int) $data_item['manually_added'] == 1) {
+                    if ((int)$data_item['manually_added'] == 1) {
                         $rs .= '<manually-added>1</manually-added>' . "\n";
                     } else {
                         $rs .= '<manually-added>0</manually-added>' . "\n";
@@ -2663,11 +2724,11 @@ class yandexrealty_admin extends Object_Manager {
                 if ($data_item['metro'] != '') {
                     $rs .= '<metro>' . "\n";
                     $rs .= '<name>' . self::symbolsClear($data_item['metro']) . '</name>' . "\n";
-                    if (isset($data_item['time_on_transport']) && (int) $data_item['time_on_transport'] != 0) {
-                        $rs .= '<time-on-transport>' . (int) $data_item['time_on_transport'] . '</time-on-transport>' . "\n";
+                    if (isset($data_item['time_on_transport']) && (int)$data_item['time_on_transport'] != 0) {
+                        $rs .= '<time-on-transport>' . (int)$data_item['time_on_transport'] . '</time-on-transport>' . "\n";
                     }
-                    if (isset($data_item['time_on_foot']) && (int) $data_item['time_on_foot'] != 0) {
-                        $rs .= '<time-on-foot>' . (int) $data_item['time_on_foot'] . '</time-on-foot>' . "\n";
+                    if (isset($data_item['time_on_foot']) && (int)$data_item['time_on_foot'] != 0) {
+                        $rs .= '<time-on-foot>' . (int)$data_item['time_on_foot'] . '</time-on-foot>' . "\n";
                     }
 
 
@@ -2695,7 +2756,7 @@ class yandexrealty_admin extends Object_Manager {
                     $rs .= '<direction>' . self::symbolsClear($data_item['direction']) . '</direction>' . "\n";
                 }
 
-                if (isset($form_data_shared['distance']) && isset($data_item['distance']) && (int) $data_item['distance'] != '') {
+                if (isset($form_data_shared['distance']) && isset($data_item['distance']) && (int)$data_item['distance'] != '') {
                     $rs .= '<distance>' . $data_item['distance'] . '</distance>' . "\n";
                 }
 
@@ -2737,7 +2798,6 @@ class yandexrealty_admin extends Object_Manager {
                     }
 
 
-
                     $org_name = '';
                     if ('' != trim($this->getConfigValue('apps.yandexrealty.organisation_global_name'))) {
                         $org_name = self::symbolsClear(trim($this->getConfigValue('apps.yandexrealty.organisation_global_name')));
@@ -2748,7 +2808,6 @@ class yandexrealty_admin extends Object_Manager {
                             $org_name = self::symbolsClear($user[$f]);
                         }
                     }
-
 
 
                     if ($exporter_type == 'a') {
@@ -2860,7 +2919,7 @@ class yandexrealty_admin extends Object_Manager {
                     }
                 } else {
 
-                    if ($data_item['fio'] != '' AND $data_item['user_id'] == $this->getUnregisteredUserId()) {
+                    if ($data_item['fio'] != '' and $data_item['user_id'] == $this->getUnregisteredUserId()) {
                         $rs .= '<category>owner</category>' . "\n";
                         $rs .= '<phone>' . self::symbolsClear($data_item['phone']) . '</phone>' . "\n";
                         $rs .= '<email>' . self::symbolsClear($data_item['email']) . '</email>' . "\n";
@@ -2902,11 +2961,9 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
 
-
                 if (isset($form_data_shared['partner']) && isset($data_item['partner']) && $data_item['partner'] != '') {
                     $rs .= '<partner>' . self::symbolsClear($data_item['partner']) . '</partner>' . "\n";
                 }
-
 
 
                 $rs .= '</sales-agent>' . "\n";
@@ -2947,7 +3004,6 @@ class yandexrealty_admin extends Object_Manager {
                   } */
 
 
-
                 $rs .= '</price>' . "\n";
 
                 if ($operational_type == 'rent') {
@@ -2957,12 +3013,12 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 $f = trim($this->getConfigValue('apps.yandexrealty.comission_from'));
-                if (isset($form_data_shared[$f]) && isset($data_item[$f]) && (float) $data_item[$f] != 0 && (float) $data_item[$f] <= 100) {
-                    $rs .= '<commission>' . (float) $data_item[$f] . '</commission>';
+                if (isset($form_data_shared[$f]) && isset($data_item[$f]) && (float)$data_item[$f] != 0 && (float)$data_item[$f] <= 100) {
+                    $rs .= '<commission>' . (float)$data_item[$f] . '</commission>';
                 }
 
                 if (isset($form_data_shared['not_for_agents']) && isset($data_item['not_for_agents'])) {
-                    if ((int) $data_item['not_for_agents'] == 1) {
+                    if ((int)$data_item['not_for_agents'] == 1) {
                         $rs .= '<not-for-agents>1</not-for-agents>' . "\n";
                     } else {
                         $rs .= '<not-for-agents>0</not-for-agents>' . "\n";
@@ -2970,13 +3026,12 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['haggle']) && isset($data_item['haggle'])) {
-                    if ((int) $data_item['haggle'] == 1) {
+                    if ((int)$data_item['haggle'] == 1) {
                         $rs .= '<haggle>1</haggle>' . "\n";
                     } else {
                         $rs .= '<haggle>0</haggle>' . "\n";
                     }
                 }
-
 
 
                 if (isset($form_data_shared['deal_status']) && isset($data_item['deal_status']) && trim($data_item['deal_status']) != '') {
@@ -2992,31 +3047,31 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['mortgage']) && isset($data_item['mortgage'])) {
-                    if ((int) $data_item['mortgage'] == 1) {
+                    if ((int)$data_item['mortgage'] == 1) {
                         $rs .= '<mortgage>1</mortgage>' . "\n";
                     } else {
                         $rs .= '<mortgage>0</mortgage>' . "\n";
                     }
                 }
 
-                if (isset($form_data_shared['prepayment']) && isset($data_item['prepayment']) && (int) $data_item['prepayment'] != 0) {
-                    $rs .= '<prepayment>' . (int) $data_item['prepayment'] . '</prepayment>' . "\n";
+                if (isset($form_data_shared['prepayment']) && isset($data_item['prepayment']) && (int)$data_item['prepayment'] != 0) {
+                    $rs .= '<prepayment>' . (int)$data_item['prepayment'] . '</prepayment>' . "\n";
                 }
 
                 if (isset($form_data_shared['rent_pledge']) && isset($data_item['rent_pledge'])) {
-                    if ((int) $data_item['rent_pledge'] == 1) {
+                    if ((int)$data_item['rent_pledge'] == 1) {
                         $rs .= '<rent-pledge>1</rent-pledge>' . "\n";
                     } else {
                         $rs .= '<rent-pledge>0</rent-pledge>' . "\n";
                     }
                 }
 
-                if (isset($form_data_shared['agent_fee']) && isset($data_item['agent_fee']) && (int) $data_item['agent_fee'] != 0) {
-                    $rs .= '<agent-fee>' . (int) $data_item['agent_fee'] . '</agent-fee>' . "\n";
+                if (isset($form_data_shared['agent_fee']) && isset($data_item['agent_fee']) && (int)$data_item['agent_fee'] != 0) {
+                    $rs .= '<agent-fee>' . (int)$data_item['agent_fee'] . '</agent-fee>' . "\n";
                 }
 
                 if (isset($form_data_shared['with_pets']) && isset($data_item['with_pets'])) {
-                    if ((int) $data_item['with_pets'] == 1) {
+                    if ((int)$data_item['with_pets'] == 1) {
                         $rs .= '<with-pets>1</with-pets>' . "\n";
                     } else {
                         $rs .= '<with-pets>0</with-pets>' . "\n";
@@ -3024,7 +3079,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['with_children']) && isset($data_item['with_children'])) {
-                    if ((int) $data_item['with_children'] == 1) {
+                    if ((int)$data_item['with_children'] == 1) {
                         $rs .= '<with-children>1</with-children>' . "\n";
                     } else {
                         $rs .= '<with-children>0</with-children>' . "\n";
@@ -3038,7 +3093,7 @@ class yandexrealty_admin extends Object_Manager {
                 //$rs.='<description>'.htmlspecialchars(strip_tags($data_item['text']), ENT_QUOTES, SITE_ENCODING).'</description>'."\n";
 
 
-                if (1 == (int) $this->getConfigValue('apps.yandexrealty.nowatermark_export') && 1 == (int) $this->getConfigValue('save_without_watermark')) {
+                if (1 == (int)$this->getConfigValue('apps.yandexrealty.nowatermark_export') && 1 == (int)$this->getConfigValue('save_without_watermark')) {
                     $image_dest = $this->getServerFullUrl() . '/img/data/nowatermark/';
                 } else {
                     $image_dest = $this->getServerFullUrl() . '/img/data/';
@@ -3119,38 +3174,45 @@ class yandexrealty_admin extends Object_Manager {
                 }
                 if ($renovation) {
                     switch ($renovation) {
-                        case 'design' : {
-                                $rs .= '<renovation>дизайнерский</renovation>';
-                                break;
-                            }
-                        case 'euro' : {
-                                $rs .= '<renovation>евро</renovation>';
-                                break;
-                            }
-                        case 'withdecor' : {
-                                $rs .= '<renovation>с отделкой</renovation>';
-                                break;
-                            }
-                        case 'reqrepair' : {
-                                $rs .= '<renovation>требует ремонта</renovation>';
-                                break;
-                            }
-                        case 'good' : {
-                                $rs .= '<renovation>хороший</renovation>';
-                                break;
-                            }
-                        case 'patialrep' : {
-                                $rs .= '<renovation>частичный ремонт</renovation>';
-                                break;
-                            }
-                        case 'roughing' : {
-                                $rs .= '<renovation>черновая отделка</renovation>';
-                                break;
-                            }
+                        case 'design' :
+                        {
+                            $rs .= '<renovation>дизайнерский</renovation>';
+                            break;
+                        }
+                        case 'euro' :
+                        {
+                            $rs .= '<renovation>евро</renovation>';
+                            break;
+                        }
+                        case 'withdecor' :
+                        {
+                            $rs .= '<renovation>с отделкой</renovation>';
+                            break;
+                        }
+                        case 'reqrepair' :
+                        {
+                            $rs .= '<renovation>требует ремонта</renovation>';
+                            break;
+                        }
+                        case 'good' :
+                        {
+                            $rs .= '<renovation>хороший</renovation>';
+                            break;
+                        }
+                        case 'patialrep' :
+                        {
+                            $rs .= '<renovation>частичный ремонт</renovation>';
+                            break;
+                        }
+                        case 'roughing' :
+                        {
+                            $rs .= '<renovation>черновая отделка</renovation>';
+                            break;
+                        }
                     }
                 } else {
                     if (isset($form_data_shared['renovation']) && isset($data_item['renovation'])/* && (int)$data_item['renovation']!=0 */) {
-                        if ($form_data_shared['renovation']['type'] == 'select_box' && (int) $data_item['renovation'] != 0 && isset($form_data_shared['renovation']['select_data'][$data_item['renovation']])) {
+                        if ($form_data_shared['renovation']['type'] == 'select_box' && (int)$data_item['renovation'] != 0 && isset($form_data_shared['renovation']['select_data'][$data_item['renovation']])) {
                             $rs .= '<renovation>' . self::symbolsClear($form_data_shared['renovation']['select_data'][$data_item['renovation']]) . '</renovation>' . "\n";
                         } elseif ($form_data_shared['renovation']['type'] != 'select_box' && $data_item['renovation'] != '') {
                             $rs .= '<renovation>' . self::symbolsClear($data_item['renovation']) . '</renovation>' . "\n";
@@ -3182,22 +3244,26 @@ class yandexrealty_admin extends Object_Manager {
                 }
                 if ($quality) {
                     switch ($quality) {
-                        case 'best' : {
-                                $rs .= '<quality>отличное</quality>';
-                                break;
-                            }
-                        case 'good' : {
-                                $rs .= '<quality>хорошее</quality>';
-                                break;
-                            }
-                        case 'norm' : {
-                                $rs .= '<quality>нормальное</quality>';
-                                break;
-                            }
-                        case 'bad' : {
-                                $rs .= '<quality>плохое</quality>';
-                                break;
-                            }
+                        case 'best' :
+                        {
+                            $rs .= '<quality>отличное</quality>';
+                            break;
+                        }
+                        case 'good' :
+                        {
+                            $rs .= '<quality>хорошее</quality>';
+                            break;
+                        }
+                        case 'norm' :
+                        {
+                            $rs .= '<quality>нормальное</quality>';
+                            break;
+                        }
+                        case 'bad' :
+                        {
+                            $rs .= '<quality>плохое</quality>';
+                            break;
+                        }
                     }
                 }
 
@@ -3226,7 +3292,7 @@ class yandexrealty_admin extends Object_Manager {
                         $rs .= '<apartments>1</apartments>';
                     }
 
-                    if($data_item['__is_studio'] == 1){
+                    if ($data_item['__is_studio'] == 1) {
                         $rs .= '<studio>1</studio>' . "\n";
                     }
                     /*$studio = false;
@@ -3253,7 +3319,7 @@ class yandexrealty_admin extends Object_Manager {
                         $rs .= '<studio>1</studio>' . "\n";
                     }*/
 
-                    if($data_item['__is_openpaln'] == 1){
+                    if ($data_item['__is_openpaln'] == 1) {
                         $rs .= '<open-plan>1</open-plan>' . "\n";
                     }
                     /*$openplan = false;
@@ -3328,7 +3394,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (!empty($associations) && isset($associations[$data_topic]) && $associations[$data_topic]['realty_category'] != 0) {
-                    if (in_array($associations[$data_topic]['realty_category'], array(3,7,8,10,9,11,12, 13,14,4, 15, 16, 25))) {
+                    if (in_array($associations[$data_topic]['realty_category'], array(3, 7, 8, 10, 9, 11, 12, 13, 14, 4, 15, 16, 25))) {
                         if (in_array($associations[$data_topic]['realty_category'], array(4, 15, 16, 25))) {
                             $lot_area_field = trim($this->getConfigValue('apps.yandexrealty.lot_area'));
 
@@ -3417,7 +3483,7 @@ class yandexrealty_admin extends Object_Manager {
 
                     if (isset($form_data_shared['yandex_house_id']) && $data_item['yandex_house_id'] != '') {
                         $rs .= '<yandex-house-id>' . $data_item['yandex_house_id'] . '</yandex-house-id>' . "\n";
-                    }elseif ($this->getConfigValue('apps.yandexrealty.complex_enable') == 1 && isset($data_item['yandex_house_id']) && $data_item['yandex_house_id'] != '') {
+                    } elseif ($this->getConfigValue('apps.yandexrealty.complex_enable') == 1 && isset($data_item['yandex_house_id']) && $data_item['yandex_house_id'] != '') {
                         $rs .= '<yandex-house-id>' . $data_item['yandex_house_id'] . '</yandex-house-id>' . "\n";
                     }
 
@@ -3425,19 +3491,16 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
 
-
-
-
-                if($data_item['__is_studio'] == 0){
-                    if (isset($form_data_shared['rooms']) && isset($data_item['rooms']) && (int) $data_item['rooms'] != 0) {
-                        $rs .= '<rooms>' . (int) $data_item['rooms'] . '</rooms>' . "\n";
-                    } elseif (isset($form_data_shared['room_count']) && isset($data_item['room_count']) && (int) $data_item['room_count'] != 0) {
-                        $rs .= '<rooms>' . (int) $data_item['room_count'] . '</rooms>' . "\n";
+                if ($data_item['__is_studio'] == 0) {
+                    if (isset($form_data_shared['rooms']) && isset($data_item['rooms']) && (int)$data_item['rooms'] != 0) {
+                        $rs .= '<rooms>' . (int)$data_item['rooms'] . '</rooms>' . "\n";
+                    } elseif (isset($form_data_shared['room_count']) && isset($data_item['room_count']) && (int)$data_item['room_count'] != 0) {
+                        $rs .= '<rooms>' . (int)$data_item['room_count'] . '</rooms>' . "\n";
                     }
                 }
 
-                if($data_item['__is_studio'] == 0 && $data_item['__is_openpaln'] == 0){
-                    if(isset($data_item['__rooms_offered']) && 0<intval($data_item['__rooms_offered'])){
+                if ($data_item['__is_studio'] == 0 && $data_item['__is_openpaln'] == 0) {
+                    if (isset($data_item['__rooms_offered']) && 0 < intval($data_item['__rooms_offered'])) {
                         $rs .= '<rooms-offered>' . $data_item['__rooms_offered'] . '</rooms-offered>';
                     }
                 }
@@ -3464,38 +3527,40 @@ class yandexrealty_admin extends Object_Manager {
                 if (isset($form_data_shared[$rooms_area_field]) && isset($data_item[$rooms_area_field]) && trim($data_item[$rooms_area_field]) != '') {
                     $area_str = trim($data_item[$rooms_area_field]);
                     $rooms_area_field_divider = intval($this->getConfigValue('apps.yandexrealty.rooms_area_field_divider'));
-                    switch($rooms_area_field_divider){
-                        case '1' : {
+                    switch ($rooms_area_field_divider) {
+                        case '1' :
+                        {
                             $rooms_area_field_divider = '-';
                             break;
                         }
-                        case '2' : {
+                        case '2' :
+                        {
                             $rooms_area_field_divider = '+';
                             break;
                         }
-                        case '3' : {
+                        case '3' :
+                        {
                             $rooms_area_field_divider = ';';
                             break;
                         }
-                        case '4' : {
+                        case '4' :
+                        {
                             $rooms_area_field_divider = '+';
                             $area_str = str_replace('-', '+', $area_str);
                             break;
                         }
-                        default : {
+                        default :
+                        {
                             $rooms_area_field_divider = ' ';
                         }
                     }
                     $area_vals = explode($rooms_area_field_divider, trim($area_str));
-                    if(!empty($area_vals)){
-                        foreach($area_vals as $area){
+                    if (!empty($area_vals)) {
+                        foreach ($area_vals as $area) {
                             $rs .= '<room-space><value>' . trim($area) . '</value><unit>кв. м</unit></room-space>' . "\n";
                         }
                     }
                 }
-
-
-
 
 
                 if (isset($form_data_shared['rooms_type']) && isset($data_item['rooms_type'])/* && $data_item['rooms_type']!='' */) {
@@ -3509,7 +3574,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['is_telephone']) && isset($data_item['is_telephone'])) {
-                    if ((int) $data_item['is_telephone'] == 1) {
+                    if ((int)$data_item['is_telephone'] == 1) {
                         $rs .= '<phone>1</phone>' . "\n";
                     } else {
                         $rs .= '<phone>0</phone>' . "\n";
@@ -3517,7 +3582,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['internet']) && isset($data_item['internet'])) {
-                    if ((int) $data_item['internet'] == 1) {
+                    if ((int)$data_item['internet'] == 1) {
                         $rs .= '<internet>1</internet>' . "\n";
                     } else {
                         $rs .= '<internet>0</internet>' . "\n";
@@ -3525,7 +3590,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['room_furniture']) && isset($data_item['room_furniture'])) {
-                    if ((int) $data_item['room_furniture'] == 1) {
+                    if ((int)$data_item['room_furniture'] == 1) {
                         $rs .= '<room-furniture>1</room-furniture>' . "\n";
                     } else {
                         $rs .= '<room-furniture>0</room-furniture>' . "\n";
@@ -3533,7 +3598,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['kitchen_furniture']) && isset($data_item['kitchen_furniture'])) {
-                    if ((int) $data_item['kitchen_furniture'] == 1) {
+                    if ((int)$data_item['kitchen_furniture'] == 1) {
                         $rs .= '<kitchen-furniture>1</kitchen-furniture>' . "\n";
                     } else {
                         $rs .= '<kitchen-furniture>0</kitchen-furniture>' . "\n";
@@ -3541,7 +3606,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['television']) && isset($data_item['television'])) {
-                    if ((int) $data_item['television'] == 1) {
+                    if ((int)$data_item['television'] == 1) {
                         $rs .= '<television>1</television>' . "\n";
                     } else {
                         $rs .= '<television>0</television>' . "\n";
@@ -3549,7 +3614,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['washing_machine']) && isset($data_item['washing_machine'])) {
-                    if ((int) $data_item['washing_machine'] == 1) {
+                    if ((int)$data_item['washing_machine'] == 1) {
                         $rs .= '<washing-machine>1</washing-machine>' . "\n";
                     } else {
                         $rs .= '<washing-machine>0</washing-machine>' . "\n";
@@ -3557,7 +3622,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['refrigerator']) && isset($data_item['refrigerator'])) {
-                    if ((int) $data_item['refrigerator'] == 1) {
+                    if ((int)$data_item['refrigerator'] == 1) {
                         $rs .= '<refrigerator>1</refrigerator>' . "\n";
                     } else {
                         $rs .= '<refrigerator>0</refrigerator>' . "\n";
@@ -3567,7 +3632,6 @@ class yandexrealty_admin extends Object_Manager {
 
                 $rs .= $this->expYA_balcony($data_item, $form_data_shared);
                 $rs .= $this->expYA_bathroom_unit($data_item, $form_data_shared);
-
 
 
                 if (isset($form_data_shared['floor_covering']) && isset($data_item['floor_covering'])/* && $data_item['floor_covering']!='' */) {
@@ -3593,13 +3657,13 @@ class yandexrealty_admin extends Object_Manager {
 
 
                 if (!empty($associations) && isset($associations[$data_topic]) && $associations[$data_topic]['realty_category'] != 0) {
-                    if (in_array($associations[$data_topic]['realty_category'], array(1,2,5,6))) {
+                    if (in_array($associations[$data_topic]['realty_category'], array(1, 2, 5, 6))) {
 
 
                         $rs .= $this->expYA_building_name($data_item, $form_data_shared);
                         $rs .= $this->expYA_building_type($data_item, $form_data_shared);
                         $rs .= $this->expYA_built_year($data_item, $form_data_shared);
-                        if($data_item['__new_flat'] == 1){
+                        if ($data_item['__new_flat'] == 1) {
                             $rs .= $this->expYA_building_state($data_item, $form_data_shared);
                             $rs .= $this->expYA_ready_quarter($data_item, $form_data_shared);
                             $rs .= $this->expYA_building_series($data_item, $form_data_shared);
@@ -3608,11 +3672,8 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
 
-
-
-
                 if (isset($form_data_shared['lift']) && isset($data_item['lift'])) {
-                    if ((int) $data_item['lift'] == 1) {
+                    if ((int)$data_item['lift'] == 1) {
                         $rs .= '<lift>1</lift>' . "\n";
                     } else {
                         $rs .= '<lift>0</lift>' . "\n";
@@ -3620,7 +3681,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['rubbish_chute']) && isset($data_item['rubbish_chute'])) {
-                    if ((int) $data_item['rubbish_chute'] == 1) {
+                    if ((int)$data_item['rubbish_chute'] == 1) {
                         $rs .= '<rubbish-chute>1</rubbish-chute>' . "\n";
                     } else {
                         $rs .= '<rubbish-chute>0</rubbish-chute>' . "\n";
@@ -3628,13 +3689,13 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['elite']) && isset($data_item['elite'])) {
-                    if ((int) $data_item['elite'] == 1) {
+                    if ((int)$data_item['elite'] == 1) {
                         $rs .= '<is-elite>1</is-elite>' . "\n";
                     }
                 }
 
                 if (isset($form_data_shared['parking']) && isset($data_item['parking'])) {
-                    if ((int) $data_item['parking'] == 1) {
+                    if ((int)$data_item['parking'] == 1) {
                         $rs .= '<parking>1</parking>' . "\n";
                     } else {
                         $rs .= '<parking>0</parking>' . "\n";
@@ -3642,7 +3703,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['alarm']) && isset($data_item['alarm'])) {
-                    if ((int) $data_item['alarm'] == 1) {
+                    if ((int)$data_item['alarm'] == 1) {
                         $rs .= '<alarm>1</alarm>' . "\n";
                     } else {
                         $rs .= '<alarm>0</alarm>' . "\n";
@@ -3662,7 +3723,7 @@ class yandexrealty_admin extends Object_Manager {
                 /*                 * ******************ЗАГОРОДНАЯ************************ */
 
                 if (isset($form_data_shared['pmg']) && isset($data_item['pmg'])) {
-                    if ((int) $data_item['pmg'] == 1) {
+                    if ((int)$data_item['pmg'] == 1) {
                         $rs .= '<pmg>1</pmg>' . "\n";
                     } else {
                         $rs .= '<pmg>0</pmg>' . "\n";
@@ -3670,7 +3731,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['kitchen']) && isset($data_item['kitchen'])) {
-                    if ((int) $data_item['kitchen'] == 1) {
+                    if ((int)$data_item['kitchen'] == 1) {
                         $rs .= '<kitchen>1</kitchen>' . "\n";
                     } else {
                         $rs .= '<kitchen>0</kitchen>' . "\n";
@@ -3678,7 +3739,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['pool']) && isset($data_item['pool'])) {
-                    if ((int) $data_item['pool'] == 1) {
+                    if ((int)$data_item['pool'] == 1) {
                         $rs .= '<pool>1</pool>' . "\n";
                     } else {
                         $rs .= '<pool>0</pool>' . "\n";
@@ -3686,7 +3747,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['billiard']) && isset($data_item['billiard'])) {
-                    if ((int) $data_item['billiard'] == 1) {
+                    if ((int)$data_item['billiard'] == 1) {
                         $rs .= '<billiard>1</billiard>' . "\n";
                     } else {
                         $rs .= '<billiard>0</billiard>' . "\n";
@@ -3694,7 +3755,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['sauna']) && isset($data_item['sauna'])) {
-                    if ((int) $data_item['sauna'] == 1) {
+                    if ((int)$data_item['sauna'] == 1) {
                         $rs .= '<sauna>1</sauna>' . "\n";
                     } else {
                         $rs .= '<sauna>0</sauna>' . "\n";
@@ -3702,7 +3763,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['heating_supply']) && isset($data_item['heating_supply'])) {
-                    if ((int) $data_item['heating_supply'] == 1) {
+                    if ((int)$data_item['heating_supply'] == 1) {
                         $rs .= '<heating-supply>1</heating-supply>' . "\n";
                     } else {
                         $rs .= '<heating-supply>0</heating-supply>' . "\n";
@@ -3710,7 +3771,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['water_supply']) && isset($data_item['water_supply'])) {
-                    if ((int) $data_item['water_supply'] == 1) {
+                    if ((int)$data_item['water_supply'] == 1) {
                         $rs .= '<water-supply>1</water-supply>' . "\n";
                     } else {
                         $rs .= '<water-supply>0</water-supply>' . "\n";
@@ -3718,7 +3779,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['sewerage_supply']) && isset($data_item['sewerage_supply'])) {
-                    if ((int) $data_item['sewerage_supply'] == 1) {
+                    if ((int)$data_item['sewerage_supply'] == 1) {
                         $rs .= '<sewerage-supply>1</sewerage-supply>' . "\n";
                     } else {
                         $rs .= '<sewerage-supply>0</sewerage-supply>' . "\n";
@@ -3726,7 +3787,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['electricity_supply']) && isset($data_item['electricity_supply'])) {
-                    if ((int) $data_item['electricity_supply'] == 1) {
+                    if ((int)$data_item['electricity_supply'] == 1) {
                         $rs .= '<electricity-supply>1</electricity-supply>' . "\n";
                     } else {
                         $rs .= '<electricity-supply>0</electricity-supply>' . "\n";
@@ -3734,7 +3795,7 @@ class yandexrealty_admin extends Object_Manager {
                 }
 
                 if (isset($form_data_shared['gas_supply']) && isset($data_item['gas_supply'])) {
-                    if ((int) $data_item['gas_supply'] == 1) {
+                    if ((int)$data_item['gas_supply'] == 1) {
                         $rs .= '<gas-supply>1</gas-supply>' . "\n";
                     } else {
                         $rs .= '<gas-supply>0</gas-supply>' . "\n";
@@ -3774,11 +3835,12 @@ class yandexrealty_admin extends Object_Manager {
         }
     }
 
-    protected function saveExportLogs($log_data) {
+    protected function saveExportLogs($log_data)
+    {
 
         $log_export_file_name = $this->export_log_file_label;
 
-        $f = fopen(SITEBILL_DOCUMENT_ROOT . '/cache/'.$log_export_file_name.'.last.log.xml', 'w');
+        $f = fopen(SITEBILL_DOCUMENT_ROOT . '/cache/' . $log_export_file_name . '.last.log.xml', 'w');
         $str = '<log>';
         $str .= '<date>' . date('Y-m-d H:i:s') . '</date>';
         $str .= '<items>';
@@ -3789,7 +3851,8 @@ class yandexrealty_admin extends Object_Manager {
         fclose($f);
     }
 
-    private function createAssocTable() {
+    private function createAssocTable()
+    {
         $DBC = DBC::getInstance();
         $query = "CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_yandexrealty_assoc` (
 		  `topic_id` int(11) NOT NULL,
@@ -3807,7 +3870,8 @@ class yandexrealty_admin extends Object_Manager {
         }
     }
 
-    protected function loadAssociations() {
+    protected function loadAssociations()
+    {
         $associations = array();
         $DBC = DBC::getInstance();
         $query = 'SELECT topic_id, realty_type, realty_category, operation_type FROM ' . DB_PREFIX . '_yandexrealty_assoc';
@@ -3821,7 +3885,8 @@ class yandexrealty_admin extends Object_Manager {
         return $associations;
     }
 
-    protected function collectData() {
+    protected function collectData()
+    {
 
 
         $select_conditions = array();
@@ -3896,7 +3961,7 @@ class yandexrealty_admin extends Object_Manager {
             $DBC = DBC::getInstance();
             $where = array();
             $where = $this->exported_conditions;
-            $max_days = (int) $this->getConfigValue('apps.yandexrealty.days_interval');
+            $max_days = (int)$this->getConfigValue('apps.yandexrealty.days_interval');
             if ($max_days == 0) {
                 $max_date = date('Y-m-d', 0);
             } else {
@@ -3904,7 +3969,7 @@ class yandexrealty_admin extends Object_Manager {
             }
 
             $where[] = '`active`=1';
-            if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
+            if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting')) {
                 $where[] = '`archived`<>1';
             }
             $where[] = '`date_added` > \'' . $max_date . '\'';
@@ -3922,7 +3987,7 @@ class yandexrealty_admin extends Object_Manager {
             }
         } else {
             $where = array();
-            $max_days = (int) $this->getConfigValue('apps.yandexrealty.days_interval');
+            $max_days = (int)$this->getConfigValue('apps.yandexrealty.days_interval');
             if ($max_days == 0) {
                 $max_date = date('Y-m-d', 0);
             } else {
@@ -3930,7 +3995,7 @@ class yandexrealty_admin extends Object_Manager {
             }
 
             $where[] = '`active`=1';
-            if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
+            if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting')) {
                 $where[] = '`archived`<>1';
             }
             $where[] = '`date_added` > \'' . $max_date . '\'';
@@ -3952,7 +4017,6 @@ class yandexrealty_admin extends Object_Manager {
                 }
             }
         }
-
 
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
@@ -4079,7 +4143,6 @@ class yandexrealty_admin extends Object_Manager {
         }
 
 
-
         /*
          * Task Mode will moved to new app
          */
@@ -4162,7 +4225,8 @@ class yandexrealty_admin extends Object_Manager {
         return $data;
     }
 
-    protected function formdate($time = NULL) {
+    protected function formdate($time = NULL)
+    {
         if ($time === NULL) {
             $localtm = time();
         } else {
@@ -4184,7 +4248,8 @@ class yandexrealty_admin extends Object_Manager {
         return $gmtdate . $gmtoff;
     }
 
-    private function getRealtyTypeSelectbox($realty_type, $topic_id) {
+    private function getRealtyTypeSelectbox($realty_type, $topic_id)
+    {
         $ret = '';
         $ret .= '<select name="data[' . $topic_id . '][realty_type]" class="input-medium">';
         foreach ($this->realty_types as $k => $v) {
@@ -4198,7 +4263,8 @@ class yandexrealty_admin extends Object_Manager {
         return $ret;
     }
 
-    private function getRealtyCategorySelectbox($realty_category, $topic_id) {
+    private function getRealtyCategorySelectbox($realty_category, $topic_id)
+    {
         $ret = '';
         $ret .= '<select name="data[' . $topic_id . '][realty_category]" class="input-medium">';
         foreach ($this->realty_categories as $k => $v) {
@@ -4212,7 +4278,8 @@ class yandexrealty_admin extends Object_Manager {
         return $ret;
     }
 
-    private function getOperationTypeSelectbox($operation_type, $topic_id) {
+    private function getOperationTypeSelectbox($operation_type, $topic_id)
+    {
         $ret = '';
         $ret .= '<select name="data[' . $topic_id . '][operation_type]" class="input-medium">';
         foreach ($this->op_types as $k => $v) {
@@ -4226,7 +4293,8 @@ class yandexrealty_admin extends Object_Manager {
         return $ret;
     }
 
-    function getTopMenu() {
+    function getTopMenu()
+    {
         $rs = '';
         $rs .= '<p>1. Для корректной работы приложения необходимо создать таблицу ассоциаций разделов</p>';
         $rs .= '<p>2. Если таблица уже создана, но в структуру добавлялись новуе пункты меню, необходимо выполнить \'Создать/дополнить таблицу ассоциаций\' для дополнения таблицы новыми пунктами раздела. Старые пункты таблицы останутся в исходном положении.</p>';
@@ -4238,7 +4306,7 @@ class yandexrealty_admin extends Object_Manager {
         $rs .= ' <!--a href="?action=' . $this->action . '&do=update_model" onclick="return confirmUpdate();" class="btn btn-warning"><i class="icon-white icon-exclamation-sign"></i> Добавить расширенные поля в модель data</a--!>';
         $rs .= ' <a href="?action=' . $this->action . '&do=mapper" class="btn btn-primary">Маппинг</a>';
         $rs .= ' <a href="?action=' . $this->action . '&do=task" class="btn btn-primary">Выгрузки</a></p>';
-        if('' == $this->getRequestValue('do')){
+        if ('' == $this->getRequestValue('do')) {
             $rs .= $this->getInfo();
         }
 
@@ -4246,7 +4314,8 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    static function symbolsClear($text) {
+    static function symbolsClear($text)
+    {
         //echo $text.'=';
         $text = preg_replace('/[[:cntrl:]]/i', '', $text);
         $text = str_replace(array('"', '&', '>', '<', '\''), array('&quot;', '&amp;', '&gt;', '&lt;', '&apos;'), $text);
@@ -4261,7 +4330,8 @@ class yandexrealty_admin extends Object_Manager {
      * This is deprecated function. It will replaced by checkCurrencyCode
      */
 
-    static function currencyCheck($currency_string) {
+    static function currencyCheck($currency_string)
+    {
         $currencies = array('RUR', 'RUB', 'USD', 'EUR', 'UAH', 'BYR', 'KZT');
         if ($currency_string != '') {
             if (in_array($currency_string, $currencies)) {
@@ -4321,7 +4391,8 @@ class yandexrealty_admin extends Object_Manager {
         return FALSE;
     }
 
-    function checkCurrencyCode($currency_id) {
+    function checkCurrencyCode($currency_id)
+    {
         if (is_null($this->currencies)) {
             $this->currencies = array();
             $DBC = DBC::getInstance();
@@ -4339,7 +4410,8 @@ class yandexrealty_admin extends Object_Manager {
         return false;
     }
 
-    private function getCategoriesNameArray() {
+    private function getCategoriesNameArray()
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
         $cs = $Structure_Manager->loadCategoryStructure($this->getConfigValue('use_topic_publish_status'));
@@ -4350,7 +4422,8 @@ class yandexrealty_admin extends Object_Manager {
         return $names;
     }
 
-    function get_yandex_model() {
+    function get_yandex_model()
+    {
         //Тут создаем массив для полей из дополнительных секций яндекса
         //Все поля описаны тут http://help.yandex.ru/webmaster/realty/requirements.xml
         $form_data['data']['expire_date']['name'] = 'expire_date';
@@ -4677,17 +4750,20 @@ class yandexrealty_admin extends Object_Manager {
         return $form_data;
     }
 
-    public function setExportLogFileLabel($label) {
-        if($label != ''){
+    public function setExportLogFileLabel($label)
+    {
+        if ($label != '') {
             $this->export_log_file_label = $label;
         }
     }
 
-    protected function setExportType() {
+    protected function setExportType()
+    {
         $this->export_type = mb_strtolower($this->getRequestValue('type'), SITE_ENCODING);
     }
 
-    protected function setExportMode() {
+    protected function setExportMode()
+    {
         if ($this->external_export_mode !== null) {
             $this->export_mode = $this->external_export_mode;
         } else {
@@ -4696,15 +4772,16 @@ class yandexrealty_admin extends Object_Manager {
     }
 
 
-
-    public function changeExportMode($mode = '') {
+    public function changeExportMode($mode = '')
+    {
         if ($mode != '') {
             $this->external_export_mode = $mode;
         }
     }
 
-    public function expYA_cleaningIncluded($data_item, $form_data_shared) {
-        $data_topic = (int) $data_item['topic_id'];
+    public function expYA_cleaningIncluded($data_item, $form_data_shared)
+    {
+        $data_topic = (int)$data_item['topic_id'];
         $this_realty_supertype = intval($this->associations[$data_topic]['realty_type']);
         $rs = '';
 
@@ -4735,8 +4812,9 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    public function expYA_utilitiesIncluded($data_item, $form_data_shared) {
-        $data_topic = (int) $data_item['topic_id'];
+    public function expYA_utilitiesIncluded($data_item, $form_data_shared)
+    {
+        $data_topic = (int)$data_item['topic_id'];
         $this_realty_supertype = intval($this->associations[$data_topic]['realty_type']);
         $rs = '';
 
@@ -4767,8 +4845,9 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    public function expYA_electricityIncluded($data_item, $form_data_shared) {
-        $data_topic = (int) $data_item['topic_id'];
+    public function expYA_electricityIncluded($data_item, $form_data_shared)
+    {
+        $data_topic = (int)$data_item['topic_id'];
         $this_realty_supertype = intval($this->associations[$data_topic]['realty_type']);
         $rs = '';
 
@@ -4799,8 +4878,9 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    public function expYA_price_taxationform($data_item, $form_data_shared) {
-        $data_topic = (int) $data_item['topic_id'];
+    public function expYA_price_taxationform($data_item, $form_data_shared)
+    {
+        $data_topic = (int)$data_item['topic_id'];
         $this_realty_supertype = intval($this->associations[$data_topic]['realty_type']);
         $rs = '';
 
@@ -4829,19 +4909,22 @@ class yandexrealty_admin extends Object_Manager {
             }
             if ($quality) {
                 switch ($quality) {
-                    case 'nds' : {
-                            return '<taxation-form>НДС</taxation-form>';
-                        }
-                    case 'usn' : {
-                            return '<taxation-form>УСН</taxation-form>';
-                        }
+                    case 'nds' :
+                    {
+                        return '<taxation-form>НДС</taxation-form>';
+                    }
+                    case 'usn' :
+                    {
+                        return '<taxation-form>УСН</taxation-form>';
+                    }
                 }
             }
         }
         return $rs;
     }
 
-    public function expYA_price_period($data_item, $form_data_shared) {
+    public function expYA_price_period($data_item, $form_data_shared)
+    {
         $rs = '';
         if (isset($form_data_shared['period']) && $form_data_shared['period']['type'] == 'select_box') {
             if ($data_item['period'] != '' && $data_item['period'] != '0' && isset($form_data_shared['period']['select_data'][$data_item['period']])) {
@@ -4857,7 +4940,8 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    public function expYA_price_unit($data_item, $form_data_shared) {
+    public function expYA_price_unit($data_item, $form_data_shared)
+    {
         $rs = '';
         if (isset($form_data_shared['unit']) && isset($data_item['unit']) && $data_item['unit'] != '') {
             $rs .= '<unit>' . self::symbolsClear($data_item['unit']) . '</unit>' . "\n";
@@ -4865,23 +4949,26 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    public function expYA_floor($data_item, $form_data_shared) {
+    public function expYA_floor($data_item, $form_data_shared)
+    {
         $rs = '';
-        if (isset($form_data_shared['floor']) && isset($data_item['floor']) && (int) $data_item['floor'] != 0) {
-            $rs .= '<floor>' . (int) $data_item['floor'] . '</floor>' . "\n";
+        if (isset($form_data_shared['floor']) && isset($data_item['floor']) && (int)$data_item['floor'] != 0) {
+            $rs .= '<floor>' . (int)$data_item['floor'] . '</floor>' . "\n";
         }
         return $rs;
     }
 
-    public function expYA_floors_total($data_item, $form_data_shared) {
+    public function expYA_floors_total($data_item, $form_data_shared)
+    {
         $rs = '';
-        if (isset($form_data_shared['floor_count']) && isset($data_item['floor_count']) && (int) $data_item['floor_count'] != 0) {
-            $rs .= '<floors-total>' . (int) $data_item['floor_count'] . '</floors-total>' . "\n";
+        if (isset($form_data_shared['floor_count']) && isset($data_item['floor_count']) && (int)$data_item['floor_count'] != 0) {
+            $rs .= '<floors-total>' . (int)$data_item['floor_count'] . '</floors-total>' . "\n";
         }
         return $rs;
     }
 
-    public function expYA_building_name($data_item, $form_data_shared) {
+    public function expYA_building_name($data_item, $form_data_shared)
+    {
         $rs = '';
         if (isset($form_data_shared['building_name']) && isset($data_item['building_name']) && $data_item['building_name'] != '') {
             $rs .= '<building-name>' . self::symbolsClear($data_item['building_name']) . '</building-name>' . "\n";
@@ -4889,7 +4976,8 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    public function expYA_building_type($data_item, $form_data_shared) {
+    public function expYA_building_type($data_item, $form_data_shared)
+    {
         $rs = '';
         if (isset($form_data_shared['building_type']) && isset($data_item['building_type'])/* && $data_item['building_type']!='' */) {
             if ($form_data_shared['building_type']['type'] == 'select_box' && intval($data_item['building_type']) != 0 && isset($form_data_shared['building_type']['select_data'][$data_item['building_type']])) {
@@ -4908,7 +4996,8 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    public function expYA_building_series($data_item, $form_data_shared) {
+    public function expYA_building_series($data_item, $form_data_shared)
+    {
         $rs = '';
         if (isset($form_data_shared['building_series']) && isset($data_item['building_series']) && $data_item['building_series'] != '') {
             $rs .= '<building-series>' . self::symbolsClear($data_item['building_series']) . '</building-series>' . "\n";
@@ -4916,7 +5005,8 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    public function expYA_building_state($data_item, $form_data_shared) {
+    public function expYA_building_state($data_item, $form_data_shared)
+    {
         $rs = '';
         if (isset($form_data_shared['building_state']) && isset($data_item['building_state']) && $data_item['building_state'] != '') {
             $rs .= '<building-state>' . self::symbolsClear($data_item['building_state']) . '</building-state>' . "\n";
@@ -4924,7 +5014,8 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    public function expYA_built_year($data_item, $form_data_shared) {
+    public function expYA_built_year($data_item, $form_data_shared)
+    {
         $rs = '';
         if (isset($form_data_shared['built_year']) && isset($data_item['built_year']) && $data_item['built_year'] != '') {
             $x = preg_replace('/[^0-9]/', '', $data_item['built_year']);
@@ -4935,7 +5026,8 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    public function expYA_bathroom_unit($data_item, $form_data_shared) {
+    public function expYA_bathroom_unit($data_item, $form_data_shared)
+    {
         $rs = '';
         if (isset($form_data_shared['bathroom_unit']) && isset($data_item['bathroom_unit'])/* && $data_item['bathroom_unit']!='' */) {
             if ($form_data_shared['bathroom_unit']['type'] == 'select_box' && intval($data_item['bathroom_unit']) != 0 && isset($form_data_shared['bathroom_unit']['select_data'][$data_item['bathroom_unit']])) {
@@ -4948,7 +5040,8 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    public function expYA_balcony($data_item, $form_data_shared) {
+    public function expYA_balcony($data_item, $form_data_shared)
+    {
         $rs = '';
         if (isset($form_data_shared['balcony']) && isset($data_item['balcony'])) {
             if ($form_data_shared['balcony']['type'] == 'select_box' && intval($data_item['balcony']) != 0 && isset($form_data_shared['balcony']['select_data'][$data_item['balcony']])) {
@@ -4961,7 +5054,8 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    public function expYA_ready_quarter($data_item, $form_data_shared) {
+    public function expYA_ready_quarter($data_item, $form_data_shared)
+    {
         $rs = '';
         if (isset($form_data_shared['ready_quarter']) && isset($data_item['ready_quarter']) && $data_item['ready_quarter'] != '') {
             $x = preg_replace('/[^0-9]/', '', $data_item['ready_quarter']);
@@ -4972,7 +5066,8 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    protected function loadFieldsAssociations() {
+    protected function loadFieldsAssociations()
+    {
 
         $DBC = DBC::getInstance();
         $query = 'SELECT `config_value` FROM ' . DB_PREFIX . '_hidden_config WHERE `config_key`=?';
@@ -4986,31 +5081,34 @@ class yandexrealty_admin extends Object_Manager {
         return $fields;
     }
 
-    protected function loadTaskList() {
+    protected function loadTaskList()
+    {
         $tasks = array();
         $DBC = DBC::getInstance();
-        $query = 'SELECT * FROM '.DB_PREFIX.'_yandexrealty_task';
+        $query = 'SELECT * FROM ' . DB_PREFIX . '_yandexrealty_task';
         $stmt = $DBC->query($query);
-        if($stmt){
-            while($ar = $DBC->fetch($stmt)){
+        if ($stmt) {
+            while ($ar = $DBC->fetch($stmt)) {
                 $task[] = $ar;
             }
         }
         return $task;
     }
 
-    protected function getTaskByAlias($alias) {
+    protected function getTaskByAlias($alias)
+    {
         $task = array();
         $DBC = DBC::getInstance();
-        $query = 'SELECT * FROM '.DB_PREFIX.'_yandexrealty_task WHERE alias = ?';
+        $query = 'SELECT * FROM ' . DB_PREFIX . '_yandexrealty_task WHERE alias = ?';
         $stmt = $DBC->query($query, array($alias));
-        if($stmt){
+        if ($stmt) {
             $task = $DBC->fetch($stmt);
         }
         return $task;
     }
 
-    protected function _taskAction() {
+    protected function _taskAction()
+    {
 
 
         /*
@@ -5045,19 +5143,19 @@ class yandexrealty_admin extends Object_Manager {
             '<=' => 'меньше или равно',
             'SETTED' => 'свойство установлено',
             '!SETTED' => 'свойство не установлено'
-            ));
-        $smarty->assign('mapper_yes_tpl', SITEBILL_DOCUMENT_ROOT.'/apps/'.$this->action.'/admin/template/mapper_yes.tpl');
+        ));
+        $smarty->assign('mapper_yes_tpl', SITEBILL_DOCUMENT_ROOT . '/apps/' . $this->action . '/admin/template/mapper_yes.tpl');
 
         $rs = '';
 
         $smarty->assign('taskformvariants', $taskformvariants);
 
-        $subdo=$this->getRequestValue('subdo');
+        $subdo = $this->getRequestValue('subdo');
 
         $request = $this->request();
 
-        if($subdo=='new'){
-            if('post' == strtolower($request->server->get('REQUEST_METHOD'))){
+        if ($subdo == 'new') {
+            if ('post' == strtolower($request->server->get('REQUEST_METHOD'))) {
                 $task_data = $request->request->get('taskdata');
 
                 $prep_data = array();
@@ -5080,22 +5178,22 @@ class yandexrealty_admin extends Object_Manager {
                 $prep_data['filter'] = json_encode($this->getTaskFilterParamsFromRequest());
 
                 $DBC = DBC::getInstance();
-                $query = 'INSERT INTO '.DB_PREFIX.'_yandexrealty_task (`'.implode('`,`', array_keys($prep_data)).'`) VALUES ('.implode(',', array_fill(0, count($prep_data), '?')).')';
+                $query = 'INSERT INTO ' . DB_PREFIX . '_yandexrealty_task (`' . implode('`,`', array_keys($prep_data)) . '`) VALUES (' . implode(',', array_fill(0, count($prep_data), '?')) . ')';
                 $stmt = $DBC->query($query, array_values($prep_data));
-                if($stmt){
-                    header('location: '.SITEBILL_MAIN_URL.'/admin/?action=yandexrealty&do=task');
-                }else{
+                if ($stmt) {
+                    header('location: ' . SITEBILL_MAIN_URL . '/admin/?action=yandexrealty&do=task');
+                } else {
                     echo $DBC->getLastError();
                 }
                 exit();
-            }else{
+            } else {
                 $smarty->assign('subdo', 'new');
                 $rs = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/yandexrealty/admin/template/taskform.tpl');
-    		}
-        }elseif($subdo=='edit'){
+            }
+        } elseif ($subdo == 'edit') {
             $yandexrealty_task_id = intval($this->getRequestValue('yandexrealty_task_id'));
 
-            if('post' == strtolower($_SERVER['REQUEST_METHOD'])){
+            if ('post' == strtolower($_SERVER['REQUEST_METHOD'])) {
                 //$task_data = $request->request->all();
                 $task_data = $request->request->get('taskdata');
 
@@ -5116,51 +5214,49 @@ class yandexrealty_admin extends Object_Manager {
                 $prep_data['filter'] = json_encode($this->getTaskFilterParamsFromRequest());
 
                 $DBC = DBC::getInstance();
-                $query = 'UPDATE '.DB_PREFIX.'_yandexrealty_task SET `'.implode('` = ?, `', array_keys($prep_data)).'` = ? WHERE `yandexrealty_task_id` = ?';
+                $query = 'UPDATE ' . DB_PREFIX . '_yandexrealty_task SET `' . implode('` = ?, `', array_keys($prep_data)) . '` = ? WHERE `yandexrealty_task_id` = ?';
 
                 $p = array_values($prep_data);
                 $p[] = $yandexrealty_task_id;
                 $stmt = $DBC->query($query, $p);
 
-                if($stmt){
-                    header('location: '.SITEBILL_MAIN_URL.'/admin/?action=yandexrealty&do=task');
-                }else{
+                if ($stmt) {
+                    header('location: ' . SITEBILL_MAIN_URL . '/admin/?action=yandexrealty&do=task');
+                } else {
                     echo $DBC->getLastError();
                 }
                 exit();
-            }else{
+            } else {
                 $DBC = DBC::getInstance();
-                $query = 'SELECT * FROM '.DB_PREFIX.'_yandexrealty_task WHERE yandexrealty_task_id = ?';
+                $query = 'SELECT * FROM ' . DB_PREFIX . '_yandexrealty_task WHERE yandexrealty_task_id = ?';
                 $stmt = $DBC->query($query, array($yandexrealty_task_id));
-                if($stmt){
+                if ($stmt) {
                     $task_data = $DBC->fetch($stmt);
                 }
-                if($task_data['filter'] != ''){
+                if ($task_data['filter'] != '') {
                     $task_data['filter'] = json_decode($task_data['filter']);
                 }
-
 
 
                 $smarty->assign('subdo', 'edit');
                 $smarty->assign('taskdata', $task_data);
                 $rs = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/yandexrealty/admin/template/taskform.tpl');
-    		}
-
+            }
 
 
             //$rs = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/adsapiruparser/admin/template/taskform.tpl');
-        }elseif($subdo=='delete'){
+        } elseif ($subdo == 'delete') {
             $yandexrealty_task_id = intval($this->getRequestValue('yandexrealty_task_id'));
             $DBC = DBC::getInstance();
-            $query = 'DELETE FROM '.DB_PREFIX.'_yandexrealty_task WHERE yandexrealty_task_id = ?';
+            $query = 'DELETE FROM ' . DB_PREFIX . '_yandexrealty_task WHERE yandexrealty_task_id = ?';
             $stmt = $DBC->query($query, array($yandexrealty_task_id));
-            header('location: '.SITEBILL_MAIN_URL.'/admin/?action=yandexrealty&do=task');
+            header('location: ' . SITEBILL_MAIN_URL . '/admin/?action=yandexrealty&do=task');
             exit();
-        }else{
+        } else {
             $tasks = $this->loadTaskList();
 
-            if(!empty($tasks)){
-                foreach($tasks as $k => $v){
+            if (!empty($tasks)) {
+                foreach ($tasks as $k => $v) {
 
                 }
             }
@@ -5170,39 +5266,38 @@ class yandexrealty_admin extends Object_Manager {
         }
 
 
-
-
         return $rs;
     }
 
-    private function getTaskFilterParamsFromRequest(){
+    private function getTaskFilterParamsFromRequest()
+    {
         $request = $this->request();
         $data = array();
-        if($request->request->has('field')){
+        if ($request->request->has('field')) {
             $fieds = $request->request->get('field');
-            if(is_array($fieds) && isset($fieds['filter'])){
+            if (is_array($fieds) && isset($fieds['filter'])) {
                 $data = $fieds['filter'];
             }
 
         }
 
-        if(!empty($data)){
-            foreach($data as $k=>$el){
-                if(is_array($el)){
-                    foreach($el as $kl=>$vl){
-                        foreach($vl as $kc=>$vc){
-                            if($vc[0]==''){
+        if (!empty($data)) {
+            foreach ($data as $k => $el) {
+                if (is_array($el)) {
+                    foreach ($el as $kl => $vl) {
+                        foreach ($vl as $kc => $vc) {
+                            if ($vc[0] == '') {
                                 unset($el[$kl][$kc]);
                             }
                         }
-                        if(empty($el[$kl])){
+                        if (empty($el[$kl])) {
                             unset($el[$kl]);
                         }
                     }
-                    if(empty($el)){
-                        $data[$k]=array();
-                    }else{
-                        $data[$k]=$el;
+                    if (empty($el)) {
+                        $data[$k] = array();
+                    } else {
+                        $data[$k] = $el;
                     }
                 }
             }
@@ -5211,11 +5306,12 @@ class yandexrealty_admin extends Object_Manager {
         return $data;
     }
 
-    protected function _mapperAction() {
+    protected function _mapperAction()
+    {
 
         $req = $this->request();
 
-        if('post' == strtolower($req->server->get('REQUEST_METHOD'))){
+        if ('post' == strtolower($req->server->get('REQUEST_METHOD'))) {
 
             $checkable_fields = array(
                 't_carwash',
@@ -5299,6 +5395,10 @@ class yandexrealty_admin extends Object_Manager {
                 'm_maf'
             );
 
+            foreach ($this->getPropertyDictionaryExtended() as $item) {
+                array_push($checkable_fields, $item['name']);
+            }
+
             $data = $req->request->get('field');
 
             foreach ($checkable_fields as $cf) {
@@ -5343,6 +5443,7 @@ class yandexrealty_admin extends Object_Manager {
 
         global $smarty;
         $rs = '';
+        $smarty->assign('propertyDictionaryExtended', $this->getPropertyDictionaryExtended());
         $smarty->assign('mapper_yes_tpl', SITEBILL_DOCUMENT_ROOT . '/apps/yandexrealty/admin/template/mapper_yes.tpl');
         //$smarty->assign('mapper_meash_tpl', SITEBILL_DOCUMENT_ROOT.'/apps/yandexrealty/admin/template/mapper_meash.tpl');
         $smarty->assign('cassocc', $this->loadFieldsAssociations());
@@ -5352,7 +5453,8 @@ class yandexrealty_admin extends Object_Manager {
         return $rs;
     }
 
-    protected function checkCondition($cond, $data_item) {
+    protected function checkCondition($cond, $data_item)
+    {
         /* $or_conds=array();
           foreach($cond as $or_cond){
           $or_conds[]=$or_cond;
@@ -5377,7 +5479,8 @@ class yandexrealty_admin extends Object_Manager {
         return $result_common;
     }
 
-    protected function checkOneCondition($oc, $data_item) {
+    protected function checkOneCondition($oc, $data_item)
+    {
 
         $f = $oc[0];
         $o = $oc[1];
@@ -5385,102 +5488,118 @@ class yandexrealty_admin extends Object_Manager {
         return $this->isConditionValid($f, $o, $v, $data_item);
     }
 
-    protected function isConditionValid($f, $o, $v, $data_item) {
+    protected function isConditionValid($f, $o, $v, $data_item)
+    {
         switch ($o) {
-            case '=' : {
-                    $method = 'isConditionEQ';
-                    $val = $v;
-                    break;
-                }
-            case '!=' : {
-                    $method = 'isConditionNEQ';
-                    $val = $v;
-                    break;
-                }
-            case '>' : {
-                    $method = 'isConditionGT';
-                    $val = $v;
-                    break;
-                }
-            case '<' : {
-                    $method = 'isConditionLT';
-                    $val = $v;
-                    break;
-                }
-            case '>=' : {
-                    $method = 'isConditionGTEQ';
+            case '=' :
+            {
+                $method = 'isConditionEQ';
+                $val = $v;
+                break;
+            }
+            case '!=' :
+            {
+                $method = 'isConditionNEQ';
+                $val = $v;
+                break;
+            }
+            case '>' :
+            {
+                $method = 'isConditionGT';
+                $val = $v;
+                break;
+            }
+            case '<' :
+            {
+                $method = 'isConditionLT';
+                $val = $v;
+                break;
+            }
+            case '>=' :
+            {
+                $method = 'isConditionGTEQ';
 
-                    $val = $v;
-                    break;
-                }
-            case '<=' : {
-                    $method = 'isConditionLTEQ';
-                    $val = $v;
-                    break;
-                }
-            case 'IN' : {
-                    $method = 'isConditionIN';
-                    if (false != strpos($v, ',')) {
-                        $val = explode(',', $v);
-                        foreach ($val as $k => $x) {
-                            $val[$k] = trim($x);
-                        }
-                        $method = 'isConditionINSet';
-                    } else {
-                        list($v1, $v2) = explode('-', $v);
-                        $val = array(trim($v1), trim($v2));
+                $val = $v;
+                break;
+            }
+            case '<=' :
+            {
+                $method = 'isConditionLTEQ';
+                $val = $v;
+                break;
+            }
+            case 'IN' :
+            {
+                $method = 'isConditionIN';
+                if (false != strpos($v, ',')) {
+                    $val = explode(',', $v);
+                    foreach ($val as $k => $x) {
+                        $val[$k] = trim($x);
                     }
+                    $method = 'isConditionINSet';
+                } else {
+                    list($v1, $v2) = explode('-', $v);
+                    $val = array(trim($v1), trim($v2));
+                }
 
-                    break;
-                }
-            case '!IN' : {
-                    $method = 'isConditionNIN';
-                    if (false != strpos($v, ',')) {
-                        $val = explode(',', $v);
-                        foreach ($val as $k => $x) {
-                            $val[$k] = trim($x);
-                        }
-                        $method = 'isConditionNINSet';
-                    } else {
-                        list($v1, $v2) = explode('-', $v);
-                        $val = array(trim($v1), trim($v2));
+                break;
+            }
+            case '!IN' :
+            {
+                $method = 'isConditionNIN';
+                if (false != strpos($v, ',')) {
+                    $val = explode(',', $v);
+                    foreach ($val as $k => $x) {
+                        $val[$k] = trim($x);
                     }
-                    break;
+                    $method = 'isConditionNINSet';
+                } else {
+                    list($v1, $v2) = explode('-', $v);
+                    $val = array(trim($v1), trim($v2));
                 }
-            case 'EMPTY' : {
-                    $method = 'isConditionEMPTY';
-                    $val = '';
-                    break;
-                }
-            case 'ZERO' : {
-                    $method = 'isConditionZERO';
-                    $val = '';
-                    break;
-                }
-            case 'EMPTYZ' : {
-                    $method = 'isConditionEMPTYZ';
-                    $val = '';
-                    break;
-                }
-            case '!EMPTY' : {
-                    $method = 'isConditionNEMPTY';
-                    $val = '';
-                    break;
-                }
-            case '!ZERO' : {
-                    $method = 'isConditionNZERO';
-                    $val = '';
-                    break;
-                }
-            case '!EMPTYZ' : {
-                    $method = 'isConditionNEMPTYZ';
-                    $val = '';
-                    break;
-                }
-            default : {
-                    $method = '';
-                    $val = '';
-                }
+                break;
+            }
+            case 'EMPTY' :
+            {
+                $method = 'isConditionEMPTY';
+                $val = '';
+                break;
+            }
+            case 'ZERO' :
+            {
+                $method = 'isConditionZERO';
+                $val = '';
+                break;
+            }
+            case 'EMPTYZ' :
+            {
+                $method = 'isConditionEMPTYZ';
+                $val = '';
+                break;
+            }
+            case '!EMPTY' :
+            {
+                $method = 'isConditionNEMPTY';
+                $val = '';
+                break;
+            }
+            case '!ZERO' :
+            {
+                $method = 'isConditionNZERO';
+                $val = '';
+                break;
+            }
+            case '!EMPTYZ' :
+            {
+                $method = 'isConditionNEMPTYZ';
+                $val = '';
+                break;
+            }
+            default :
+            {
+                $method = '';
+                $val = '';
+            }
         }
         if ($method != '') {
             return $this->$method($f, $val, $data_item);
@@ -5491,74 +5610,85 @@ class yandexrealty_admin extends Object_Manager {
 
     // = != > < >= <= IN !IN EMPTY ZERO EMPTYZ !EMPTY !ZERO !EMPTYZ
 
-    protected function isConditionNZERO($f, $v, $data_item) {
+    protected function isConditionNZERO($f, $v, $data_item)
+    {
         if (!$this->isConditionZERO($f, $v, $data_item)) {
             return true;
         }
         return false;
     }
 
-    protected function isConditionNEMPTY($f, $v, $data_item) {
+    protected function isConditionNEMPTY($f, $v, $data_item)
+    {
         if (!$this->isConditionEMPTY($f, $v, $data_item)) {
             return true;
         }
         return false;
     }
 
-    protected function isConditionNEMPTYZ($f, $v, $data_item) {
+    protected function isConditionNEMPTYZ($f, $v, $data_item)
+    {
         if (!$this->isConditionEMPTYZ($f, $v, $data_item)) {
             return true;
         }
         return false;
     }
 
-    protected function isConditionZERO($f, $v, $data_item) {
+    protected function isConditionZERO($f, $v, $data_item)
+    {
         if (isset($data_item[$f]) && intval($data_item[$f]) == 0) {
             return true;
         }
         return false;
     }
 
-    protected function isConditionEMPTY($f, $v, $data_item) {
+    protected function isConditionEMPTY($f, $v, $data_item)
+    {
         if (isset($data_item[$f]) && strval($data_item[$f]) == '') {
             return true;
         }
         return false;
     }
 
-    protected function isConditionEMPTYZ($f, $v, $data_item) {
+    protected function isConditionEMPTYZ($f, $v, $data_item)
+    {
         if (isset($data_item[$f]) && (strval($data_item[$f]) == '' || intval($data_item[$f]) == 0)) {
             return true;
         }
         return false;
     }
 
-    protected function isConditionEQ($f, $v, $data_item) {
+    protected function isConditionEQ($f, $v, $data_item)
+    {
         if (isset($data_item[$f]) && $data_item[$f] == $v) {
             return true;
         }
         return false;
     }
 
-    protected function isConditionINSet($f, $v, $data_item) {
+    protected function isConditionINSet($f, $v, $data_item)
+    {
         if (isset($data_item[$f]) && in_array($data_item[$f], $v)) {
             return true;
         }
         return false;
     }
 
-    protected function isConditionNINSet($f, $v, $data_item) {
+    protected function isConditionNINSet($f, $v, $data_item)
+    {
         return !$this->isConditionINSet($f, $v, $data_item);
     }
 
-    protected function isConditionNEQ($f, $v, $data_item) {
+    protected function isConditionNEQ($f, $v, $data_item)
+    {
         if (!$this->isConditionEQ($f, $v, $data_item)) {
             return true;
         }
         return false;
     }
 
-    protected function isConditionGT($f, $v, $data_item) {
+    protected function isConditionGT($f, $v, $data_item)
+    {
 
         if (isset($data_item[$f]) && $data_item[$f] > $v) {
             return true;
@@ -5566,21 +5696,24 @@ class yandexrealty_admin extends Object_Manager {
         return false;
     }
 
-    protected function isConditionLT($f, $v, $data_item) {
+    protected function isConditionLT($f, $v, $data_item)
+    {
         if (isset($data_item[$f]) && $data_item[$f] < $v) {
             return true;
         }
         return false;
     }
 
-    protected function isConditionLTEQ($f, $v, $data_item) {
+    protected function isConditionLTEQ($f, $v, $data_item)
+    {
         if ($this->isConditionEQ($f, $v, $data_item) || $this->isConditionLT($f, $v, $data_item)) {
             return true;
         }
         return false;
     }
 
-    protected function isConditionGTEQ($f, $v, $data_item) {
+    protected function isConditionGTEQ($f, $v, $data_item)
+    {
 
         if ($this->isConditionEQ($f, $v, $data_item) || $this->isConditionGT($f, $v, $data_item)) {
             return true;
@@ -5588,39 +5721,50 @@ class yandexrealty_admin extends Object_Manager {
         return false;
     }
 
-    protected function isConditionIN($f, $v, $data_item) {
+    protected function isConditionIN($f, $v, $data_item)
+    {
         if ($this->isConditionGTEQ($f, $v[0], $data_item) && $this->isConditionLTEQ($f, $v[1], $data_item)) {
             return true;
         }
         return false;
     }
 
-    protected function isConditionNIN($f, $v, $data_item) {
+    protected function isConditionNIN($f, $v, $data_item)
+    {
         if (!$this->isConditionIN($f, $v, $data_item)) {
             return true;
         }
         return false;
     }
 
-    function ajax () {
-        if($_SESSION['current_user_group_name']!='admin'){
-            return json_encode(array('status'=>0));
+    function ajax()
+    {
+        if ($_SESSION['current_user_group_name'] != 'admin') {
+            return json_encode(array('status' => 0));
         }
-    	if($this->getRequestValue('action') == 'set_activity'){
+        if ($this->getRequestValue('action') == 'set_activity') {
             $req = $this->request();
-    		$status = $req->request->getInt('status');
+            $status = $req->request->getInt('status');
             $yandexrealty_task_id = $req->request->getInt('yandexrealty_task_id');
-    		$DBC=DBC::getInstance();
+            $DBC = DBC::getInstance();
 
-            $query='UPDATE '.DB_PREFIX.'_yandexrealty_task SET `active`=? WHERE `yandexrealty_task_id`=?';
-            $stmt=$DBC->query($query, array($status, $yandexrealty_task_id));
+            $query = 'UPDATE ' . DB_PREFIX . '_yandexrealty_task SET `active`=? WHERE `yandexrealty_task_id`=?';
+            $stmt = $DBC->query($query, array($status, $yandexrealty_task_id));
 
-            if($stmt){
-                return json_encode(array('status'=>1));
+            if ($stmt) {
+                return json_encode(array('status' => 1));
             }
-    		return json_encode(array('status'=>0));
-    	}
-    	return false;
+            return json_encode(array('status' => 0));
+        }
+        return false;
     }
 
+    protected function getUserData($uid)
+    {
+        if (!isset($this->users_cache[$uid])) {
+            $UM = new Users_Manager();
+            $this->users_cache[$uid] = $UM->getUserProfileData($uid);
+        }
+        return $this->users_cache[$uid];
+    }
 }

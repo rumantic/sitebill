@@ -5,7 +5,7 @@ class customentity_admin extends Object_Manager {
     private static $custom_entity_holder=false;
 
     function __construct() {
-    	$this->SiteBill();
+    	parent::__construct();
         $this->entity=$this->getRequestValue('action');
         $ent=$this->getEntityList();
         if(isset($ent[$this->entity])){
@@ -87,7 +87,7 @@ class customentity_admin extends Object_Manager {
     				if ( !$permission->get_component_function($entity_name, 'access') ) {
                         $permission->add_permission($entity_name, 'access');
                     }
-    				if ( !$permission->get_access($_SESSION['user_id_value'], $entity_name, 'access') and $permission->getConfigValue('check_permissions')) {
+    				if ( !$permission->get_access(@$_SESSION['user_id_value'], $entity_name, 'access') and $permission->getConfigValue('check_permissions')) {
     					unset($ret[$entity_name]);
     				}
     			}

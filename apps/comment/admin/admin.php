@@ -14,7 +14,7 @@ class comment_admin extends Object_Manager {
      * Constructor
      */
     function __construct($realty_type = false) {
-        $this->SiteBill();
+        parent::__construct();
         Multilanguage::appendAppDictionary('comment');
         $this->table_name = 'comment';
         $this->action = 'comment';

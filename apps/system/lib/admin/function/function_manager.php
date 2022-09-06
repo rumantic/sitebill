@@ -9,8 +9,8 @@ class Function_Manager extends Object_Manager {
     /**
      * Constructor
      */
-    function Function_Manager() {
-        $this->Sitebill();
+    function __construct() {
+        parent::__construct();
         $this->table_name = 'function';
         $this->action = 'function';
         $this->app_title = Multilanguage::_('FUNCTION_APP_NAME', 'system');
@@ -134,7 +134,7 @@ CREATE TABLE `" . DB_PREFIX . "_function` (
 
     /**
      * Get top menu
-     * @param void 
+     * @param void
      * @return string
      */
     function getTopMenu() {

@@ -10,7 +10,7 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
 class memorylist_user extends Object_Manager {
     function __construct($realty_type = false)
     {
-        $this->SiteBill();
+        parent::__construct();
         $this->table_name = 'memorylist_user';
         $this->action = 'memorylist_user';
         $this->primary_key = 'id';

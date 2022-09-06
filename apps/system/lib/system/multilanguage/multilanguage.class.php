@@ -47,10 +47,10 @@ function _translate($t) {
             //require_once (SITEBILL_DOCUMENT_ROOT . '/apps/language/admin/admin_template.php');
             //$language_admin_template = new language_admin_template();
             //$template_languages = $language_admin_template->getTemplateWordsArray($sitebill->getConfigValue('theme'), $lang);
-            $terms = $template_languages['keys'];
-            $values = $template_languages['words'];
-            @array_push($terms, $key);
-            $values[$key][$lang] = $translate;
+            //$terms = $template_languages['keys'];
+            //$values = $template_languages['words'];
+            //@array_push($terms, $key);
+            //$values[$key][$lang] = $translate;
             //array_push($values, $translate);
             //$terms[0] = $key;
             //$values[0][$lang] = $translate;
@@ -93,6 +93,8 @@ class Multilanguage {
 
     // массив системных слов
     private static $words = array();
+
+    private static $words_in_smarty_inited = false;
 
     // массив системных словарей приложений
     private static $apps_words = array();
@@ -342,7 +344,7 @@ class Multilanguage {
      * @param $value значение слова
      */
     public static function insert_lang_words($app, $lang, $key, $value) {
-        if ( self::$all_db_records[$app][$key] != true ) {
+        if ( @self::$all_db_records[$app][$key] != true ) {
             $DBC = DBC::getInstance();
             $query = 'INSERT INTO ' . DB_PREFIX . '_lang_words (word_app, lang_key, word_key, word_default, word_pack) values (?, ?, ?, ?, ?)';
             $stmt = $DBC->query($query, array($app, $lang, $key, $value, substr($value, 0, 50)), $success);
@@ -354,7 +356,6 @@ class Multilanguage {
      */
     public static function load_db_lang_words() {
         //return;
-        global $smarty;
 
         $SConfig = SConfig::getInstance();
         $template_key = $SConfig->getConfigValue('theme') . '_template';
@@ -372,7 +373,6 @@ class Multilanguage {
                     self::$words[$ar['word_key']] = $ar['word_default'];
                 }
                 if ($ar['word_app'] == $template_key) {
-                    $smarty->assign($ar['word_key'], $ar['word_default']);
                     self::$is_tpl_loaded = true;
                 }
             }
@@ -380,6 +380,9 @@ class Multilanguage {
     }
 
     public static function assign(&$smarty) {
+        if ( self::$words_in_smarty_inited ) {
+             return;
+        }
         if (!is_object($smarty)) {
             return false;
         }
@@ -388,6 +391,7 @@ class Multilanguage {
         }
 
         $smarty->assign('apps_words', self::$apps_words);
+        self::$words_in_smarty_inited = true;
     }
 
     private function __construct() {
@@ -581,7 +585,7 @@ class Multilanguage {
     public static function get_words () {
         return self::$words;
     }
-    
+
     public static function set_empty_words_array() {
         self::$words = array();
     }

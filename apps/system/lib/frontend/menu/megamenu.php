@@ -8,9 +8,9 @@ class Mega_Menu extends Structure_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
     }
-    
+
     /**
      * Get menu
      * @param
@@ -24,9 +24,9 @@ class Mega_Menu extends Structure_Manager {
 <ul id="menusys_mega">
         ';
         foreach ( $category_structure['childs'][0] as $item_id => $categoryID ) {
-            
+
             $href = '';
-            
+
             if ($category_structure['catalog'][$categoryID]['url'] != '') {
                 if (preg_match('/^http/', $category_structure['catalog'][$categoryID]['url'])) {
                     $href = $category_structure['catalog'][$categoryID]['url'];
@@ -36,13 +36,13 @@ class Mega_Menu extends Structure_Manager {
             } else {
                 $href = $this->createUrlTpl('topic' . $categoryID . '.html');
             }
-            
+
             $rs .= '<li class="item hasChild"><a class="'.($category_structure['catalog'][$categoryID]['current']==1 ? ' active' : ' item').'" href="'.$href.'"><span class="no-image"><span class="menu-title">'.$category_structure['catalog'][$categoryID]['name'].'</span></span></a>';
-        	
+
             $rs .= $this->getChildNodes($categoryID, $category_structure, $level + 1, $current_category_id);
             $rs .= '</li>';
         }
-        
+
         $content_drop_menu = $this->get_content_drop_menu();
         if ( count($content_drop_menu) > 0 ) {
         	foreach ( $content_drop_menu as $tag => $menu_structure ) {
@@ -59,18 +59,18 @@ class Mega_Menu extends Structure_Manager {
         		}
         		$rs .= '</ul>';
         		$rs .= '</li>';
-        		
+
         	}
         }
-        
+
         $rs .= '
 </ul>
 </div>
         ';
         return $rs;
     }
-    
-    
+
+
     /**
      * Get child nodes
      * @param $categoryID
@@ -85,7 +85,7 @@ class Mega_Menu extends Structure_Manager {
     	$rs .= '<ul class="mega-ul ul">';
         foreach ( $category_structure['childs'][$categoryID] as $child_id ) {
             $href = '';
-            
+
             if ($category_structure['catalog'][$child_id]['url'] != '') {
                 if (preg_match('/^http/', $category_structure['catalog'][$child_id]['url'])) {
                     $href = $category_structure['catalog'][$child_id]['url'];
@@ -104,5 +104,5 @@ class Mega_Menu extends Structure_Manager {
         $rs .= '</ul>';
         return $rs;
     }
-    
+
 }

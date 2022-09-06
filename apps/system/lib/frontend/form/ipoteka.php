@@ -10,7 +10,7 @@ class Ipoteka_Order_Form extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
         $this->table_name = 'ipoteka';
         $this->action = 'ipoteka';
         $this->primary_key = 'ipoteka_id';
@@ -24,7 +24,7 @@ class Ipoteka_Order_Form extends Object_Manager {
         $rs = '';
         $form_data = $this->data_model;
         $rs .= $this->get_form($form_data[$this->table_name], 'new', 0, '', SITEBILL_MAIN_URL.'/ipotekaorder'.self::$_trslashes);
-        
+
         require_once SITEBILL_DOCUMENT_ROOT.'/apps/page/admin/admin.php';
         require_once SITEBILL_DOCUMENT_ROOT.'/apps/page/site/site.php';
         $PS=new page_site();
@@ -33,13 +33,13 @@ class Ipoteka_Order_Form extends Object_Manager {
             /*echo '<pre>';
             var_dump($page);
             echo '</pre>';*/
-            
+
             $this->template->assert('meta_title', $page['meta_title']);
             $this->template->assert('meta_description', $page['meta_description']);
             $this->template->assert('title', $page['title']);
             $this->template->assert('descrition', $page['body']);
         }
-        
+
         return $rs;
     }
 
@@ -111,7 +111,7 @@ class Ipoteka_Order_Form extends Object_Manager {
 
     /**
      * Get top menu
-     * @param void 
+     * @param void
      * @return string
      */
     function getTopMenu() {

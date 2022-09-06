@@ -1,9 +1,13 @@
 <?php
+use system\lib\system\cache\RedisCache;
 
-class SConfig {
+class SConfig
+{
 
     public static $instance;
     private static $config_array = array();
+    private static $config_array_types = array();
+    private static $config_array_types_by_id = array();
     private static $public_config_array = array();
     public static $check_config_array = array();
 
@@ -12,30 +16,36 @@ class SConfig {
     public static $fieldtypeSelectbox = 2;
     public static $fieldtypeTextarea = 3;
     public static $fieldtypeLangSelect = 4;
+    public static $fieldtypeUploads = 5;
 
-    public static function getInstance() {
+    public static function getInstance()
+    {
         if (!self::$instance) {
-            self::$instance = new self ( );
+            self::$instance = new self ();
         }
         return self::$instance;
     }
 
-    public function getConfig() {
+    public function getConfig()
+    {
         return self::$config_array;
     }
 
-    public function getPublicConfig() {
+    public function getPublicConfig()
+    {
         return self::$public_config_array;
     }
 
-    public function getConfigValue($key) {
+    public function getConfigValue($key)
+    {
         if (isset(self::$config_array[$key])) {
             return self::$config_array[$key];
         }
         return false;
     }
 
-    public static function getConfigValueStatic($key) {
+    public static function getConfigValueStatic($key)
+    {
         if (isset(self::$config_array[$key])) {
             return self::$config_array[$key];
         }
@@ -43,11 +53,13 @@ class SConfig {
     }
 
 
-    public function setConfigValue($key, $value) {
+    public function setConfigValue($key, $value)
+    {
         self::$config_array[$key] = $value;
     }
 
-    public static function setConfigValueStatic($key, $value) {
+    public static function setConfigValueStatic($key, $value)
+    {
         self::$config_array[$key] = $value;
     }
 
@@ -57,11 +69,12 @@ class SConfig {
      * @param type $key
      * @param type $value
      */
-    public static function updateHiddenConfigValue($key, $value) {
+    public static function updateHiddenConfigValue($key, $value)
+    {
         $DBC = DBC::getInstance();
-        $query='INSERT INTO '.DB_PREFIX.'_hidden_config (`config_key`, `config_value`) VALUES (?,?) ON DUPLICATE KEY UPDATE `config_value`=?';
+        $query = 'INSERT INTO ' . DB_PREFIX . '_hidden_config (`config_key`, `config_value`) VALUES (?,?) ON DUPLICATE KEY UPDATE `config_value`=?';
         $stmt = $DBC->query($query, array($key, $value, $value), $success);
-        if ( !$success ) {
+        if (!$success) {
             return $DBC->getLastError();
         }
         return true;
@@ -72,13 +85,15 @@ class SConfig {
      * @param type $key
      * @param type $value
      */
-    public static function initHiddenConfigValue($key, $value) {
+    public static function initHiddenConfigValue($key, $value)
+    {
         $DBC = DBC::getInstance();
-        $query='INSERT INTO '.DB_PREFIX.'_hidden_config (`config_key`, `config_value`) VALUES (?,?) ON DUPLICATE KEY UPDATE `config_value`=`config_value`';
+        $query = 'INSERT INTO ' . DB_PREFIX . '_hidden_config (`config_key`, `config_value`) VALUES (?,?) ON DUPLICATE KEY UPDATE `config_value`=`config_value`';
         $stmt = $DBC->query($query, array($key, $value));
     }
 
-    public static function getHiddenConfigValue($key) {
+    public static function getHiddenConfigValue($key)
+    {
         $DBC = DBC::getInstance();
         $query = 'SELECT `config_value` FROM ' . DB_PREFIX . '_hidden_config WHERE `config_key`=?';
         $stmt = $DBC->query($query, array($key));
@@ -94,11 +109,12 @@ class SConfig {
      * @param array $params Массив изменяемых\добавляемых значений в виде имя параметра+значение
      * @return bool
      */
-    public static function storeHiddenConfigValueParams($key, $params){
+    public static function storeHiddenConfigValueParams($key, $params)
+    {
         $configItem = self::getHiddenConfigValue($key);
-        if(is_null($configItem)){
+        if (is_null($configItem)) {
             $configItem = array();
-        }else{
+        } else {
             $configItem = json_decode($configItem, true);
         }
         $configItem = array_merge($configItem, $params);
@@ -106,12 +122,24 @@ class SConfig {
     }
 
 
-
-    private function __construct() {
+    private function __construct()
+    {
         self::loadConfig();
     }
 
-    private static function loadConfig() {
+    public static function reLoadConfig() {
+        return self::loadConfig();
+    }
+
+
+    private static function loadConfig()
+    {
+        $redis_cache = RedisCache::getArray('loadConfig');
+        if ( is_array($redis_cache) and count($redis_cache) > 0 ) {
+            self::$config_array = $redis_cache;
+            return;
+        }
+
 
         self::$config_array['per_page'] = 25;
         self::$config_array['site_title'] = 'Агентство недвижимости';
@@ -141,7 +169,6 @@ class SConfig {
         self::$config_array['vendor_image_preview_height'] = 50;
 
 
-
         self::$config_array['topic_image_big_width'] = 800;
         self::$config_array['topic_image_big_height'] = 600;
 
@@ -153,15 +180,23 @@ class SConfig {
         $stmt = $DBC->query($query);
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
-                if($ar['vtype'] == self::$fieldtypeLangSelect){
-                    if('' != $ar['value']){
+                if ($ar['vtype'] == self::$fieldtypeLangSelect) {
+                    if ('' != $ar['value']) {
                         $ar['value'] = json_decode($ar['value'], true);
                     }
                 }
+                if ($ar['vtype'] == self::$fieldtypeUploads) {
+                    if ('' != $ar['value']) {
+                        $ar['value'] = unserialize($ar['value']);
+                    }
+                }
+
                 self::$config_array[$ar['config_key']] = $ar['value'];
+                self::$config_array_types[$ar['config_key']] = $ar['vtype'];
+                self::$config_array_types_by_id[$ar['id']] = $ar['vtype'];
                 self::$check_config_array[$ar['config_key']] = '1';
 
-                if ( $ar['public'] == 1 ) {
+                if ($ar['public'] == 1) {
                     self::$public_config_array[$ar['config_key']] = $ar['value'];
                 }
             }
@@ -188,22 +223,26 @@ class SConfig {
                 self::loadSubdomenalConfig($core_domain);
             }
         }
-        //$core_domain='estatecms.ru';
-        //var_dump(self::$config_array['apps.language.default_lang_code']);
-
-        /* if(isset($_SESSION['user_domain_owner']) && isset($_SESSION['user_domain_owner']['theme']) && $_SESSION['user_domain_owner']['theme']!=''){
-          self::$config_array['theme'] = $_SESSION['user_domain_owner']['theme'];
-          } */
+        RedisCache::setArray('loadConfig', self::$config_array);
     }
 
-    private static function loadDomainConfig() {
+    public static function getConfigType($key)
+    {
+        return self::$config_array_types[$key];
+    }
+
+    public static function getConfigTypeById($id)
+    {
+        return self::$config_array_types_by_id[$id];
+    }
+
+    private static function loadDomainConfig()
+    {
         $domain = $_SERVER['HTTP_HOST'];
         $domain = preg_replace('/^www\./', '', $domain);
         $domain_config = $_SERVER['DOCUMENT_ROOT'] . '/' . $domain . '.config.php';
         if (file_exists($domain_config)) {
             include_once $domain_config;
-            //print_r($Local_Config);
-            //$domain_settings=parse_ini_file($domain_config, true);
             $domain_settings = $Local_Config;
             if (is_array($domain_settings)) {
                 self::$config_array = array_merge(self::$config_array, $domain_settings);
@@ -213,7 +252,8 @@ class SConfig {
         return false;
     }
 
-    private static function loadSubdomenalConfig($core_domain = '') {
+    private static function loadSubdomenalConfig($core_domain = '')
+    {
         $uri = $_SERVER['HTTP_HOST'];
         $uri = preg_replace('/^www\./', '', $uri);
         if ($uri != $core_domain) {
@@ -226,7 +266,6 @@ class SConfig {
         if (file_exists($subdomenal_config)) {
             include_once $subdomenal_config;
             $subdomenal_settings = $Local_Config;
-            //$subdomenal_settings=parse_ini_file($subdomenal_config, true);
             if (is_array($subdomenal_settings)) {
                 self::$config_array = array_merge(self::$config_array, $subdomenal_settings);
             }

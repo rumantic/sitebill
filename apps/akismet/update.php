@@ -10,7 +10,7 @@ class akismet_update extends akismet_admin
      */
     function __construct()
     {
-        $this->sitebill();
+        parent::__construct();
     }
 
     function main($secret_key = '')
@@ -24,7 +24,7 @@ class akismet_update extends akismet_admin
         if (!$config_admin->check_config_item('apps.akismet.key')) {
             $config_admin->addParamToConfig('apps.akismet.key', '227a31a0ec75', 'Ключ akismet. <a href="https://akismet.com/" target="_blank">Получить ключ</a>');
         }
-        $config_admin->addParamToConfig('apps.akismet.auth_disable', '0', 'Не проверять антиспамом для авторизованных', 1);
+        $config_admin->addParamToConfig('apps.akismet.auth_disable', '1', 'Не проверять антиспамом для авторизованных', 1);
 
         $rs = 'Обновление конфигурации';
         return $rs;

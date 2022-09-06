@@ -146,14 +146,14 @@ class Admin3Controller extends BaseController
             $Country_Manager = new \Country_Manager();
             $rs = $Country_Manager->main();
         } elseif( $_REQUEST['action'] == 'data' ) {
-            if ( $sitebill->getConfigValue('apps.realtypro.enable') ) {
+            if ( \SConfig::getConfigValueStatic('apps.realtypro.enable') ) {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/apps/realtypro/admin/admin.php');
                 $realty_pro_admin = new \realtypro_admin();
                 $rs = $realty_pro_admin->main();
             } else {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/data/data_manager.php');
-                if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php') ) {
-                    require_once (SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php');
+                if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.\SConfig::getConfigValueStatic('theme').'/admin/data/data_manager.php') ) {
+                    require_once (SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.\SConfig::getConfigValueStatic('theme').'/admin/data/data_manager.php');
                     $data_manager_local = new \Data_Manager_Local();
                     $rs = $data_manager_local->main();
                 } else {
@@ -252,8 +252,8 @@ class Admin3Controller extends BaseController
             unset($_SESSION['current_user_group_id']);
             unset($_SESSION['current_user_name']);
             //unset($_COOKIE['logged_user_id'])
-            setcookie('logged_user_id', '', time()-60*60*24*5, '/',\SiteBill::$_cookiedomain);
-            setcookie('logged_user_token', '', time()-60*60*24*5, '/', \SiteBill::$_cookiedomain);
+            setcookie('logged_user_id', '', time()-$sitebill->get_cookie_duration_in_sec(), '/',\SiteBill::$_cookiedomain);
+            setcookie('logged_user_token', '', time()-$sitebill->get_cookie_duration_in_sec(), '/', \SiteBill::$_cookiedomain);
             header('Location: '.SITEBILL_ADMIN_BASE);
             exit;
         } elseif( $_REQUEST['action'] == 'loginasuser' ) {
@@ -273,8 +273,8 @@ class Admin3Controller extends BaseController
             unset($_SESSION['current_user_group_id']);
             unset($_SESSION['current_user_name']);
             //unset($_COOKIE['logged_user_id'])
-            setcookie('logged_user_id', '', time()-60*60*24*5, '/', \SiteBill::$_cookiedomain);
-            setcookie('logged_user_token', '', time()-60*60*24*5, '/', \SiteBill::$_cookiedomain);
+            setcookie('logged_user_id', '', time()-$sitebill->get_cookie_duration_in_sec(), '/', \SiteBill::$_cookiedomain);
+            setcookie('logged_user_token', '', time()-$sitebill->get_cookie_duration_in_sec(), '/', \SiteBill::$_cookiedomain);
 
             require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/user/login.php';
             $Login = new \Login();
@@ -288,8 +288,8 @@ class Admin3Controller extends BaseController
             $rs = $Cowork->main();
         } elseif ( $_REQUEST['action'] == 'data' ) {
             require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/data/data_manager.php');
-            if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php') ) {
-                require_once (SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php');
+            if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.\SConfig::getConfigValueStatic('theme').'/admin/data/data_manager.php') ) {
+                require_once (SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.\SConfig::getConfigValueStatic('theme').'/admin/data/data_manager.php');
                 $data_manager_local = new \Data_Manager_Local();
                 $rs = $data_manager_local->main();
             } else {

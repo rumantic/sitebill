@@ -8,12 +8,16 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
 class memorylist_admin extends Object_Manager {
+    /**
+     * @var Memory_List
+     */
+    protected $ML;
 
     /**
      * Constructor
      */
     function __construct($realty_type = false) {
-        $this->SiteBill();
+        parent::__construct();
         Multilanguage::appendAppDictionary('memorylist');
         $this->table_name = 'memorylist';
         $this->action = 'memorylist';
@@ -22,6 +26,9 @@ class memorylist_admin extends Object_Manager {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/memorylist_model.php');
         $memorylist_model = new memorylist_model();
         $this->data_model = $memorylist_model->get_model();
+
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/memory_list.php';
+        $this->ML = new Memory_List();
 
 
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
@@ -32,6 +39,14 @@ class memorylist_admin extends Object_Manager {
             'apps.memorylist.link_access',
             '0',
             'Доступ к сохраненным спискам по ссылке (для всех) /memorylist/grid/[MEMORYLIST_ID]',
+            1,
+            array('public' => true)
+        );
+
+        $config_admin->addParamToConfig(
+            'apps.memorylist.sharelist.enable',
+            '0',
+            'Разрешить sharelist на фронтенте',
             1,
             array('public' => true)
         );

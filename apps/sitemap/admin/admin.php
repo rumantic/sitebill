@@ -28,7 +28,7 @@ class sitemap_admin extends Object_Manager {
      * Constructor
      */
     function __construct($realty_type = false) {
-        $this->SiteBill();
+        parent::__construct();
         Multilanguage::appendAppDictionary('sitemap');
         $this->checkConfiguration();
         $this->action = 'sitemap';
@@ -302,9 +302,9 @@ class sitemap_admin extends Object_Manager {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
         $category_structure = $Structure_Manager->loadCategoryStructure();
-        
-        
-        $urls[] = array('url' => '', 'changefreq' => 'daily', 'priority' => 1);
+
+
+        $urls[] = array('url' => '', 'changefreq' => 'daily', 'priority' => '1.0');
 
         /*
          * Prepare Topics urls

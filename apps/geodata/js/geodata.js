@@ -1,230 +1,232 @@
-(function($){
-    jQuery.fn.Geodata = function(options){
+(function ($) {
+    jQuery.fn.Geodata = function (options) {
         var _defaults = {width: '350px', height: '350px', no_scroll_zoom: 0};
 
         var options = $.extend(true, _defaults, options);
-        options.yandex_map_version='2';
-        if(typeof yandex_map_version != 'undefined'){
-            options.yandex_map_version=yandex_map_version;
+        options.yandex_map_version = '2';
+        if (typeof yandex_map_version != 'undefined') {
+            options.yandex_map_version = yandex_map_version;
         }
-        
-        var PositionEditorLeaflet={
-            init: function(map){
-                this.map=map;
-                this.settedMarker=null;
+
+        var PositionEditorLeaflet = {
+            init: function (map) {
+                this.map = map;
+                this.settedMarker = null;
                 return this;
             },
-            initMarker: function(x,y,id){
-                if(x!='' && y!=''){
+            initMarker: function (x, y, id) {
+                if (x != '' && y != '') {
                     var latlng = [Number(x), Number(y)];
                     this.createPositionMarker(latlng, id);
                     this.map.setView(latlng);
-                }else{
-                    if(this.settedMarker!=null){
+                } else {
+                    if (this.settedMarker != null) {
                         this.map.removeLayer(this.settedMarker);
-                        this.settedMarker=null;
+                        this.settedMarker = null;
                     }
                 }
 
             },
 
-            createPositionMarker: function(latlng, id){
-                var lat=new String(latlng.lat);
-                var lng=new String(latlng.lng);
-                var lat_parts=lat.split('.');
-                if(lat_parts[1]!==undefined && lat_parts[1].length>6){
-                    lat=lat_parts[0]+'.'+lat_parts[1].substring(0,6);
+            createPositionMarker: function (latlng, id) {
+                var lat = new String(latlng.lat);
+                var lng = new String(latlng.lng);
+                var lat_parts = lat.split('.');
+                if (lat_parts[1] !== undefined && lat_parts[1].length > 6) {
+                    lat = lat_parts[0] + '.' + lat_parts[1].substring(0, 6);
                 }
-                var lng_parts=lng.split('.');
-                if(lng_parts[1]!==undefined && lng_parts[1].length>6){
-                    lng=lng_parts[0]+'.'+lng_parts[1].substring(0,6);
+                var lng_parts = lng.split('.');
+                if (lng_parts[1] !== undefined && lng_parts[1].length > 6) {
+                    lng = lng_parts[0] + '.' + lng_parts[1].substring(0, 6);
                 }
 
-                if(this.settedMarker!=null){
+                if (this.settedMarker != null) {
                     this.map.removeLayer(this.settedMarker);
-                    this.settedMarker=null;
+                    this.settedMarker = null;
                 }
-                
+
                 var marker = L.marker(latlng).addTo(this.map);
 
-               
-                this.settedMarker=marker;
-                var ret=[];
+
+                this.settedMarker = marker;
+                var ret = [];
                 ret.push(lat);
                 ret.push(lng);
                 return ret;
             }
         }
 
-        var PositionEditor={
-            init: function(map){
-                this.map=map;
-                this.settedMarker=null;
+        var PositionEditor = {
+            init: function (map) {
+                this.map = map;
+                this.settedMarker = null;
             },
-            initMarker: function(x,y,id){
-                if(x!='' && y!=''){
+            initMarker: function (x, y, id) {
+                if (x != '' && y != '') {
                     var latlng = new google.maps.LatLng(Number(x), Number(y));
-                    this.createPositionMarker(latlng,id);
+                    this.createPositionMarker(latlng, id);
                     this.map.setCenter(latlng);
-                }else{
-                    if(this.settedMarker!=null){
+                } else {
+                    if (this.settedMarker != null) {
                         this.settedMarker.setMap(null);
-                        this.settedMarker=null;
+                        this.settedMarker = null;
                     }
                 }
 
             },
 
-            createPositionMarker: function(latlng, id){
+            createPositionMarker: function (latlng, id) {
 
-                var lat=new String(latlng.lat());
-                var lng=new String(latlng.lng());
-                var lat_parts=lat.split('.');
-                if(lat_parts[1]!==undefined && lat_parts[1].length>6){
-                    lat=lat_parts[0]+'.'+lat_parts[1].substring(0,6);
+                var lat = new String(latlng.lat());
+                var lng = new String(latlng.lng());
+                var lat_parts = lat.split('.');
+                if (lat_parts[1] !== undefined && lat_parts[1].length > 6) {
+                    lat = lat_parts[0] + '.' + lat_parts[1].substring(0, 6);
                 }
-                var lng_parts=lng.split('.');
-                if(lng_parts[1]!==undefined && lng_parts[1].length>6){
-                    lng=lng_parts[0]+'.'+lng_parts[1].substring(0,6);
+                var lng_parts = lng.split('.');
+                if (lng_parts[1] !== undefined && lng_parts[1].length > 6) {
+                    lng = lng_parts[0] + '.' + lng_parts[1].substring(0, 6);
                 }
 
-                if(this.settedMarker!=null){
+                if (this.settedMarker != null) {
                     this.settedMarker.setMap(null);
-                    this.settedMarker=null;
+                    this.settedMarker = null;
                 }
 
                 var marker = new google.maps.Marker({
-                    position: latlng, 
+                    position: latlng,
                     map: this.map,
                     draggable: false,
-                    title:latlng.lat()+' '+latlng.lng()
+                    title: latlng.lat() + ' ' + latlng.lng()
                 });
-                this.settedMarker=marker;
-                var ret=[];
+                this.settedMarker = marker;
+                var ret = [];
                 ret.push(lat);
                 ret.push(lng);
                 return ret;
             }
         }
-        var PositionEditorYandex={
-            init: function(map){
-                this.map=map;
-                this.settedMarker=null;
+        var PositionEditorYandex = {
+            init: function (map) {
+                this.map = map;
+                this.settedMarker = null;
             },
-            initMarker: function(x, y, id){
-                if(x!='' && y!=''){
+            initMarker: function (x, y, id) {
+                if (x != '' && y != '') {
                     //var latlng = new google.maps.LatLng(new Number(x),new Number(y));
-                    var latlng=new Array(new Number(x),new Number(y));
+                    var latlng = new Array(new Number(x), new Number(y));
                     this.createPositionMarker(latlng, id);
                     this.map.setCenter(latlng);
-                }else{
-                    if(this.settedMarker!=null){
+                } else {
+                    if (this.settedMarker != null) {
                         this.settedMarker.setMap(null);
-                        this.settedMarker=null;
+                        this.settedMarker = null;
                     }
                 }
 
             },
 
-            createPositionMarker: function(latlng, id){
+            createPositionMarker: function (latlng, id) {
 
-                var lat=new String(latlng[0]);
-                var lng=new String(latlng[1]);
+                var lat = new String(latlng[0]);
+                var lng = new String(latlng[1]);
                 /*var lat=latlng[0].toPrecision(8);
                 var lng=latlng[1].toPrecision(8);*/
-                var lat_parts=lat.split('.');
-                if(lat_parts[1]!==undefined && lat_parts[1].length>6){
-                    lat=lat_parts[0]+'.'+lat_parts[1].substring(0,6);
+                var lat_parts = lat.split('.');
+                if (lat_parts[1] !== undefined && lat_parts[1].length > 6) {
+                    lat = lat_parts[0] + '.' + lat_parts[1].substring(0, 6);
 
                 }
-                var lng_parts=lng.split('.');
-                if(lng_parts[1]!==undefined && lng_parts[1].length>6){
-                    lng=lng_parts[0]+'.'+lng_parts[1].substring(0,6);
+                var lng_parts = lng.split('.');
+                if (lng_parts[1] !== undefined && lng_parts[1].length > 6) {
+                    lng = lng_parts[0] + '.' + lng_parts[1].substring(0, 6);
                 }
 
-                if(this.settedMarker!=null){
+                if (this.settedMarker != null) {
                     this.map.geoObjects.remove(this.settedMarker);
-                    this.settedMarker=null;
+                    this.settedMarker = null;
                 }
                 var myPlacemark = new ymaps.Placemark(
                     latlng,
                     {iconContent: ''},
                     {draggable: false}
                 );
-                this.map.geoObjects.removeAll();
+                if (this.map && this.map.geoObjects && typeof this.map.geoObjects.removeAll === "function") {
+                    this.map.geoObjects.removeAll();
+                }
                 this.map.geoObjects.add(myPlacemark);
 
 
-                this.settedMarker=myPlacemark;
-                var ret=[];
+                this.settedMarker = myPlacemark;
+                var ret = [];
                 ret.push(lat);
                 ret.push(lng);
                 return ret;
             }
         }
-        var GDC=$(this);
+        var GDC = $(this);
 
-        var parent_form=GDC.parents('form').eq(0);
-
-
-        var map_id=GDC.attr('id').replace('geodata_', 'geodata_map_');
+        var parent_form = GDC.parents('form').eq(0);
 
 
-        var map_center_string=GDC.attr('coords');
-        var map_zoom=GDC.attr('zoom');
+        var map_id = GDC.attr('id').replace('geodata_', 'geodata_map_');
 
-        if(map_zoom=='' || map_zoom=='0'){
-            map_zoom=Number(10);
-        }else{
-            map_zoom=Number(map_zoom);
+
+        var map_center_string = GDC.attr('coords');
+        var map_zoom = GDC.attr('zoom');
+
+        if (map_zoom == '' || map_zoom == '0') {
+            map_zoom = Number(10);
+        } else {
+            map_zoom = Number(map_zoom);
         }
 
-        if(map_center_string!=''){
-            var c=map_center_string.split(',');
-        }else{
-            var c=[55.751849,37.622681];
+        if (map_center_string != '') {
+            var c = map_center_string.split(',');
+        } else {
+            var c = [55.751849, 37.622681];
         }
 
 
-        var late=GDC.find('[geodata=lat]');
-        var lnge=GDC.find('[geodata=lng]');
+        var late = GDC.find('[geodata=lat]');
+        var lnge = GDC.find('[geodata=lng]');
 
 
-        if(options.map_type!='google' && options.map_type!='leaflet_osm'){
-            options.map_type='yandex';
+        if (options.map_type != 'google' && options.map_type != 'leaflet_osm') {
+            options.map_type = 'yandex';
         }
 
-        if(options.map_type=='google'){
-            if(typeof google === 'object'){
-                if(late && lnge){
+        if (options.map_type == 'google') {
+            if (typeof google === 'object') {
+                if (late && lnge) {
                     //var map_id='map_'+CryptoJS.MD5((new Date()).toString()+'_'+(Math.floor(Math.random() * (999 - 100 + 1)) + 100));
-                    var map=initializeGoogleLocationsMap(map_id);
+                    var map = initializeGoogleLocationsMap(map_id);
 
-                    var PE=PositionEditor.init(map);
-                    google.maps.event.addDomListener(map, 'click', function(event) {
-                        var geo_c=PositionEditor.createPositionMarker(event.latLng, 0);
+                    var PE = PositionEditor.init(map);
+                    google.maps.event.addDomListener(map, 'click', function (event) {
+                        var geo_c = PositionEditor.createPositionMarker(event.latLng, 0);
                         late.val(geo_c[0]);
                         lnge.val(geo_c[1]);
                     });
-                    var lat=late.val();
-                    var lng=lnge.val();
-                    if(lat!='' && lng!=''){
+                    var lat = late.val();
+                    var lng = lnge.val();
+                    if (lat != '' && lng != '') {
                         PositionEditor.initMarker(lat, lng, 0);
                     }
 
-                    late.change(function(){
-                        var lng=lnge.val();
-                        var lat=late.val();
-                        if(lat!='' && lng!=''){
+                    late.change(function () {
+                        var lng = lnge.val();
+                        var lat = late.val();
+                        if (lat != '' && lng != '') {
                             runMapChange(map, lat, lng);
                             PositionEditor.initMarker(lat, lng, 0);
                         }
                     });
 
-                    lnge.change(function(){
-                        var lng=lnge.val();
-                        var lat=late.val();
-                        if(lat!='' && lng!=''){
+                    lnge.change(function () {
+                        var lng = lnge.val();
+                        var lat = late.val();
+                        if (lat != '' && lng != '') {
                             runMapChange(map, lat, lng);
                             PositionEditor.initMarker(lat, lng, 0);
                         }
@@ -232,83 +234,83 @@
                 }
             }
 
-        }else if(options.map_type=='leaflet_osm'){
-            
-            
-            if(late && lnge){
-                var map=initializeLeafletOSMLocationsMap(map_id);
-                var PE=PositionEditorLeaflet.init(map);
-                map.on('click', function (e) {
-                    
-                    var l=e.latlng;
+        } else if (options.map_type == 'leaflet_osm') {
 
-                    var geo_c=PE.createPositionMarker(l, 0);
+
+            if (late && lnge) {
+                var map = initializeLeafletOSMLocationsMap(map_id);
+                var PE = PositionEditorLeaflet.init(map);
+                map.on('click', function (e) {
+
+                    var l = e.latlng;
+
+                    var geo_c = PE.createPositionMarker(l, 0);
                     late.val(geo_c[0]);
                     lnge.val(geo_c[1]);
                 });
-                var lat=late.val();
-                var lng=lnge.val();
-                
-                if(lat!='' && lng!=''){
+                var lat = late.val();
+                var lng = lnge.val();
+
+                if (lat != '' && lng != '') {
                     PE.initMarker(lat, lng, 0);
                 }
-                
-                late.change(function(){
 
-                    var lng=lnge.val();
-                    var lat=late.val();
+                late.change(function () {
+
+                    var lng = lnge.val();
+                    var lat = late.val();
                     //if(lat!='' && lng!=''){
-                        runMapChange(map, lat, lng);
-                        PE.initMarker(lat, lng, 0);
+                    runMapChange(map, lat, lng);
+                    PE.initMarker(lat, lng, 0);
                     //}
                 });
 
-                lnge.change(function(){
+                lnge.change(function () {
 
-                    var lng=lnge.val();
-                    var lat=late.val();
-                    if(lat!='' && lng!=''){
+                    var lng = lnge.val();
+                    var lat = late.val();
+                    if (lat != '' && lng != '') {
                         runMapChange(map, lat, lng);
                         PE.initMarker(lat, lng, 0);
                     }
                 });
             }
-            
-           
-        }else{
-            if(late && lnge){
+
+
+        } else {
+            if (late && lnge) {
                 //var map_id='map_'+CryptoJS.MD5((new Date()).toString()+'_'+(Math.floor(Math.random() * (999 - 100 + 1)) + 100));
-                ymaps.ready(function(){
-                    var map=initializeYandexLocationsMap(map_id);
-                    var PE=PositionEditorYandex.init(map);
+                ymaps.ready(function () {
+                    var map = initializeYandexLocationsMap(map_id);
+                    var PE = PositionEditorYandex.init(map);
                     map.events.add('click', function (e) {
-                        var geo_c=PositionEditorYandex.createPositionMarker(e.get('coords'), 0);
+                        var geo_c = PositionEditorYandex.createPositionMarker(e.get('coords'), 0);
                         late.val(geo_c[0]);
                         lnge.val(geo_c[1]);
                     });
-                    var lat=late.val();
-                    var lng=lnge.val();
-                    if(lat!='' && lng!=''){
+                    var lat = late.val();
+                    var lng = lnge.val();
+                    if (lat != '' && lng != '') {
                         PositionEditorYandex.initMarker(lat, lng, 0);
                     }
 
 
-                    late.change(function(){
+                    late.change(function () {
 
-                        var lng=lnge.val();
-                        var lat=late.val();
-                        if(lat!='' && lng!=''){
+                        var lng = lnge.val();
+                        var lat = late.val();
+                        if (lat != '' && lng != '') {
                             runMapChange(map, lat, lng);
                             //PositionEditor.init(map);
                             PositionEditorYandex.initMarker(lat, lng, 0);
                         }
                     });
 
-                    lnge.change(function(){
+                    lnge.change(function () {
 
-                        var lng=lnge.val();
-                        var lat=late.val();
-                        if(lat!='' && lng!=''){
+                        var lng = lnge.val();
+                        var lat = late.val();
+                        if (lat != '' && lng != '') {
                             runMapChange(map, lat, lng);
                             //PositionEditor.init(map);
                             PositionEditorYandex.initMarker(lat, lng, 0);
@@ -319,24 +321,24 @@
             }
         }
 
-        function runMapChange(map, lat, lng){
-            if(options.map_type=='google'){
-                map.panTo(new google.maps.LatLng(lat,lng));
+        function runMapChange(map, lat, lng) {
+            if (options.map_type == 'google') {
+                map.panTo(new google.maps.LatLng(lat, lng));
                 //map.setCenter(new google.maps.LatLng(lat, lng));
                 //map.panTo(new google.maps.LatLng(lat, lng));
-            }else if(options.map_type=='leaflet_osm'){
+            } else if (options.map_type == 'leaflet_osm') {
                 map.setView(new Array(lat, lng));
-            }else{
+            } else {
                 //map.setCenter(new Array(lat, lng));
                 map.panTo(new Array(lat, lng));
             }
         }
 
-        function initializeYandexLocationsMap(map_id){
-            var behaviors=[];
+        function initializeYandexLocationsMap(map_id) {
+            var behaviors = [];
             behaviors.push("drag");
             behaviors.push("dblClickZoom");
-            if(options.no_scroll_zoom==0 && $(window).width()>800){
+            if (options.no_scroll_zoom == 0 && $(window).width() > 800) {
                 behaviors.push("scrollZoom");
             }
 
@@ -344,39 +346,39 @@
             controls.push('smallMapDefaultSet');
             controls.push('searchControl');
 
-            var latlng=new Array(Number(c[0]), Number(c[1]));
-            var m=$('<div id="'+map_id+'" style="width:'+options.width+'; height:'+options.height+'"></div>')
-            m.appendTo($('body')).css({'position':'absolute','left':'-1000px','display':'block'});
-            if(options.map_view_type=='m'){
-                var map_view_type='yandex#map';
-            }else if(options.map_view_type=='h'){
-                var map_view_type='yandex#hybrid';
-            }else if(options.map_view_type=='s'){
-                var map_view_type='yandex#satellite';
-            }else if(options.map_view_type=='p'){
-                var map_view_type='yandex#publicMap';
-            }else{
-                var map_view_type='yandex#map';
+            var latlng = new Array(Number(c[0]), Number(c[1]));
+            var m = $('<div id="' + map_id + '" style="width:' + options.width + '; height:' + options.height + '"></div>')
+            m.appendTo($('body')).css({'position': 'absolute', 'left': '-1000px', 'display': 'block'});
+            if (options.map_view_type == 'm') {
+                var map_view_type = 'yandex#map';
+            } else if (options.map_view_type == 'h') {
+                var map_view_type = 'yandex#hybrid';
+            } else if (options.map_view_type == 's') {
+                var map_view_type = 'yandex#satellite';
+            } else if (options.map_view_type == 'p') {
+                var map_view_type = 'yandex#publicMap';
+            } else {
+                var map_view_type = 'yandex#map';
             }
 
-            if(options.yandex_map_version=='2'){
+            if (options.yandex_map_version == '2') {
                 var map = new ymaps.Map(document.getElementById(map_id), {
                     zoom: map_zoom,
                     center: latlng,
                     behaviors: behaviors,
-                    type : map_view_type
+                    type: map_view_type
                 });
                 map.controls.add(new ymaps.control.TypeSelector(['yandex#map', 'yandex#publicMap', 'yandex#satellite', 'yandex#hybrid']));
                 map.controls.add('scaleLine');
-                map.controls.add('zoomControl', { top: 75, left: 5 });
-            }else{
+                map.controls.add('zoomControl', {top: 75, left: 5});
+            } else {
                 var map = new ymaps.Map(document.getElementById(map_id), {
                     zoom: map_zoom,
                     center: latlng,
                     behaviors: behaviors,
-                    type : map_view_type,
+                    type: map_view_type,
                     controls: controls
-                },{suppressMapOpenBlock: true});
+                }, {suppressMapOpenBlock: true});
                 map.controls.remove('searchControl'); // сделать условным
                 map.controls.remove('geolocationControl');
                 map.controls.remove('fullscreenControl');
@@ -390,9 +392,9 @@
 
                 map.controls.add(searchControl);
 
-                searchControl.events.add('resultselect', function(e) {
+                searchControl.events.add('resultselect', function (e) {
                     var index = e.get('index');
-                    searchControl.getResult(index).then(function(res) {
+                    searchControl.getResult(index).then(function (res) {
                         // Получаем метаданные
                         var GeocoderMetaData = res.properties.get('metaDataProperty').GeocoderMetaData;
 
@@ -405,7 +407,7 @@
                         //GDC.find('[name=geodata]').val(JSON.stringify(res.properties._data.metaDataProperty)); // отправка расширенных данных
 
                         //Ставим маркер
-                        var geo_c=PositionEditorYandex.createPositionMarker(res.geometry.getCoordinates(), 0);
+                        var geo_c = PositionEditorYandex.createPositionMarker(res.geometry.getCoordinates(), 0);
                         late.val(geo_c[0]);
                         lnge.val(geo_c[1]);
 
@@ -413,10 +415,10 @@
                 })
             }
             //m.css({'position':'relative','left':'0'}).appendTo(GDC.find('.geodata_map_holder'));
-            var w=GDC.find('.geodata_map_holder').width();
-            var h=GDC.find('.geodata_map_holder').height();
-            
-            
+            var w = GDC.find('.geodata_map_holder').width();
+            var h = GDC.find('.geodata_map_holder').height();
+
+
             /*if(options.yandex_map_version=='2.1'){
                 map.events.add('tilesLoaded', function () {
                     map.container.fitToViewport();
@@ -424,63 +426,174 @@
             }else{
                 map.container.fitToViewport();
             }*/
-            
-            let timerId = setInterval(function(){if(GDC.find('.geodata_map_holder').is(':visible')){clearInterval(timerId);m.css({'position':'relative','left':'0', 'width':w, 'height':options.height}).appendTo(GDC.find('.geodata_map_holder'));map.container.fitToViewport();}else{}}, 1000);
-            return map;	
+
+            let timerId = setInterval(function () {
+                if (GDC.find('.geodata_map_holder').is(':visible')) {
+                    clearInterval(timerId);
+                    m.css({
+                        'position': 'relative',
+                        'left': '0',
+                        'width': w,
+                        'height': options.height
+                    }).appendTo(GDC.find('.geodata_map_holder'));
+                    map.container.fitToViewport();
+                } else {
+                }
+            }, 1000);
+            return map;
         }
-        
-        function initializeLeafletOSMLocationsMap(map_id){
+
+        function initializeLeafletOSMLocationsMap(map_id) {
             var latlng = [Number(c[0]), Number(c[1])];
             /*if(options.no_scroll_zoom==1 || (options.no_scroll_zoom==0 && $(window).width()>800)){
                 myOptions.scrollwheel=false;
             }*/
 
-            var m=$('<div id="'+map_id+'" style="width:'+options.width+'; height:'+options.height+'"></div>')
-            m.css({'position':'relative','left':'0', 'width':options.width, 'height':options.height}).appendTo(GDC.find('.geodata_map_holder'));
+            var m = $('<div id="' + map_id + '" style="width:' + options.width + '; height:' + options.height + '"></div>')
+            m.css({
+                'position': 'relative',
+                'left': '0',
+                'width': options.width,
+                'height': options.height
+            }).appendTo(GDC.find('.geodata_map_holder'));
             var map = L.map(map_id).setView(latlng, 9);
-            
-            var osmUrl='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-            var osmAttrib='Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
+
+            var osmUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+            var osmAttrib = 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors';
             var osm = new L.TileLayer(osmUrl, {attribution: osmAttrib});
-            
+
             map.addLayer(osm);
 
             return map;
         }
 
-        function initializeGoogleLocationsMap(map_id){
+        function initializeGoogleLocationsMap(map_id) {
 
             var latlng = new google.maps.LatLng(Number(c[0]), Number(c[1]));
-            if(options.map_view_type=='m'){
-                var map_view_type=google.maps.MapTypeId.ROADMAP;
-            }else if(options.map_view_type=='h'){
-                var map_view_type=google.maps.MapTypeId.HYBRID;
-            }else if(options.map_view_type=='s'){
-                var map_view_type=google.maps.MapTypeId.SATELLITE;
-            }else{
-                var map_view_type=google.maps.MapTypeId.ROADMAP;
+            if (options.map_view_type == 'm') {
+                var map_view_type = google.maps.MapTypeId.ROADMAP;
+            } else if (options.map_view_type == 'h') {
+                var map_view_type = google.maps.MapTypeId.HYBRID;
+            } else if (options.map_view_type == 's') {
+                var map_view_type = google.maps.MapTypeId.SATELLITE;
+            } else {
+                var map_view_type = google.maps.MapTypeId.ROADMAP;
             }
-            var map_view_type1=google.maps.MapTypeId.SATELLITE;
+            var map_view_type1 = google.maps.MapTypeId.SATELLITE;
             var myOptions = {
                 zoom: map_zoom,
                 center: latlng,
                 streetViewControl: false,
-                mapTypeId: map_view_type1
+                mapTypeId: map_view_type1,
+                mapTypeControl: false
             };
 
-            if(options.no_scroll_zoom==1 || (options.no_scroll_zoom==0 && $(window).width()>800)){
-                myOptions.scrollwheel=false;
+            if (options.no_scroll_zoom == 1 || (options.no_scroll_zoom == 0 && $(window).width() > 800)) {
+                myOptions.scrollwheel = false;
             }
 
-            var m=$('<div id="'+map_id+'" style="width:'+options.width+'; height:'+options.height+'"></div>')
-            m.appendTo($('body')).css({'position':'absolute','left':'-1000px','display':'block'});
+            var m = $('<div id="' + map_id + '" style="width:' + options.width + '; height:' + options.height + '"></div>')
+            m.appendTo($('body')).css({'position': 'absolute', 'left': '-1000px', 'display': 'block'});
             var map = new google.maps.Map(document.getElementById(map_id), myOptions);
 
-            google.maps.event.addDomListener(map, 'tilesloaded', function(event) {
-                if(map_view_type1!=map_view_type){
+            const card = document.getElementById("pac-card");
+            const places_input = document.getElementById("pac-input");
+            if ( card ) {
+                map.controls[google.maps.ControlPosition.TOP_LEFT].push(card);
+                const options_autocomplete = {
+                    fields: ["formatted_address", "geometry", "name", "address_components"],
+                    strictBounds: false,
+                    types: [],
+                };
+                const autocomplete = new google.maps.places.Autocomplete(places_input, options_autocomplete);
+                autocomplete.bindTo("bounds", map);
+                const marker = new google.maps.Marker({
+                    map,
+                    anchorPoint: new google.maps.Point(0, -29),
+                });
+
+                autocomplete.addListener("place_changed", () => {
+                    const place = autocomplete.getPlace();
+
+                    if (!place.geometry || !place.geometry.location) {
+                        // User entered the name of a Place that was not suggested and
+                        // pressed the Enter key, or the Place Details request failed.
+                        window.alert("No details available for input: '" + place.name + "'");
+                        return;
+                    }
+                    console.log(place);
+                    if (place.geometry.viewport) {
+                        map.fitBounds(place.geometry.viewport);
+                    } else {
+                        map.setCenter(place.geometry.location);
+                        map.setZoom(17);
+                    }
+
+                    marker.setPosition(place.geometry.location);
+                    marker.setVisible(true);
+
+                    $('form input[geodata=lat]').val(place.geometry.location.lat).trigger('change');
+                    $('form [geodata=lng]').val(place.geometry.location.lng).trigger('change');
+
+                    let address_array = {};
+
+                    for (const component of place.address_components) {
+                        // @ts-ignore remove once typings fixed
+                        const componentType = component.types[0];
+
+                        switch (componentType) {
+                            case "country": {
+                                $('form input[name=\'geoautocomplete[country_id]\']').val(component.long_name);
+                                address_array['country'] = component.long_name;
+                                break;
+                            }
+
+                            case "administrative_area_level_1": {
+                                $('form input[name=\'geoautocomplete[region_id]\']').val(component.long_name);
+                                address_array['region'] = component.long_name;
+                                break;
+                            }
+
+                            case "locality":
+                                $('form input[name=\'geoautocomplete[city_id]\']').val(component.long_name);
+                                address_array['city'] = component.long_name;
+                                break;
+
+                            case "sublocality_level_1": {
+                                $('form input[name=\'geoautocomplete[district_id]\']').val(component.long_name);
+                                address_array['district'] = component.long_name;
+                                break;
+                            }
+
+                            case "route": {
+                                $('form input[name=\'geoautocomplete[street_id]\']').val(component.short_name);
+                                address_array['street'] = component.short_name;
+                                break;
+                            }
+
+                            case "street_number": {
+                                $('form input[name=\'number\']').val(component.long_name);
+                                address_array['number'] = component.long_name;
+                                break;
+                            }
+                        }
+                    }
+                    $('form input[name=\'address\']').val(place.formatted_address);
+                });
+
+            }
+
+
+            google.maps.event.addDomListener(map, 'tilesloaded', function (event) {
+                if (map_view_type1 != map_view_type) {
                     map.setOptions({mapTypeId: map_view_type});
                 }
-                m.css({'position':'relative','left':'0', 'width':options.width, 'height':options.height}).appendTo(GDC.find('.geodata_map_holder'));
+                m.css({
+                    'position': 'relative',
+                    'left': '0',
+                    'width': options.width,
+                    'height': options.height
+                }).appendTo(GDC.find('.geodata_map_holder'));
                 google.maps.event.clearListeners(map, 'tilesloaded');
                 google.maps.event.trigger(map, "resize");
             });
@@ -488,13 +601,13 @@
             return map;
         }
 
-        function georun(str){
+        function georun(str) {
             $.ajax({
-                url: estate_folder+'/apps/geodata/js/ajax.php',
+                url: estate_folder + '/apps/geodata/js/ajax.php',
                 dataType: 'json',
                 data: {action: 'geocode_fast', input: str},
-                success: function(json){
-                    if(json.lat !== undefined && json.lng !== undefined){
+                success: function (json) {
+                    if (json.lat !== undefined && json.lng !== undefined) {
                         $('form input[geodata=lat]').val(json.lat).trigger('change');
                         $('form [geodata=lng]').val(json.lng).trigger('change');
                     }
@@ -502,12 +615,12 @@
             });
         }
 
-        if(options.confields.length>0 && parent_form.legth!=0){
-            var prev_els_array=[];
-            for(var i=0; i<options.confields.length; i++){
-                prev_els_array[options.confields[i]]=options.confields.slice(0, i+1);
+        if (options.confields.length > 0 && parent_form.legth != 0) {
+            var prev_els_array = [];
+            for (var i = 0; i < options.confields.length; i++) {
+                prev_els_array[options.confields[i]] = options.confields.slice(0, i + 1);
 
-                var element_for_event='[name='+options.confields[i]+']';
+                var element_for_event = '[name=' + options.confields[i] + ']';
                 /*if(parent_form.find(element_for_event).parents('.geoautocomplete_block').length>0){
                     element_for_event='[name=geoautocomplete\\['+options.confields[i]+'\\]]';
                     console.log(element_for_event);
@@ -549,25 +662,25 @@
                 }*/
                 //console.log(parent_form.find(element_for_event).parents('.geoautocomplete'));
 
-                parent_form.on('change', element_for_event, function(){
-                    var $this=$(this);
-                    var name=this.name;
+                parent_form.on('change', element_for_event, function () {
+                    var $this = $(this);
+                    var name = this.name;
 
-                    var n=[];
+                    var n = [];
 
-                    for(var k=0; k<prev_els_array[name].length; k++){
-                        var el=parent_form.find('[name='+prev_els_array[name][k]+']');
-                        if(el.prop("tagName").toLowerCase()=='select'){
-                            if(el.val()!=0){
+                    for (var k = 0; k < prev_els_array[name].length; k++) {
+                        var el = parent_form.find('[name=' + prev_els_array[name][k] + ']');
+                        if (el.prop("tagName").toLowerCase() == 'select') {
+                            if (el.val() != 0) {
                                 n.push(el.find('option:selected').text());
                             }
-                        }else if(el.prop("tagName").toLowerCase()=='input'){
+                        } else if (el.prop("tagName").toLowerCase() == 'input') {
                             //console.log(el);
-                            if(el.parents('.geoautocomplete_block').length>0){
-                                if(el.parents('.geoautocomplete_block').find('.geoautocomplete').eq(0).val()!=''){
+                            if (el.parents('.geoautocomplete_block').length > 0) {
+                                if (el.parents('.geoautocomplete_block').find('.geoautocomplete').eq(0).val() != '') {
                                     n.push(el.parents('.geoautocomplete_block').find('.geoautocomplete').eq(0).val());
                                 }
-                            }else if(el.val()!=''){
+                            } else if (el.val() != '') {
                                 n.push(el.val());
                             }
 

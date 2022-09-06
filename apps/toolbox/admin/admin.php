@@ -12,7 +12,7 @@ class toolbox_admin extends Object_Manager {
      * Constructor
      */
     function __construct($realty_type = false) {
-        $this->SiteBill();
+        parent::__construct();
         $this->action = 'toolbox';
 
         $geography = array(

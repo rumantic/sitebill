@@ -5,7 +5,7 @@ class yandexrealty_update extends SiteBill {
      * Construct
      */
     function __construct() {
-        $this->sitebill();
+        parent::__construct();
     }
     
     function main () {

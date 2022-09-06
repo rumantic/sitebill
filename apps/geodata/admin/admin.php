@@ -14,7 +14,7 @@ class geodata_admin extends Object_Manager
      */
     function __construct($realty_type = false)
     {
-        $this->SiteBill();
+        parent::__construct();
         Multilanguage::appendAppDictionary('geodata');
         $this->app_title = Multilanguage::_('APP_NAME', 'geodata');
         $this->action = 'geodata';
@@ -45,7 +45,28 @@ class geodata_admin extends Object_Manager
         $config_admin->addParamToConfig('apps.geodata.prevtext', '', 'Предварительный текст для геокодирования на форме');
         $config_admin->addParamToConfig('apps.geodata.no_scroll_zoom', '0', 'Выключить зуммирование карты скроллом', SConfig::$fieldtypeCheckbox);
         $config_admin->addParamToConfig('apps.geodata.iframe_map_limit', '0', 'Количество объектов выводимых на iframe-карте. 0 - выводить все');
-        $config_admin->addParamToConfig('apps.geodata.iframe_scroll_zoom', '0', 'Зумировать карту iframe колесиком мыши', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig(
+            'apps.geodata.iframe_scroll_zoom',
+            '0',
+            'Зумировать карту iframe колесиком мыши',
+            SConfig::$fieldtypeCheckbox
+        );
+
+        $config_admin->addParamToConfig(
+            'apps.geodata.use_google_places_api',
+            '0',
+            'Использовать поиск по адресу на карте Google (Places API)',
+            SConfig::$fieldtypeCheckbox
+        );
+
+        $config_admin->addParamToConfig(
+            'apps.geodata.enable_mobile_map_drag',
+            '0',
+            'Разрешить двигать карту на мобильных устройствах',
+            SConfig::$fieldtypeCheckbox
+        );
+
+
     }
 
     public function ajax()
@@ -664,7 +685,7 @@ class geodata_admin extends Object_Manager
 
 
                 if ($str != '') {
-                    $cache = geodata_admin::getGeocoderDataFromCache($address);
+                    $cache = @geodata_admin::getGeocoderDataFromCache($address);
                     //var_dump($cache);
                     if (!empty($cache)) {
                         $res = array('address' => $str, 'lat' => $cache['lat'], 'lng' => $cache['lng'], 'cached' => 1);
@@ -689,7 +710,9 @@ class geodata_admin extends Object_Manager
         } else {
             $this->riseError('Empty geofields. Check config value apps.geodata.try_encode_fields');
         }
-        $ret_str = $str;
+        if ( isset($str) ) {
+            $ret_str = $str;
+        }
         return $form_data;
     }
 
@@ -709,8 +732,7 @@ class geodata_admin extends Object_Manager
             $result = array('address' => $str, 'lat' => $cache['lat'], 'lng' => $cache['lng'], 'cached' => 1);
             return $result;
         } else {
-            $Config = SConfig::getInstance();
-            $url = 'https://geocode-maps.yandex.ru/1.x/?apikey=' . $Config::getConfigValue('apps.geodata.yandex_api_key_server') . '&geocode=' . urlencode($str);
+            $url = 'https://geocode-maps.yandex.ru/1.x/?apikey=' . SConfig::getConfigValueStatic('apps.geodata.yandex_api_key_server') . '&geocode=' . urlencode($str);
             //echo $url;
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $url);
@@ -723,7 +745,7 @@ class geodata_admin extends Object_Manager
             curl_close($ch);
             $geodata = simplexml_load_string($output);
             if ($geodata && $geodata instanceof SimpleXMLElement) {
-                $founded = $geodata->GeoObjectCollection[0]->metaDataProperty->GeocoderResponseMetaData->found;
+                $founded = @$geodata->GeoObjectCollection[0]->metaDataProperty->GeocoderResponseMetaData->found;
                 if ((int)$founded > 0) {
                     $pos = $geodata->GeoObjectCollection[0]->featureMember[0]->GeoObject[0]->Point[0]->pos[0];
                     if ($pos != '') {

@@ -1,5 +1,7 @@
 <?php
 
+use system\lib\system\cache\RedisCache;
+
 defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
 /**
  * Currencies options and courses admin backend
@@ -16,7 +18,7 @@ class currency_admin extends Object_Manager {
      * Constructor
      */
     function __construct($realty_type = false) {
-        $this->SiteBill();
+        parent::__construct();
 
         $this->table_name = 'currency';
         $this->action = 'currency';
@@ -399,6 +401,12 @@ class currency_admin extends Object_Manager {
     }
 
     private function loadCourses() {
+        $redis_cache = RedisCache::getArray('loadCourses');
+        if ( is_array($redis_cache) and count($redis_cache) > 0 ) {
+            $this->courses = $redis_cache;
+            return;
+        }
+
         $query = 'SELECT `currency_id`, `course` FROM ' . DB_PREFIX . '_' . $this->table_name;
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query);
@@ -407,6 +415,7 @@ class currency_admin extends Object_Manager {
                 $this->courses[$ar['currency_id']] = $ar['course'];
             }
         }
+        RedisCache::setArray('loadCourses', $this->courses);
     }
 
     public function getActiveCurrencies() {

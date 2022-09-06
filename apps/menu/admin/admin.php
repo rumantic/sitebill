@@ -14,7 +14,7 @@ class menu_admin extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
     }
 
     public function _preload() {

@@ -1,101 +1,117 @@
 .common-grid-sorted-desc {
-	background-image: url('../img/sort_desc.png');
-	background-repeat: no-repeat;
-	padding-right: 20px;
-	background-position: 100% 50%;
+    background-image: url('../img/sort_desc.png');
+    background-repeat: no-repeat;
+    padding-right: 20px;
+    background-position: 100% 50%;
 }
 
 .common-grid-sorted-asc {
-	background-image: url('../img/sort_asc.png');
-	background-repeat: no-repeat;
-	padding-right: 20px;
-	background-position: 100% 50%;
+    background-image: url('../img/sort_asc.png');
+    background-repeat: no-repeat;
+    padding-right: 20px;
+    background-position: 100% 50%;
 }
+
 .navbar-toggle {
-	position: relative;
-	float: left;
-	margin-right: 12px;
-	padding: 9px 10px;
-	margin-top: 8px;
-	margin-bottom: 8px;
-	background-color: transparent;
-	background-image: none;
-	border: 1px solid transparent;
-	border-radius: 4px;
+    position: relative;
+    float: left;
+    margin-right: 12px;
+    padding: 9px 10px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    background-color: transparent;
+    background-image: none;
+    border: 1px solid transparent;
+    border-radius: 4px;
 }
+
 .navbar .navbar-toggle {
-	border: 1px solid transparent;
-	width: 40px;
-	height: 35px;
-	line-height: 0;
-	padding: 0 0 1px;
-	text-align: center;
-	margin: 5px 0 4px 6px;
-	background-color: #75B3D7;
+    border: 1px solid transparent;
+    width: 40px;
+    height: 35px;
+    line-height: 0;
+    padding: 0 0 1px;
+    text-align: center;
+    margin: 5px 0 4px 6px;
+    background-color: #75B3D7;
 }
+
 .navbar .navbar-toggle:hover {
-	1px solid transparent;
-	background-color: #6FB3E0;
-	border-radius: 4px;
+    1px solid transparent;
+    background-color: #6FB3E0;
+    border-radius: 4px;
 }
 
 .no-skin .navbar .navbar-toggle {
-	background-color: #75B3D7;
+    background-color: #75B3D7;
 }
+
 .navbar .navbar-toggle .pull-left {
-	margin: 5px 0 4px 6px !important;
+    margin: 5px 0 4px 6px !important;
 }
+
 .no-skin .navbar .navbar-toggle .display, .no-skin .navbar .navbar-toggle[data-toggle=collapse]:not(.collapsed) {
-	background-color: #4d9dcc;
-	box-shadow: inset 1px 1px 2px 0 rgba(0,0,0,0.25);
-	border-color: rgba(255,255,255,0.35);
+    background-color: #4d9dcc;
+    box-shadow: inset 1px 1px 2px 0 rgba(0, 0, 0, 0.25);
+    border-color: rgba(255, 255, 255, 0.35);
 }
+
 .navbar .navbar-toggle .icon-bar {
-	background-color: #FFF;
-	border-radius: 0;
-	width: 24px;
-	margin-left: 7px;
+    background-color: #FFF;
+    border-radius: 0;
+    width: 24px;
+    margin-left: 7px;
 }
+
 .sr-only {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	margin: -1px;
-	padding: 0;
-	overflow: hidden;
-	clip: rect(0,0,0,0);
-	border: 0;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
 }
+
 @media only screen and (max-width: 979px) {
-	.menu-toggler:after {
-		border-top: 1px solid white;
-		border-bottom: 1px solid white;
-		content: "";
-		height: 4px;
-		width: 24px;
-		position: absolute;
-		top: 19px;
-		left: 8px;
-		-moz-transition: all .1s ease;
-		-webkit-transition: all .1s ease;
-		-ms-transition: all .1s ease;
-		transition: all .1s ease;
-		-o-transition: none;
-	}
-	.menu-toggler:before {
-		border-top: 1px solid white;
-		border-bottom: 1px solid white;
-		height: 4px;
-		width: 24px;
-		content: "";
-		position: absolute;
-		z-index: 11;
-		top: 13px;
-		left: 8px;
-		-moz-transition: all .1s ease;
-		-webkit-transition: all .1s ease;
-		-ms-transition: all .1s ease;
-		transition: all .1s ease;
-		-o-transition: none;
-	}
+    .menu-toggler:after {
+        border-top: 1px solid white;
+        border-bottom: 1px solid white;
+        content: "";
+        height: 4px;
+        width: 24px;
+        position: absolute;
+        top: 19px;
+        left: 8px;
+        -moz-transition: all .1s ease;
+        -webkit-transition: all .1s ease;
+        -ms-transition: all .1s ease;
+        transition: all .1s ease;
+        -o-transition: none;
+    }
+
+    .menu-toggler:before {
+        border-top: 1px solid white;
+        border-bottom: 1px solid white;
+        height: 4px;
+        width: 24px;
+        content: "";
+        position: absolute;
+        z-index: 11;
+        top: 13px;
+        left: 8px;
+        -moz-transition: all .1s ease;
+        -webkit-transition: all .1s ease;
+        -ms-transition: all .1s ease;
+        transition: all .1s ease;
+        -o-transition: none;
+    }
+}
+
+.mybrand {
+    padding-top: 2px !important;
+    padding-bottom: 2px !important;
+    padding-left: 8px;
+    margin-left: -25px !important;
 }

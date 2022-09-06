@@ -9,14 +9,8 @@ define('DB_PREFIX', 're');
 //$sitebill_document_root = $_SERVER['DOCUMENT_ROOT'];
 
 class Users_Manager extends SiteBill_Krascap {
-    var $user_image_dir = '/img/data/user/'; 
-	/**
-	 * Constructor
-	 */
-	function Users_Manager() {
-		$this->SiteBill();
-	}
-	
+    var $user_image_dir = '/img/data/user/';
+
     /**
      * Main
      * @param void
@@ -24,36 +18,36 @@ class Users_Manager extends SiteBill_Krascap {
      */
     function main () {
 		$user_id = $this->getRequestValue('user_id');
-        
+
         switch ( $this->getRequestValue('do') ) {
-            
+
             case 'edit':
                 $hash = $this->load($this->getRequestValue('user_id'));
                 $rs = $this->getEditForm('edit');
             break;
-            
+
             case 'new_done':
                 if ( !$this->checkData() ) {
                     $rs = $this->getEditForm('new');
                 } else {
                     $user_id = $this->add_user();
 					$rs.=$this->updateUserPicture($user_id);
-                    
+
                     $rs = $this->get_top_menu();
                     $rs .= $this->grid();
                 }
             break;
-            
+
             case 'delete':
                 $this->delete_user($this->getRequestValue('user_id'));
                 $rs = $this->get_top_menu();
                 $rs .= $this->grid();
             break;
-            
+
             case 'new':
                 $rs = $this->getEditForm('new');
             break;
-            
+
             case 'edit_done':
                 if ( !$this->checkData() ) {
                     $rs = $this->getEditForm('edit');
@@ -81,10 +75,10 @@ class Users_Manager extends SiteBill_Krascap {
             default:
                 $rs = $this->get_top_menu();
                 $rs .= $this->grid();
-        }                
+        }
         return $rs;
     }
-    
+
     /**
      * Add ajax user
      * @param int $user_id
@@ -97,12 +91,12 @@ class Users_Manager extends SiteBill_Krascap {
         $mobile = $params['mobile'];
         $icq = $params['icq'];
         $site = $params['site'];
-        
+
         $query = "insert into ".DB_PREFIX."_user (user_id, reg_date, fio, email, phone, mobile, icq, site) values (".$user_id.",now(), '".$fio."', '".$email."',  '".$phone."', '".$mobile."', '".$icq."',  '".$site."' )";
         $DBC=DBC::getInstance();
     	$stmt=$DBC->query($query);
     }
-    
+
     /**
      * Add user
      * @param void
@@ -114,7 +108,7 @@ class Users_Manager extends SiteBill_Krascap {
         $DBC=DBC::getInstance();
 		$stmt=$DBC->query($query);
     }
-    
+
     /**
      * Delete user
      * @param int $user_id
@@ -124,7 +118,7 @@ class Users_Manager extends SiteBill_Krascap {
         $DBC=DBC::getInstance();
 		$stmt=$DBC->query($query);
     }
-    
+
     /**
      * Edit password
      * @param int $user_id user id
@@ -137,7 +131,7 @@ class Users_Manager extends SiteBill_Krascap {
 		$stmt=$DBC->query($query);
         return true;
     }
-    
+
     function get_top_menu () {
         if ( SITEBILL_MAIN_URL != '' ) {
             $add_folder = SITEBILL_MAIN_URL.'/';
@@ -149,8 +143,8 @@ class Users_Manager extends SiteBill_Krascap {
         }
         return $rs;
     }
-    
-    
+
+
     /**
      * Check password
      * @param int $user_id user id
@@ -169,7 +163,7 @@ class Users_Manager extends SiteBill_Krascap {
 		}
 		return false;
     }
-    
+
     /**
      * Check crypt
      * @param string $password password
@@ -184,8 +178,8 @@ class Users_Manager extends SiteBill_Krascap {
         }
 		return true;
     }
-    
-    
+
+
     /**
      * Check data
      * @param void
@@ -206,18 +200,18 @@ class Users_Manager extends SiteBill_Krascap {
         }
         if ( $this->getRequestValue('do') == 'new_done' ) {
         }
-        
+
         if ( !$this->getConfigValue('ajax_auth_form') ) {
             if ( $this->getRequestValue('fio') == '' ) {
                 $this->riseError(Multilanguage::_('L_ERROR_NAME_NOT_SPECIFIED'));
                 return false;
             }
-            
+
             if ( $this->getRequestValue('login') == '' ) {
                 $this->riseError(Multilanguage::_('L_ERROR_LOGIN_NOT_SPECIFIED'));
                 return false;
             }
-            
+
             if ( !$this->checkLogin($this->getRequestValue('login')) and $this->getRequestValue('do') != 'edit_done' ) {
                 $this->riseError(Multilanguage::_('LOGIN_IS_REGISTERED','system'));
                 return false;
@@ -232,12 +226,12 @@ class Users_Manager extends SiteBill_Krascap {
                     return false;
                 }
             }
-            
+
         }
-        
+
         return true;
     }
-    
+
     /**
      * Check login
      * @param string $login login
@@ -255,36 +249,36 @@ class Users_Manager extends SiteBill_Krascap {
 		}
 		return true;
     }
-    
+
 
 	private function prepareData($d){
 		$dd=$d;
 		return $dd;
 	}
-	
+
 	private function updateUserPicture($user_id){
         /*if ( SITEBILL_MAIN_URL != '' ) {
             $add_folder = SITEBILL_MAIN_URL.'/';
         }*/
-        
-	    
+
+
 	    //global $sitebill_document_root;
 	    //echo '$sitebill_document_root = '.$sitebill_document_root.'<br>';
 	    //echo '$add_folder = '.$add_folder.'<br>';
-		
+
 	    $imgfile_directory=$this->user_image_dir;
 	    /*$document_root = $_SERVER['DOCUMENT_ROOT'].$add_folder; */
-		
+
 		$avial_ext=array('jpg', 'jpeg', 'gif', 'png');
 		if(isset($_FILES['imgfile'])){
-			
+
 			if(($_FILES['imgfile']['error']!=0)OR($_FILES['imgfile']['size']==0)){
 				//echo 'Не указан или указан не верно файл для загрузки<br>';
 			}else{
 				//$ret='No errors';
 				$fprts=explode('.',$_FILES['imgfile']['name']);
 				//print_r($fprts,true);
-				
+
 				if(count($fprts)>1){
 					$ext=strtolower($fprts[count($fprts)-1]);
 					if(in_array($ext,$avial_ext)){
@@ -293,27 +287,27 @@ class Users_Manager extends SiteBill_Krascap {
                         $i = rand(0, 999);
 						$preview_name="img".uniqid().'_'.time()."_".$i.".".$ext;
                         $preview_name_tmp="_tmp".uniqid().'_'.time()."_".$i.".".$ext;
-						
+
 						if(! move_uploaded_file($_FILES['imgfile']['tmp_name'], SITEBILL_DOCUMENT_ROOT.$imgfile_directory.$preview_name_tmp) ){
-							
+
 						}else{
                             list($width,$height)=$this->makePreview(SITEBILL_DOCUMENT_ROOT.$imgfile_directory.$preview_name_tmp, SITEBILL_DOCUMENT_ROOT.$imgfile_directory.$preview_name, 160,160, $ext,1);
                             unlink(SITEBILL_DOCUMENT_ROOT.$imgfile_directory.$preview_name_tmp);
-                            
+
 							$query='UPDATE '.DB_PREFIX.'_user SET imgfile="'.$preview_name.'" WHERE user_id='.$user_id;
 							$DBC=DBC::getInstance();
 							$stmt=$DBC->query($query);
 						}
 					}
-					
+
 				}
 			}
 		}
 		//return $ret;
 	}
-	
+
 	/**
-	 * Init data from 
+	 * Init data from
 	 * @param void
 	 * @return array
 	 */
@@ -329,7 +323,7 @@ class Users_Manager extends SiteBill_Krascap {
 	    $data['email'] = $this->getRequestValue('email');
 	    return $data;
 	}
-    
+
 	/**
 	 * Get edit from
 	 * @param string $form
@@ -339,7 +333,7 @@ class Users_Manager extends SiteBill_Krascap {
         if ( SITEBILL_MAIN_URL != '' ) {
             $add_folder = SITEBILL_MAIN_URL.'/';
         }
-	    
+
 		$imgfile_directory=$this->user_image_dir;
 	    if ( $form == 'edit' ) {
 		    $data = $this->getUserProfileData($this->getRequestValue('user_id'));
@@ -369,24 +363,24 @@ class Users_Manager extends SiteBill_Krascap {
 			</td>';
 		}
 		$ret.='<tr><td>'.Multilanguage::_('L_PHOTO').': </td><td><input type="file" name="imgfile" /></td><td></td>';
-		
+
 		if ( $this->getConfigValue('ajax_auth_form') ) {
 		    $ret.='<tr><td>'.Multilanguage::_('L_PASSWORD').': </td><td><div id="admin_area"><input type="password" value="******" disabled><a href="#" onclick="run_command(\'change_password&user_id='.$this->getRequestValue('user_id').'\', \'cp1251\', \''.$_SERVER['SERVER_NAME'].$add_folder.'\', \''.$_SESSION['session_key'].'\'); return false;">'.Multilanguage::_('CHANGE_PASSWORD','system').'</a></div></td><td></td>';
-		}		
+		}
 		if ( $form == 'edit' ) {
 		    $ret .= '<input type="hidden" name="do" value="edit_done" />';
 		    $ret.='<input type="hidden" name="user_id" value="'.$this->getRequestValue('user_id').'" />';
 		} else {
 		    $ret .= '<input type="hidden" name="do" value="new_done" />';
 		}
-		
+
 		$ret.='<input type="hidden" name="action" value="users" />';
 		$ret.='<tr><td colspan="3"><input type="submit" name="submit" value="'.Multilanguage::_('L_TEXT_SAVE').'" /></td>';
 		$ret.='</form>';
 		$ret.='</table>';
 		return $ret;
 	}
-	
+
 	function getUserProfileData($user_id){
 		$query = 'SELECT * FROM '.DB_PREFIX.'_user WHERE user_id='.$user_id;
         $DBC=DBC::getInstance();
@@ -396,7 +390,7 @@ class Users_Manager extends SiteBill_Krascap {
 		}
         return array();
 	}
-	
+
 	function updateUserProfile($user_id,$nd){
 		$qparts=array();
 		foreach($nd as $k=>$v){
@@ -411,7 +405,7 @@ class Users_Manager extends SiteBill_Krascap {
 			return FALSE;
 		}
 	}
-    
+
     /**
      * Load
      * @param int $record_id record ID
@@ -426,8 +420,8 @@ class Users_Manager extends SiteBill_Krascap {
 			$this->setRequestValue('login', $ar['login']);
 		}
     }
-    
-    
+
+
     /**
      * Grid
      * @param void
@@ -437,12 +431,12 @@ class Users_Manager extends SiteBill_Krascap {
         if ( SITEBILL_MAIN_URL != '' ) {
             $add_folder = SITEBILL_MAIN_URL.'/';
         }
-        
+
         global $_SESSION;
         $query = "select * from ".DB_PREFIX."_user order by user_id asc";
     	$DBC=DBC::getInstance();
 		$stmt=$DBC->query($query);
-		
+
         $rs .= '<div id="admin_area">';
         $rs .= '<div align="left"><table border="0" width="20%">';
         $rs .= '<td ><b>Имя</b></td>';
@@ -473,11 +467,11 @@ class Users_Manager extends SiteBill_Krascap {
 	            $rs .= '</tr>';
 	        }
         }
-        
+
         $rs .= '</table></div>';
         $rs .= '</div>';
-        
+
         return $rs;
     }
-	
+
 }

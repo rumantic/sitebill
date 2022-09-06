@@ -10,7 +10,7 @@ class contactus_Form extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
         $this->table_name = 'contactus';
         $this->action = 'contactus';
         $this->primary_key = 'contactus_id';

@@ -12,7 +12,7 @@ class downloader_admin extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
         $this->data_model[$this->table_name]['user_id']['value'] = $this->getSessionUserId();
     }
 

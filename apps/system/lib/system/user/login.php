@@ -5,7 +5,8 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * Login class
  * @author Kondin Dmitry <kondin@etown.ru>
  */
-class Login extends SiteBill {
+class Login extends SiteBill
+{
 
     var $user_id = 0;
     private $hard_mode;
@@ -15,9 +16,10 @@ class Login extends SiteBill {
     /**
      * Constructor
      */
-    function Login() {
+    function Login()
+    {
 
-        $this->SiteBill();
+        parent::__construct();
         $this->hardmode = false;
         if (!isset($_SESSION['key'])) {
             $this->setSessionKey($this->GenerateSessionKey(0));
@@ -31,7 +33,7 @@ class Login extends SiteBill {
             $this->restoreUser();
         }
         //var_dump($this->isStillActive($_SESSION['user_id']));
-        if (isset($_SESSION['user_id']) && (int) $_SESSION['user_id'] > 0) {
+        if (isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0) {
             if (!$this->isStillActive($_SESSION['user_id'])) {
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/logout.php';
                 $Logout = new Logout();
@@ -43,7 +45,7 @@ class Login extends SiteBill {
                 $this->loadUserInfo($_SESSION['user_id']);
                 if (isset($_COOKIE['user_favorites']) && $_COOKIE['user_favorites'] != '') {
                     $cc = unserialize($_COOKIE['user_favorites']);
-                    $_SESSION['favorites'] = $cc[(int) $_SESSION['user_id']];
+                    $_SESSION['favorites'] = $cc[(int)$_SESSION['user_id']];
                 }
 
                 if (!isset($_SESSION['user_dayly_activity']) || intval($_SESSION['user_dayly_activity']) != 1) {
@@ -67,7 +69,8 @@ class Login extends SiteBill {
         }
     }
 
-    function isStillActive($user_id) {
+    function isStillActive($user_id)
+    {
         //return true;
         $DBC = DBC::getInstance();
         if (1 == $this->getConfigValue('use_registration_email_confirm')) {
@@ -83,7 +86,8 @@ class Login extends SiteBill {
         return false;
     }
 
-    function loadUserInfo($user_id) {
+    function loadUserInfo($user_id)
+    {
         $DBC = DBC::getInstance();
         $what = array();
         $where = array();
@@ -136,7 +140,7 @@ class Login extends SiteBill {
             if ($_SESSION['current_user_group_name'] == 'admin') {
                 $_SESSION['user_id_value'] = $udata['user_id'];
             } else {
-                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php');
+                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php');
                 $permission = new Permission();
                 if ($permission->get_access($_SESSION['user_id'], 'admin_panel', 'login')) {
                     $_SESSION['user_id_value'] = $udata['user_id'];
@@ -154,20 +158,20 @@ class Login extends SiteBill {
                 if ($stmt) {
                     $ar = $DBC->fetch($stmt);
                     $_SESSION['current_user_tariff_info'] = array('tariff_id' => $udata['tariff_id'], 'title' => $ar['title']);
-                    $sid=$ar['service_id'];
-                    if(''!=trim($sid)){
-                        $sid=explode(',', $sid);
-                        foreach($sid as $k=>$iid){
-                            if(intval($iid)<1){
+                    $sid = $ar['service_id'];
+                    if ('' != trim($sid)) {
+                        $sid = explode(',', $sid);
+                        foreach ($sid as $k => $iid) {
+                            if (intval($iid) < 1) {
                                 unset($sid[$k]);
                             }
                         }
-                        if(!empty($sid)){
-                            $query = 'SELECT * FROM '.DB_PREFIX.'_service WHERE service_id IN ('.implode(',', $sid).')';
-                            $stmt=$DBC->query($query);
-                            if($stmt){
-                                while($ar=$DBC->fetch($stmt)){
-                                    $_SESSION['current_user_tariff_info']['services'][$ar['name']]=$ar;
+                        if (!empty($sid)) {
+                            $query = 'SELECT * FROM ' . DB_PREFIX . '_service WHERE service_id IN (' . implode(',', $sid) . ')';
+                            $stmt = $DBC->query($query);
+                            if ($stmt) {
+                                while ($ar = $DBC->fetch($stmt)) {
+                                    $_SESSION['current_user_tariff_info']['services'][$ar['name']] = $ar;
                                 }
                             }
 
@@ -188,9 +192,10 @@ class Login extends SiteBill {
         }
     }
 
-    function restoreUser() {
+    function restoreUser()
+    {
 
-        if (isset($_COOKIE["logged_user_id"]) && (int) $_COOKIE["logged_user_id"] > 0 && isset($_COOKIE["logged_user_token"])/* &&  $_COOKIE["logged_user_token"]!='' && md5((int)$_COOKIE["logged_user_id"].' '.$_SERVER['REMOTE_ADDR'].' '.$_SERVER['HTTP_USER_AGENT'])==$_COOKIE["logged_user_token"] */) {
+        if (isset($_COOKIE["logged_user_id"]) && (int)$_COOKIE["logged_user_id"] > 0 && isset($_COOKIE["logged_user_token"])/* &&  $_COOKIE["logged_user_token"]!='' && md5((int)$_COOKIE["logged_user_id"].' '.$_SERVER['REMOTE_ADDR'].' '.$_SERVER['HTTP_USER_AGENT'])==$_COOKIE["logged_user_token"] */) {
             $user_id = 0;
             $DBC = DBC::getInstance();
             if ($this->hard_mode) {
@@ -216,8 +221,8 @@ class Login extends SiteBill {
                 $query = 'SELECT `auth_salt` FROM ' . DB_PREFIX . '_user WHERE user_id=?';
                 $stmt = $DBC->query($query, array($_COOKIE["logged_user_id"]));
                 if (!$stmt) {
-                    setcookie('logged_user_id', '', time() - 60 * 60 * 24 * 5, '/', self::$_cookiedomain);
-                    setcookie('logged_user_token', '', time() - 60 * 60 * 24 * 5, '/', self::$_cookiedomain);
+                    setcookie('logged_user_id', '', time() - $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+                    setcookie('logged_user_token', '', time() - $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
                     return false;
                 }
                 $ar = $DBC->fetch($stmt);
@@ -225,8 +230,8 @@ class Login extends SiteBill {
                     $auth_salt = md5(rand(10000, 99999) . time());
                     $sql = 'UPDATE ' . DB_PREFIX . '_user SET `auth_salt`=? WHERE `user_id`=? ';
                     $stmt = $DBC->query($sql, array($auth_salt, $_COOKIE["logged_user_id"]));
-                    setcookie('logged_user_id', '', time() - 60 * 60 * 24 * 5, '/', self::$_cookiedomain);
-                    setcookie('logged_user_token', '', time() - 60 * 60 * 24 * 5, '/', self::$_cookiedomain);
+                    setcookie('logged_user_id', '', time() - $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+                    setcookie('logged_user_token', '', time() - $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
                     return false;
                 } else {
                     $auth_salt = $ar['auth_salt'];
@@ -235,8 +240,8 @@ class Login extends SiteBill {
                 //echo $_COOKIE["logged_user_token"].'@@@@';
                 //echo $test_hash;
                 if ($test_hash != $_COOKIE["logged_user_token"]) {
-                    setcookie('logged_user_id', '', time() - 60 * 60 * 24 * 5, '/', self::$_cookiedomain);
-                    setcookie('logged_user_token', '', time() - 60 * 60 * 24 * 5, '/', self::$_cookiedomain);
+                    setcookie('logged_user_id', '', time() - $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+                    setcookie('logged_user_token', '', time() - $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
                     return false;
                 }
 
@@ -252,8 +257,8 @@ class Login extends SiteBill {
                 $this->restoreFavorites($user_id);
                 return true;
             } else {
-                setcookie('logged_user_id', '', time() - 60 * 60 * 24 * 5, '/', self::$_cookiedomain);
-                setcookie('logged_user_token', '', time() - 60 * 60 * 24 * 5, '/', self::$_cookiedomain);
+                setcookie('logged_user_id', '', time() - $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+                setcookie('logged_user_token', '', time() - $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
             }
         }
 
@@ -265,7 +270,8 @@ class Login extends SiteBill {
      * @param void
      * @return string
      */
-    function main() {
+    function main()
+    {
 
         if (isset($_SESSION['go_after_login']) && $_SESSION['go_after_login'] != '') {
             $back_url = $_SESSION['go_after_login'];
@@ -311,12 +317,14 @@ class Login extends SiteBill {
         return $rs;
     }
 
-    function alreadyLogin() {
+    function alreadyLogin()
+    {
         $rs = Multilanguage::_('YOU_AUTHORIZED', 'system');
         return $rs;
     }
 
-    public function getAuthData() {
+    public function getAuthData()
+    {
         global $smarty;
         $user_id = $this->getSessionUserId();
 
@@ -338,7 +346,8 @@ class Login extends SiteBill {
         }
     }
 
-    function getUserMenu() {
+    function getUserMenu()
+    {
 
         /* $Sitebill_User=Sitebill_User::getInstance();
           if($Sitebill_User->isLogged()){
@@ -375,7 +384,8 @@ class Login extends SiteBill {
      * @param void
      * @return string
      */
-    function getAuthMenu() {
+    function getAuthMenu()
+    {
         global $estate_folder;
         global $smarty;
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/account.php');
@@ -411,7 +421,7 @@ class Login extends SiteBill {
                 }
 
                 if ($this->getConfigValue('apps.socialauth.vk.enable')) {
-                    require_once (SITEBILL_DOCUMENT_ROOT . '/apps/socialauth/lib/vk/vk_logger.php');
+                    require_once(SITEBILL_DOCUMENT_ROOT . '/apps/socialauth/lib/vk/vk_logger.php');
                     $VK = Vk_Logger::getInstance();
                     $social_link .= $VK->getLoginLink();
                 }
@@ -437,12 +447,11 @@ class Login extends SiteBill {
         }
 
 
-
-
         return $rs;
     }
 
-    function ReGenerateSessionKey($user_id, $session_key) {
+    function ReGenerateSessionKey($user_id, $session_key)
+    {
         $user_ip = $_SERVER['REMOTE_ADDR'];
         $query = 'UPDATE ' . DB_PREFIX . '_session SET `user_id`=?, `ip`=?, `start_date`=NOW() WHERE `session_key`=?';
         $DBC = DBC::getInstance();
@@ -458,10 +467,11 @@ class Login extends SiteBill {
      * @param void
      * @return string $session_key - session key
      */
-    function GenerateSessionKey($user_id, $preset_session_key = false) {
+    function GenerateSessionKey($user_id, $preset_session_key = false)
+    {
         $this->clear_session_table();
         $user_ip = $_SERVER['REMOTE_ADDR'];
-        if ( $preset_session_key ) {
+        if ($preset_session_key) {
             $session_key = $preset_session_key;
         } else {
             $session_key = md5(rand() . time() . $user_ip);
@@ -478,7 +488,8 @@ class Login extends SiteBill {
      * @param void
      * @return string
      */
-    function wellcomePage() {
+    function wellcomePage()
+    {
         $back_url = $_SESSION['go_after_login'];
         unset($_SESSION['go_after_login']);
         $rs = '<h1>Добро пожаловать!</h1>';
@@ -494,7 +505,8 @@ class Login extends SiteBill {
      * @param void
      * @return string
      */
-    function loginForm() {
+    function loginForm()
+    {
         global $ETOWN_LANG;
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/local_login_form.tpl')) {
             $this->template->assign('allow_register_account', $this->getConfigValue('allow_register_account'));
@@ -527,7 +539,8 @@ class Login extends SiteBill {
         return $rs;
     }
 
-    function get_data($url) {
+    function get_data($url)
+    {
         $ch = curl_init();
         $timeout = 5;
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -538,7 +551,8 @@ class Login extends SiteBill {
         return $data;
     }
 
-    function direct_add_user($login, $pass, $fio, $email) {
+    function direct_add_user($login, $pass, $fio, $email)
+    {
         $query = 'INSERT INTO ' . DB_PREFIX . '_user (login, password, fio, email, reg_date) VALUES (?, ?, ?, ?, ?)';
         $DBC = DBC::getInstance();
         if (1 == intval($this->getConfigValue('email_as_login'))) {
@@ -560,7 +574,8 @@ class Login extends SiteBill {
       $stmt=$DBC->query($query, array($social_id));
       } */
 
-    function storeLastActivity($user_id) {
+    function storeLastActivity($user_id)
+    {
         if ((time() - $_SESSION['last_activity_date']) < 300) {
             return;
         }
@@ -571,13 +586,15 @@ class Login extends SiteBill {
         $stmt = $DBC->query($query, array(date('Y-m-d H:i:s'), $id));
     }
 
-    function saveLastAuthDate($id) {
+    function saveLastAuthDate($id)
+    {
         $DBC = DBC::getInstance();
         $query = 'UPDATE ' . DB_PREFIX . '_user SET `last_auth_date`=? WHERE `user_id`=?';
         $stmt = $DBC->query($query, array(date('Y-m-d H:i:s'), $id));
     }
 
-    function setLoggedUser($id) {
+    function setLoggedUser($id)
+    {
         $DBC = DBC::getInstance();
 
         $what = array();
@@ -606,13 +623,6 @@ class Login extends SiteBill {
         }
 
         return false;
-
-
-
-
-
-
-
 
 
         /* $what=array();
@@ -697,13 +707,14 @@ class Login extends SiteBill {
     }
 
 
-    function makeUserLogged($user_id, $rememberme = 0, $oauth_key = false, $save_last_auth = true){
+    function makeUserLogged($user_id, $rememberme = 0, $oauth_key = false, $save_last_auth = true)
+    {
 
-        if($save_last_auth){
+        if ($save_last_auth) {
             $this->saveLastAuthDate($user_id);
         }
 
-        if ( $oauth_key ) {
+        if ($oauth_key) {
             $session_key = $this->GenerateSessionKey($user_id, $oauth_key);
         } else {
             $session_key = $this->GenerateSessionKey($user_id);
@@ -736,8 +747,8 @@ class Login extends SiteBill {
             }
             //$str=md5($_SESSION['user_id'].' '.$_SERVER['REMOTE_ADDR'].' '.$_SERVER['HTTP_USER_AGENT']);
 
-            setcookie('logged_user_id', $user_id, time() + 60 * 60 * 24 * 5, '/', self::$_cookiedomain);
-            setcookie('logged_user_token', $str, time() + 60 * 60 * 24 * 5, '/', self::$_cookiedomain);
+            setcookie('logged_user_id', $user_id, time() + $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+            setcookie('logged_user_token', $str, time() + $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
         }
     }
 
@@ -747,15 +758,15 @@ class Login extends SiteBill {
      * @param string $password password
      * @return boolean
      */
-    function checkLogin($login, $password, $rememberme = 0, $oauth_key = false) {
+    function checkLogin($login, $password, $rememberme = 0, $oauth_key = false)
+    {
         /* $Sitebill_User=Sitebill_User::getInstance();
           if($Sitebill_User->isLogged()){
           return true;
           } */
 
 
-
-        if ($_SESSION['user_id'] > 0/* || $_SESSION['Sitebill_User']['user_id']>0 */) {
+        if (@$_SESSION['user_id'] > 0/* || $_SESSION['Sitebill_User']['user_id']>0 */) {
             return true;
         }
         if ($this->getConfigValue('ajax_auth_form')) {
@@ -787,7 +798,7 @@ class Login extends SiteBill {
                     //$blocked_to=date('Y-m-d H:');
                 }
 
-                if ($blocked_to > time()) {
+                if (isset($blocked_to) and $blocked_to > time()) {
                     $this->riseError(Multilanguage::_('L_ACCOUNT_LOGIN_FROZEN'));
                     return false;
                 }
@@ -803,7 +814,6 @@ class Login extends SiteBill {
                 //$what[]='g.`system_name`';
                 //$what[]='g.`name` AS gname';
                 //$what[]='u.`email`';
-
 
 
                 $where[] = 'u.password=?';
@@ -823,7 +833,7 @@ class Login extends SiteBill {
 
 
                 //$query = 'SELECT '.implode(',', $what).' FROM '.DB_PREFIX.'_user u LEFT JOIN '.DB_PREFIX.'_group g USING(group_id) WHERE '.implode(' AND ', $where);
-                if ( $oauth_key ) {
+                if ($oauth_key) {
                     $query = 'SELECT user_id FROM ' . DB_PREFIX . '_oauth WHERE session_key=?';
                     $stmt = $DBC->query($query, array($oauth_key));
                 } else {
@@ -839,55 +849,6 @@ class Login extends SiteBill {
 
 
                         $this->makeUserLogged($ar['user_id'], $rememberme, $oauth_key, true);
-
-                        /*$this->saveLastAuthDate($ar['user_id']);
-
-                        if ( $oauth_key ) {
-                            $session_key = $this->GenerateSessionKey($udata['user_id'], $oauth_key);
-                        } else {
-                            $session_key = $this->GenerateSessionKey($udata['user_id']);
-                        }
-                        $this->setSessionKey($session_key);
-                        $this->setUserId($udata['user_id']);
-
-                        $this->loadUserInfo($udata['user_id']);
-
-                        $this->restoreFavorites($ar['user_id']);*/
-
-                        //$this->writeLog(array('apps_name' => 'auth', 'method' => 'login', 'message' => 'Авторизация пользователя ID: ' . $ar['user_id'], 'type' => NOTICE));
-
-
-                        //$query='INSERT INTO '.DB_PREFIX.'_'.$this->last_activity_table.' (user_id, login_date) VALUES (?,?)';
-                        //$stmt=$DBC->query($query, array($ar['user_id'], date('Y-m-d H:i:s')));
-
-                        /* $query='INSERT INTO '.DB_PREFIX.'_user_logins (user_id, login_date) VALUES (?,?)';
-                          $stmt=$DBC->query($query, array($ar['user_id'], date('Y-m-d H:i:s'))); */
-                        /*if ($rememberme == 1) {
-                            $auth_salt = '';
-                            //$auth_salt=$ar['auth_salt'];
-
-                            $sql = 'SELECT `auth_salt` FROM ' . DB_PREFIX . '_user WHERE user_id=?';
-                            $stmt = $DBC->query($sql, array($_SESSION['user_id']));
-                            if ($stmt) {
-                                $ar = $DBC->fetch($stmt);
-                                $auth_salt = $ar['auth_salt'];
-                            }
-
-                            if ($this->hard_mode) {
-                                $str = $auth_hash;
-                            } else {
-                                if ($auth_salt == '') {
-                                    $auth_salt = md5(rand(10000, 99999) . time());
-                                    $sql = 'UPDATE ' . DB_PREFIX . '_user SET `auth_salt`=? WHERE `user_id`=? ';
-                                    $stmt = $DBC->query($sql, array($auth_salt, $_SESSION['user_id']));
-                                }
-                                $str = md5($_SESSION['user_id'] . ' ' . $_SERVER['REMOTE_ADDR'] . ' ' . $_SERVER['HTTP_USER_AGENT'] . ' ' . $auth_salt);
-                            }
-                            //$str=md5($_SESSION['user_id'].' '.$_SERVER['REMOTE_ADDR'].' '.$_SERVER['HTTP_USER_AGENT']);
-
-                            setcookie('logged_user_id', $_SESSION['user_id'], time() + 60 * 60 * 24 * 5, '/', self::$_cookiedomain);
-                            setcookie('logged_user_token', $str, time() + 60 * 60 * 24 * 5, '/', self::$_cookiedomain);
-                        }*/
 
                         $query = 'DELETE FROM ' . DB_PREFIX . '_user_blocked_logins WHERE login=?';
                         $stmt = $DBC->query($query, array($login));
@@ -928,7 +889,8 @@ class Login extends SiteBill {
      * @param string $key session key
      * @return void
      */
-    function setSessionKey($key) {
+    function setSessionKey($key)
+    {
         $_SESSION['key'] = $key;
     }
 
@@ -936,7 +898,8 @@ class Login extends SiteBill {
      * Get session
      * @return string
      */
-    function getSessionKey() {
+    function getSessionKey()
+    {
         return $_SESSION['key'];
     }
 
@@ -946,7 +909,8 @@ class Login extends SiteBill {
      * @param void
      * @return int
      */
-    function getUserId() {
+    function getUserId()
+    {
         return $this->user_id;
     }
 
@@ -955,7 +919,8 @@ class Login extends SiteBill {
      * @param int $user_id user ID
      * @return void
      */
-    function setUserId($user_id) {
+    function setUserId($user_id)
+    {
         $this->user_id = $user_id;
     }
 
@@ -964,7 +929,8 @@ class Login extends SiteBill {
      * @param int $user_id user id
      * @return string
      */
-    function getUserInfo($user_id) {
+    function getUserInfo($user_id)
+    {
         $query = "select * from " . DB_PREFIX . "_user where user_id=$user_id";
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query);
@@ -982,7 +948,8 @@ class Login extends SiteBill {
      * @param void
      * @return int
      */
-    function getSessionUserId() {
+    function getSessionUserId()
+    {
         $key = (isset($_SESSION['key']) ? $_SESSION['key'] : '');
         if (isset(self::$Heaps['session']) && self::$Heaps['session']['user_id_none'] == 1) {
             return false;
@@ -1023,7 +990,8 @@ class Login extends SiteBill {
      * @param int $user_id user id
      * @return string
      */
-    function getFio($user_id) {
+    function getFio($user_id)
+    {
         $query = "select fio from " . DB_PREFIX . "_user where user_id=$user_id";
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query);
@@ -1038,7 +1006,8 @@ class Login extends SiteBill {
      * @param int $user_id user id
      * @return string
      */
-    function getLogin($user_id) {
+    function getLogin($user_id)
+    {
         $query = "select login from " . DB_PREFIX . "_user where user_id=$user_id";
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query);

@@ -43,7 +43,7 @@ class Fb_Logger extends Common_Logger {
 			
 			$url = $this->config['TOKEN_URL'];
 			
-			$params=$this->config;
+			$params = array();
 			$params['client_id']=$this->config['CLIENT_ID'];
 			$params['redirect_uri']=$this->config['REDIRECT_URI'];
 			$params['client_secret']=$this->config['CLIENT_SECRET'];
@@ -126,7 +126,7 @@ class Fb_Logger extends Common_Logger {
 		$params['client_id']=$this->config['CLIENT_ID'];
 		$params['redirect_uri']=$this->config['REDIRECT_URI'];
 		$params['response_type']='code';
-		$params['scope']='email, user_birthday';
+		$params['scope']='email';
 		
 		$href = $url . '?' . urldecode(http_build_query($params));
 		return $href;

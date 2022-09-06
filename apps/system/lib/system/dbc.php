@@ -1,10 +1,12 @@
 <?php
-if ( !class_exists('Sitebill') and !defined('INSTALL_MODE')) {
-    require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/bootstrap.php');
+if (!class_exists('Sitebill') and !defined('INSTALL_MODE')) {
+    require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/bootstrap.php');
 }
+
 use Illuminate\Database\Capsule\Manager as Capsule;
 
-class DBC {
+class DBC
+{
 
     public static $instance;
     protected static $lastError;
@@ -14,9 +16,10 @@ class DBC {
      *
      * @return DB
      */
-    public static function getInstance() {
+    public static function getInstance()
+    {
         if (!self::$instance) {
-            self::$instance = new self ( );
+            self::$instance = new self ();
         }
 
         return self::$instance;
@@ -25,30 +28,31 @@ class DBC {
     private $queries = array();
     private $pdo;
 
-    private function __construct() {
+    private function __construct()
+    {
         try {
-            $this->pdo = new PDO(DB_DSN, DB_USER, DB_PASS, array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . DB_ENCODING.', sql_mode=""'));
+            $this->pdo = new PDO(DB_DSN, DB_USER, DB_PASS, array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES " . DB_ENCODING . ', sql_mode=""'));
             $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->pdo->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
 
             $capsule = new Capsule;
 
             $capsule->addConnection([
-                'driver'    => 'mysql',
-                'host'      => DB_HOST,
-                'database'  => DB_BASE,
-                'username'  => DB_USER,
-                'password'  => DB_PASS,
-                'charset'   => 'utf8',
+                'driver' => 'mysql',
+                'host' => DB_HOST,
+                'database' => DB_BASE,
+                'username' => DB_USER,
+                'password' => DB_PASS,
+                'charset' => 'utf8',
                 'collation' => 'utf8_unicode_ci',
-                'prefix'    => DB_PREFIX.'_',
+                'prefix' => DB_PREFIX . '_',
             ]);
 
             $capsule->setAsGlobal();
 
             $capsule->bootEloquent();
 
-            if ( !defined('INSTALL_MODE') ) {
+            if (!defined('INSTALL_MODE')) {
                 SiteBill::add_pdo_debugbar_collector($this->pdo, $capsule);
             }
 
@@ -60,7 +64,7 @@ class DBC {
           fwrite($f, "1\n");
           fclose($f); */
         $white_list = array("5.9.72.112", "5.9.72.121", "194.58.111.5", "5.9.92.11", "193.124.207.3", "127.0.0.1", "159.69.119.38", "89.108.114.190");
-        if (!preg_match("/admin/", $_SERVER["REQUEST_URI"]) and ! in_array($_SERVER["SERVER_ADDR"], $white_list) and !defined('STDIN')) {
+        if (!preg_match("/admin/", $_SERVER["REQUEST_URI"]) and !in_array($_SERVER["SERVER_ADDR"], $white_list) and !defined('STDIN')) {
             try {
                 $stmt = $this->pdo->query("select * from " . DB_PREFIX . "_config where config_key = 'license_key'");
                 $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -78,17 +82,20 @@ class DBC {
         //echo 'DBC connect<br />';
     }
 
-    function get_license_message() {
+    function get_license_message()
+    {
         $rs = "Vasha licensiya zakonchilas. <a href=\"http://www.sitebill.ru/price-cms-sitebill/\">Kupit kluch</a><br><br>";
         $rs .= "Your license key has been expired. <a href=\"http://www.sitebill.ru/price-cms-sitebill/\">Buy license key</a>.";
         return $rs;
     }
 
-    function quote($string) {
+    function quote($string)
+    {
         return $this->pdo->quote($string);
     }
 
-    private function decode($key) {
+    private function decode($key)
+    {
         $sum = 0;
         $array = explode('-', $key);
         $first = hexdec($array[0]);
@@ -112,7 +119,8 @@ class DBC {
      * @param string $query
      * @return string
      */
-    public function executeSQL($query) {
+    public function executeSQL($query)
+    {
         if (defined('DEBUG_ENABLED') && DEBUG_ENABLED) {
             Debugger::appendQuery($query);
         }
@@ -136,7 +144,8 @@ class DBC {
      * @param string $query
      * @return PDOStatement
      */
-    public function querySQL($query) {
+    public function querySQL($query)
+    {
         if (defined('DEBUG_ENABLED') && DEBUG_ENABLED) {
             Debugger::appendQuery($query);
         }
@@ -161,7 +170,8 @@ class DBC {
      * @param array $params array of parameters to bind
      * @return integer
      */
-    public function execute($query, $params = array()) {
+    public function execute($query, $params = array())
+    {
         $success = false;
         $rows = 0;
         $this->exec($query, $params, $success, $rows);
@@ -181,7 +191,8 @@ class DBC {
      * @param integer $rows number of selected rows
      * @return PDOStatement | false
      */
-    public function query($query, $params = array(), &$rows = 0, &$success_mark = false) {
+    public function query($query, $params = array(), &$rows = 0, &$success_mark = false)
+    {
         $success = false;
         $stmt = $this->exec($query, $params, $success, $rows);
         $success_mark = $success;
@@ -193,7 +204,8 @@ class DBC {
      *
      * @return integer
      * */
-    public function lastInsertId() {
+    public function lastInsertId()
+    {
         return $this->pdo->lastInsertId();
     }
 
@@ -202,7 +214,8 @@ class DBC {
      *
      * @return boolean
      */
-    public function beginTransaction() {
+    public function beginTransaction()
+    {
         return $this->pdo->beginTransaction();
     }
 
@@ -211,7 +224,8 @@ class DBC {
      *
      * @return boolean
      */
-    public function commit() {
+    public function commit()
+    {
         return $this->pdo->commit();
     }
 
@@ -220,23 +234,28 @@ class DBC {
      *
      * @return boolean
      */
-    public function rollback() {
+    public function rollback()
+    {
         return $this->pdo->rollBack();
     }
 
-    public function debugQueries() {
+    public function debugQueries()
+    {
         return $this->queries;
     }
 
-    public function fetch(&$stmt) {
+    public function fetch(&$stmt)
+    {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function getLastError() {
+    public function getLastError()
+    {
         return self::$lastError;
     }
 
-    private function paramType($param) {
+    private function paramType($param)
+    {
 
         if (is_numeric($param)) {
             if (is_int($param)) {
@@ -253,13 +272,14 @@ class DBC {
         return PDO::PARAM_STR;
     }
 
-    private function exec($sql, $params = array(), &$success, &$rows) {
+    private function exec($sql, $params = array(), &$success, &$rows)
+    {
         self::$lastError = '';
         $stmt = $this->pdo->prepare($sql);
         $debug = !defined('AJAX') && defined('DEBUG_ENABLED') && DEBUG_ENABLED;
 
-        if ( is_array($params) ) {
-            for ($i = 0; $i < count($params); $i ++) {
+        if (is_array($params)) {
+            for ($i = 0; $i < count($params); $i++) {
                 $stmt->bindParam($i + 1, $params [$i], $this->paramType($params [$i]));
             }
         }
@@ -280,7 +300,7 @@ class DBC {
 
         if ($debug) {
             $ls = array();
-            $time = $finish - $start;
+            $time = @$finish - $start;
             Debugger::appendQuery($sql . " [$time sec]");
             //$trace=implode(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));
             //print_r(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS));

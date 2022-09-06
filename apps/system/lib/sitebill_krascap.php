@@ -1,6 +1,6 @@
 <?php
-if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/local/apps/system/lib/sitebill_krascap.php') ) {
-    require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/local/apps/system/lib/sitebill_krascap.php';
+if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/local/apps/system/lib/sitebill_krascap.php')) {
+    require_once SITEBILL_DOCUMENT_ROOT . '/template/frontend/local/apps/system/lib/sitebill_krascap.php';
     return;
 }
 
@@ -8,7 +8,8 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/local/apps/system/li
  * SiteBill sitebill.ru interface class
  * @author Kondin Dmitriy <kondin@etown.ru>
  */
-class SiteBill_Krascap extends SiteBill {
+class SiteBill_Krascap extends SiteBill
+{
 
     var $image_number = 5;
     public $lock_title = false;
@@ -16,17 +17,19 @@ class SiteBill_Krascap extends SiteBill {
 
     //protected $currentCommand='';
 
-    function isKernelEnable() {
+    function isKernelEnable()
+    {
         return false;
     }
 
-    function getBestAgent ( $best_checkbox_name ) {
-        require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/users/user_object_manager.php';
+    function getBestAgent($best_checkbox_name)
+    {
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/users/user_object_manager.php';
         $user_object_manager = new User_Object_Manager();
         $user_id = $user_object_manager->get_id_by_filter($best_checkbox_name, 1);
         $best_agent = $user_object_manager->load_by_id($user_id);
-        if ( $best_agent ) {
-            $this->template->assign('best_agent', $best_agent);
+        if ($best_agent) {
+            $this->template->assert('best_agent', $best_agent);
         }
     }
 
@@ -36,26 +39,29 @@ class SiteBill_Krascap extends SiteBill {
      * @param void
      * @return void
      */
-    function SiteBill_Krascap() {
+    function SiteBill_Krascap()
+    {
         if (version_compare(phpversion(), "5.3.0", "<=")) {
             echo 'Для работы CMS Sitebill необходим <b>PHP 5.3</b> и выше. Сейчас у вас работает PHP версии ' . phpversion() . '<br>  Включите, пожалуйста, новую версию PHP через панель управления хостингом или обратитесь в тех.поддержку вашего хостинга.<br>Также можете задать вопрос на <a href="http://goo.gl/f78nzw">нашем форуме</a>';
             exit;
         }
-        $this->SiteBill();
-        $this->template->assign('google_api_key', $this->getConfigValue('google_api_key'));
+        parent::__construct();
+        //parent::__construct();
+        $this->template->assert('google_api_key', $this->getConfigValue('google_api_key'));
     }
-
 
 
     /**
      * Method for final operations
      */
-    final function finalizer() {
+    final function finalizer()
+    {
         $Sitebill_Includer = Sitebill_Includer::getInstance();
         $Sitebill_Includer->fetch();
     }
 
-    function load_user_stat($user_id) {
+    function load_user_stat($user_id)
+    {
         $user_stat['advs_counter'] = 777;
         return $user_stat;
     }
@@ -66,7 +72,8 @@ class SiteBill_Krascap extends SiteBill {
      * @param int $index image index
      * @return string
      */
-    function getPreviewImage($record_id, $index) {
+    function getPreviewImage($record_id, $index)
+    {
         $DBC = DBC::getInstance();
         $query = 'SELECT img' . $index . '_preview FROM re_data WHERE id=?';
         $stmt = $DBC->query($query, array($record_id));        //echo $query;
@@ -82,14 +89,16 @@ class SiteBill_Krascap extends SiteBill {
      * @param
      * @return string
      */
-    function processGetRentForm() {
+    function processGetRentForm()
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/components/com_data_get_rent/sitebill_data_get_rent.php');
         $sitebill_data_get_rent = new Sitebill_Data_Get_Rent();
         $rs = $sitebill_data_get_rent->main();
         return $rs;
     }
 
-    function getExtendedSearchFormParams() {
+    function getExtendedSearchFormParams()
+    {
         $DBC = DBC::getInstance();
         $ar = array();
         $query = 'SELECT MAX(floor_count) AS max_floor_count, MAX(price) AS max_price FROM ' . DB_PREFIX . '_data WHERE active=1';
@@ -100,11 +109,13 @@ class SiteBill_Krascap extends SiteBill {
         return $ar;
     }
 
-    protected function FrontAction_isunderconstruct() {
+    protected function FrontAction_isunderconstruct()
+    {
 
     }
 
-    protected function FrontAction_yandexrealty_export() {
+    protected function FrontAction_yandexrealty_export()
+    {
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/yandexrealty/admin/local_admin.php')) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/yandexrealty/admin/admin.php';
             require_once SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/yandexrealty/admin/local_admin.php';
@@ -123,7 +134,8 @@ class SiteBill_Krascap extends SiteBill {
      * return array of available layout of template
      */
 
-    public function getTemplateLayouts() {
+    public function getTemplateLayouts()
+    {
         return array();
     }
 
@@ -132,7 +144,8 @@ class SiteBill_Krascap extends SiteBill {
      * @param void
      * @return string
      */
-    function main() {
+    function main()
+    {
 
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php');
@@ -171,7 +184,6 @@ class SiteBill_Krascap extends SiteBill {
                     }
                 }
             }
-
 
 
             if (!$access_allowed) {
@@ -224,28 +236,31 @@ class SiteBill_Krascap extends SiteBill {
         }
 
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $theme . '/main/main.php')) {
-            require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/apps/apps_processor_local.php');
-            require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $theme . '/main/main.php');
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/apps/apps_processor_local.php');
+            require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $theme . '/main/main.php');
             $frontend_main = new frontend_main();
-            if ( file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/bridge/bridge.xml') ) {
+            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/bridge/bridge.xml')) {
                 $kernel = new \bridge\Http\Kernel();
                 $run_kernel = false;
                 if (
                     $frontend_main->isKernelEnable() ||
-                    (
-                        preg_match('/^'.$this->getConfigValue('apps.admin3.alias').'/', $REQUESTURIPATH)
-                    )
+                    ($this->getConfigValue('apps.admin3.enable') && $this->getConfigValue('apps.admin3.alias') == $REQUESTURIPATH)
                 ) {
                     $run_kernel = true;
                 }
                 $kernel->handle(!$run_kernel);
-                if ( $run_kernel ) {
+                if ($run_kernel) {
                     exit;
                 }
             }
             return $frontend_main->main();
 
         } else {
+            if (!is_dir(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme'))) {
+                echo _e('Шаблон не найден. Каталог не существует: ' . SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme'));
+                exit;
+
+            }
             global $__site_title, $folder, $smarty;
             //echo '<br><br><br>******************************************************************<br><br><br>';
 
@@ -390,7 +405,6 @@ class SiteBill_Krascap extends SiteBill {
             }
 
 
-
             if ($this->getConfigValue('theme') != 'kgs') {
                 if (preg_match('/^\/add(\/)*/', $_SERVER['REQUEST_URI'])) {
                     require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php');
@@ -459,7 +473,6 @@ class SiteBill_Krascap extends SiteBill {
             }
 
 
-
             if (preg_match('/\/getrent\//', $_SERVER['REQUEST_URI'])) {
                 $this->template->assert('main', $this->processGetRentForm('buy'));
                 $this->template->render();
@@ -492,40 +505,40 @@ class SiteBill_Krascap extends SiteBill {
 
 
                 $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                                array(
-                                    '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                    '<a href="' . $folder . '/account/">' . Multilanguage::_('PRIVATE_ACCOUNT', 'system') . '</a>'
-                )));
+                    array(
+                        '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
+                        '<a href="' . $folder . '/account/">' . Multilanguage::_('PRIVATE_ACCOUNT', 'system') . '</a>'
+                    )));
 
                 if (preg_match('/profile/', $_SERVER['REQUEST_URI'])) {
                     require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/profile.php');
                     $profile = new User_Profile();
                     $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                                    array(
-                                        '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                        '<a href="' . $folder . '/account/">' . Multilanguage::_('PRIVATE_ACCOUNT', 'system') . '</a>',
-                                        '<a href="' . $folder . '/account/profile/">' . Multilanguage::_('PROFILE', 'system') . '</a>'
-                    )));
+                        array(
+                            '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
+                            '<a href="' . $folder . '/account/">' . Multilanguage::_('PRIVATE_ACCOUNT', 'system') . '</a>',
+                            '<a href="' . $folder . '/account/profile/">' . Multilanguage::_('PROFILE', 'system') . '</a>'
+                        )));
 
                     $this->template->assert('main', $profile->main());
                 } elseif (preg_match('/balance/', $_SERVER['REQUEST_URI'])) {
 
                     $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                                    array(
-                                        '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                        '<a href="' . $folder . '/account/">' . Multilanguage::_('PRIVATE_ACCOUNT', 'system') . '</a>',
-                                        '<a href="' . $folder . '/account/balance/">' . Multilanguage::_('BALANCE', 'system') . '</a>'
-                    )));
+                        array(
+                            '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
+                            '<a href="' . $folder . '/account/">' . Multilanguage::_('PRIVATE_ACCOUNT', 'system') . '</a>',
+                            '<a href="' . $folder . '/account/balance/">' . Multilanguage::_('BALANCE', 'system') . '</a>'
+                        )));
 
                     $this->template->assert('main', $Account->main());
                 } elseif (preg_match('/\/user/', $_SERVER['REQUEST_URI'])) {
                     if ($this->getConfigValue('apps.company.enable')) {
                         $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                                        array(
-                                            '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                            '<a href="' . $folder . '/account/">' . Multilanguage::_('PRIVATE_ACCOUNT', 'system') . '</a>',
-                                            '<a href="' . $folder . '/account/user/">' . Multilanguage::_('REALTERS', 'system') . '</a>'
-                        )));
+                            array(
+                                '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
+                                '<a href="' . $folder . '/account/">' . Multilanguage::_('PRIVATE_ACCOUNT', 'system') . '</a>',
+                                '<a href="' . $folder . '/account/user/">' . Multilanguage::_('REALTERS', 'system') . '</a>'
+                            )));
 
                         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/users/user_object_manager.php');
                         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/user/user_company_manager.php');
@@ -535,11 +548,11 @@ class SiteBill_Krascap extends SiteBill {
                 } elseif (preg_match('/data/', $_SERVER['REQUEST_URI'])) {
 
                     $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                                    array(
-                                        '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                        '<a href="' . $folder . '/account/">' . Multilanguage::_('PRIVATE_ACCOUNT', 'system') . '</a>',
-                                        '<a href="' . $folder . '/account/data/">' . Multilanguage::_('MY_ADS', 'system') . '</a>'
-                    )));
+                        array(
+                            '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
+                            '<a href="' . $folder . '/account/">' . Multilanguage::_('PRIVATE_ACCOUNT', 'system') . '</a>',
+                            '<a href="' . $folder . '/account/data/">' . Multilanguage::_('MY_ADS', 'system') . '</a>'
+                        )));
 
                     if (preg_match('/add/', $_SERVER['REQUEST_URI'])) {
                         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/sitebill_krascap_admin.php');
@@ -556,10 +569,10 @@ class SiteBill_Krascap extends SiteBill {
                     }
                 } else {
                     $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                                    array(
-                                        '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                        '<a href="' . $folder . '/account/">' . Multilanguage::_('PRIVATE_ACCOUNT', 'system') . '</a>'
-                    )));
+                        array(
+                            '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
+                            '<a href="' . $folder . '/account/">' . Multilanguage::_('PRIVATE_ACCOUNT', 'system') . '</a>'
+                        )));
 
                     $this->template->assert('main', $Account->getHome());
                 }
@@ -586,11 +599,11 @@ class SiteBill_Krascap extends SiteBill {
                 if ($possible_alias != '') {
                     $DBC = DBC::getInstance();
                     $q = 'SELECT id FROM ' . DB_PREFIX . '_data WHERE translit_alias=? LIMIT 1';
-                    $stmt = $DBC->query($q, array((string) $possible_alias));
+                    $stmt = $DBC->query($q, array((string)$possible_alias));
                     if ($stmt) {
                         $ar = $DBC->fetch($stmt);
-                        if ((int) $ar['id'] > 0) {
-                            $realty_id = (int) $ar['id'];
+                        if ((int)$ar['id'] > 0) {
+                            $realty_id = (int)$ar['id'];
                             $this->growCounter('data', 'id', $realty_id, $this->getSessionUserId());
                             //require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/frontend/view/kvartira_view.php');
                             //$kvartira_view = new Kvartira_View();
@@ -640,10 +653,10 @@ class SiteBill_Krascap extends SiteBill {
                     }
                 } else {
                     header("Status: 404 Not Found");
-                    $this->template->assign('title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
-                    $this->template->assign('meta_title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
-                    $this->template->assign('error_message', '<h1>' . Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND') . '</h1>');
-                    $this->template->assign('main_file_tpl', 'error_message.tpl');
+                    $this->template->assert('title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
+                    $this->template->assert('meta_title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
+                    $this->template->assert('error_message', '<h1>' . Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND') . '</h1>');
+                    $this->template->assert('main_file_tpl', 'error_message.tpl');
                 }
             } elseif (1 == $this->getConfigValue('apps.seo.level_enable') && !preg_match($realty_view_regexp, $_SERVER['REQUEST_URI'])) {
                 $realty_id = $this->getIDfromURI($_SERVER['REQUEST_URI']);
@@ -661,10 +674,10 @@ class SiteBill_Krascap extends SiteBill {
                 $this->template->assert('main', $kvartira_view->main($realty_id));
             } else {
                 header("Status: 404 Not Found");
-                $this->template->assign('title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
-                $this->template->assign('meta_title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
-                $this->template->assign('error_message', '<h1>' . Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND') . '</h1>');
-                $this->template->assign('main_file_tpl', 'error_message.tpl');
+                $this->template->assert('title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
+                $this->template->assert('meta_title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
+                $this->template->assert('error_message', '<h1>' . Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND') . '</h1>');
+                $this->template->assert('main_file_tpl', 'error_message.tpl');
             }
             /* $realty_id = $this->getIDfromURI($_SERVER['REQUEST_URI']);
               $this->growCounter('data', 'id', $realty_id, $this->getSessionUserId());
@@ -693,7 +706,8 @@ class SiteBill_Krascap extends SiteBill {
      * @param array $items
      * @return string
      */
-    function get_breadcrumbs($items) {
+    function get_breadcrumbs($items)
+    {
         if (count($items) > 0) {
             return implode(' / ', $items);
         }
@@ -705,7 +719,8 @@ class SiteBill_Krascap extends SiteBill {
      * @param string $uri uri
      * @return int
      */
-    function getIDfromURI($uri) {
+    function getIDfromURI($uri)
+    {
         if (trim($this->getConfigValue('apps.seo.realty_alias')) != '') {
             $realty_alias = trim($this->getConfigValue('apps.seo.realty_alias'));
         } else {
@@ -723,7 +738,8 @@ class SiteBill_Krascap extends SiteBill {
      * @param string $key key
      * @return string
      */
-    function processAdvancedForm() {
+    function processAdvancedForm()
+    {
         if ($_REQUEST['do'] == 'add_done') {
             $data = $this->initDataFromRequest();
             if ($this->checkAdvData($data)) {
@@ -744,7 +760,8 @@ class SiteBill_Krascap extends SiteBill {
      * @param array $data data
      * @return boolean
      */
-    function checkAdvData($data) {
+    function checkAdvData($data)
+    {
         if ($this->getRequestValue('district_id') == '' and $this->getRequestValue('new_district') == '') {
             $this->riseError(Multilanguage::_('L_ERROR_DISTRICT_NOT_SPECIFIED'));
             return false;
@@ -761,7 +778,8 @@ class SiteBill_Krascap extends SiteBill {
      * @param void
      * @return array
      */
-    function initDataFromRequest() {
+    function initDataFromRequest()
+    {
         $data_array['type_id'] = $this->getRequestValue('type_id');
         $data_array['topic_id'] = $this->getRequestValue('topic_id');
 
@@ -845,7 +863,8 @@ class SiteBill_Krascap extends SiteBill {
         return $data_array;
     }
 
-    function topicUrlFind($request_uri) {
+    function topicUrlFind($request_uri)
+    {
 
         $url_parts = parse_url(urldecode($request_uri));
 
@@ -903,7 +922,8 @@ class SiteBill_Krascap extends SiteBill {
         }
     }
 
-    function cityTopicUrlFind($request_uri) {
+    function cityTopicUrlFind($request_uri)
+    {
         $request_uri = urldecode($request_uri);
 
         $cid = NULL;
@@ -953,10 +973,11 @@ class SiteBill_Krascap extends SiteBill {
         return FALSE;
     }
 
-    function isTopicExists($topic_id) {
+    function isTopicExists($topic_id)
+    {
         $DBC = DBC::getInstance();
         $query = 'SELECT COUNT(id) AS cnt FROM ' . DB_PREFIX . '_topic WHERE id=?';
-        $stmt = $DBC->query($query, array((int) $topic_id));
+        $stmt = $DBC->query($query, array((int)$topic_id));
 
         if ($stmt) {
             $ar = $DBC->fetch($stmt);
@@ -967,7 +988,8 @@ class SiteBill_Krascap extends SiteBill {
         return FALSE;
     }
 
-    function grid_adv_favorites() {
+    function grid_adv_favorites()
+    {
 
         //$grid_constructor = $this->_grid_constructor;
         $grid_constructor = $this->_getGridConstructor();
@@ -992,27 +1014,26 @@ class SiteBill_Krascap extends SiteBill {
         }
 
 
-
-
         /* $params['price'] = $this->getRequestValue('price');
-          $this->template->assign('price', $params['price']);
+          $this->template->assert('price', $params['price']);
 
           $params['price_min'] = $this->getRequestValue('price_min');
-          $this->template->assign('price_min', $params['price_min']);
+          $this->template->assert('price_min', $params['price_min']);
 
           $params['house_number'] = $this->getRequestValue('house_number');
-          $this->template->assign('house_number', $params['house_number']); */
+          $this->template->assert('house_number', $params['house_number']); */
 
         $params['onlyspecial'] = $this->getRequestValue('onlyspecial');
-        $this->template->assign('onlyspecial', $params['onlyspecial']);
+        $this->template->assert('onlyspecial', $params['onlyspecial']);
 
         $grid_constructor->main($params);
-        $this->template->assert('breadcrumbs', $this->get_breadcrumbs(array('<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>', _e('Избранное'))));
+        $this->template->assert('breadcrumbs', $this->get_breadcrumbs(array('<a href="' . $this->createUrlTpl('') . '">' . Multilanguage::_('L_HOME') . '</a>', _e('Избранное'))));
 
-        return $rs;
+        return;
     }
 
-    function _detectUrlParams($server_request_uri) {
+    function _detectUrlParams($server_request_uri)
+    {
 
         $server_request_uri = urldecode($server_request_uri);
         $server_request_uri = parse_url($server_request_uri, PHP_URL_PATH);
@@ -1024,7 +1045,7 @@ class SiteBill_Krascap extends SiteBill {
 
         if (preg_match('/topic(\d*).html/', $server_request_uri, $matches) && $this->isTopicExists($matches[1])) {
             //$this->setRequestValue('topic_id', $matches[1]);
-            $topic_id = (int) $matches[1];
+            $topic_id = (int)$matches[1];
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
             $Structure = new Structure_Manager();
             $urls = $Structure->loadCategoriesUrls();
@@ -1078,11 +1099,13 @@ class SiteBill_Krascap extends SiteBill {
         );
     }
 
-    protected function grid_data() {
+    protected function grid_data()
+    {
         $REQUESTURIPATH = Sitebill::getClearRequestURI();
     }
 
-    protected function FrontAction_grid_find($REQUESTURIPATH) {
+    protected function FrontAction_grid_find($REQUESTURIPATH)
+    {
         $grid_constructor = $this->_getGridConstructor();
         if (Multilanguage::is_set('LT_FIND_URL_TITLE', '_template')) {
             $title = Multilanguage::_('LT_FIND_URL_TITLE', '_template');
@@ -1090,8 +1113,8 @@ class SiteBill_Krascap extends SiteBill {
             $title = Multilanguage::_('FIND_URL_TITLE', 'system');
         }
 
-        $this->template->assign('title', $title);
-        $this->template->assign('meta_title', $title);
+        $this->template->assert('title', $title);
+        $this->template->assert('meta_title', $title);
         $this->setRequestValue('find_url_catched', 1);
 
         $params_r = $this->gatherRequestParams();
@@ -1104,7 +1127,8 @@ class SiteBill_Krascap extends SiteBill {
         $grid_constructor->main($params);
     }
 
-    protected function FrontAction_grid_country($REQUESTURIPATH, $country_info) {
+    protected function FrontAction_grid_country($REQUESTURIPATH, $country_info)
+    {
 
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
             $curlang = $this->getCurrentLang();
@@ -1133,11 +1157,11 @@ class SiteBill_Krascap extends SiteBill {
         }
 
         if (intval($this->getRequestValue('page')) > 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-            if (0 == (int) $this->getConfigValue('add_pagenumber_title_place') && $title != '') {
+            if (0 == (int)$this->getConfigValue('add_pagenumber_title_place') && $title != '') {
                 $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-            } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
+            } elseif (1 == (int)$this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
                 $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-            } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
+            } elseif (2 == (int)$this->getConfigValue('add_pagenumber_title_place')) {
                 if ($title != '') {
                     $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
                 }
@@ -1147,27 +1171,27 @@ class SiteBill_Krascap extends SiteBill {
             }
         }
 
-        $this->template->assign('title', $title);
-        $this->template->assign('meta_title', $meta_title);
+        $this->template->assert('title', $title);
+        $this->template->assert('meta_title', $meta_title);
 
         if (isset($country_info['description' . $lang_postfix]) && $country_info['description' . $lang_postfix] != '') {
-            $this->template->assign('description', $country_info['description' . $lang_postfix]);
+            $this->template->assert('description', $country_info['description' . $lang_postfix]);
         } elseif ($country_info['description'] != '') {
-            $this->template->assign('description', $country_info['description']);
+            $this->template->assert('description', $country_info['description']);
         }
         if (isset($country_info['meta_description' . $lang_postfix]) && $country_info['meta_description' . $lang_postfix] != '') {
-            $this->template->assign('meta_description', $country_info['meta_description' . $lang_postfix]);
+            $this->template->assert('meta_description', $country_info['meta_description' . $lang_postfix]);
         } elseif ($country_info['meta_description'] != '') {
-            $this->template->assign('meta_description', $country_info['meta_description']);
+            $this->template->assert('meta_description', $country_info['meta_description']);
         } else {
-            $this->template->assign('meta_description', $this->getConfigValue('meta_description_main'));
+            $this->template->assert('meta_description', $this->getConfigValue('meta_description_main'));
         }
         if (isset($country_info['meta_keywords' . $lang_postfix]) && $country_info['meta_keywords' . $lang_postfix] != '') {
-            $this->template->assign('meta_keywords', $country_info['meta_keywords' . $lang_postfix]);
+            $this->template->assert('meta_keywords', $country_info['meta_keywords' . $lang_postfix]);
         } elseif ($country_info['meta_keywords'] != '') {
-            $this->template->assign('meta_keywords', $country_info['meta_keywords']);
+            $this->template->assert('meta_keywords', $country_info['meta_keywords']);
         } else {
-            $this->template->assign('meta_keywords', $this->getConfigValue('meta_keywords_main'));
+            $this->template->assert('meta_keywords', $this->getConfigValue('meta_keywords_main'));
         }
 
         $grid_constructor = $this->_getGridConstructor();
@@ -1178,7 +1202,8 @@ class SiteBill_Krascap extends SiteBill {
         $grid_constructor->main($params);
     }
 
-    protected function FrontAction_grid_region($REQUESTURIPATH, $region_info) {
+    protected function FrontAction_grid_region($REQUESTURIPATH, $region_info)
+    {
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
             $curlang = $this->getCurrentLang();
             $lang_postfix = '_' . $curlang;
@@ -1201,11 +1226,11 @@ class SiteBill_Krascap extends SiteBill {
         }
 
         if (intval($this->getRequestValue('page')) > 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-            if (0 == (int) $this->getConfigValue('add_pagenumber_title_place') && $title != '') {
+            if (0 == (int)$this->getConfigValue('add_pagenumber_title_place') && $title != '') {
                 $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-            } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
+            } elseif (1 == (int)$this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
                 $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-            } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
+            } elseif (2 == (int)$this->getConfigValue('add_pagenumber_title_place')) {
                 if ($title != '') {
                     $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
                 }
@@ -1215,21 +1240,21 @@ class SiteBill_Krascap extends SiteBill {
             }
         }
 
-        $this->template->assign('title', $title);
-        $this->template->assign('meta_title', $meta_title);
+        $this->template->assert('title', $title);
+        $this->template->assert('meta_title', $meta_title);
 
         if ($region_info['description'] != '') {
-            $this->template->assign('description', $region_info['description']);
+            $this->template->assert('description', $region_info['description']);
         }
         if ($region_info['meta_description'] != '') {
-            $this->template->assign('meta_description', $region_info['meta_description']);
+            $this->template->assert('meta_description', $region_info['meta_description']);
         } else {
-            $this->template->assign('meta_description', $this->getConfigValue('meta_description_main'));
+            $this->template->assert('meta_description', $this->getConfigValue('meta_description_main'));
         }
         if ($region_info['meta_keywords'] != '') {
-            $this->template->assign('meta_keywords', $region_info['meta_keywords']);
+            $this->template->assert('meta_keywords', $region_info['meta_keywords']);
         } else {
-            $this->template->assign('meta_keywords', $this->getConfigValue('meta_keywords_main'));
+            $this->template->assert('meta_keywords', $this->getConfigValue('meta_keywords_main'));
         }
 
         $grid_constructor = $this->_getGridConstructor();
@@ -1240,15 +1265,16 @@ class SiteBill_Krascap extends SiteBill {
         $grid_constructor->main($params);
     }
 
-    protected function FrontAction_grid_complex($REQUESTURIPATH, $complex_info) {
-        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/complex/admin/admin.php');
+    protected function FrontAction_grid_complex($REQUESTURIPATH, $complex_info)
+    {
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/complex/admin/admin.php');
         $complex_admin = new complex_admin();
         $data_model = new Data_Model();
         $complex_data = $complex_admin->data_model;
-        $complex_data = $data_model->init_model_data_from_db('complex', 'complex_id', (int) $complex_info['complex_id'], $complex_data['complex'], true);
-        $complex_data['image']['image_array'] = $this->get_image_array('complex', 'complex', 'complex_id', (int) $ar['complex_id']);
+        $complex_data = $data_model->init_model_data_from_db('complex', 'complex_id', (int)$complex_info['complex_id'], $complex_data['complex'], true);
+        $complex_data['image']['image_array'] = $this->get_image_array('complex', 'complex', 'complex_id', (int)$ar['complex_id']);
 
-        $this->template->assign('complex_data', $complex_data);
+        $this->template->assert('complex_data', $complex_data);
 
         if ($complex_info['meta_title'] != '') {
             $title = $complex_info['name'];
@@ -1258,11 +1284,11 @@ class SiteBill_Krascap extends SiteBill {
         }
 
         if (intval($this->getRequestValue('page')) > 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-            if (0 == (int) $this->getConfigValue('add_pagenumber_title_place') && $title != '') {
+            if (0 == (int)$this->getConfigValue('add_pagenumber_title_place') && $title != '') {
                 $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-            } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
+            } elseif (1 == (int)$this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
                 $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-            } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
+            } elseif (2 == (int)$this->getConfigValue('add_pagenumber_title_place')) {
                 if ($title != '') {
                     $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
                 }
@@ -1272,23 +1298,22 @@ class SiteBill_Krascap extends SiteBill {
             }
         }
 
-        $this->template->assign('title', $title);
-        $this->template->assign('meta_title', $meta_title);
+        $this->template->assert('title', $title);
+        $this->template->assert('meta_title', $meta_title);
 
         if ($complex_info['description'] != '') {
-            $this->template->assign('description', $complex_info['description']);
+            $this->template->assert('description', $complex_info['description']);
         }
         if ($complex_info['meta_description'] != '') {
-            $this->template->assign('meta_description', $complex_info['meta_description']);
+            $this->template->assert('meta_description', $complex_info['meta_description']);
         } else {
-            $this->template->assign('meta_description', $this->getConfigValue('meta_description_main'));
+            $this->template->assert('meta_description', $this->getConfigValue('meta_description_main'));
         }
         if ($complex_info['meta_keywords'] != '') {
-            $this->template->assign('meta_keywords', $complex_info['meta_keywords']);
+            $this->template->assert('meta_keywords', $complex_info['meta_keywords']);
         } else {
-            $this->template->assign('meta_keywords', $this->getConfigValue('meta_keywords_main'));
+            $this->template->assert('meta_keywords', $this->getConfigValue('meta_keywords_main'));
         }
-
 
 
         //$this->setRequestValue('complex_view', $REQUESTURIPATH);
@@ -1296,7 +1321,7 @@ class SiteBill_Krascap extends SiteBill {
         $grid_constructor = $this->_getGridConstructor();
 
         $params = $this->gatherRequestParams();
-        $this->setRequestValue('complex_id', (int) $complex_info['complex_id']);
+        $this->setRequestValue('complex_id', (int)$complex_info['complex_id']);
         $params['complex_id'] = intval($complex_info['complex_id']);
         $grid_constructor->main($params);
 
@@ -1304,8 +1329,9 @@ class SiteBill_Krascap extends SiteBill {
         //$this->setRequestValue('city_view', $REQUESTURIPATH);
     }
 
-    protected function FrontAction_grid_favorites($REQUESTURIPATH) {
-        $this->template->assign('title', 'Избранное');
+    protected function FrontAction_grid_favorites($REQUESTURIPATH)
+    {
+        $this->template->assert('title', 'Избранное');
         $grid_constructor = $this->_getGridConstructor();
         $params['page'] = $this->getRequestValue('page');
         $params['asc'] = $this->getRequestValue('asc');
@@ -1318,7 +1344,8 @@ class SiteBill_Krascap extends SiteBill {
         $grid_constructor->main($params);
     }
 
-    protected function FrontAction_grid_city($REQUESTURIPATH, $city_info) {
+    protected function FrontAction_grid_city($REQUESTURIPATH, $city_info)
+    {
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
             $curlang = $this->getCurrentLang();
             $lang_postfix = '_' . $curlang;
@@ -1345,11 +1372,11 @@ class SiteBill_Krascap extends SiteBill {
         }
 
         if (intval($this->getRequestValue('page')) > 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-            if (0 == (int) $this->getConfigValue('add_pagenumber_title_place') && $title != '') {
+            if (0 == (int)$this->getConfigValue('add_pagenumber_title_place') && $title != '') {
                 $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-            } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
+            } elseif (1 == (int)$this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
                 $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-            } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
+            } elseif (2 == (int)$this->getConfigValue('add_pagenumber_title_place')) {
                 if ($title != '') {
                     $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
                 }
@@ -1359,27 +1386,27 @@ class SiteBill_Krascap extends SiteBill {
             }
         }
 
-        $this->template->assign('title', $title);
-        $this->template->assign('meta_title', $meta_title);
+        $this->template->assert('title', $title);
+        $this->template->assert('meta_title', $meta_title);
 
         if (isset($city_info['description' . $lang_postfix]) && $city_info['description' . $lang_postfix] != '') {
-            $this->template->assign('description', $city_info['description' . $lang_postfix]);
+            $this->template->assert('description', $city_info['description' . $lang_postfix]);
         } elseif ($city_info['description'] != '') {
-            $this->template->assign('description', $city_info['description']);
+            $this->template->assert('description', $city_info['description']);
         }
         if (isset($city_info['meta_description' . $lang_postfix]) && $city_info['meta_description' . $lang_postfix] != '') {
-            $this->template->assign('meta_description', $city_info['meta_description' . $lang_postfix]);
+            $this->template->assert('meta_description', $city_info['meta_description' . $lang_postfix]);
         } elseif ($city_info['meta_description'] != '') {
-            $this->template->assign('meta_description', $city_info['meta_description']);
+            $this->template->assert('meta_description', $city_info['meta_description']);
         } else {
-            $this->template->assign('meta_description', $this->getConfigValue('meta_description_main'));
+            $this->template->assert('meta_description', $this->getConfigValue('meta_description_main'));
         }
         if (isset($city_info['meta_keywords' . $lang_postfix]) && $city_info['meta_keywords' . $lang_postfix] != '') {
-            $this->template->assign('meta_keywords', $city_info['meta_keywords' . $lang_postfix]);
+            $this->template->assert('meta_keywords', $city_info['meta_keywords' . $lang_postfix]);
         } elseif ($city_info['meta_keywords'] != '') {
-            $this->template->assign('meta_keywords', $city_info['meta_keywords']);
+            $this->template->assert('meta_keywords', $city_info['meta_keywords']);
         } else {
-            $this->template->assign('meta_keywords', $this->getConfigValue('meta_keywords_main'));
+            $this->template->assert('meta_keywords', $this->getConfigValue('meta_keywords_main'));
         }
 
         $grid_constructor = $this->_getGridConstructor();
@@ -1389,25 +1416,28 @@ class SiteBill_Krascap extends SiteBill {
         $params['city_id'] = intval($city_info['city_id']);
         $grid_constructor->main($params);
 
-        $this->setRequestValue('city_id', (int) $city_info['city_id']);
+        $this->setRequestValue('city_id', (int)$city_info['city_id']);
         $this->setRequestValue('city_view', $REQUESTURIPATH);
     }
 
-    protected function isHomePage($REQUESTURIPATH) {
+    protected function isHomePage($REQUESTURIPATH)
+    {
         if ($REQUESTURIPATH == '' && strtoupper($_SERVER['REQUEST_METHOD']) == 'GET' && empty($_GET)) {
             return true;
         }
         return false;
     }
 
-    protected function FrontAction_index() {
+    protected function FrontAction_index()
+    {
         /* $grid_constructor=$this->_getGridConstructor();
           $params=$this->gatherRequestParams();
           $params['city_id']=1;
           $grid_constructor->main($params); */
     }
 
-    protected function FrontAction_add($REQUESTURIPATH) {
+    protected function FrontAction_add($REQUESTURIPATH)
+    {
         if ($_SESSION['user_id'] > 0) {
             header('location: ' . SITEBILL_MAIN_URL . '/account/data/?do=new');
             exit();
@@ -1418,7 +1448,8 @@ class SiteBill_Krascap extends SiteBill {
         $this->template->assert('main', $user_add->main());
     }
 
-    protected function FrontAction_account($REQUESTURIPATH) {
+    protected function FrontAction_account($REQUESTURIPATH)
+    {
 
         $this->template->assert('right_column', '');
         $this->template->assert('is_account', '1');
@@ -1450,41 +1481,41 @@ class SiteBill_Krascap extends SiteBill {
 
 
         $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                        array(
-                            '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                            '<a href="' . $folder . '/account/">Личный кабинет</a>'
-        )));
+            array(
+                '<a href="' . $this->createUrlTpl('') . '">' . Multilanguage::_('L_HOME') . '</a>',
+                '<a href="' . $this->createUrlTpl('account') . '">Личный кабинет</a>'
+            )));
 
         if (preg_match('/^account\/profile/', $REQUESTURIPATH)) {
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/profile.php');
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/profile_using_model.php');
             $profile = new User_Profile_Model();
             $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                            array(
-                                '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                '<a href="' . $folder . '/account/">Личный кабинет</a>',
-                                '<a href="' . $folder . '/account/profile/">Профиль</a>'
-            )));
+                array(
+                    '<a href="' . $this->createUrlTpl('') . '">' . Multilanguage::_('L_HOME') . '</a>',
+                    '<a href="' . $this->createUrlTpl('account') . '">Личный кабинет</a>',
+                    '<a href="' . $this->createUrlTpl('account/profile') . '">Профиль</a>'
+                )));
 
             $this->template->assert('main', $profile->main());
         } elseif (preg_match('/^account\/balance/', $REQUESTURIPATH)) {
 
             $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                            array(
-                                '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                '<a href="' . $folder . '/account/">Личный кабинет</a>',
-                                '<a href="' . $folder . '/account/balance/">Баланс</a>'
-            )));
+                array(
+                    '<a href="' . $this->createUrlTpl('') . '">' . Multilanguage::_('L_HOME') . '</a>',
+                    '<a href="' . $this->createUrlTpl('account') . '">Личный кабинет</a>',
+                    '<a href="' . $this->createUrlTpl('account/balance') . '">Баланс</a>'
+                )));
 
             $this->template->assert('main', $Account->main());
         } elseif (preg_match('/^account\/user/', $REQUESTURIPATH)) {
             if ($this->getConfigValue('apps.company.enable')) {
                 $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                                array(
-                                    '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                    '<a href="' . $folder . '/account/">Личный кабинет</a>',
-                                    '<a href="' . $folder . '/account/user/">Риелторы</a>'
-                )));
+                    array(
+                        '<a href="' . $this->createUrlTpl('') . '">' . Multilanguage::_('L_HOME') . '</a>',
+                        '<a href="' . $this->createUrlTpl('account') . '">Личный кабинет</a>',
+                        '<a href="' . $this->createUrlTpl('account/user') . '">Риелторы</a>'
+                    )));
 
                 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/users/user_object_manager.php');
                 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/user/user_company_manager.php');
@@ -1494,11 +1525,11 @@ class SiteBill_Krascap extends SiteBill {
         } else {
 
             $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                            array(
-                                '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                '<a href="' . $folder . '/account/">Личный кабинет</a>',
-                                '<a href="' . $folder . '/account/data/">Мои объявления</a>'
-            )));
+                array(
+                    '<a href="' . $this->createUrlTpl('') . '">' . Multilanguage::_('L_HOME') . '</a>',
+                    '<a href="' . $this->createUrlTpl('account') . '">Личный кабинет</a>',
+                    '<a href="' . $this->createUrlTpl('account/data') . '">Мои объявления</a>'
+                )));
 
             if (preg_match('/add/', $REQUESTURIPATH)) {
                 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/sitebill_krascap_admin.php');
@@ -1518,7 +1549,8 @@ class SiteBill_Krascap extends SiteBill {
         $has_result = true;
     }
 
-    protected function FrontAction_login($REQUESTURIPATH) {
+    protected function FrontAction_login($REQUESTURIPATH)
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/login.php');
         $Login = new Login();
         $this->template->assert('main', $Login->main());
@@ -1527,7 +1559,8 @@ class SiteBill_Krascap extends SiteBill {
         }
     }
 
-    protected function FrontAction_register($REQUESTURIPATH) {
+    protected function FrontAction_register($REQUESTURIPATH)
+    {
         if (!$this->getConfigValue('allow_register_account')) {
             $this->template->assert('main', 'Функция регистрации отключена администратором');
         } else {
@@ -1539,7 +1572,8 @@ class SiteBill_Krascap extends SiteBill {
         }
     }
 
-    protected function FrontAction_remind($REQUESTURIPATH) {
+    protected function FrontAction_remind($REQUESTURIPATH)
+    {
         if (!$this->getConfigValue('allow_remind_password')) {
             $this->template->assert('main', 'Функция напоминания пароля отключена администратором');
         } else {
@@ -1550,7 +1584,8 @@ class SiteBill_Krascap extends SiteBill {
         }
     }
 
-    protected function FrontAction_ipotekaorder($REQUESTURIPATH) {
+    protected function FrontAction_ipotekaorder($REQUESTURIPATH)
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php');
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/form/ipoteka.php');
         //require_once(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/main/form/local_ipoteka.php');
@@ -1559,26 +1594,30 @@ class SiteBill_Krascap extends SiteBill {
         $this->template->assert('main', $ipoteka_order->main());
     }
 
-    protected function FrontAction_contactus($REQUESTURIPATH) {
+    protected function FrontAction_contactus($REQUESTURIPATH)
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php');
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/form/contactus.php');
         $contactus_form = new contactus_Form();
         $this->template->assert('main', $contactus_form->main());
     }
 
-    protected function FrontAction_logout($REQUESTURIPATH) {
+    protected function FrontAction_logout($REQUESTURIPATH)
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/logout.php');
         $Logout = new Logout;
         $Logout->main();
     }
 
-    protected function FrontAction_grid_common() {
+    protected function FrontAction_grid_common()
+    {
         $grid_constructor = $this->_getGridConstructor();
         $params = $this->gatherRequestParams();
         $grid_constructor->main($params);
     }
 
-    protected function FrontAction_grid_user($REQUESTURIPATH, $info = array()) {
+    protected function FrontAction_grid_user($REQUESTURIPATH, $info = array())
+    {
 
         $user_id = intval($info['user_id']);
         if ($user_id == 0) {
@@ -1587,7 +1626,7 @@ class SiteBill_Krascap extends SiteBill {
             $fio = '';
             $DBC = DBC::getInstance();
             $query = 'SELECT fio FROM ' . DB_PREFIX . '_user WHERE user_id=? LIMIT 1';
-            $stmt = $DBC->query($query, array((int) $user_id));
+            $stmt = $DBC->query($query, array((int)$user_id));
             if ($stmt) {
                 $ar = $DBC->fetch($stmt);
                 $fio = $ar['fio'];
@@ -1598,11 +1637,11 @@ class SiteBill_Krascap extends SiteBill {
             $meta_title = $title;
 
             if (intval($this->getRequestValue('page')) > 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-                if (0 == (int) $this->getConfigValue('add_pagenumber_title_place') && $title != '') {
+                if (0 == (int)$this->getConfigValue('add_pagenumber_title_place') && $title != '') {
                     $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-                } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
+                } elseif (1 == (int)$this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
                     $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-                } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
+                } elseif (2 == (int)$this->getConfigValue('add_pagenumber_title_place')) {
                     if ($title != '') {
                         $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
                     }
@@ -1612,17 +1651,18 @@ class SiteBill_Krascap extends SiteBill {
                 }
             }
 
-            $this->template->assign('title', $title);
-            $this->template->assign('meta_title', $meta_title);
+            $this->template->assert('title', $title);
+            $this->template->assert('meta_title', $meta_title);
 
             $grid_constructor = $this->_getGridConstructor();
             $params = $this->gatherRequestParams();
-            $params['user_id'] = $matches[1];
+            $params['user_id'] = $user_id;
             $grid_constructor->main($params);
         }
     }
 
-    protected function FrontAction_myfavorites($REQUESTURIPATH, $info = array()) {
+    protected function FrontAction_myfavorites($REQUESTURIPATH, $info = array())
+    {
         //$favorites=$_SESSION['favorites'];
         if (count($_SESSION['favorites']) != 0) {
             $grid_constructor = $this->_getGridConstructor();
@@ -1632,20 +1672,22 @@ class SiteBill_Krascap extends SiteBill {
         }
     }
 
-    protected function FrontAction_404($REQUESTURIPATH) {
+    protected function FrontAction_404($REQUESTURIPATH)
+    {
         $sapi_name = php_sapi_name();
         if ($sapi_name == 'cgi' || $sapi_name == 'cgi-fcgi') {
             header('Status: 404 Not Found');
         } else {
             header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
         }
-        $this->template->assign('title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
-        $this->template->assign('meta_title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
-        $this->template->assign('error_message', '<h1>' . Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND') . '</h1>');
-        $this->template->assign('main_file_tpl', 'error_message.tpl');
+        $this->template->assert('title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
+        $this->template->assert('meta_title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
+        $this->template->assert('error_message', '<h1>' . Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND') . '</h1>');
+        $this->template->assert('main_file_tpl', 'error_message.tpl');
     }
 
-    protected function FrontAction_grid_topic($REQUESTURIPATH, $topic_info) {
+    protected function FrontAction_grid_topic($REQUESTURIPATH, $topic_info)
+    {
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
             $curlang = $this->getCurrentLang();
             $lang_postfix = '_' . $curlang;
@@ -1657,7 +1699,7 @@ class SiteBill_Krascap extends SiteBill {
 
         if (isset($topic_info['meta_title' . $lang_postfix]) && $topic_info['meta_title' . $lang_postfix] != '') {
             $meta_title = $topic_info['meta_title' . $lang_postfix];
-        } elseif ($topic['meta_title'] != '') {
+        } elseif ($topic_info['meta_title'] != '') {
             $meta_title = $topic_info['meta_title'];
         } else {
             $meta_title = '';
@@ -1680,27 +1722,27 @@ class SiteBill_Krascap extends SiteBill {
         }
 
         if (isset($topic_info['description' . $lang_postfix]) && $topic_info['description' . $lang_postfix] != '') {
-            $this->template->assign('description', $topic_info['description' . $lang_postfix]);
+            $this->template->assert('description', $topic_info['description' . $lang_postfix]);
         } elseif ($topic_info['description'] != '') {
-            $this->template->assign('description', $topic_info['description']);
+            $this->template->assert('description', $topic_info['description']);
         }
         if (isset($topic_info['meta_description' . $lang_postfix]) && $topic_info['meta_description' . $lang_postfix] != '') {
-            $this->template->assign('meta_description', $topic_info['meta_description' . $lang_postfix]);
+            $this->template->assert('meta_description', $topic_info['meta_description' . $lang_postfix]);
         } elseif ($topic_info['meta_description'] != '') {
-            $this->template->assign('meta_description', $topic_info['meta_description']);
+            $this->template->assert('meta_description', $topic_info['meta_description']);
         }
         if (isset($topic_info['meta_keywords' . $lang_postfix]) && $topic_info['meta_keywords' . $lang_postfix] != '') {
-            $this->template->assign('meta_keywords', $topic_info['meta_keywords' . $lang_postfix]);
+            $this->template->assert('meta_keywords', $topic_info['meta_keywords' . $lang_postfix]);
         } elseif ($topic_info['meta_keywords'] != '') {
-            $this->template->assign('meta_keywords', $topic_info['meta_keywords']);
+            $this->template->assert('meta_keywords', $topic_info['meta_keywords']);
         }
 
         if (intval($this->getRequestValue('page')) > 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-            if (0 == (int) $this->getConfigValue('add_pagenumber_title_place') && $title != '') {
+            if (0 == (int)$this->getConfigValue('add_pagenumber_title_place') && $title != '') {
                 $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-            } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
+            } elseif (1 == (int)$this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
                 $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-            } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
+            } elseif (2 == (int)$this->getConfigValue('add_pagenumber_title_place')) {
                 if ($title != '') {
                     $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
                 }
@@ -1710,8 +1752,8 @@ class SiteBill_Krascap extends SiteBill {
             }
         }
 
-        $this->template->assign('title', $title);
-        $this->template->assign('meta_title', $meta_title);
+        $this->template->assert('title', $title);
+        $this->template->assert('meta_title', $meta_title);
 
         $grid_constructor = $this->_getGridConstructor();
 
@@ -1721,7 +1763,8 @@ class SiteBill_Krascap extends SiteBill {
         $grid_constructor->main($params);
     }
 
-    protected function FrontAction_grid_citytopic($REQUESTURIPATH, $info) {
+    protected function FrontAction_grid_citytopic($REQUESTURIPATH, $info)
+    {
 
         $topic_info = $this->getTopicFullInfo($info[1]);
         $gorod_name = $info[2];
@@ -1737,7 +1780,7 @@ class SiteBill_Krascap extends SiteBill {
 
         if (isset($topic_info['meta_title' . $lang_postfix]) && $topic_info['meta_title' . $lang_postfix] != '') {
             $meta_title = $topic_info['meta_title' . $lang_postfix];
-        } elseif ($topic['meta_title'] != '') {
+        } elseif ($topic_info['meta_title'] != '') {
             $meta_title = $topic_info['meta_title'];
         } else {
             $meta_title = '';
@@ -1760,21 +1803,20 @@ class SiteBill_Krascap extends SiteBill {
         }
 
 
-
         if (isset($topic_info['description' . $lang_postfix]) && $topic_info['description' . $lang_postfix] != '') {
-            $this->template->assign('description', $topic_info['description' . $lang_postfix]);
+            $this->template->assert('description', $topic_info['description' . $lang_postfix]);
         } elseif ($topic_info['description'] != '') {
-            $this->template->assign('description', $topic_info['description']);
+            $this->template->assert('description', $topic_info['description']);
         }
         if (isset($topic_info['meta_description' . $lang_postfix]) && $topic_info['meta_description' . $lang_postfix] != '') {
-            $this->template->assign('meta_description', $topic_info['meta_description' . $lang_postfix]);
+            $this->template->assert('meta_description', $topic_info['meta_description' . $lang_postfix]);
         } elseif ($topic_info['meta_description'] != '') {
-            $this->template->assign('meta_description', $topic_info['meta_description']);
+            $this->template->assert('meta_description', $topic_info['meta_description']);
         }
         if (isset($topic_info['meta_keywords' . $lang_postfix]) && $topic_info['meta_keywords' . $lang_postfix] != '') {
-            $this->template->assign('meta_keywords', $topic_info['meta_keywords' . $lang_postfix]);
+            $this->template->assert('meta_keywords', $topic_info['meta_keywords' . $lang_postfix]);
         } elseif ($topic_info['meta_keywords'] != '') {
-            $this->template->assign('meta_keywords', $topic_info['meta_keywords']);
+            $this->template->assert('meta_keywords', $topic_info['meta_keywords']);
         }
 
         if ($gorod_name) {
@@ -1782,11 +1824,11 @@ class SiteBill_Krascap extends SiteBill {
         }
 
         if (intval($this->getRequestValue('page')) > 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-            if (0 == (int) $this->getConfigValue('add_pagenumber_title_place') && $title != '') {
+            if (0 == (int)$this->getConfigValue('add_pagenumber_title_place') && $title != '') {
                 $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-            } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
+            } elseif (1 == (int)$this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
                 $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-            } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
+            } elseif (2 == (int)$this->getConfigValue('add_pagenumber_title_place')) {
                 if ($title != '') {
                     $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
                 }
@@ -1796,8 +1838,8 @@ class SiteBill_Krascap extends SiteBill {
             }
         }
 
-        $this->template->assign('title', $title);
-        $this->template->assign('meta_title', $meta_title);
+        $this->template->assert('title', $title);
+        $this->template->assert('meta_title', $meta_title);
 
         $grid_constructor = $this->_getGridConstructor();
 
@@ -1810,7 +1852,8 @@ class SiteBill_Krascap extends SiteBill {
         //$this->setRequestValue('city_view', $REQUESTURIPATH);
     }
 
-    protected function FrontAction_grid_predefined($REQUESTURIPATH, $predefined_info) {
+    protected function FrontAction_grid_predefined($REQUESTURIPATH, $predefined_info)
+    {
         if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
             $curlang = $this->getCurrentLang();
             $lang_postfix = '_' . $curlang;
@@ -1846,11 +1889,11 @@ class SiteBill_Krascap extends SiteBill {
         }
 
         if (intval($this->getRequestValue('page')) > 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-            if (0 == (int) $this->getConfigValue('add_pagenumber_title_place') && $title != '') {
+            if (0 == (int)$this->getConfigValue('add_pagenumber_title_place') && $title != '') {
                 $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-            } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
+            } elseif (1 == (int)$this->getConfigValue('add_pagenumber_title_place') && $meta_title != '') {
                 $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
-            } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
+            } elseif (2 == (int)$this->getConfigValue('add_pagenumber_title_place')) {
                 if ($title != '') {
                     $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . intval($this->getRequestValue('page')) . ']';
                 }
@@ -1860,27 +1903,27 @@ class SiteBill_Krascap extends SiteBill {
             }
         }
 
-        $this->template->assign('title', $title);
-        $this->template->assign('meta_title', $meta_title);
+        $this->template->assert('title', $title);
+        $this->template->assert('meta_title', $meta_title);
 
         if (isset($predefined_info['description' . $lang_postfix]) && $predefined_info['description' . $lang_postfix] != '') {
-            $this->template->assign('description', $predefined_info['description' . $lang_postfix]);
+            $this->template->assert('description', $predefined_info['description' . $lang_postfix]);
         } elseif ($predefined_info['description'] != '') {
-            $this->template->assign('description', $predefined_info['description']);
+            $this->template->assert('description', $predefined_info['description']);
         }
         if (isset($predefined_info['meta_description' . $lang_postfix]) && $predefined_info['meta_description' . $lang_postfix] != '') {
-            $this->template->assign('meta_description', $predefined_info['meta_description' . $lang_postfix]);
+            $this->template->assert('meta_description', $predefined_info['meta_description' . $lang_postfix]);
         } elseif ($predefined_info['meta_description'] != '') {
-            $this->template->assign('meta_description', $predefined_info['meta_description']);
+            $this->template->assert('meta_description', $predefined_info['meta_description']);
         } else {
-            $this->template->assign('meta_description', $this->getConfigValue('meta_description_main'));
+            $this->template->assert('meta_description', $this->getConfigValue('meta_description_main'));
         }
         if (isset($predefined_info['meta_keywords' . $lang_postfix]) && $predefined_info['meta_keywords' . $lang_postfix] != '') {
-            $this->template->assign('meta_keywords', $predefined_info['meta_keywords' . $lang_postfix]);
+            $this->template->assert('meta_keywords', $predefined_info['meta_keywords' . $lang_postfix]);
         } elseif ($predefined_info['meta_keywords'] != '') {
-            $this->template->assign('meta_keywords', $predefined_info['meta_keywords']);
+            $this->template->assert('meta_keywords', $predefined_info['meta_keywords']);
         } else {
-            $this->template->assign('meta_keywords', $this->getConfigValue('meta_keywords_main'));
+            $this->template->assert('meta_keywords', $this->getConfigValue('meta_keywords_main'));
         }
 
 
@@ -1903,14 +1946,67 @@ class SiteBill_Krascap extends SiteBill {
         //$this->setRequestValue('city_view', $REQUESTURIPATH);
     }
 
-    public function FrontAction_grid_custom($REQUESTURIPATH) {
+    public function FrontAction_grid_custom($REQUESTURIPATH)
+    {
         return false;
     }
 
-    function map_search(){
+    function map_search()
+    {
         global $smarty;
-        return $smarty->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/system/template/map_search.tpl');
+        return $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/system/template/map_search.tpl');
         return 'map_search';
+    }
+
+    function extractMetaFromRawData($objectinfo)
+    {
+
+        $responce = array(
+            'meta_title' => '',
+            'title' => '',
+            'description' => '',
+            'meta_description' => '',
+            'meta_keywords' => ''
+        );
+
+        $lang_postfix = $this->getLangPostfix($this->getCurrentLang());
+
+        $titlefields = array('public_title', 'title', 'name');
+        foreach ($titlefields as $titlefield) {
+            if (isset($objectinfo[$titlefield . $lang_postfix]) && $objectinfo[$titlefield . $lang_postfix] != '') {
+                $responce['title'] = $objectinfo[$titlefield . $lang_postfix];
+                break;
+            } elseif (isset($objectinfo[$titlefield]) && $objectinfo[$titlefield] != '') {
+                $responce['title'] = $objectinfo[$titlefield];
+                break;
+            }
+        }
+
+        if (isset($objectinfo['meta_title' . $lang_postfix]) && $objectinfo['meta_title' . $lang_postfix] != '') {
+            $responce['meta_title'] = $objectinfo['meta_title' . $lang_postfix];
+        } else {
+            $responce['meta_title'] = $objectinfo['meta_title'];
+        }
+
+        if (isset($objectinfo['description' . $lang_postfix]) && $objectinfo['description' . $lang_postfix] != '') {
+            $responce['description'] = $objectinfo['description' . $lang_postfix];
+        } elseif ($objectinfo['description'] != '') {
+            $responce['description'] = $objectinfo['description'];
+        }
+
+        if (isset($objectinfo['meta_description' . $lang_postfix]) && $objectinfo['meta_description' . $lang_postfix] != '') {
+            $responce['meta_description'] = $objectinfo['meta_description' . $lang_postfix];
+        } elseif ($objectinfo['meta_description'] != '') {
+            $responce['meta_description'] = $objectinfo['meta_description'];
+        }
+
+        if (isset($objectinfo['meta_keywords' . $lang_postfix]) && $objectinfo['meta_keywords' . $lang_postfix] != '') {
+            $responce['meta_keywords'] = $objectinfo['meta_keywords' . $lang_postfix];
+        } elseif ($objectinfo['meta_keywords'] != '') {
+            $responce['meta_keywords'] = $objectinfo['meta_keywords'];
+        }
+        return $responce;
+
     }
 
     /**
@@ -1918,7 +2014,8 @@ class SiteBill_Krascap extends SiteBill {
      * @param void
      * @return string
      */
-    function grid_adv($params = array()) {
+    function grid_adv($params = array(), $label = '')
+    {
         /* возможны вариант отдачи списка в виде эксель-таблицы */
         /* $to_excell=false;
           if(isset($params['format']) && $params['format']='excell'){
@@ -1928,177 +2025,180 @@ class SiteBill_Krascap extends SiteBill {
 
         $any_url_catched = false;
 
+        // признак адреса по стране
         $country_url_catched = false;
+
+        // признак адреса поиска
         $find_url_catched = false;
+
+        // признак адреса по городу
         $city_url_catched = false;
+
+        // признак адреса по метро
         $metro_url_catched = false;
+
+        // признак адреса по региону
         $region_url_catched = false;
+
+        // признак адреса по району
         $district_url_catched = false;
+
+        // признак адреса по линкменеджеру
         $predefined_url_catched = false;
+
+        // признак адреса по роуту
         $route_catched = false;
+
+        // признак адреса по ЖК
         $complex_url_catched = false;
+
+        // признак адреса по пользователю
         $user_url_catched = false;
+        $system_route_catched = false;
+
+        // признак адреса поиска
         $REQUESTURIPATH = Sitebill::getClearRequestURI();
 
-        $grid_constructor = $this->_getGridConstructor();
+        $grid_constructor = $this->_getGridConstructor($label);
 
-        //$SF=Sitebill_Registry::getInstance();
-        //$SF->clearFeedback('catched_route');
-        //$SF->clearFeedback('catched_route_params');
+        $DBC = DBC::getInstance();
 
-
-        /* $Sitebill_Registry=Sitebill_Registry::getInstance();
-          if(1==(int)$Sitebill_Registry->getFeedback('route_catched')){
-          $route_catched=true;
-          }else{
-          $route_catched=false;
-          } */
-
-        if ($REQUESTURIPATH == 'find') {
-            //$grid_constructor->setCatchedRoute('system:find');
-            //$SF->addFeedback('catched_route', 'system:find');
+        if (!$any_url_catched && $REQUESTURIPATH == 'find') {
             $find_url_catched = true;
             $any_url_catched = true;
-            //$params['pager_url']='find';
-        } elseif ($REQUESTURIPATH != '') {
-            $DBC = DBC::getInstance();
-            if (!$any_url_catched) {
-                if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/main/router/router.php')) {
-                    require_once SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/main/router/router.php';
-                    $Router = new Router();
-                    if ($Router->checkUrl($REQUESTURIPATH)) {
-                        $route_catched = true;
+        }
+
+        if (!$any_url_catched && $REQUESTURIPATH != '') {
+            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/main/router/router.php')) {
+                require_once SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/main/router/router.php';
+                $Router = new Router();
+                if ($Router->checkUrl($REQUESTURIPATH)) {
+                    $route_catched = true;
+                    $any_url_catched = true;
+                    $work_params = $Router->getWorkParams();
+                    foreach ($work_params['params'] as $k => $v) {
+                        $this->setRequestValue($k, $v);
+                    }
+                }
+            }
+        }
+
+        if (!$any_url_catched && $REQUESTURIPATH != '') {
+            if (preg_match('/^user(\d+)\.html/', $REQUESTURIPATH, $matches)) {
+
+                $user_id = $matches[1];
+                $query = 'SELECT * FROM ' . DB_PREFIX . '_user WHERE user_id=? LIMIT 1';
+                $stmt = $DBC->query($query, array($user_id));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+
+                    if ((int)$ar['user_id'] != 0) {
+                        $user_url_catched = true;
+                        $user_info = $ar;
                         $any_url_catched = true;
-                        $work_params = $Router->getWorkParams();
-                        foreach ($work_params['params'] as $k => $v) {
-                            $this->setRequestValue($k, $v);
-                        }
                     }
                 }
             }
+        }
 
-            if (!$any_url_catched) {
-                if (preg_match('/^user(\d+)\.html/', $REQUESTURIPATH, $matches)) {
-
-                    $user_id = $matches[1];
-                    $query = 'SELECT * FROM ' . DB_PREFIX . '_user WHERE user_id=? LIMIT 1';
-                    $stmt = $DBC->query($query, array($user_id));
-                    if ($stmt) {
-                        $ar = $DBC->fetch($stmt);
-
-                        if ((int) $ar['user_id'] != 0) {
-                            $user_url_catched = true;
-                            $user_info = $ar;
-                            $any_url_catched = true;
-                        }
-                    }
+        if (!$any_url_catched && $REQUESTURIPATH != '') {
+            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/predefinedlinks/admin/admin.php') && 1 == $this->getConfigValue('apps.predefinedlinks.enable')) {
+                require_once SITEBILL_DOCUMENT_ROOT . '/apps/predefinedlinks/admin/admin.php';
+                $PDLA = new predefinedlinks_admin();
+                if ($predefined_info = $PDLA->checkAlias($REQUESTURIPATH)) {
+                    $predefined_url_catched = true;
+                    $any_url_catched = true;
                 }
             }
+        }
 
-            if (!$any_url_catched) {
-                if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/predefinedlinks/admin/admin.php')) {
-                    require_once SITEBILL_DOCUMENT_ROOT . '/apps/predefinedlinks/admin/admin.php';
-                    $PDLA = new predefinedlinks_admin();
-                    if ($predefined_info = $PDLA->checkAlias($REQUESTURIPATH)) {
-                        $predefined_url_catched = true;
+        if (!$any_url_catched && $REQUESTURIPATH != '') {
+            if (intval($this->getConfigValue('apps.seo.no_country_url')) === 0) {
+                $query = 'SELECT * FROM ' . DB_PREFIX . '_country WHERE url=? LIMIT 1';
+                $stmt = $DBC->query($query, array($REQUESTURIPATH));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+
+                    if ((int)$ar['country_id'] != 0) {
+                        $country_url_catched = true;
+                        $country_info = $ar;
                         $any_url_catched = true;
-                        //$grid_constructor->setCatchedRoute('system:predefinedlinks');
-                        //$grid_constructor->setCatchedRouteParams($predefined_info);
                     }
                 }
             }
+        }
 
-            if (!$any_url_catched) {
-                if (intval($this->getConfigValue('apps.seo.no_country_url')) === 0) {
-                    $query = 'SELECT * FROM ' . DB_PREFIX . '_country WHERE url=? LIMIT 1';
-                    $stmt = $DBC->query($query, array($REQUESTURIPATH));
-                    if ($stmt) {
-                        $ar = $DBC->fetch($stmt);
-
-                        if ((int) $ar['country_id'] != 0) {
-                            $country_url_catched = true;
-                            $country_info = $ar;
-                            $any_url_catched = true;
-                        }
+        if (!$any_url_catched && $REQUESTURIPATH != '') {
+            if (intval($this->getConfigValue('apps.seo.no_region_url')) === 0) {
+                $query = 'SELECT * FROM ' . DB_PREFIX . '_region WHERE alias=? LIMIT 1';
+                $stmt = $DBC->query($query, array($REQUESTURIPATH));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+                    if ((int)$ar['region_id'] != 0) {
+                        $region_url_catched = true;
+                        $region_info = $ar;
+                        $any_url_catched = true;
                     }
                 }
             }
+        }
 
-            if (!$any_url_catched) {
-                if (intval($this->getConfigValue('apps.seo.no_region_url')) === 0) {
-                    $query = 'SELECT * FROM ' . DB_PREFIX . '_region WHERE alias=? LIMIT 1';
-                    $stmt = $DBC->query($query, array($REQUESTURIPATH));
-                    if ($stmt) {
-                        $ar = $DBC->fetch($stmt);
-                        if ((int) $ar['region_id'] != 0) {
-                            $region_url_catched = true;
-                            $region_info = $ar;
-                            $any_url_catched = true;
-                        }
+        if (!$any_url_catched && $REQUESTURIPATH != '') {
+            if (intval($this->getConfigValue('apps.seo.no_city_url')) === 0) {
+                $query = 'SELECT * FROM ' . DB_PREFIX . '_city WHERE url=? LIMIT 1';
+                $stmt = $DBC->query($query, array($REQUESTURIPATH));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+                    if ((int)$ar['city_id'] != 0) {
+                        $city_url_catched = true;
+                        $city_info = $ar;
+                        $any_url_catched = true;
                     }
                 }
             }
+        }
 
-            if (!$any_url_catched) {
-                if (intval($this->getConfigValue('apps.seo.no_city_url')) === 0) {
-                    $query = 'SELECT * FROM ' . DB_PREFIX . '_city WHERE url=? LIMIT 1';
-                    $stmt = $DBC->query($query, array($REQUESTURIPATH));
-                    if ($stmt) {
-                        $ar = $DBC->fetch($stmt);
-
-                        if ((int) $ar['city_id'] != 0) {
-                            $city_url_catched = true;
-                            $city_info = $ar;
-                            $any_url_catched = true;
-                        }
+        if (!$any_url_catched && $REQUESTURIPATH != '') {
+            if (intval($this->getConfigValue('apps.seo.no_metro_url')) === 0) {
+                $query = 'SELECT * FROM ' . DB_PREFIX . '_metro WHERE `alias`=? LIMIT 1';
+                $stmt = $DBC->query($query, array($REQUESTURIPATH));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+                    if ((int)$ar['metro_id'] != 0) {
+                        $metro_url_catched = true;
+                        $metro_info = $ar;
+                        $any_url_catched = true;
                     }
                 }
             }
+        }
 
-            if (!$any_url_catched) {
-                if (intval($this->getConfigValue('apps.seo.no_metro_url')) === 0) {
-                    $query = 'SELECT * FROM ' . DB_PREFIX . '_metro WHERE `alias`=? LIMIT 1';
-                    $stmt = $DBC->query($query, array($REQUESTURIPATH));
-                    if ($stmt) {
-                        $ar = $DBC->fetch($stmt);
-
-                        if ((int) $ar['metro_id'] != 0) {
-                            $metro_url_catched = true;
-                            $metro_info = $ar;
-                            $any_url_catched = true;
-                        }
+        if (!$any_url_catched && $REQUESTURIPATH != '') {
+            if (intval($this->getConfigValue('apps.seo.no_district_url')) === 0) {
+                $query = 'SELECT * FROM ' . DB_PREFIX . '_district WHERE `url`=? LIMIT 1';
+                $stmt = $DBC->query($query, array($REQUESTURIPATH));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+                    if ((int)$ar['id'] != 0) {
+                        $district_url_catched = true;
+                        $district_info = $ar;
+                        $any_url_catched = true;
                     }
                 }
             }
+        }
 
-            if (!$any_url_catched) {
-                if (intval($this->getConfigValue('apps.seo.no_district_url')) === 0) {
-                    $query = 'SELECT * FROM ' . DB_PREFIX . '_district WHERE `url`=? LIMIT 1';
-                    $stmt = $DBC->query($query, array($REQUESTURIPATH));
-                    if ($stmt) {
-                        $ar = $DBC->fetch($stmt);
-
-                        if ((int) $ar['id'] != 0) {
-                            $district_url_catched = true;
-                            $district_info = $ar;
-                            $any_url_catched = true;
-                        }
-                    }
-                }
-            }
-
-            if (!$any_url_catched) {
-                if ($this->getConfigValue('apps.complex.enable')) {
-                    $DBC = DBC::getInstance();
-                    $query = 'SELECT * FROM ' . DB_PREFIX . '_complex WHERE url=? LIMIT 1';
-                    $stmt = $DBC->query($query, array($REQUESTURIPATH));
-                    if ($stmt) {
-                        $ar = $DBC->fetch($stmt);
-                        if (intval($ar['complex_id']) !== 0) {
-                            $complex_url_catched = true;
-                            $complex_info = $ar;
-                            $any_url_catched = true;
-                        }
+        if (!$any_url_catched && $REQUESTURIPATH != '') {
+            if ($this->getConfigValue('apps.complex.enable')) {
+                $DBC = DBC::getInstance();
+                $query = 'SELECT * FROM ' . DB_PREFIX . '_complex WHERE url=? LIMIT 1';
+                $stmt = $DBC->query($query, array($REQUESTURIPATH));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+                    if (intval($ar['complex_id']) !== 0) {
+                        $complex_url_catched = true;
+                        $complex_info = $ar;
+                        $any_url_catched = true;
                     }
                 }
             }
@@ -2106,7 +2206,6 @@ class SiteBill_Krascap extends SiteBill {
 
 
         $gorod_name = false;
-        //$grid_constructor = $this->_grid_constructor;
 
         if ($find_url_catched) {
             if (Multilanguage::is_set('LT_FIND_URL_TITLE', '_template')) {
@@ -2115,74 +2214,29 @@ class SiteBill_Krascap extends SiteBill {
                 $title = Multilanguage::_('FIND_URL_TITLE', 'system');
             }
 
-            $this->template->assign('title', $title);
-            $this->template->assign('meta_title', $title);
+            $this->template->assert('title', $title);
+            $this->template->assert('meta_title', $title);
             $this->setRequestValue('find_url_catched', 1);
-        } elseif ($route_catched) {
+        }
+
+        if ($route_catched) {
             //$work_params=$Router->getWorkParams();
             //$this->setRequestValue('router_info', $work_params);
-        } elseif ($predefined_url_catched) {
-            if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-                $curlang = $this->getCurrentLang();
-                $lang_postfix = '_' . $curlang;
-                if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                    $lang_postfix = '';
-                }
-            } else {
-                $lang_postfix = '';
+        }
+
+        if ($predefined_url_catched) {
+
+            $meta = $this->extractMetaFromRawData($predefined_info);
+            if ($meta['meta_title'] == '') {
+                $meta['meta_title'] = $meta['title'];
             }
 
-            if (isset($predefined_info['meta_title' . $lang_postfix]) && $predefined_info['meta_title' . $lang_postfix] != '') {
-                $meta_title = $predefined_info['meta_title' . $lang_postfix];
-            } else {
-                $meta_title = $predefined_info['meta_title'];
+            $meta = $this->appendPageNumberTail($meta, intval($this->getRequestValue('page')));
+
+            foreach ($meta as $mkey => $mvalue) {
+                $this->template->assert($mkey, $mvalue);
             }
 
-            if (isset($predefined_info['title' . $lang_postfix]) && $predefined_info['title' . $lang_postfix] != '') {
-                $title = $predefined_info['title' . $lang_postfix];
-            } else {
-                $title = $predefined_info['title'];
-            }
-
-            if ($meta_title == '') {
-                $meta_title = $title;
-            }
-
-
-
-            if ((int) $this->getRequestValue('page') > 0 && (int) $this->getRequestValue('page') != 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-                if (0 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                    $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                }
-            }
-
-            $this->template->assign('title', $title);
-            $this->template->assign('meta_title', $meta_title);
-
-            if (isset($predefined_info['description' . $lang_postfix]) && $predefined_info['description' . $lang_postfix] != '') {
-                $this->template->assign('description', $predefined_info['description' . $lang_postfix]);
-            } elseif ($predefined_info['description'] != '') {
-                $this->template->assign('description', $predefined_info['description']);
-            }
-            if (isset($predefined_info['meta_description' . $lang_postfix]) && $predefined_info['meta_description' . $lang_postfix] != '') {
-                $this->template->assign('meta_description', $predefined_info['meta_description' . $lang_postfix]);
-            } elseif ($predefined_info['meta_description'] != '') {
-                $this->template->assign('meta_description', $predefined_info['meta_description']);
-            } else {
-                //$this->template->assign('meta_description', $this->getConfigValue('meta_description_main'));
-            }
-            if (isset($predefined_info['meta_keywords' . $lang_postfix]) && $predefined_info['meta_keywords' . $lang_postfix] != '') {
-                $this->template->assign('meta_keywords', $predefined_info['meta_keywords' . $lang_postfix]);
-            } elseif ($predefined_info['meta_keywords'] != '') {
-                $this->template->assign('meta_keywords', $predefined_info['meta_keywords']);
-            } else {
-                //$this->template->assign('meta_keywords', $this->getConfigValue('meta_keywords_main'));
-            }
             if (count($predefined_info['params']) > 0) {
                 foreach ($predefined_info['params'] as $k => $v) {
                     $this->setRequestValue($k, $v);
@@ -2190,139 +2244,53 @@ class SiteBill_Krascap extends SiteBill {
             }
 
             $this->setRequestValue('predefined_info', $predefined_info);
-        } elseif ($country_url_catched) {
+        }
 
-            if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-                $curlang = $this->getCurrentLang();
-                $lang_postfix = '_' . $curlang;
-                if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                    $lang_postfix = '';
-                }
-            } else {
-                $lang_postfix = '';
-            }
-            $meta_title = '';
-            if (isset($country_info['meta_title' . $lang_postfix]) && $country_info['meta_title' . $lang_postfix] != '') {
-                $meta_title = $country_info['meta_title' . $lang_postfix];
-            } elseif ($country_info['meta_title'] != '') {
-                $meta_title = $country_info['meta_title'];
+        if ($country_url_catched) {
+
+            $meta = $this->extractMetaFromRawData($country_info);
+            if ($meta['meta_title'] == '') {
+                $meta['meta_title'] = $meta['title'];
             }
 
+            $meta = $this->appendPageNumberTail($meta, intval($this->getRequestValue('page')));
 
-            if (isset($country_info['name' . $lang_postfix]) && $country_info['name' . $lang_postfix] != '') {
-                $title = $country_info['name' . $lang_postfix];
-            } else {
-                $title = $country_info['name'];
+            foreach ($meta as $mkey => $mvalue) {
+                $this->template->assert($mkey, $mvalue);
             }
 
-            if ($meta_title == '') {
-                $meta_title = $title;
-            }
-
-            if ((int) $this->getRequestValue('page') > 0 && (int) $this->getRequestValue('page') != 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-                if (0 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                    $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                }
-            }
-
-            $this->template->assign('title', $title);
-            $this->template->assign('meta_title', $meta_title);
-
-            if (isset($country_info['description' . $lang_postfix]) && $country_info['description' . $lang_postfix] != '') {
-                $this->template->assign('description', $country_info['description' . $lang_postfix]);
-            } elseif ($country_info['description'] != '') {
-                $this->template->assign('description', $country_info['description']);
-            }
-            if (isset($country_info['meta_description' . $lang_postfix]) && $country_info['meta_description' . $lang_postfix] != '') {
-                $this->template->assign('meta_description', $country_info['meta_description' . $lang_postfix]);
-            } elseif ($country_info['meta_description'] != '') {
-                $this->template->assign('meta_description', $country_info['meta_description']);
-            } else {
-                //$this->template->assign('meta_description', $this->getConfigValue('meta_description_main'));
-            }
-            if (isset($country_info['meta_keywords' . $lang_postfix]) && $country_info['meta_keywords' . $lang_postfix] != '') {
-                $this->template->assign('meta_keywords', $country_info['meta_keywords' . $lang_postfix]);
-            } elseif ($country_info['meta_keywords'] != '') {
-                $this->template->assign('meta_keywords', $country_info['meta_keywords']);
-            } else {
-                //$this->template->assign('meta_keywords', $this->getConfigValue('meta_keywords_main'));
-            }
-
-
-            $this->setRequestValue('country_id', (int) $country_info['country_id']);
+            $this->setRequestValue('country_id', (int)$country_info['country_id']);
             $this->setRequestValue('country_view', $REQUESTURIPATH);
-        } elseif ($district_url_catched) {
+        }
 
-            if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-                $curlang = $this->getCurrentLang();
-                $lang_postfix = '_' . $curlang;
-                if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                    $lang_postfix = '';
-                }
-            } else {
-                $lang_postfix = '';
-            }
-            $meta_title = '';
-            if (isset($district_info['meta_title' . $lang_postfix]) && $district_info['meta_title' . $lang_postfix] != '') {
-                $meta_title = $district_info['meta_title' . $lang_postfix];
-            } elseif ($country_info['meta_title'] != '') {
-                $meta_title = $district_info['meta_title'];
+        if ($district_url_catched) {
+
+            $meta = $this->extractMetaFromRawData($district_info);
+            if ($meta['meta_title'] == '') {
+                $meta['meta_title'] = $meta['title'];
             }
 
+            $meta = $this->appendPageNumberTail($meta, intval($this->getRequestValue('page')));
 
-            if (isset($district_info['name' . $lang_postfix]) && $district_info['name' . $lang_postfix] != '') {
-                $title = $district_info['name' . $lang_postfix];
-            } else {
-                $title = $district_info['name'];
+            foreach ($meta as $mkey => $mvalue) {
+                $this->template->assert($mkey, $mvalue);
             }
 
-            if ($meta_title == '') {
-                $meta_title = $title;
-            }
+            $params['district_id'] = intval($district_info['id']);
 
-            if ((int) $this->getRequestValue('page') > 0 && (int) $this->getRequestValue('page') != 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-                if (0 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                    $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                }
-            }
-
-            $this->template->assign('title', $title);
-            $this->template->assign('meta_title', $meta_title);
-
-            if (isset($district_info['description' . $lang_postfix]) && $district_info['description' . $lang_postfix] != '') {
-                $this->template->assign('description', $district_info['description' . $lang_postfix]);
-            } elseif ($district_info['description'] != '') {
-                $this->template->assign('description', $district_info['description']);
-            }
-            if (isset($district_info['meta_description' . $lang_postfix]) && $district_info['meta_description' . $lang_postfix] != '') {
-                $this->template->assign('meta_description', $district_info['meta_description' . $lang_postfix]);
-            } elseif ($district_info['meta_description'] != '') {
-                $this->template->assign('meta_description', $country_info['meta_description']);
-            } else {
-                //$this->template->assign('meta_description', $this->getConfigValue('meta_description_main'));
-            }
-            if (isset($district_info['meta_keywords' . $lang_postfix]) && $district_info['meta_keywords' . $lang_postfix] != '') {
-                $this->template->assign('meta_keywords', $district_info['meta_keywords' . $lang_postfix]);
-            } elseif ($district_info['meta_keywords'] != '') {
-                $this->template->assign('meta_keywords', $district_info['meta_keywords']);
-            } else {
-                //$this->template->assign('meta_keywords', $this->getConfigValue('meta_keywords_main'));
-            }
-            $params['district_id'] = (int) $district_info['id'];
-
-            $this->setRequestValue('district_id', (int) $district_info['id']);
+            $this->setRequestValue('district_id', (int)$district_info['id']);
             $this->setRequestValue('district_view', $REQUESTURIPATH);
-        } elseif ($city_url_catched) {
+        }
+
+        if ($city_url_catched) {
+
+            $meta = array(
+                'meta_title' => '',
+                'title' => '',
+                'description' => '',
+                'meta_description' => '',
+                'meta_keywords' => ''
+            );
 
             if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
                 $curlang = $this->getCurrentLang();
@@ -2335,178 +2303,96 @@ class SiteBill_Krascap extends SiteBill {
             }
 
             if (isset($city_info['public_title' . $lang_postfix]) && $city_info['public_title' . $lang_postfix] != '') {
-                $title = $city_info['public_title' . $lang_postfix];
+                $meta['title'] = $city_info['public_title' . $lang_postfix];
             } elseif (isset($city_info['public_title']) && $city_info['public_title'] != '') {
-                $title = $city_info['public_title'];
+                $meta['title'] = $city_info['public_title'];
             } else {
-                $title = $city_info['name'];
+                $meta['title'] = $city_info['name'];
                 if ($this->getConfigValue('apps.seo.city_title_postfix') != '') {
-                    $title .= ' ' . $this->getConfigValue('apps.seo.city_title_postfix');
+                    $meta['title'] .= ' ' . $this->getConfigValue('apps.seo.city_title_postfix');
                 }
             }
             if (isset($city_info['meta_title' . $lang_postfix]) && $city_info['meta_title' . $lang_postfix] != '') {
-                $meta_title = $city_info['meta_title' . $lang_postfix];
+                $meta['meta_title'] = $city_info['meta_title' . $lang_postfix];
             } elseif ($city_info['meta_title'] != '') {
-                $meta_title = $city_info['meta_title'];
+                $meta['meta_title'] = $city_info['meta_title'];
             } else {
-                $meta_title = $title;
+                $meta['meta_title'] = $meta['title'];
             }
-
-
-            if ((int) $this->getRequestValue('page') > 0 && (int) $this->getRequestValue('page') != 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-                $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-            }
-
-            $this->template->assign('title', $title);
-            $this->template->assign('meta_title', $meta_title);
 
             if (isset($city_info['description' . $lang_postfix]) && $city_info['description' . $lang_postfix] != '') {
-                $this->template->assign('description', $city_info['description' . $lang_postfix]);
+                $meta['description'] = $city_info['description' . $lang_postfix];
             } elseif ($city_info['description'] != '') {
-                $this->template->assign('description', $city_info['description']);
+                $meta['description'] = $city_info['description'];
             }
             if (isset($city_info['meta_description' . $lang_postfix]) && $city_info['meta_description' . $lang_postfix] != '') {
-                $this->template->assign('meta_description', $city_info['meta_description' . $lang_postfix]);
+                $meta['meta_description'] = $city_info['meta_description' . $lang_postfix];
             } elseif ($city_info['meta_description'] != '') {
-                $this->template->assign('meta_description', $city_info['meta_description']);
-            } else {
-                //$this->template->assign('meta_description', $this->getConfigValue('meta_description_main'));
+                $meta['meta_description'] = $city_info['meta_description'];
             }
+
             if (isset($city_info['meta_keywords' . $lang_postfix]) && $city_info['meta_keywords' . $lang_postfix] != '') {
-                $this->template->assign('meta_keywords', $city_info['meta_keywords' . $lang_postfix]);
+                $meta['meta_keywords'] = $city_info['meta_keywords' . $lang_postfix];
             } elseif ($city_info['meta_keywords'] != '') {
-                $this->template->assign('meta_keywords', $city_info['meta_keywords']);
-            } else {
-                //$this->template->assign('meta_keywords', $this->getConfigValue('meta_keywords_main'));
+                $meta['meta_keywords'] = $city_info['meta_keywords'];
+            }
+
+            $meta = $this->appendPageNumberTail($meta, intval($this->getRequestValue('page')));
+
+            foreach ($meta as $mkey => $mvalue) {
+                $this->template->assert($mkey, $mvalue);
             }
 
 
-            $this->setRequestValue('city_id', (int) $city_info['city_id']);
+            $this->setRequestValue('city_id', (int)$city_info['city_id']);
             $this->setRequestValue('city_view', $REQUESTURIPATH);
-        } elseif ($metro_url_catched) {
+        }
 
-            if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-                $curlang = $this->getCurrentLang();
-                $lang_postfix = '_' . $curlang;
-                if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                    $lang_postfix = '';
-                }
-            } else {
-                $lang_postfix = '';
+        if ($metro_url_catched) {
+
+            $meta = $this->extractMetaFromRawData($metro_info);
+            if ($meta['meta_title'] == '') {
+                $meta['meta_title'] = $meta['title'];
             }
 
-            if (isset($metro_info['public_title' . $lang_postfix]) && $metro_info['public_title' . $lang_postfix] != '') {
-                $title = $metro_info['public_title' . $lang_postfix];
-            } elseif (isset($metro_info['public_title']) && $metro_info['public_title'] != '') {
-                $title = $metro_info['public_title'];
-            } else {
-                $title = $metro_info['name'];
-            }
-            if (isset($metro_info['meta_title' . $lang_postfix]) && $metro_info['meta_title' . $lang_postfix] != '') {
-                $meta_title = $metro_info['meta_title' . $lang_postfix];
-            } elseif ($metro_info['meta_title'] != '') {
-                $meta_title = $metro_info['meta_title'];
-            } else {
-                $meta_title = $title;
+            $meta = $this->appendPageNumberTail($meta, intval($this->getRequestValue('page')));
+
+            foreach ($meta as $mkey => $mvalue) {
+                $this->template->assert($mkey, $mvalue);
             }
 
-            if ((int) $this->getRequestValue('page') > 0 && (int) $this->getRequestValue('page') != 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-                $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-            }
-
-            $this->template->assign('title', $title);
-            $this->template->assign('meta_title', $meta_title);
-
-            if (isset($metro_info['description' . $lang_postfix]) && $metro_info['description' . $lang_postfix] != '') {
-                $this->template->assign('description', $metro_info['description' . $lang_postfix]);
-            } elseif ($metro_info['description'] != '') {
-                $this->template->assign('description', $metro_info['description']);
-            }
-            if (isset($metro_info['meta_description' . $lang_postfix]) && $metro_info['meta_description' . $lang_postfix] != '') {
-                $this->template->assign('meta_description', $metro_info['meta_description' . $lang_postfix]);
-            } elseif ($metro_info['meta_description'] != '') {
-                $this->template->assign('meta_description', $metro_info['meta_description']);
-            } else {
-                //$this->template->assign('meta_description', $this->getConfigValue('meta_description_main'));
-            }
-            if (isset($metro_info['meta_keywords' . $lang_postfix]) && $metro_info['meta_keywords' . $lang_postfix] != '') {
-                $this->template->assign('meta_keywords', $metro_info['meta_keywords' . $lang_postfix]);
-            } elseif ($metro_info['meta_keywords'] != '') {
-                $this->template->assign('meta_keywords', $metro_info['meta_keywords']);
-            } else {
-                //$this->template->assign('meta_keywords', $this->getConfigValue('meta_keywords_main'));
-            }
-
-
-            $this->setRequestValue('metro_id', (int) $metro_info['metro_id']);
+            $this->setRequestValue('metro_id', intval($metro_info['metro_id']));
             $this->setRequestValue('metro_view', $REQUESTURIPATH);
-        } elseif ($region_url_catched) {
+        }
 
-            if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
-                $curlang = $this->getCurrentLang();
-                $lang_postfix = '_' . $curlang;
-                if (1 === intval($this->getConfigValue('apps.language.use_default_as_ru')) && $curlang == 'ru') {
-                    $lang_postfix = '';
-                }
-            } else {
-                $lang_postfix = '';
+        if ($region_url_catched) {
+
+            $meta = $this->extractMetaFromRawData($region_info);
+            if ($meta['meta_title'] == '') {
+                $meta['meta_title'] = $meta['title'];
             }
 
-            if (isset($region_info['public_title']) && $region_info['public_title'] != '') {
-                $title = $region_info['public_title'];
-            } else {
-                $title = $region_info['name'];
-            }
-            if ($region_info['meta_title'] != '') {
-                $meta_title = $region_info['meta_title'];
-            } else {
-                $meta_title = $region_info['name'];
+            $meta = $this->appendPageNumberTail($meta, intval($this->getRequestValue('page')));
+
+            foreach ($meta as $mkey => $mvalue) {
+                $this->template->assert($mkey, $mvalue);
             }
 
-            if ((int) $this->getRequestValue('page') > 0 && (int) $this->getRequestValue('page') != 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-                if (0 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                    $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                }
-            }
+            $meta = $this->appendPageNumberTail($meta, intval($this->getRequestValue('page')));
 
-            $this->template->assign('title', $title);
-            $this->template->assign('meta_title', $meta_title);
-
-            if ($region_info['description'] != '') {
-                $this->template->assign('description', $region_info['description']);
-            }
-            if ($region_info['meta_description'] != '') {
-                $this->template->assign('meta_description', $region_info['meta_description']);
-            } else {
-                //$this->template->assign('meta_description', $this->getConfigValue('meta_description_main'));
-            }
-            if ($region_info['meta_keywords'] != '') {
-                $this->template->assign('meta_keywords', $region_info['meta_keywords']);
-            } else {
-                //$this->template->assign('meta_keywords', $this->getConfigValue('meta_keywords_main'));
-            }
-
-
-            $this->setRequestValue('region_id', (int) $region_info['region_id']);
+            $this->setRequestValue('region_id', intval($region_info['region_id']));
             $this->setRequestValue('region_view', $REQUESTURIPATH);
-        } elseif ($complex_url_catched) {
-            require_once (SITEBILL_DOCUMENT_ROOT . '/apps/complex/admin/admin.php');
+        }
+
+        if ($complex_url_catched) {
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/complex/admin/admin.php');
             $complex_admin = new complex_admin();
             $data_model = new Data_Model();
             $complex_data = $complex_admin->data_model;
-            $complex_data = $data_model->init_model_data_from_db('complex', 'complex_id', (int) $ar['complex_id'], $complex_data['complex'], true);
-            $complex_data['image']['image_array'] = $this->get_image_array('complex', 'complex', 'complex_id', (int) $ar['complex_id']);
-            /*
-              echo '<pre>';
-              print_r($complex_data);
-              echo '</pre>';
-             */
-            $this->template->assign('complex_data', $complex_data);
+            $complex_data = $data_model->init_model_data_from_db('complex', 'complex_id', (int)$ar['complex_id'], $complex_data['complex'], true);
+            $complex_data['image']['image_array'] = $this->get_image_array('complex', 'complex', 'complex_id', (int)$ar['complex_id']);
+
+            $this->template->assert('complex_data', $complex_data);
 
 
             if ($complex_info['meta_title'] != '') {
@@ -2516,38 +2402,30 @@ class SiteBill_Krascap extends SiteBill {
                 $title = $meta_title = $complex_info['name'];
             }
 
-            if ((int) $this->getRequestValue('page') > 0 && (int) $this->getRequestValue('page') != 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-                if (0 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                    $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                    $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                }
-            }
+            $meta = $this->appendPageNumberTail($meta, intval($this->getRequestValue('page')));
 
-            $this->template->assign('title', $title);
-            $this->template->assign('meta_title', $meta_title);
+            $this->template->assert('title', $title);
+            $this->template->assert('meta_title', $meta_title);
 
             if ($complex_info['description'] != '') {
-                $this->template->assign('description', $complex_info['description']);
+                $this->template->assert('description', $complex_info['description']);
             }
             if ($complex_info['meta_description'] != '') {
-                $this->template->assign('meta_description', $complex_info['meta_description']);
+                $this->template->assert('meta_description', $complex_info['meta_description']);
             } else {
-                //$this->template->assign('meta_description', $this->getConfigValue('meta_description_main'));
+                //$this->template->assert('meta_description', $this->getConfigValue('meta_description_main'));
             }
             if ($complex_info['meta_keywords'] != '') {
-                $this->template->assign('meta_keywords', $complex_info['meta_keywords']);
+                $this->template->assert('meta_keywords', $complex_info['meta_keywords']);
             } else {
-                //$this->template->assign('meta_keywords', $this->getConfigValue('meta_keywords_main'));
             }
 
 
-            $this->setRequestValue('complex_id', (int) $ar['complex_id']);
+            $this->setRequestValue('complex_id', (int)$ar['complex_id']);
             $this->setRequestValue('complex_view', $REQUESTURIPATH);
-        } elseif ($user_url_catched) {
+        }
+
+        if ($user_url_catched) {
             $fio = '';
             $fio = $user_info['fio'];
             $title = Multilanguage::_('AGENT_ADS', 'system') . ' ' . $fio;
@@ -2556,10 +2434,12 @@ class SiteBill_Krascap extends SiteBill {
             $this->setRequestValue('user_id', $user_info['user_id']);
             $this->setRequestValue('user_view', $REQUESTURIPATH);
 
-            $this->template->assign('title', $title);
-            $this->template->assign('meta_title', $meta_title);
+            $this->template->assert('title', $title);
+            $this->template->assert('meta_title', $meta_title);
 
-        }  else {
+        }
+
+        if (!$any_url_catched) {
 
             $result = $this->_detectUrlParams(parse_url($REQUESTURIPATH, PHP_URL_PATH));
 
@@ -2571,10 +2451,6 @@ class SiteBill_Krascap extends SiteBill {
                 $this->setRequestValue('city_id', $result['city_id']);
             }
             $gorod_name = $result['gorod_name'];
-
-
-
-
 
 
             $url_info = parse_url($REQUESTURIPATH);
@@ -2603,14 +2479,14 @@ class SiteBill_Krascap extends SiteBill {
                 } else {
                     header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
                 }
-                $this->template->assign('title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
-                $this->template->assign('meta_title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
-                $this->template->assign('error_message', '<h1>' . Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND') . '</h1>');
-                $this->template->assign('main_file_tpl', 'error_message.tpl');
+                $this->template->assert('title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
+                $this->template->assert('meta_title', Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND'));
+                $this->template->assert('error_message', '<h1>' . Multilanguage::_('L_MESSAGE_PAGE_NOT_FOUND') . '</h1>');
+                $this->template->assert('main_file_tpl', 'error_message.tpl');
                 //exit();
                 //echo 1;
                 return false;
-            } elseif ((!is_array($result['topic_id']) && $this->getRequestValue('topic_id') > 0 ) or ( $gorod_name != '' and is_array($this->getRequestValue('topic_id')))) {
+            } elseif ((!is_array($result['topic_id']) && $this->getRequestValue('topic_id') > 0) or ($gorod_name != '' and is_array($this->getRequestValue('topic_id')))) {
                 if (is_array($this->getRequestValue('topic_id'))) {
                     $tmp_tppc = $this->getRequestValue('topic_id');
                     $topic = $this->getTopicFullInfo($tmp_tppc[0]);
@@ -2655,36 +2531,28 @@ class SiteBill_Krascap extends SiteBill {
                 }
 
                 if (isset($topic['description' . $lang_postfix]) && $topic['description' . $lang_postfix] != '') {
-                    $this->template->assign('description', $topic['description' . $lang_postfix]);
+                    $this->template->assert('description', $topic['description' . $lang_postfix]);
                 } elseif ($topic['description'] != '') {
-                    $this->template->assign('description', $topic['description']);
+                    $this->template->assert('description', $topic['description']);
                 }
                 if (isset($topic['meta_description' . $lang_postfix]) && $topic['meta_description' . $lang_postfix] != '') {
-                    $this->template->assign('meta_description', $topic['meta_description' . $lang_postfix]);
+                    $this->template->assert('meta_description', $topic['meta_description' . $lang_postfix]);
                 } elseif ($topic['meta_description'] != '') {
-                    $this->template->assign('meta_description', $topic['meta_description']);
+                    $this->template->assert('meta_description', $topic['meta_description']);
                 }
                 if (isset($topic['meta_keywords' . $lang_postfix]) && $topic['meta_keywords' . $lang_postfix] != '') {
-                    $this->template->assign('meta_keywords', $topic['meta_keywords' . $lang_postfix]);
+                    $this->template->assert('meta_keywords', $topic['meta_keywords' . $lang_postfix]);
                 } elseif ($topic['meta_keywords'] != '') {
-                    $this->template->assign('meta_keywords', $topic['meta_keywords']);
+                    $this->template->assert('meta_keywords', $topic['meta_keywords']);
                 }
                 if ($gorod_name) {
                     $title .= ' - ' . $gorod_name;
                 }
 
-                if ((int) $this->getRequestValue('page') > 0 && (int) $this->getRequestValue('page') != 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-                    if (0 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                        $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                    } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                        $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                    } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                        $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                        $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                    }
-                }
-                $this->template->assign('title', $title);
-                $this->template->assign('meta_title', $meta_title);
+                $meta = $this->appendPageNumberTail($meta, intval($this->getRequestValue('page')));
+
+                $this->template->assert('title', $title);
+                $this->template->assert('meta_title', $meta_title);
             } else {
                 if ($this->getConfigValue('meta_title_main') != '') {
                     $title = $this->getConfigValue('site_title');
@@ -2692,61 +2560,15 @@ class SiteBill_Krascap extends SiteBill {
                 } else {
                     $title = $meta_title = $this->getConfigValue('site_title');
                 }
-                //$title = ($this->getConfigValue('meta_title_main')!='' ? $this->getConfigValue('meta_title_main') : $this->getConfigValue('site_title'));
-                if ((int) $this->getRequestValue('page') > 0 && (int) $this->getRequestValue('page') != 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
-                    if (0 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                        $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                    } elseif (1 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                        $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                    } elseif (2 == (int) $this->getConfigValue('add_pagenumber_title_place')) {
-                        $title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                        $meta_title .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $this->getRequestValue('page') . ']';
-                    }
-                }
-                /*if (preg_match('/user(\d+).html/', $_SERVER['REQUEST_URI'], $matches)) {
-                    $user_id = $matches[1];
-                    $fio = '';
-                    if (0 !== (int) $user_id) {
-                        $DBC = DBC::getInstance();
-                        $query = 'SELECT fio FROM ' . DB_PREFIX . '_user WHERE user_id=? LIMIT 1';
-                        $stmt = $DBC->query($query, array((int) $user_id));
-                        if ($stmt) {
-                            $ar = $DBC->fetch($stmt);
-                            $fio = $ar['fio'];
-                        }
-                    }
-                    $title = Multilanguage::_('AGENT_ADS', 'system') . ' ' . $fio;
-                    $meta_title = $title;
-                } elseif ((int) $this->getRequestValue('user_id') != 0) {
-                    $user_id = (int) $this->getRequestValue('user_id');
-                    $fio = '';
-                    if (0 !== (int) $user_id) {
-                        $DBC = DBC::getInstance();
-                        $query = 'SELECT fio FROM ' . DB_PREFIX . '_user WHERE user_id=? LIMIT 1';
-                        $stmt = $DBC->query($query, array((int) $user_id));
-                        if ($stmt) {
-                            $ar = $DBC->fetch($stmt);
-                            $fio = $ar['fio'];
-                        }
-                    }
-
-                    $title = Multilanguage::_('AGENT_ADS', 'system') . ' ' . $fio;
-                    $meta_title = $title;
-                }*/
-                //$meta_title=$title;
+                $meta = $this->appendPageNumberTail($meta, intval($this->getRequestValue('page')));
                 if (!$this->lock_title) {
-                    $this->template->assign('title', $title);
+                    $this->template->assert('title', $title);
                 }
-                $this->template->assign('meta_title', $meta_title);
-                $this->template->assign('meta_description', $this->getConfigValue('meta_description_main'));
-                $this->template->assign('meta_keywords', $this->getConfigValue('meta_keywords_main'));
+                $this->template->assert('meta_title', $meta_title);
+                $this->template->assert('meta_description', $this->getConfigValue('meta_description_main'));
+                $this->template->assert('meta_keywords', $this->getConfigValue('meta_keywords_main'));
             }
         }
-
-
-
-
-
 
 
         $this->setGridViewType();
@@ -2773,6 +2595,13 @@ class SiteBill_Krascap extends SiteBill {
         }
 
         $params_r = $this->gatherRequestParams();
+
+        if (isset($routedparams)) {
+            $params_r['routed_params'] = $routedparams;
+            $params_r['pager_url'] = $REQUESTURIPATH;
+        }
+
+
         if (!empty($params)) {
             $params = array_merge($params, $params_r);
         } else {
@@ -2791,11 +2620,32 @@ class SiteBill_Krascap extends SiteBill {
         return '';
     }
 
+    /**
+     * Добавление хвоста вида [страница N] в тексты заголовков
+     * @param array $metadata массив метаданных страницы
+     * @param int $page номер страницы
+     */
+    private function appendPageNumberTail($metadata, $page = 0)
+    {
+
+        if ($page > 1 && 1 == $this->getConfigValue('add_pagenumber_title')) {
+            $pagenumber_title_place = intval($this->getConfigValue('add_pagenumber_title_place'));
+            if (isset($metadata['title']) && $metadata['title'] != '' && ($pagenumber_title_place == 0 || $pagenumber_title_place == 2)) {
+                $metadata['title'] .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $page . ']';
+            }
+            if (isset($metadata['meta_title']) && $metadata['meta_title'] != '' && ($pagenumber_title_place == 1 || $pagenumber_title_place == 2)) {
+                $metadata['meta_title'] .= ' [' . Multilanguage::_('L_PAGE') . ' ' . $page . ']';
+            }
+        }
+        return $metadata;
+    }
+
     /*
      * функция для возврата списка в виде єксель-таблицы
      */
 
-    function getRealtyListAsExcell($data) {
+    function getRealtyListAsExcell($data)
+    {
         $objPHPExcel = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
         $column = 0;
 
@@ -2815,7 +2665,7 @@ class SiteBill_Krascap extends SiteBill {
         }
 
         $objWriter = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($objPHPExcel);
-        $xlsx_file_name = "data" . date('Y-m-d_H_i') . "_page" . $current_page . ".xlsx";
+        $xlsx_file_name = "data" . date('Y-m-d_H_i') . ".xlsx";
         $xlsx_output_file = SITEBILL_DOCUMENT_ROOT . "/cache/upl/" . $xlsx_file_name;
         $objWriter->save($xlsx_output_file);
 
@@ -2827,7 +2677,8 @@ class SiteBill_Krascap extends SiteBill {
         exit;
     }
 
-    function grid_adv2($params = array()) {
+    function grid_adv2($params = array())
+    {
         $country_url_catched = false;
         $find_url_catched = false;
         $city_url_catched = false;
@@ -2843,7 +2694,7 @@ class SiteBill_Krascap extends SiteBill {
         if ($REQUESTURIPATH != '') {
 
             $trailing_slashe = '/';
-            if (1 == (int) $this->getConfigValue('apps.seo.no_trailing_slashes')) {
+            if (1 == (int)$this->getConfigValue('apps.seo.no_trailing_slashes')) {
                 $trailing_slashe = '';
             }
 
@@ -2856,14 +2707,10 @@ class SiteBill_Krascap extends SiteBill {
             }
 
 
-
             if (preg_match('/^user(\d).html$/', $REQUESTURIPATH, $matches)) {
                 return $this->FrontAction_grid_user($REQUESTURIPATH, array('user_id' => $matches[1]));
             }
-
-
-
-            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/predefinedlinks/admin/admin.php')) {
+            if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/predefinedlinks/admin/admin.php') && 1 == $this->getConfigValue('apps.predefinedlinks.enable')) {
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/predefinedlinks/admin/admin.php';
                 $PDLA = new predefinedlinks_admin();
                 if ($predefined_info = $PDLA->checkAlias($REQUESTURIPATH)) {
@@ -2880,7 +2727,7 @@ class SiteBill_Krascap extends SiteBill {
                 if ($stmt) {
                     $ar = $DBC->fetch($stmt);
 
-                    if ((int) $ar['country_id'] != 0) {
+                    if ((int)$ar['country_id'] != 0) {
                         if ($ar['url'] != $REQUESTURIPATH) {
                             $new_location = SITEBILL_MAIN_URL . '/' . $ar['url'] . $trailing_slashe;
                             $this->go301($new_location);
@@ -2895,7 +2742,7 @@ class SiteBill_Krascap extends SiteBill {
                 $stmt = $DBC->query($query, array($REQUESTURIPATH));
                 if ($stmt) {
                     $ar = $DBC->fetch($stmt);
-                    if ((int) $ar['region_id'] != 0) {
+                    if ((int)$ar['region_id'] != 0) {
                         if ($ar['alias'] != $REQUESTURIPATH) {
                             $new_location = SITEBILL_MAIN_URL . '/' . $ar['alias'] . $trailing_slashe;
                             $this->go301($new_location);
@@ -2911,7 +2758,7 @@ class SiteBill_Krascap extends SiteBill {
                 if ($stmt) {
                     $ar = $DBC->fetch($stmt);
 
-                    if ((int) $ar['city_id'] != 0) {
+                    if ((int)$ar['city_id'] != 0) {
                         if ($ar['url'] != $REQUESTURIPATH) {
                             $new_location = SITEBILL_MAIN_URL . '/' . $ar['url'] . $trailing_slashe;
                             $this->go301($new_location);
@@ -2939,7 +2786,7 @@ class SiteBill_Krascap extends SiteBill {
 
             if (intval($this->getConfigValue('apps.seo.no_topic_url')) === 0) {
                 if (preg_match('/topic(\d*).html/', $REQUESTURIPATH, $matches)) {
-                    $topic_id = (int) $matches[1];
+                    $topic_id = (int)$matches[1];
                     require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
                     $Structure = new Structure_Manager();
                     $urls = $Structure->loadCategoriesUrls();
@@ -3011,19 +2858,46 @@ class SiteBill_Krascap extends SiteBill {
         }
     }
 
-    public function gatherRequestParams() {
-        $REQUESTURIPATH = SiteBill::getClearRequestURI();
+    /*
+     * Функция определяющая набор и правила извлечения переменніх из запроса
+    function getRequestParamsList(){
         $params = array();
 
-        /* if(NULL!==$this->getRequestValue('places')){
-          $params['places'] = $this->getRequestValue('places');
-          } */
+        $params['id'] = array(
+            'type' => 'int',
+            'array' => true
+        );
+        $params['wlocation'] = array(
+            'type' => 'str'
+        );
+        $params['loc'] = array(
+            'type' => 'str'
+        );
+        $params['id'] = array(
+            'type' => 'int',
+            'array' => true
+        );
+        return array(
+            'id' => array()
+        );
+    }
+
+    function gt($value, $type, $isarray = false){
+        //if($isarray)
+    }
+    */
+
+    public function gatherRequestParams()
+    {
+
+        $REQUESTURIPATH = SiteBill::getClearRequestURI();
+        $params = array();
 
         if (NULL !== $this->getRequestValue('id')) {
             if (is_array($this->getRequestValue('id'))) {
                 $params['id'] = $this->getRequestValue('id');
             } else {
-                $params['id'] = (int) $this->getRequestValue('id');
+                $params['id'] = (int)$this->getRequestValue('id');
             }
         }
 
@@ -3064,13 +2938,13 @@ class SiteBill_Krascap extends SiteBill {
             $params['complex_id'] = $this->safeRequestParams($this->getRequestValue('complex_id'));
         }
         if (NULL !== $this->getRequestValue('page')) {
-            $params['page'] = (int) $this->getRequestValue('page');
+            $params['page'] = (int)$this->getRequestValue('page');
         }
         if (NULL !== $this->getRequestValue('spec')) {
             $params['spec'] = $this->getRequestValue('spec');
         }
         if (NULL !== $this->getRequestValue('owner')) {
-            $params['owner'] = (int) $this->getRequestValue('owner');
+            $params['owner'] = (int)$this->getRequestValue('owner');
         }
         if (NULL !== $this->getRequestValue('asc')) {
             $params['asc'] = $this->getRequestValue('asc');
@@ -3082,139 +2956,139 @@ class SiteBill_Krascap extends SiteBill {
         }
 
         if (NULL !== $this->getRequestValue('currency_id')) {
-            $params['currency_id'] = (int) $this->getRequestValue('currency_id');
+            $params['currency_id'] = (int)$this->getRequestValue('currency_id');
         }
         if (NULL !== $this->getRequestValue('price')) {
-            $params['price'] = (int) str_replace(' ', '', $this->getRequestValue('price'));
-            $this->template->assign('price', $params['price']);
+            $params['price'] = (int)str_replace(' ', '', $this->getRequestValue('price'));
+            $this->template->assert('price', $params['price']);
         }
 
         if (NULL !== $this->getRequestValue('price_min')) {
-            $params['price_min'] = (int) str_replace(' ', '', $this->getRequestValue('price_min'));
-            $this->template->assign('price_min', $params['price_min']);
+            $params['price_min'] = (int)str_replace(' ', '', $this->getRequestValue('price_min'));
+            $this->template->assert('price_min', $params['price_min']);
         }
 
         if (NULL !== $this->getRequestValue('price_pm')) {
-            $params['price_pm'] = (int) str_replace(' ', '', $this->getRequestValue('price_pm'));
-            $this->template->assign('price_pm', $params['price_pm']);
+            $params['price_pm'] = (int)str_replace(' ', '', $this->getRequestValue('price_pm'));
+            $this->template->assert('price_pm', $params['price_pm']);
         }
 
         if (NULL !== $this->getRequestValue('price_pm_min')) {
-            $params['price_pm_min'] = (int) str_replace(' ', '', $this->getRequestValue('price_pm_min'));
-            $this->template->assign('price_pm_min', $params['price_pm_min']);
+            $params['price_pm_min'] = (int)str_replace(' ', '', $this->getRequestValue('price_pm_min'));
+            $this->template->assert('price_pm_min', $params['price_pm_min']);
         }
 
         if (NULL !== $this->getRequestValue('house_number')) {
             $params['house_number'] = $this->getRequestValue('house_number');
-            $this->template->assign('house_number', $params['house_number']);
+            $this->template->assert('house_number', $params['house_number']);
         }
 
         if (NULL !== $this->getRequestValue('onlyspecial')) {
             $params['onlyspecial'] = $this->getRequestValue('onlyspecial');
-            $this->template->assign('onlyspecial', $params['onlyspecial']);
+            $this->template->assert('onlyspecial', $params['onlyspecial']);
         }
 
         if (NULL !== $this->getRequestValue('floor')) {
-            $params['floor'] = (int) $this->getRequestValue('floor');
+            $params['floor'] = (int)$this->getRequestValue('floor');
         }
 
         if (NULL !== $this->getRequestValue('floor_count')) {
-            $params['floor_count'] = (int) $this->getRequestValue('floor_count');
+            $params['floor_count'] = (int)$this->getRequestValue('floor_count');
         }
 
         if (NULL !== $this->getRequestValue('floor_min')) {
-            $params['floor_min'] = (int) $this->getRequestValue('floor_min');
+            $params['floor_min'] = (int)$this->getRequestValue('floor_min');
         }
 
         if (NULL !== $this->getRequestValue('floor_max')) {
-            $params['floor_max'] = (int) $this->getRequestValue('floor_max');
+            $params['floor_max'] = (int)$this->getRequestValue('floor_max');
         }
 
         if (NULL !== $this->getRequestValue('floor_count_min')) {
-            $params['floor_count_min'] = (int) $this->getRequestValue('floor_count_min');
+            $params['floor_count_min'] = (int)$this->getRequestValue('floor_count_min');
         }
 
         if (NULL !== $this->getRequestValue('floor_count_max')) {
-            $params['floor_count_max'] = (int) $this->getRequestValue('floor_count_max');
+            $params['floor_count_max'] = (int)$this->getRequestValue('floor_count_max');
         }
 
         if (NULL !== $this->getRequestValue('not_first_floor')) {
-            $params['not_first_floor'] = (int) $this->getRequestValue('not_first_floor');
+            $params['not_first_floor'] = (int)$this->getRequestValue('not_first_floor');
         }
 
         if (NULL !== $this->getRequestValue('not_last_floor')) {
-            $params['not_last_floor'] = (int) $this->getRequestValue('not_last_floor');
+            $params['not_last_floor'] = (int)$this->getRequestValue('not_last_floor');
         }
 
 
         if (NULL !== $this->getRequestValue('square_min')) {
-            $params['square_min'] = (int) str_replace(' ', '', $this->getRequestValue('square_min'));
+            $params['square_min'] = (int)str_replace(' ', '', $this->getRequestValue('square_min'));
         }
 
         if (NULL !== $this->getRequestValue('square_max')) {
-            $params['square_max'] = (int) str_replace(' ', '', $this->getRequestValue('square_max'));
+            $params['square_max'] = (int)str_replace(' ', '', $this->getRequestValue('square_max'));
         }
 
         if (NULL !== $this->getRequestValue('live_square_min')) {
-            $params['live_square_min'] = (int) str_replace(' ', '', $this->getRequestValue('live_square_min'));
+            $params['live_square_min'] = (int)str_replace(' ', '', $this->getRequestValue('live_square_min'));
         }
 
         if (NULL !== $this->getRequestValue('kitchen_square_min')) {
-            $params['kitchen_square_min'] = (int) str_replace(' ', '', $this->getRequestValue('kitchen_square_min'));
+            $params['kitchen_square_min'] = (int)str_replace(' ', '', $this->getRequestValue('kitchen_square_min'));
         }
 
         if (NULL !== $this->getRequestValue('kitchen_square_max')) {
-            $params['kitchen_square_max'] = (int) str_replace(' ', '', $this->getRequestValue('kitchen_square_max'));
+            $params['kitchen_square_max'] = (int)str_replace(' ', '', $this->getRequestValue('kitchen_square_max'));
         }
 
         if (NULL !== $this->getRequestValue('live_square_max')) {
-            $params['live_square_max'] = (int) str_replace(' ', '', $this->getRequestValue('live_square_max'));
+            $params['live_square_max'] = (int)str_replace(' ', '', $this->getRequestValue('live_square_max'));
         }
 
         if (NULL !== $this->getRequestValue('is_phone')) {
-            $params['is_phone'] = (int) $this->getRequestValue('is_phone');
+            $params['is_phone'] = (int)$this->getRequestValue('is_phone');
         }
 
         if (NULL !== $this->getRequestValue('is_balkony')) {
-            $params['is_balkony'] = (int) $this->getRequestValue('is_balkony');
+            $params['is_balkony'] = (int)$this->getRequestValue('is_balkony');
         }
 
         if (NULL !== $this->getRequestValue('is_sanitary')) {
-            $params['is_sanitary'] = (int) $this->getRequestValue('is_sanitary');
+            $params['is_sanitary'] = (int)$this->getRequestValue('is_sanitary');
         }
 
 
         if (NULL !== $this->getRequestValue('status')) {
-            $params['status'] = (int) $this->getRequestValue('status');
+            $params['status'] = (int)$this->getRequestValue('status');
         }
 
 
         if (NULL !== $this->getRequestValue('nout_from_sale')) {
-            $params['nout_from_sale'] = (int) $this->getRequestValue('nout_from_sale');
+            $params['nout_from_sale'] = (int)$this->getRequestValue('nout_from_sale');
         }
 
         if (NULL !== $this->getRequestValue('nwith_null_params')) {
-            $params['nwith_null_params'] = (int) $this->getRequestValue('nwith_null_params');
+            $params['nwith_null_params'] = (int)$this->getRequestValue('nwith_null_params');
         }
 
         if (NULL !== $this->getRequestValue('by_ipoteka')) {
-            $params['by_ipoteka'] = (int) $this->getRequestValue('by_ipoteka');
+            $params['by_ipoteka'] = (int)$this->getRequestValue('by_ipoteka');
         }
 
         if (NULL !== $this->getRequestValue('new_only')) {
-            $params['new_only'] = (int) $this->getRequestValue('new_only');
+            $params['new_only'] = (int)$this->getRequestValue('new_only');
         }
 
         if (NULL !== $this->getRequestValue('is_furniture')) {
-            $params['is_furniture'] = (int) $this->getRequestValue('is_furniture');
+            $params['is_furniture'] = (int)$this->getRequestValue('is_furniture');
         }
 
         if (NULL !== $this->getRequestValue('has_photo')) {
-            $params['has_photo'] = (int) $this->getRequestValue('has_photo');
+            $params['has_photo'] = (int)$this->getRequestValue('has_photo');
         }
 
         if (NULL !== $this->getRequestValue('is_internet')) {
-            $params['is_internet'] = (int) $this->getRequestValue('is_internet');
+            $params['is_internet'] = (int)$this->getRequestValue('is_internet');
         }
 
         if (NULL !== $this->getRequestValue('room_count')) {
@@ -3226,23 +3100,22 @@ class SiteBill_Krascap extends SiteBill {
         }
 
         if (NULL !== $this->getRequestValue('minbeds')) {
-            $params['minbeds'] = (int) $this->getRequestValue('minbeds');
+            $params['minbeds'] = (int)$this->getRequestValue('minbeds');
         }
 
         if (NULL !== $this->getRequestValue('minbaths')) {
-            $params['minbaths'] = (int) $this->getRequestValue('minbaths');
+            $params['minbaths'] = (int)$this->getRequestValue('minbaths');
         }
 
         if (NULL !== $this->getRequestValue('uniq_id')) {
-            $params['uniq_id'] = (int) $this->getRequestValue('uniq_id');
+            $params['uniq_id'] = (int)$this->getRequestValue('uniq_id');
         }
 
 
-
-        if (1 == (int) $this->getRequestValue('export_afy')) {
+        if (1 == (int)$this->getRequestValue('export_afy')) {
             $params['export_afy'] = 1;
         }
-        if (1 == (int) $this->getRequestValue('export_cian')) {
+        if (1 == (int)$this->getRequestValue('export_cian')) {
             $params['export_cian'] = 1;
         }
 
@@ -3257,9 +3130,8 @@ class SiteBill_Krascap extends SiteBill {
         }
 
 
-
-        if (0 != (int) $this->getRequestValue('page_limit')) {
-            $params['page_limit'] = (int) $this->getRequestValue('page_limit');
+        if (0 != (int)$this->getRequestValue('page_limit')) {
+            $params['page_limit'] = (int)$this->getRequestValue('page_limit');
         }
 
         if (NULL !== $this->getRequestValue('geocoords')) {
@@ -3272,15 +3144,19 @@ class SiteBill_Krascap extends SiteBill {
 
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/billing/lib/billing.php') && $this->getConfigValue('apps.billing.enable') == 1) {
             if (NULL !== $this->getRequestValue('vip_status')) {
-                $params['vip_status'] = (int) $this->getRequestValue('vip_status');
+                $params['vip_status'] = (int)$this->getRequestValue('vip_status');
             }
             if (NULL !== $this->getRequestValue('premium_status')) {
-                $params['premium_status'] = (int) $this->getRequestValue('premium_status');
+                $params['premium_status'] = (int)$this->getRequestValue('premium_status');
             }
             if (NULL !== $this->getRequestValue('bold_status')) {
-                $params['bold_status'] = (int) $this->getRequestValue('bold_status');
+                $params['bold_status'] = (int)$this->getRequestValue('bold_status');
             }
         }
+        if (NULL !== $this->getRequestValue('dv_ipoteka')) {
+            $params['dv_ipoteka'] = $this->getRequestValue('dv_ipoteka');
+        }
+
 
         /* if($REQUESTURIPATH=='find'){
           $params['pager_url']=$REQUESTURIPATH;
@@ -3289,7 +3165,8 @@ class SiteBill_Krascap extends SiteBill {
         return $params;
     }
 
-    protected function setGridViewType() {
+    protected function setGridViewType()
+    {
 
         if (in_array($this->getRequestValue('grid_type'), array('thumbs', 'list'))) {
             $_SESSION['grid_type'] = $this->getRequestValue('grid_type');
@@ -3304,11 +3181,12 @@ class SiteBill_Krascap extends SiteBill {
         }
     }
 
-    function map($only_data = false) {
+    function map($only_data = false)
+    {
         $data = array();
 
         if ($this->getConfigValue('apps.geodata.enable') != 1) {
-            $this->template->assign('_geo_data_hide', 1);
+            $this->template->assert('_geo_data_hide', 1);
             return json_encode($data);
         }
 
@@ -3323,37 +3201,37 @@ class SiteBill_Krascap extends SiteBill {
         $params['street_id'] = $this->getRequestValue('street_id');
         $params['page'] = $this->getRequestValue('page');
         $params['spec'] = $this->getRequestValue('spec');
-        $params['owner'] = (int) $this->getRequestValue('owner');
+        $params['owner'] = (int)$this->getRequestValue('owner');
         $params['asc'] = $this->getRequestValue('asc');
         if (NULL != $this->getRequestValue('user_id')) {
             $params['user_id'] = $this->getRequestValue('user_id');
         }
 
-        $params['price'] = (int) str_replace(' ', '', $this->getRequestValue('price'));
-        $this->template->assign('price', $params['price']);
+        $params['price'] = (int)str_replace(' ', '', $this->getRequestValue('price'));
+        $this->template->assert('price', $params['price']);
 
-        $params['price_min'] = (int) str_replace(' ', '', $this->getRequestValue('price_min'));
-        $this->template->assign('price_min', $params['price_min']);
+        $params['price_min'] = (int)str_replace(' ', '', $this->getRequestValue('price_min'));
+        $this->template->assert('price_min', $params['price_min']);
 
         $params['house_number'] = $this->getRequestValue('house_number');
-        $this->template->assign('house_number', $params['house_number']);
+        $this->template->assert('house_number', $params['house_number']);
 
         $params['onlyspecial'] = $this->getRequestValue('onlyspecial');
-        $this->template->assign('onlyspecial', $params['onlyspecial']);
+        $this->template->assert('onlyspecial', $params['onlyspecial']);
 
-        $params['floor_min'] = (int) $this->getRequestValue('floor_min');
-        $params['floor_max'] = (int) $this->getRequestValue('floor_max');
+        $params['floor_min'] = (int)$this->getRequestValue('floor_min');
+        $params['floor_max'] = (int)$this->getRequestValue('floor_max');
 
-        $params['floor_count_min'] = (int) $this->getRequestValue('floor_count_min');
-        $params['floor_count_max'] = (int) $this->getRequestValue('floor_count_max');
+        $params['floor_count_min'] = (int)$this->getRequestValue('floor_count_min');
+        $params['floor_count_max'] = (int)$this->getRequestValue('floor_count_max');
 
-        $params['square_min'] = (int) $this->getRequestValue('square_min');
-        $params['square_max'] = (int) $this->getRequestValue('square_max');
+        $params['square_min'] = (int)$this->getRequestValue('square_min');
+        $params['square_max'] = (int)$this->getRequestValue('square_max');
 
-        $params['is_phone'] = (int) $this->getRequestValue('is_phone');
-        $params['is_furniture'] = (int) $this->getRequestValue('is_furniture');
-        $params['has_photo'] = (int) $this->getRequestValue('has_photo');
-        $params['is_internet'] = (int) $this->getRequestValue('is_internet');
+        $params['is_phone'] = (int)$this->getRequestValue('is_phone');
+        $params['is_furniture'] = (int)$this->getRequestValue('is_furniture');
+        $params['has_photo'] = (int)$this->getRequestValue('has_photo');
+        $params['is_internet'] = (int)$this->getRequestValue('is_internet');
 
         $params['room_count'] = $this->getRequestValue('room_count');
         $params['optype'] = $this->getRequestValue('optype');
@@ -3375,7 +3253,7 @@ class SiteBill_Krascap extends SiteBill {
             $data[$k]['currency_name'] = SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['currency_name']);
             $data[$k]['city'] = SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['city']);
             $data[$k]['street'] = SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['street']);
-            if ((int) $d['price'] != 0) {
+            if ((int)$d['price'] != 0) {
                 $gdata[$k]['price'] = number_format($d['price'], 0, '.', ' ');
             } else {
                 $gdata[$k]['price'] = $d['price'];
@@ -3400,13 +3278,14 @@ class SiteBill_Krascap extends SiteBill {
             return json_encode($data);
         }
 
-        $this->template->assign('_geo_data', json_encode($data));
+        $this->template->assert('_geo_data', json_encode($data));
 
-        $this->template->assign('main_file_tpl', 'map.tpl');
+        $this->template->assert('main_file_tpl', 'map.tpl');
         return true;
     }
 
-    function map2($only_data = false) {
+    function map2($only_data = false)
+    {
 
         global $smarty;
 
@@ -3421,37 +3300,37 @@ class SiteBill_Krascap extends SiteBill {
         $params['street_id'] = $this->getRequestValue('street_id');
         $params['page'] = $this->getRequestValue('page');
         $params['spec'] = $this->getRequestValue('spec');
-        $params['owner'] = (int) $this->getRequestValue('owner');
+        $params['owner'] = (int)$this->getRequestValue('owner');
         $params['asc'] = $this->getRequestValue('asc');
         if (NULL != $this->getRequestValue('user_id')) {
             $params['user_id'] = $this->getRequestValue('user_id');
         }
 
-        $params['price'] = (int) str_replace(' ', '', $this->getRequestValue('price'));
-        $this->template->assign('price', $params['price']);
+        $params['price'] = (int)str_replace(' ', '', $this->getRequestValue('price'));
+        $this->template->assert('price', $params['price']);
 
-        $params['price_min'] = (int) str_replace(' ', '', $this->getRequestValue('price_min'));
-        $this->template->assign('price_min', $params['price_min']);
+        $params['price_min'] = (int)str_replace(' ', '', $this->getRequestValue('price_min'));
+        $this->template->assert('price_min', $params['price_min']);
 
         $params['house_number'] = $this->getRequestValue('house_number');
-        $this->template->assign('house_number', $params['house_number']);
+        $this->template->assert('house_number', $params['house_number']);
 
         $params['onlyspecial'] = $this->getRequestValue('onlyspecial');
-        $this->template->assign('onlyspecial', $params['onlyspecial']);
+        $this->template->assert('onlyspecial', $params['onlyspecial']);
 
-        $params['floor_min'] = (int) $this->getRequestValue('floor_min');
-        $params['floor_max'] = (int) $this->getRequestValue('floor_max');
+        $params['floor_min'] = (int)$this->getRequestValue('floor_min');
+        $params['floor_max'] = (int)$this->getRequestValue('floor_max');
 
-        $params['floor_count_min'] = (int) $this->getRequestValue('floor_count_min');
-        $params['floor_count_max'] = (int) $this->getRequestValue('floor_count_max');
+        $params['floor_count_min'] = (int)$this->getRequestValue('floor_count_min');
+        $params['floor_count_max'] = (int)$this->getRequestValue('floor_count_max');
 
-        $params['square_min'] = (int) $this->getRequestValue('square_min');
-        $params['square_max'] = (int) $this->getRequestValue('square_max');
+        $params['square_min'] = (int)$this->getRequestValue('square_min');
+        $params['square_max'] = (int)$this->getRequestValue('square_max');
 
-        $params['is_phone'] = (int) $this->getRequestValue('is_phone');
-        $params['is_furniture'] = (int) $this->getRequestValue('is_furniture');
-        $params['has_photo'] = (int) $this->getRequestValue('has_photo');
-        $params['is_internet'] = (int) $this->getRequestValue('is_internet');
+        $params['is_phone'] = (int)$this->getRequestValue('is_phone');
+        $params['is_furniture'] = (int)$this->getRequestValue('is_furniture');
+        $params['has_photo'] = (int)$this->getRequestValue('has_photo');
+        $params['is_internet'] = (int)$this->getRequestValue('is_internet');
 
         $params['room_count'] = $this->getRequestValue('room_count');
         $params['optype'] = $this->getRequestValue('optype');
@@ -3487,7 +3366,7 @@ class SiteBill_Krascap extends SiteBill {
             return json_encode($data);
         }
 
-        $this->template->assign('data', json_encode($data));
+        $this->template->assert('data', json_encode($data));
 
         return $smarty->fetch('map.tpl');
         return true;
@@ -3498,7 +3377,8 @@ class SiteBill_Krascap extends SiteBill {
      * @param
      * @return
      */
-    function grid_special() {
+    function grid_special()
+    {
         $params['spec'] = 'spec';
         $grid_constructor = $this->_getGridConstructor();
         $grid_constructor->special($params);
@@ -3509,7 +3389,20 @@ class SiteBill_Krascap extends SiteBill {
      * @param
      * @return
      */
-    function grid_special_right() {
+    function grid_special_right()
+    {
+        $params['spec'] = 'spec';
+        $grid_constructor = $this->_getGridConstructor();
+        $grid_constructor->special_right($params);
+    }
+
+    /**
+     * Get special right grid with params
+     * @param
+     * @return
+     */
+    function grid_special_right_with_params($params)
+    {
         $params['spec'] = 'spec';
         $grid_constructor = $this->_getGridConstructor();
         $grid_constructor->special_right($params);
@@ -3520,7 +3413,8 @@ class SiteBill_Krascap extends SiteBill {
      * @param void
      * @return string
      */
-    function getUpdateDate() {
+    function getUpdateDate()
+    {
         $rs = '<b>' . Multilanguage::_('L_MESSAGE_DB_UPDATED') . ': ' . date('d.m.Y') . '</b>';
         return $rs;
     }
@@ -3530,7 +3424,8 @@ class SiteBill_Krascap extends SiteBill {
      * @param int $topic_id topic ID
      * @return string
      */
-    function getTopicTitle($topic_id) {
+    function getTopicTitle($topic_id)
+    {
         $DBC = DBC::getInstance();
         $query = 'SELECT name FROM ' . DB_PREFIX . '_topic WHERE id=? LIMIT 1';
         $stmt = $DBC->query($query, array($topic_id));
@@ -3546,7 +3441,8 @@ class SiteBill_Krascap extends SiteBill {
      * @param int $topic_id topic ID
      * @return array
      */
-    function getTopicFullInfo($topic_id) {
+    function getTopicFullInfo($topic_id)
+    {
         $DBC = DBC::getInstance();
         $query = 'SELECT * FROM ' . DB_PREFIX . '_topic WHERE id=? LIMIT 1';
         $stmt = $DBC->query($query, array($topic_id));
@@ -3564,14 +3460,15 @@ class SiteBill_Krascap extends SiteBill {
      * @param int $page page
      * @return boolean
      */
-    function validPage($array_count, $counter, $page = 1) {
+    function validPage($array_count, $counter, $page = 1)
+    {
         //global $per_page;
         $per_page = $this->getConfigValue('per_page');
         //echo "page = $page, counter = $counter, per_page = $per_page";
         if ($page == '') {
             $page = 1;
         }
-        if (($counter > $per_page * ( $page - 1) ) and ( $counter <= $per_page * $page )) {
+        if (($counter > $per_page * ($page - 1)) and ($counter <= $per_page * $page)) {
             return true;
         }
         return false;
@@ -3582,7 +3479,8 @@ class SiteBill_Krascap extends SiteBill {
      * @param int $record_id record ID
      * @return boolean
      */
-    function recordHasPhoto($record_id) {
+    function recordHasPhoto($record_id)
+    {
         for ($index = 0; $index <= $this->image_number; $index++) {
             if ($this->getPreviewImage($record_id, $index)) {
                 return true;
@@ -3590,9 +3488,10 @@ class SiteBill_Krascap extends SiteBill {
         }
     }
 
-    function getLast($count = 10) {
+    function getLast($count = 10)
+    {
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/banner/banner.php')) {
-            include_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/banner/banner.php');
+            include_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/banner/banner.php');
         } else {
             $banners = array(
                 array('src' => '/template/frontend/albostar/img/banners3.png', 'href' => '/baner3.html'),
@@ -3677,7 +3576,8 @@ class SiteBill_Krascap extends SiteBill {
         return $ret_b;
     }
 
-    function getRealtyWrap($data) {
+    function getRealtyWrap($data)
+    {
         $ret = '<div class="itm">';
         $ret .= '<a href="' . SITEBILL_MAIN_URL . '/realty' . $data['id'] . '.html">';
         $ret .= '<div class="itm_img"><img src="' . $data['prev'] . '" /></div>';
@@ -3690,12 +3590,14 @@ class SiteBill_Krascap extends SiteBill {
         return $ret;
     }
 
-    function getBannerWrap($data) {
+    function getBannerWrap($data)
+    {
         $ret = '<div class="itm"><a href="' . SITEBILL_MAIN_URL . $data['href'] . '"><div class="itm_img"><img src="' . SITEBILL_MAIN_URL . $data['src'] . '" /></div></a></div>';
         return $ret;
     }
 
-    function getCityListTr() {
+    function getCityListTr()
+    {
         $city = array();
         $translite_names = array();
         if (1 == $this->getConfigValue('apps.geodata.enable')) {
@@ -3733,7 +3635,8 @@ class SiteBill_Krascap extends SiteBill {
         return $city;
     }
 
-    function getTopicListTr() {
+    function getTopicListTr()
+    {
         $DBC = DBC::getInstance();
         $topic = array();
         $translite_names = array();
@@ -3766,7 +3669,8 @@ class SiteBill_Krascap extends SiteBill {
         return $topic;
     }
 
-    function urlAnalizer() {
+    function urlAnalizer()
+    {
         $topic_id = FALSE;
         if (preg_match('/topic(\d*).html/', $_SERVER['REQUEST_URI'], $matches)) {
             $topic_id = $matches[1];
@@ -3778,12 +3682,14 @@ class SiteBill_Krascap extends SiteBill {
         return $topic_id;
     }
 
-    function safeRequestParams($params) {
+    function safeRequestParams($params)
+    {
         return $params;
     }
 
-    function isAccountDetected($requesturi) {
-
+    function isAccountDetected($requesturi)
+    {
+        $has_result = false;
         $apps_processor = new Apps_Processor();
         $apps_processor->run_account();
         if (count($apps_processor->get_executed_apps()) > 0) {
@@ -3808,11 +3714,11 @@ class SiteBill_Krascap extends SiteBill {
             }
 
             $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                            array(
-                                '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                '<a href="' . $folder . '/account/">Личный кабинет</a>'
-                            )
-                    )
+                array(
+                    '<a href="' . $this->createUrlTpl('') . '">' . Multilanguage::_('L_HOME') . '</a>',
+                    '<a href="' . $this->createUrlTpl('account') . '">Личный кабинет</a>'
+                )
+            )
             );
 
             if (preg_match('/^account\/profile/', $requesturi)) {
@@ -3820,31 +3726,31 @@ class SiteBill_Krascap extends SiteBill {
                 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/profile_using_model.php');
                 $profile = new User_Profile_Model();
                 $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                                array(
-                                    '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                    '<a href="' . $folder . '/account/">Личный кабинет</a>',
-                                    '<a href="' . $folder . '/account/profile/">Профиль</a>'
-                )));
+                    array(
+                        '<a href="' . $this->createUrlTpl('') . '">' . Multilanguage::_('L_HOME') . '</a>',
+                        '<a href="' . $this->createUrlTpl('account') . '">Личный кабинет</a>',
+                        '<a href="' . $this->createUrlTpl('account/profile') . '">Профиль</a>'
+                    )));
 
                 $this->template->assert('main', $profile->main());
             } elseif (preg_match('/^account\/balance/', $requesturi)) {
 
                 $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                                array(
-                                    '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                    '<a href="' . $folder . '/account/">Личный кабинет</a>',
-                                    '<a href="' . $folder . '/account/balance/">Баланс</a>'
-                )));
+                    array(
+                        '<a href="' . $this->createUrlTpl('') . '">' . Multilanguage::_('L_HOME') . '</a>',
+                        '<a href="' . $this->createUrlTpl('account') . '">Личный кабинет</a>',
+                        '<a href="' . $this->createUrlTpl('account/balance') . '">Баланс</a>'
+                    )));
 
                 $this->template->assert('main', $Account->main());
             } elseif (preg_match('/^account\/user/', $requesturi)) {
                 if ($this->getConfigValue('apps.company.enable')) {
                     $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                                    array(
-                                        '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                        '<a href="' . $folder . '/account/">Личный кабинет</a>',
-                                        '<a href="' . $folder . '/account/user/">Риелторы</a>'
-                    )));
+                        array(
+                            '<a href="' . $this->createUrlTpl('') . '">' . Multilanguage::_('L_HOME') . '</a>',
+                            '<a href="' . $this->createUrlTpl('account') . '">Личный кабинет</a>',
+                            '<a href="' . $this->createUrlTpl('account/user') . '">Риелторы</a>'
+                        )));
 
                     require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/users/user_object_manager.php');
                     require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/user/user_company_manager.php');
@@ -3854,11 +3760,11 @@ class SiteBill_Krascap extends SiteBill {
             } else {
 
                 $this->template->assert('breadcrumbs', $this->get_breadcrumbs(
-                                array(
-                                    '<a href="' . $folder . '/">' . Multilanguage::_('L_HOME') . '</a>',
-                                    '<a href="' . $folder . '/account/">Личный кабинет</a>',
-                                    '<a href="' . $folder . '/account/data/">Мои объявления</a>'
-                )));
+                    array(
+                        '<a href="' . $this->createUrlTpl('') . '">' . Multilanguage::_('L_HOME') . '</a>',
+                        '<a href="' . $this->createUrlTpl('account') . '">Личный кабинет</a>',
+                        '<a href="' . $this->createUrlTpl('account/data') . '">Мои объявления</a>'
+                    )));
 
                 if (preg_match('/add/', $requesturi)) {
                     require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/sitebill_krascap_admin.php');
@@ -3888,12 +3794,21 @@ class SiteBill_Krascap extends SiteBill {
         }
     }
 
-    function isRealtyDetected($requesturi) {
+    function isRealtyDetected($requesturi)
+    {
 
         $hard_mode = false; //decline all aliased url if they have no determined alias
         $result = false;
         $unknown_address = false;
         $realty_id = false;
+
+        $querytail = '';
+        $request = $this->request();
+        $get = $request->query->all();
+        if (!empty($get)) {
+            $querytail = '?' . http_build_query($get);
+        }
+
 
         if (!$result && 1 == $this->getConfigValue('apps.seo.data_alias_enable')) {
             $url_string_parts = explode('/', $requesturi);
@@ -3908,13 +3823,13 @@ class SiteBill_Krascap extends SiteBill {
                     if ($stmt) {
                         $ar = $DBC->fetch($stmt);
                         //$this->db->fetch_assoc();
-                        if ((int) $ar['id'] > 0) {
+                        if ((int)$ar['id'] > 0) {
                             if (1 == $this->getConfigValue('apps.seo.level_enable') && count($url_string_parts) == 1) {
                                 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
                                 $Structure_Manager = new Structure_Manager();
                                 $urls = $Structure_Manager->loadCategoriesUrls();
                                 if (isset($urls[$ar['topic_id']]) && $urls[$ar['topic_id']] != '') {
-                                    $new_location = SITEBILL_MAIN_URL . '/' . $urls[$ar['topic_id']] . '/' . $ar['translit_alias'];
+                                    $new_location = $this->createUrlTpl($urls[$ar['topic_id']] . '/' . $ar['translit_alias'] . $querytail);
                                     $this->go301($new_location);
                                     return false;
                                 } else {
@@ -3939,14 +3854,14 @@ class SiteBill_Krascap extends SiteBill {
                                 $facturl = implode('/', $url_string_parts);
 
                                 if (isset($urls[$ar['topic_id']]) && $urls[$ar['topic_id']] != '' && $urls[$ar['topic_id']] == $facturl) {
-                                    $new_location = SITEBILL_MAIN_URL . '/' . $ar['translit_alias'];
+                                    $new_location = $this->createUrlTpl($ar['translit_alias'] . $querytail);
                                     $this->go301($new_location);
                                     return false;
                                 } else {
                                     return false;
                                 }
                             }
-                            $realty_id = (int) $ar['id'];
+                            $realty_id = (int)$ar['id'];
                             $this->growCounter('data', 'id', $realty_id, $this->getSessionUserId());
                             $kvartira_view = $this->_getRealtyViewer();
                             if ($html = $kvartira_view->main($realty_id)) {
@@ -3982,16 +3897,16 @@ class SiteBill_Krascap extends SiteBill {
                             $Structure = new Structure_Manager();
                             $urls = $Structure->loadCategoriesUrls();
                             if (isset($urls[$ar['topic_id']]) && $urls[$ar['topic_id']] != '') {
-                                $new_location = SITEBILL_MAIN_URL . '/' . $urls[$ar['topic_id']] . '/' . $ar['translit_alias'];
+                                $new_location = $this->createUrlTpl($urls[$ar['topic_id']] . '/' . $ar['translit_alias'] . $querytail);
                                 $this->go301($new_location);
                                 return false;
                             } else {
-                                $new_location = SITEBILL_MAIN_URL . '/' . $ar['translit_alias'];
+                                $new_location = $this->createUrlTpl($ar['translit_alias'] . $querytail);
                                 $this->go301($new_location);
                                 return false;
                             }
                         } else {
-                            $new_location = SITEBILL_MAIN_URL . '/' . $ar['translit_alias'];
+                            $new_location = $this->createUrlTpl($ar['translit_alias'] . $querytail);
                             $this->go301($new_location);
                             return false;
                         }
@@ -4026,12 +3941,7 @@ class SiteBill_Krascap extends SiteBill {
                     } else {
                         $parent_category_url = '';
                     }
-
-                    if (1 == $this->getConfigValue('apps.seo.html_prefix_enable')) {
-                        $new_location = SITEBILL_MAIN_URL . '/' . $parent_category_url . $realty_alias . $realty_id . '.html';
-                    } else {
-                        $new_location = SITEBILL_MAIN_URL . '/' . $parent_category_url . $realty_alias . $realty_id;
-                    }
+                    $new_location = $this->createUrlTpl($parent_category_url . $realty_alias . $realty_id . (1 == $this->getConfigValue('apps.seo.html_prefix_enable') ? '.html' : '') . $querytail);
                     $this->go301($new_location);
                     return false;
                 } else {
@@ -4059,10 +3969,7 @@ class SiteBill_Krascap extends SiteBill {
                     }
                     //echo preg_quote($real_turl, '/');
                     if (!preg_match('/^' . preg_quote($comparative_url, '/') . '$/', ltrim($requesturi, '/'))) {
-                        $new_location = SITEBILL_MAIN_URL . '/' . $real_turl . '/' . $realty_alias . $realty_id;
-                        if (1 == $this->getConfigValue('apps.seo.html_prefix_enable')) {
-                            $new_location .= '.html';
-                        }
+                        $new_location = $this->createUrlTpl($real_turl . '/' . $realty_alias . $realty_id . (1 == $this->getConfigValue('apps.seo.html_prefix_enable') ? '.html' : '') . $querytail);
                         $this->go301($new_location);
                         return false;
                     }
@@ -4084,10 +3991,7 @@ class SiteBill_Krascap extends SiteBill {
                     $comparative_url .= '.html';
                 }
                 if (!preg_match('/^' . preg_quote($comparative_url, '/') . '$/', ltrim($requesturi, '/'))) {
-                    $new_location = SITEBILL_MAIN_URL . '/' . $realty_alias . $realty_id;
-                    if (1 == $this->getConfigValue('apps.seo.html_prefix_enable')) {
-                        $new_location .= '.html';
-                    }
+                    $new_location = $this->createUrlTpl($realty_alias . $realty_id . (1 == $this->getConfigValue('apps.seo.html_prefix_enable') ? '.html' : '') . $querytail);
                     $this->go301($new_location);
                     return false;
                 }
@@ -4107,20 +4011,15 @@ class SiteBill_Krascap extends SiteBill {
                 $DBC = DBC::getInstance();
                 $query = 'SELECT topic_id FROM ' . DB_PREFIX . '_data WHERE id=?';
                 $stmt = $DBC->query($query, array($realty_id));
-                //echo $DBC->getLastError();
                 if ($stmt) {
                     $ti = $DBC->fetch($stmt);
-                    //print_r($ti);
                     require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
                     $Structure_Manager = new Structure_Manager();
                     $urls = $Structure_Manager->loadCategoriesUrls();
                     $real_turl = $urls[$ti['topic_id']];
                     $comparative_url = $real_turl . '/' . $realty_alias . $realty_id;
                     if (preg_match('/^' . preg_quote($comparative_url, '/') . '/', ltrim($requesturi, '/'))) {
-                        $new_location = SITEBILL_MAIN_URL . '/' . $realty_alias . $realty_id;
-                        if (1 == $this->getConfigValue('apps.seo.html_prefix_enable')) {
-                            $new_location .= '.html';
-                        }
+                        $new_location = $this->createUrlTpl($realty_alias . $realty_id . (1 == $this->getConfigValue('apps.seo.html_prefix_enable') ? '.html' : '') . $querytail);
                         $this->go301($new_location);
                         return false;
                     } else {
@@ -4152,26 +4051,29 @@ class SiteBill_Krascap extends SiteBill {
                     if ($stmt) {
                         $ar = $DBC->fetch($stmt);
 
-                        if ((int) $ar['id'] > 0) {
+                        if ((int)$ar['id'] > 0) {
                             if (1 == $this->getConfigValue('apps.seo.level_enable')) {
                                 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
                                 $Structure_Manager = new Structure_Manager();
                                 $urls = $Structure_Manager->loadCategoriesUrls();
                                 if (isset($urls[$ar['topic_id']]) && $urls[$ar['topic_id']] != '') {
-                                    $new_location = SITEBILL_MAIN_URL . '/' . $urls[$ar['topic_id']] . '/realty' . $ar['id'];
+                                    $new_location = $urls[$ar['topic_id']] . '/' . $realty_alias . $ar['id'];
                                 } else {
-                                    $new_location = SITEBILL_MAIN_URL . '/' . $realty_alias . $ar['id'];
+                                    $new_location = $realty_alias . $ar['id'];
                                 }
                                 if (1 == $this->getConfigValue('apps.seo.html_prefix_enable')) {
                                     $new_location = $new_location . '.html';
                                 }
+                                $new_location = $this->createUrlTpl($new_location . $querytail);
+
                                 $this->go301($new_location);
                                 return false;
                             } elseif (0 == $this->getConfigValue('apps.seo.level_enable')) {
-                                $new_location = SITEBILL_MAIN_URL . '/' . $realty_alias . $ar['id'];
+                                $new_location = $realty_alias . $ar['id'];
                                 if (1 == $this->getConfigValue('apps.seo.html_prefix_enable')) {
                                     $new_location = $new_location . '.html';
                                 }
+                                $new_location = $this->createUrlTpl($new_location . $querytail);
                                 $this->go301($new_location);
                                 return false;
                             }
@@ -4180,8 +4082,6 @@ class SiteBill_Krascap extends SiteBill {
                 }
             }
         }
-
         return $result;
     }
-
 }

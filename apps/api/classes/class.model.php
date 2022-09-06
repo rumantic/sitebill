@@ -74,7 +74,7 @@ class API_model extends API_Common {
 
     private function extract_config_items ( $config ) {
         $matches = array();
-        preg_match_all('/\{[^\}]+\}/', trim($config['apps.mailbox.complaint_mode_variants']), $matches);
+        preg_match_all('/\{[^\}]+\}/', @trim($config['apps.mailbox.complaint_mode_variants']), $matches);
         if (count($matches) > 0) {
             foreach ($matches[0] as $v) {
                 $v = str_replace(array('{', '}'), '', $v);
@@ -82,7 +82,9 @@ class API_model extends API_Common {
                 $ret[$d[0]] = $d[1];
             }
         }
-        $config['apps.mailbox.complaint_mode_variants'] =  $ret;
+        if ( isset($ret) ) {
+            $config['apps.mailbox.complaint_mode_variants'] =  $ret;
+        }
         return $config;
     }
 
@@ -155,7 +157,7 @@ class API_model extends API_Common {
         if ( $custom_model_object != null ) {
             $model_object = $custom_model_object;
         } else {
-            $model_object = $this->init_custom_model_object($model_name);
+            $model_object = @$this->init_custom_model_object($model_name);
         }
         $user_id = $this->get_my_user_id();
 
@@ -176,7 +178,7 @@ class API_model extends API_Common {
                 }
                 $primary_key = $model_object->primary_key;
             }
-            $data_array = $model_object->load_by_id($key_value);
+            $data_array = @$model_object->load_by_id($key_value);
             if ( !empty($ql_items) ) {
                 $sliced_result = $this->slice_model($model_object, $model_name, $primary_key, $data_array, $ql_items);
                 $data_array = $sliced_result['model_data'];
@@ -242,7 +244,7 @@ class API_model extends API_Common {
         $tabs = array();
         if (is_array($data_array)) {
             foreach ($data_array as $key => $item_array) {
-                if ($item_array['tab'] != '') {
+                if (@$item_array['tab'] != '') {
                     $tabs[$item_array['tab']][] = $key;
                 } else {
                     $tabs[$this->getConfigValue('default_tab_name')][] = $key;
@@ -598,6 +600,7 @@ class API_model extends API_Common {
         $model_object = $this->init_custom_model_object($model_name);
 
         $dictionary_array = $model_tags->get_array($model_name, $columnName, 'array', $model_object->data_model[$model_name]);
+        $dictionary_array = $this->system_cleanup_array($model_object, $columnName, $dictionary_array, $params, $model_tags);
         if (
             $this->getConfigValue('system_email') == 'info@sklyuchami.com' and
             (
@@ -619,6 +622,28 @@ class API_model extends API_Common {
             $ret = array('data' => $dictionary_array);
         }
         return $this->json_string($ret);
+    }
+
+    function system_cleanup_array($model_object, $columnName, $dictionary_array, $params, model_tags $model_tags) {
+        if ($model_object->table_name == 'user' and $columnName == 'group_id') {
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php');
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/users/user_object_manager.php');
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/register_using_model.php');
+            $Register = new Register_Using_Model();
+            $allowed_group_array = $Register->newuser_registration_shared_groupid_array();
+            echo '<pre>';
+            print_r($allowed_group_array);
+            echo '</pre>';
+            if ( $allowed_group_array ) {
+                foreach ( $dictionary_array as $idx => $item ) {
+                    if ( in_array($item['id'], $allowed_group_array) ) {
+                        $result_group[] = $item;
+                    }
+                }
+                return $result_group;
+            }
+        }
+        return $dictionary_array;
     }
 
     function cleanup_array($model_object, $columnName, $dictionary_array, $params, model_tags $model_tags) {
@@ -825,7 +850,7 @@ class API_model extends API_Common {
         $permission = new Permission();
         // @todo: Экспериментальная проверка на edit
         if ($permission->get_access($user_id, $model_name, 'edit')) {
-            if ( $ql_items['user_id'] != $user_id and !$permission->is_admin($user_id)) {
+            if ( @$ql_items['user_id'] != $user_id and !$permission->is_admin($user_id)) {
                 $response = new API_Response('error', _e('Доступ запрещен. edit.reason'));
                 return $this->json_string($response->get());
             }
@@ -1018,12 +1043,12 @@ class API_model extends API_Common {
                 if ($this->getConfigValue('apps.realtylog.enable')) {
                     require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylog/admin/admin.php';
                     $Logger = new realtylog_admin();
-                    $Logger->addLog($model_data, $user_id, 'edit', 'data');
+                    $Logger->addLog($model_data[$primary_key]['value'], $user_id, 'edit', 'data');
                 }
                 if ($this->getConfigValue('apps.realtylogv2.enable')) {
                     require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylogv2/admin/admin.php';
                     $Logger = new realtylogv2_admin();
-                    $Logger->addLog($model_data, $user_id, 'edit', 'data', 'id');
+                    $Logger->addLog($model_data[$primary_key]['value'], $user_id, 'edit', 'data', 'id');
                 }
 
 
@@ -1411,7 +1436,7 @@ class API_model extends API_Common {
             }
             //Отключим кэш, чтобы выбрать свежие записи
             $this->setConfigValue('query_cache_enable', false);
-            $rows = $customentity_admin->grid_array($params, $default_params);
+            $rows = @$customentity_admin->grid_array($params, $default_params);
             if ($customentity_admin->getError()) {
                 $response = new API_Response('error', $customentity_admin->GetErrorMessage());
                 return $this->json_string($response->get());
@@ -1427,13 +1452,13 @@ class API_model extends API_Common {
             //$columns = array_values($customentity_admin->data_model[$model_name]);
 
             $ret = array(
-                'id' => $model_id,
+                'id' => @$model_id,
                 'name' => $model_name,
                 'per_page' => $per_page,
                 'total_count' => $customentity_admin->get_total_count(),
                 'columns' => $columns,
                 'columns_index' => $columns_index['index'],
-                'rows_index' => $rows_index['index'],
+                'rows_index' => @$rows_index['index'],
                 'default_columns_list' => $columns_index['default_columns_list'],
                 'grid_columns' => $grid_columns,
                 'rows' => $rows,
@@ -1651,6 +1676,7 @@ class API_model extends API_Common {
     }
 
     private function indexing_rows($rows, $primary_key) {
+        $ra = array();
         foreach ($rows as $idx => $item) {
             $ra['index'][$item[$primary_key]['value']] = $idx;
         }

@@ -7,7 +7,7 @@ class downloader_update extends downloader_admin {
      * Construct
      */
     function __construct() {
-        $this->sitebill();
+        parent::__construct();
     }
 
     function main ($secret_key = '') {

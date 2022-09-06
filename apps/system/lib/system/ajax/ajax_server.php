@@ -17,7 +17,7 @@ class Ajax_Server extends SiteBill
      */
     function __construct()
     {
-        $this->SiteBill();
+        parent::__construct();
         Multilanguage::appendTemplateDictionary($this->getConfigValue('theme'));
     }
 
@@ -1109,585 +1109,11 @@ class Ajax_Server extends SiteBill
                 $this->rotateImage($table, $image_id, $key, $key_value, $rot_dir);
                 break;
             }
-            case 'dz_imagework' :
-            {
-                $what = $this->getRequestValue('what');
-
-                $user_id = (int)$_SESSION['user_id'];
-                if ($user_id == 0) {
-                    $user_id = (int)$_SESSION['user_id_value'];
-                }
-                $admin_mode = false;
-
-                if ($user_id == 0) {
-                    return 'error';
-                }
-                $DBC = DBC::getInstance();
-                $query = 'SELECT system_name FROM ' . DB_PREFIX . '_group WHERE group_id=(SELECT group_id FROM ' . DB_PREFIX . '_user WHERE user_id=? LIMIT 1)';
-                $stmt = $DBC->query($query, array($user_id));
-                if (!$stmt) {
-                    return 'error';
-                }
-                $ar = $DBC->fetch($stmt);
-                if ($ar['system_name'] == 'admin') {
-                    $admin_mode = true;
-                } else {
-                    $admin_mode = $this->check_access(
-                        $this->getRequestValue('model_name'),
-                        $user_id,
-                        'edit',
-                        $this->getRequestValue('key'),
-                        (int)$this->getRequestValue('key_value')
-                    );
-                }
-
-                switch ($what) {
-                    case 'resort' :
-                    {
-                        $table = $this->getRequestValue('model_name');
-                        $field_name = $this->getRequestValue('field_name');
-                        $sortorder = $this->getRequestValue('sortorder');
-                        $key = $this->getRequestValue('key');
-                        $key_value = (int)$this->getRequestValue('key_value');
-
-                        if (!is_array($sortorder) || empty($sortorder)) {
-                            return $this->getErrorResponceJSON();
-                        }
-
-                        $DBC = DBC::getInstance();
-                        if ($admin_mode) {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value));
-                        } else {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? AND user_id=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value, $user_id));
-                        }
-
-                        if (!$stmt) {
-                            return $this->getErrorResponceJSON();
-                        }
-                        $ar = $DBC->fetch($stmt);
-                        if ($ar[$field_name] == '') {
-                            return $this->getErrorResponceJSON();
-                        }
-                        $uploads = unserialize($ar[$field_name]);
-
-                        $newarray = array();
-
-                        foreach ($sortorder as $v) {
-                            $newarray[] = $uploads[$v];
-                        }
-
-                        $uploads = $newarray;
-                        $query = 'UPDATE `' . DB_PREFIX . '_' . $table . '` SET `' . $field_name . '`=? WHERE `' . $key . '`=?';
-                        $stmt = $DBC->query($query, array(serialize($uploads), $key_value));
-                        if ($stmt) {
-                            return $this->getSuccessResponceJSON();
-                        }
-                        return $this->getErrorResponceJSON();
-                        break;
-                    }
-                    case 'reorder' :
-                    {
-                        $table = $this->getRequestValue('model_name');
-                        $field_name = $this->getRequestValue('field_name');
-                        $current_position = (int)$this->getRequestValue('current_position');
-                        $key = $this->getRequestValue('key');
-                        $key_value = (int)$this->getRequestValue('key_value');
-                        $reorder = $this->getRequestValue('reorder');
-                        if ($reorder == 'up') {
-                            $new_position = $current_position - 1;
-                        } elseif ($reorder == 'down') {
-                            $new_position = $current_position + 1;
-                        }
-                        $DBC = DBC::getInstance();
-                        if ($admin_mode) {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value));
-                        } else {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? AND user_id=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value, $user_id));
-                        }
-
-                        if (!$stmt) {
-                            return $this->getErrorResponceJSON();
-                        }
-                        $ar = $DBC->fetch($stmt);
-                        if ($ar[$field_name] == '') {
-                            return $this->getErrorResponceJSON();
-                        }
-                        $uploads = unserialize($ar[$field_name]);
-                        if (!isset($uploads[$current_position]) || !isset($uploads[$new_position])) {
-                            return $this->getErrorResponceJSON();
-                        }
-                        $temp = $uploads[$current_position];
-                        $uploads[$current_position] = $uploads[$new_position];
-                        $uploads[$new_position] = $temp;
-                        $query = 'UPDATE `' . DB_PREFIX . '_' . $table . '` SET `' . $field_name . '`=? WHERE `' . $key . '`=?';
-                        $stmt = $DBC->query($query, array(serialize($uploads), $key_value));
-                        if ($stmt) {
-                            return $this->getSuccessResponceJSON();
-                        }
-                        return $this->getErrorResponceJSON();
-                        break;
-                    }
-                    case 'rotate' :
-                    {
-
-                        $table = $this->getRequestValue('model_name');
-                        $field_name = $this->getRequestValue('field_name');
-                        $current_position = (int)$this->getRequestValue('current_position');
-                        $key = $this->getRequestValue('key');
-                        $key_value = (int)$this->getRequestValue('key_value');
-                        $rot_dir = $this->getRequestValue('rot_dir');
-
-                        //Признак необходимости смены имени картинки (на сервере используется кеширование или по иным причинам)
-                        //Установка системно или через параметры
-                        $needrename = false;
-
-                        $DBC = DBC::getInstance();
-                        $query = 'SELECT * FROM ' . DB_PREFIX . '_columns WHERE `name`=? AND `type`=? AND `table_id`=(SELECT `table_id` FROM ' . DB_PREFIX . '_table WHERE `name`=? LIMIT 1)';
-                        $stmt = $DBC->query($query, array($field_name, 'uploads', $table));
-
-                        if (!$stmt and $table != 'user' and $field_name != 'imgfile') {
-                            return 'error';
-                        }
-                        if ($stmt) {
-                            $ar = $DBC->fetch($stmt);
-                        }
-                        if ($ar['parameters'] != '') {
-                            $parameters = unserialize($ar['parameters']);
-                        } else {
-                            $parameters = array();
-                        }
-
-                        if (!isset($parameters['norm_width'])) {
-                            $big_width = $this->getConfigValue($table . '_image_big_width');
-                            if ($big_width == '') {
-                                $big_width = $this->getConfigValue('news_image_big_width');
-                            }
-                            $parameters['norm_width'] = $big_width;
-                        }
-
-                        if (!isset($parameters['norm_height'])) {
-                            $big_height = $this->getConfigValue($table . '_image_big_height');
-                            if ($big_height == '') {
-                                $big_height = $this->getConfigValue('news_image_big_height');
-                            }
-                            $parameters['norm_height'] = $big_height;
-                        }
-
-                        if (!isset($parameters['prev_width'])) {
-                            $preview_width = $this->getConfigValue($table . '_image_preview_width');
-                            if ($preview_width == '') {
-                                $preview_width = $this->getConfigValue('news_image_preview_width');
-                            }
-                            $parameters['prev_width'] = $preview_width;
-                        }
-
-                        if (!isset($parameters['prev_height'])) {
-                            $preview_height = $this->getConfigValue($table . '_image_preview_height');
-                            if ($preview_height == '') {
-                                $preview_height = $this->getConfigValue('news_image_preview_height');
-                            }
-                            $parameters['prev_height'] = $preview_height;
-                        }
-
-                        if (!isset($parameters['preview_smart_resizing'])) {
-                            if (1 === intval($this->getConfigValue('apps.realty.preview_smart_resizing')) && $table == 'data') {
-                                $parameters['preview_smart_resizing'] = 1;
-                            }
-                        }
-
-                        if ($admin_mode) {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value));
-                        } else {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? AND user_id=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value, $user_id));
-                        }
-
-
-                        if (!$stmt) {
-                            return $this->getErrorResponceJSON();
-                        }
-                        $ar = $DBC->fetch($stmt);
-                        if ($ar[$field_name] == '') {
-                            return $this->getErrorResponceJSON();
-                        }
-                        $uploads = unserialize($ar[$field_name]);
-
-                        if ($table == 'user' and $field_name == 'imgfile') {
-                            $uploads[0]['normal'] = 'user/' . $ar[$field_name];
-                        }
-
-
-                        if (!isset($uploads[$current_position])) {
-                            return $this->getErrorResponceJSON();
-                        }
-
-
-                        $rot_image = $uploads[$current_position];
-
-                        if ($rot_dir == 'ccw') {
-                            $degree = 90;
-                        } else {
-                            $degree = -90;
-                        }
-
-                        $is_watermark = false;
-                        if ($table == 'data' && $this->getConfigValue('is_watermark')) {
-                            $is_watermark = true;
-                        }
-
-                        $res = $this->rotateImage2($rot_image, $is_watermark, $degree, $parameters);
-                        if ($res) {
-
-                            if($needrename){
-
-                                $target_image_name = $rot_image['normal'];
-                                $target_preview_name = $rot_image['preview'];
-
-                                $code = md5(time().rand(100,999));
-
-
-                                $filepath = explode('/', $target_image_name);
-                                $filename = array_pop($filepath);
-                                $arr = explode('.', $filename);
-                                $ext = end($arr);
-
-                                $normalimagename = (!empty($filepath) ? implode('/', $filepath) : '').'/img'.$code.'.'.$ext;
-                                $previewimagename = (!empty($filepath) ? implode('/', $filepath) : '').'/prv'.$code.'.'.$ext;
-
-                                rename(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$target_image_name, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$normalimagename);
-                                rename(SITEBILL_DOCUMENT_ROOT.'/img/data/'.$target_preview_name, SITEBILL_DOCUMENT_ROOT.'/img/data/'.$previewimagename);
-
-                                if (file_exists(SITEBILL_DOCUMENT_ROOT . '/img/data/nowatermark/' . $target_image_name)) {
-                                    rename(SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/'.$target_image_name, SITEBILL_DOCUMENT_ROOT.'/img/data/nowatermark/'.$normalimagename);
-                                }
-
-                                $uploads[$current_position]['normal'] = $normalimagename;
-                                $uploads[$current_position]['preview'] = $previewimagename;
-
-                                $query = 'UPDATE  `' . DB_PREFIX . '_' . $table . '` SET `' . $field_name . '` = ? WHERE `' . $key . '`=?';
-                                $stmt = $DBC->query($query, array(serialize($uploads), $key_value));
-
-                                return $this->getSuccessResponceJSON(array('imgsrc' => SITEBILL_MAIN_URL.'/img/data/'.$previewimagename));
-                            }else{
-                                return $this->getSuccessResponceJSON();
-                            }
-
-
-                        }
-                        return $this->getErrorResponceJSON();
-
-                        break;
-                    }
-                    case 'delete' :
-                    {
-                        $table = $this->getRequestValue('model_name');
-                        $field_name = $this->getRequestValue('field_name');
-                        $current_position = (int)$this->getRequestValue('current_position');
-                        $key = $this->getRequestValue('key');
-                        $key_value = (int)$this->getRequestValue('key_value');
-                        $doc_mode = (int)$this->getRequestValue('doc_mode') == 1 ? true : false;
-
-                        $DBC = DBC::getInstance();
-
-                        if ($admin_mode) {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value));
-                        } else {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? AND user_id=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value, $user_id));
-                        }
-
-
-                        if (!$stmt) {
-                            return json_encode($responce);
-                        }
-                        $ar = $DBC->fetch($stmt);
-                        if ($ar[$field_name] == '') {
-                            return $this->getErrorResponceJSON();
-                        }
-                        $uploads = unserialize($ar[$field_name]);
-                        if ($table == 'user' and $field_name == 'imgfile') {
-                            $uploads[0]['normal'] = $ar[$field_name];
-                        }
-                        if (!isset($uploads[$current_position])) {
-                            return $this->getErrorResponceJSON();
-                        }
-
-                        if ($doc_mode) {
-                            @unlink(SITEBILL_DOCUMENT_ROOT . '/img/mediadocs/' . $uploads[$current_position]['normal']);
-                        } else {
-                            if ($uploads[$current_position]['remote'] === 'true') {
-                                if ($this->getConfigValue('apps.sharder.api_key')) {
-                                    if (!is_object($this->sharder)) {
-                                        $this->sharder = new \sharder\lib\sharder();
-                                    }
-                                    $this->sharder->remove_remote_files(array($uploads[$current_position]['preview'], $uploads[$current_position]['normal']), $this->getServerFullUrl(true));
-                                }
-                            } else {
-                                if (defined('STR_MEDIA') && STR_MEDIA == Sitebill::MEDIA_SAVE_FOLDER) {
-                                    $preview = $uploads[$current_position]['preview'];
-                                    $normal = $uploads[$current_position]['normal'];
-
-                                    $user_prefix = '';
-                                    if ($table == 'user' and $field_name == 'imgfile') {
-                                        $user_prefix = 'user/';
-                                    }
-
-                                    @unlink(MEDIA_FOLDER . '/' . $user_prefix . $preview);
-                                    @unlink(MEDIA_FOLDER . '/' . $user_prefix . $normal);
-                                    @unlink(MEDIA_FOLDER . '/nowatermark/' . $user_prefix . $normal);
-                                } else {
-                                    $path = SITEBILL_DOCUMENT_ROOT . $this->storage_dir;
-                                    if ($table == 'user' and $field_name == 'imgfile') {
-                                        $path .= 'user/';
-                                    }
-
-                                    $preview = $uploads[$current_position]['preview'];
-                                    $normal = $uploads[$current_position]['normal'];
-                                    @unlink($path . $preview);
-                                    @unlink($path . $normal);
-                                    @unlink($path . 'nowatermark/' . $normal);
-                                }
-                            }
-                        }
-
-                        unset($uploads[$current_position]);
-                        $uploads = array_values($uploads);
-                        if (count($uploads) == 0) {
-                            $nuploads = '';
-                        } else {
-                            $nuploads = serialize($uploads);
-                        }
-                        $query = 'UPDATE `' . DB_PREFIX . '_' . $table . '` SET `' . $field_name . '`=? WHERE `' . $key . '`=?';
-                        $stmt = $DBC->query($query, array($nuploads, $key_value));
-                        if ($stmt) {
-                            return $this->getSuccessResponceJSON();
-                        }
-                        return $this->getErrorResponceJSON();
-                        break;
-                    }
-                    case 'delete_all' :
-                    {
-                        $table = $this->getRequestValue('model_name');
-                        $field_name = $this->getRequestValue('field_name');
-                        $key = $this->getRequestValue('key');
-                        $key_value = (int)$this->getRequestValue('key_value');
-                        $doc_mode = (int)$this->getRequestValue('doc_mode') == 1 ? true : false;
-
-                        $DBC = DBC::getInstance();
-
-                        if ($admin_mode) {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value));
-                        } else {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? AND user_id=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value, $user_id));
-                        }
-
-                        if (!$stmt) {
-                            return $this->getErrorResponceJSON();
-                        }
-                        $ar = $DBC->fetch($stmt);
-                        if ($ar[$field_name] == '') {
-                            return $this->getErrorResponceJSON();
-                        }
-
-
-                        $uploads = unserialize($ar[$field_name]);
-
-                        if ($table == 'user' and $field_name == 'imgfile') {
-                            $uploads[0]['normal'] = $ar[$field_name];
-                        }
-
-
-                        if ($doc_mode) {
-                            foreach ($uploads as $upl) {
-                                @unlink(SITEBILL_DOCUMENT_ROOT . '/img/mediadocs/' . $upl['normal']);
-                            }
-                        } else {
-                            $remote_files = array();
-                            foreach ($uploads as $upl) {
-                                if ($upl['remote'] === 'true') {
-                                    //shard
-                                    array_push($remote_files, $upl['preview']);
-                                    array_push($remote_files, $upl['normal']);
-                                } else {
-                                    if (defined('STR_MEDIA') && STR_MEDIA == Sitebill::MEDIA_SAVE_FOLDER) {
-
-                                        $user_prefix = '';
-                                        if ($table == 'user' and $field_name == 'imgfile') {
-                                            $user_prefix = 'user/';
-                                        }
-
-                                        $preview = $upl['preview'];
-                                        $normal = $upl['normal'];
-                                        @unlink(MEDIA_FOLDER . '/' . $user_prefix . $preview);
-                                        @unlink(MEDIA_FOLDER . '/' . $user_prefix . $normal);
-                                        @unlink(MEDIA_FOLDER . '/nowatermark/' . $user_prefix . $normal);
-                                    } else {
-                                        $path = SITEBILL_DOCUMENT_ROOT . $this->storage_dir;
-                                        if ($table == 'user' and $field_name == 'imgfile') {
-                                            $path .= 'user/';
-                                        }
-
-                                        $preview = $upl['preview'];
-                                        $normal = $upl['normal'];
-                                        @unlink($path . $preview);
-                                        @unlink($path . $normal);
-                                        @unlink($path . 'nowatermark/' . $normal);
-                                    }
-                                }
-                            }
-                            if ($this->getConfigValue('apps.sharder.api_key') and count($remote_files) > 0) {
-                                if (!is_object($this->sharder)) {
-                                    $this->sharder = new \sharder\lib\sharder();
-                                }
-                                $this->sharder->remove_remote_files($remote_files, $this->getServerFullUrl(true));
-                            }
-
-                        }
-
-
-                        if ($admin_mode) {
-                            $query = 'UPDATE `' . DB_PREFIX . '_' . $table . '` SET `' . $field_name . '`=\'\' WHERE `' . $key . '`=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value));
-                        } else {
-                            $query = 'UPDATE `' . DB_PREFIX . '_' . $table . '` SET `' . $field_name . '`=\'\' WHERE `' . $key . '`=? AND user_id=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value, $user_id));
-                        }
-                        return $this->getSuccessResponceJSON();
-
-                        break;
-                    }
-                    case 'make_main' :
-                    {
-                        $table = $this->getRequestValue('model_name');
-                        $field_name = $this->getRequestValue('field_name');
-                        $current_position = (int)$this->getRequestValue('current_position');
-                        $key = $this->getRequestValue('key');
-                        $key_value = (int)$this->getRequestValue('key_value');
-                        $DBC = DBC::getInstance();
-                        if ($admin_mode) {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value));
-                        } else {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? AND user_id=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value, $user_id));
-                        }
-                        if (!$stmt) {
-                            return $this->getErrorResponceJSON();
-                        }
-                        $ar = $DBC->fetch($stmt);
-                        if ($ar[$field_name] == '') {
-                            return $this->getErrorResponceJSON();
-                        }
-                        $uploads = unserialize($ar[$field_name]);
-                        if (!isset($uploads[$current_position])) {
-                            return $this->getErrorResponceJSON();
-                        }
-                        $temp = $uploads[$current_position];
-                        unset($uploads[$current_position]);
-                        array_unshift($uploads, $temp);
-                        $uploads = array_values($uploads);
-                        $query = 'UPDATE `' . DB_PREFIX . '_' . $table . '` SET `' . $field_name . '`=? WHERE `' . $key . '`=?';
-                        $stmt = $DBC->query($query, array(serialize($uploads), $key_value));
-                        if ($stmt) {
-                            return $this->getSuccessResponceJSON();
-                        }
-                        return $this->getErrorResponceJSON();
-                        break;
-                    }
-                    case 'set_tags' :
-                    {
-                        $tags = $this->getRequestValue('tags');
-
-                        $tags = array_filter($tags, function ($tg) {
-                            return (intval($tg) > 0 ? true : false);
-                        });
-
-                        $table = $this->getRequestValue('model_name');
-                        $field_name = $this->getRequestValue('field_name');
-                        $current_position = (int)$this->getRequestValue('current_position');
-                        $key = $this->getRequestValue('key');
-                        $key_value = (int)$this->getRequestValue('key_value');
-                        $DBC = DBC::getInstance();
-                        if ($admin_mode) {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value));
-                        } else {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? AND user_id=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value, $user_id));
-                        }
-                        if (!$stmt) {
-                            return false;
-                        }
-                        $ar = $DBC->fetch($stmt);
-                        if ($ar[$field_name] == '') {
-                            return false;
-                        }
-                        $uploads = unserialize($ar[$field_name]);
-                        if (!isset($uploads[$current_position])) {
-                            return false;
-                        }
-                        if (empty($tags)) {
-                            unset($uploads[$current_position]['tags']);
-                        } else {
-                            $uploads[$current_position]['tags'] = $tags;
-                        }
-
-
-                        $query = 'UPDATE `' . DB_PREFIX . '_' . $table . '` SET `' . $field_name . '`=? WHERE `' . $key . '`=?';
-                        $stmt = $DBC->query($query, array(serialize($uploads), $key_value));
-                        if ($stmt) {
-                            return $title;
-                        }
-                        exit();
-                        break;
-                    }
-                    case 'change_title' :
-                    {
-                        $title = htmlspecialchars($this->getRequestValue('title'));
-                        $title = substr($title, 0, 100);
-
-                        $table = $this->getRequestValue('model_name');
-                        $field_name = $this->getRequestValue('field_name');
-                        $current_position = (int)$this->getRequestValue('current_position');
-                        $key = $this->getRequestValue('key');
-                        $key_value = (int)$this->getRequestValue('key_value');
-                        $DBC = DBC::getInstance();
-                        if ($admin_mode) {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value));
-                        } else {
-                            $query = 'SELECT `' . $field_name . '` FROM `' . DB_PREFIX . '_' . $table . '` WHERE `' . $key . '`=? AND user_id=? LIMIT 1';
-                            $stmt = $DBC->query($query, array($key_value, $user_id));
-                        }
-                        if (!$stmt) {
-                            return false;
-                        }
-                        $ar = $DBC->fetch($stmt);
-                        if ($ar[$field_name] == '') {
-                            return false;
-                        }
-                        $uploads = unserialize($ar[$field_name]);
-                        if (!isset($uploads[$current_position])) {
-                            return false;
-                        }
-                        $uploads[$current_position]['title'] = $title;
-                        $query = 'UPDATE `' . DB_PREFIX . '_' . $table . '` SET `' . $field_name . '`=? WHERE `' . $key . '`=?';
-                        $stmt = $DBC->query($query, array(serialize($uploads), $key_value));
-                        if ($stmt) {
-                            return $title;
-                        }
-                        exit();
-                        break;
-                    }
-                }
+            case 'dz_imagework' : {
+                require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/ajax/dz_imagework.php');
+                $dz_imagework = new dz_imagework();
+                return $dz_imagework->work();
+                break;
             }
             case 'reorder_image' :
             {
@@ -1707,9 +1133,6 @@ class Ajax_Server extends SiteBill
             {
                 $title = $this->getRequestValue('title');
                 $image_id = (int)$this->getRequestValue('image_id');
-                if (get_magic_quotes_gpc()) {
-                    $title = stripslashes($title);
-                }
                 $title = trim($title);
                 $title = SiteBill::iconv('utf-8', SITE_ENCODING, $title);
                 if ($image_id != 0) {
@@ -1724,9 +1147,6 @@ class Ajax_Server extends SiteBill
             {
                 $description = $this->getRequestValue('description');
                 $image_id = (int)$this->getRequestValue('image_id');
-                if (get_magic_quotes_gpc()) {
-                    $title = stripslashes($title);
-                }
                 $description = trim($description);
                 $description = SiteBill::iconv('utf-8', SITE_ENCODING, $description);
                 if ($image_id != 0) {
@@ -2396,6 +1816,8 @@ class Ajax_Server extends SiteBill
                 }
                 //if()
 
+                $error_only_active_data = 'Платный статус можно применить только к активным объектам. Активируйте объявление или дождитесь модерации.';
+
                 if ($user_id != 0 && $days > 0 && (in_array($payment_type, array('vip', 'premium', 'bold', 'bold_map', 'buy_ups', 'make_up')) || $is_custom_status)) {
 
                     if ($payment_type != 'buy_ups' && $realty_id == 0) {
@@ -2426,7 +1848,7 @@ class Ajax_Server extends SiteBill
                             $stmt = $DBC->query($query, array($realty_id));
 
                             if (!$stmt) {
-                                return 'error';
+                                return 'error:'.$error_only_active_data;
                             }
 
                             $ar = $DBC->fetch($stmt);
@@ -2479,7 +1901,7 @@ class Ajax_Server extends SiteBill
                             $stmt = $DBC->query($query, array($realty_id));
 
                             if (!$stmt) {
-                                return 'error';
+                                return 'error:'.$error_only_active_data;
                             }
 
                             $ar = $DBC->fetch($stmt);
@@ -2533,7 +1955,7 @@ class Ajax_Server extends SiteBill
                             $stmt = $DBC->query($query, array($realty_id));
 
                             if (!$stmt) {
-                                return 'error';
+                                return 'error:'.$error_only_active_data;
                             }
 
                             $ar = $DBC->fetch($stmt);
@@ -2583,7 +2005,7 @@ class Ajax_Server extends SiteBill
                             $stmt = $DBC->query($query, array($realty_id));
 
                             if (!$stmt) {
-                                return 'error';
+                                return 'error:'.$error_only_active_data;
                             }
 
                             $ar = $DBC->fetch($stmt);
@@ -2680,7 +2102,7 @@ class Ajax_Server extends SiteBill
                             $stmt = $DBC->query($query, array($realty_id));
 
                             if (!$stmt) {
-                                echo 'error';
+                                return 'error:'.$error_only_active_data;
                             }
 
                             $ar = $DBC->fetch($stmt);
@@ -2951,121 +2373,20 @@ class Ajax_Server extends SiteBill
         } else {
             $params = $sitebill_krascap->gatherRequestParams();
         }
-        /*
+        if ( $this->request()->get('map_bounds') ) {
+            $params['map_bounds'] = $this->request()->get('map_bounds');
+        }
+        if ( $this->request()->get('polylineString') ) {
+            $params['polylineString'] = $this->request()->get('polylineString');
+        }
 
-          if ($path != '') {
-          $DBC = DBC::getInstance();
-          if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/predefinedlinks/admin/admin.php')) {
-          require_once SITEBILL_DOCUMENT_ROOT . '/apps/predefinedlinks/admin/admin.php';
-          $PDLA = new predefinedlinks_admin();
-          if ($predefined_info = $PDLA->checkAlias($path)) {
-          $catched = true;
-          if (count($predefined_info['params']) > 0) {
-          foreach ($predefined_info['params'] as $k => $v) {
-          $params[$k] = $v;
-          }
-          }
-          }
-          }
-          if (!$catched) {
-          if (intval($this->getConfigValue('apps.seo.no_country_url')) === 0) {
-          $query = 'SELECT * FROM ' . DB_PREFIX . '_country WHERE url=? LIMIT 1';
-          $stmt = $DBC->query($query, array($path));
-          if ($stmt) {
-          $ar = $DBC->fetch($stmt);
-
-          if ((int) $ar['country_id'] != 0) {
-          $catched = true;
-          $params['country_id'] = $ar['country_id'];
-          }
-          }
-          }
-          }
-
-          if (!$catched) {
-          if (intval($this->getConfigValue('apps.seo.no_region_url')) === 0) {
-          $query = 'SELECT * FROM ' . DB_PREFIX . '_region WHERE alias=? LIMIT 1';
-          $stmt = $DBC->query($query, array($path));
-          if ($stmt) {
-          $ar = $DBC->fetch($stmt);
-          if ((int) $ar['region_id'] != 0) {
-          $catched = true;
-          $params['region_id'] = $ar['region_id'];
-          }
-          }
-          }
-          }
-
-          if (!$catched) {
-          if (intval($this->getConfigValue('apps.seo.no_city_url')) === 0) {
-          $query = 'SELECT * FROM ' . DB_PREFIX . '_city WHERE url=? LIMIT 1';
-          $stmt = $DBC->query($query, array($path));
-          if ($stmt) {
-          $ar = $DBC->fetch($stmt);
-
-          if ((int) $ar['city_id'] != 0) {
-          $catched = true;
-          $params['city_id'] = $ar['city_id'];
-          }
-          }
-          }
-          }
-
-          if (!$catched) {
-          if (intval($this->getConfigValue('apps.seo.no_metro_url')) === 0) {
-          $query = 'SELECT * FROM ' . DB_PREFIX . '_metro WHERE `alias`=? LIMIT 1';
-          $stmt = $DBC->query($query, array($path));
-          if ($stmt) {
-          $ar = $DBC->fetch($stmt);
-
-          if ((int) $ar['metro_id'] != 0) {
-          $catched = true;
-          $params['metro_id'] = $ar['metro_id'];
-          }
-          }
-          }
-          }
-
-          if (!$catched) {
-          if ($this->getConfigValue('apps.complex.enable')) {
-          $DBC = DBC::getInstance();
-          $query = 'SELECT * FROM ' . DB_PREFIX . '_complex WHERE url=? LIMIT 1';
-          $stmt = $DBC->query($query, array($path));
-          if ($stmt) {
-          $ar = $DBC->fetch($stmt);
-          if (intval($ar['complex_id']) !== 0) {
-          $catched = true;
-          $params['complex_id'] = $ar['complex_id'];
-          }
-          }
-          }
-          }
-
-          if (!$catched) {
-          require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
-          $Structure = new Structure_Manager();
-          $urls = $Structure->loadCategoriesUrls();
-
-          if ($this->getConfigValue('apps.seo.level_enable') == 1) {
-
-          } else {
-          foreach ($urls as $k => $u) {
-          $up = explode('/', $u);
-          $urls[$k] = end($up);
-          }
-          }
-
-          $urls_to_ids = array_flip($urls);
-          if (isset($urls_to_ids[$path])) {
-          $params['topic_id'] = $urls_to_ids[$path];
-          }
-          }
-          } */
 
         $search_params = $params;
 
 
         $DBC = DBC::getInstance();
+
+        $this->template->assign('language', $this->getSessionLanguage());
 
         if (isset($_GET['custom_center'])) {
             $crds = preg_replace('/[^\d\.,-]/', '', $_GET['custom_center']);

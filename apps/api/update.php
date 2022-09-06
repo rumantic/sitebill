@@ -2,16 +2,34 @@
 
 defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
 
-class api_update extends SiteBill {
+class api_update extends SiteBill
+{
 
     /**
      * Construct
      */
-    function __construct() {
-        $this->sitebill();
+    function __construct()
+    {
+        parent::__construct();
     }
 
-    function main() {
+    function main()
+    {
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
+        $config_admin = new config_admin();
+        $config_admin->addParamToConfig(
+            'apps.api.post_enable',
+            '0',
+            'Включить apps.api.post_enable (добавление записей через простую POST-форму)',
+            SConfig::$fieldtypeCheckbox);
+
+        $config_admin->addParamToConfig(
+            'apps.api.post_key',
+            md5(rand(1, 999999) . time()),
+            'Ключ доступа к POST-форме'
+        );
+
+
         $query_data[] = "CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_oauth` (
 				`oauth_id` int(11) NOT NULL AUTO_INCREMENT,
 				`user_id` int(11) NOT NULL,

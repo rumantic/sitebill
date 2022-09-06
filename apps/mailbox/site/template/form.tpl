@@ -243,7 +243,7 @@
             <div><label>{$apps_words.mailbox.MESSAGE} <span class="required">*</span></label><textarea name="message"></textarea></div>
             <div><label>{$apps_words.mailbox.NAME} <span class="required">*</span></label><input type="text" name="name" /></div>
             <div><label>{$apps_words.mailbox.PHONE} <span class="required">*</span></label><input type="text" name="phone" /></div>
-            <div><label>{$apps_words.mailbox.EMAIL} </label><input type="text" name="email" /></div>
+            <div><label>{$apps_words.mailbox.EMAIL} <span class="required">*</span> </label><input type="text" name="email" /></div>
             {if $post_form_agreement_enable}
             <div><input type="checkbox" value="1" name="post_form_agree" /> <label>{$post_form_agreement_text_add}</label></div>
             {/if}

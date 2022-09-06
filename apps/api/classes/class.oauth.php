@@ -148,6 +148,7 @@ class API_oauth extends API_Common {
 
         if ($stmt) {
             $ar = $DBC->fetch($stmt);
+
             if ($ar['user_id'] > 0) {
                 $ar = $this->init_success_response($ar['user_id'], $session_key, $need_init_oauth);
                 $ar['step'] = 'first';

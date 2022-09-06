@@ -3,7 +3,7 @@ require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/user/user_register.
 class User_Shop_Register extends User_Register {
 	
     function User_Shop_Register() {
-        $this->SiteBill();
+        parent::__construct();
         $this->table_name = 'user';
         $this->action = 'register';
         $this->primary_key = 'user_id';

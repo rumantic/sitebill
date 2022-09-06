@@ -1,5 +1,7 @@
 <?php
 
+use system\lib\system\cache\RedisCache;
+
 /**
  * Admin table helper
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
@@ -395,6 +397,13 @@ class Admin_Table_Helper extends SiteBill {
 
         $input_model_name = $model_name;
 
+        $redis_cache = unserialize(RedisCache::get('load_model_'.$model_name));
+        if ( is_array($redis_cache) and count($redis_cache) > 0 ) {
+            self::$model_storage[$model_name] = $redis_cache;
+            return self::$model_storage[$model_name];
+        }
+
+
         /*if($table_name == 'complex'){
             echo '<!--'.$current_lang.'-->';
         }*/
@@ -551,6 +560,11 @@ class Admin_Table_Helper extends SiteBill {
                 self::$model_storage[$model_name][$table_name][$ar['name']]['table_id'] = $ar['table_id'];
                 self::$model_storage[$model_name][$table_name][$ar['name']]['active'] = $ar['active'];
 
+                if ( $api_parameters = $this->parse_api_parameters(self::$model_storage[$model_name][$table_name][$ar['name']]) ) {
+                    self::$model_storage[$model_name][$table_name][$ar['name']]['api'] = $api_parameters;
+                }
+
+
                 //$model_data[$table_name][$ar['name']]['is_ml'] = $ar['is_ml'];
             }
             /*
@@ -563,8 +577,23 @@ class Admin_Table_Helper extends SiteBill {
             $model_data = self::$model_storage[$model_name];
         }
 
+        RedisCache::set('load_model_'.$input_model_name, serialize(self::$model_storage[$input_model_name]));
+
         return self::$model_storage[$input_model_name];
     }
+
+    function parse_api_parameters ( $model_item ) {
+        if (isset($model_item['parameters']['api_version']) && $model_item['parameters']['api_version'] != '') {
+            return new api\types\method(
+                $model_item['parameters']['api_version'],
+                $model_item['parameters']['api_name'],
+                $model_item['parameters']['api_method'],
+                $model_item['parameters']['api_params']
+            );
+        }
+        return false;
+    }
+
 
     function unserializeSelectData($str) {
         $ret = array();

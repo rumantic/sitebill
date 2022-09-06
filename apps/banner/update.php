@@ -4,9 +4,9 @@ class banner_update extends SiteBill {
      * Construct
      */
     function __construct() {
-        $this->sitebill();
+        parent::__construct();
     }
-    
+
     function main () {
         $query_data[] = "
 CREATE TABLE `".DB_PREFIX."_banner` (
@@ -20,12 +20,12 @@ CREATE TABLE `".DB_PREFIX."_banner` (
   PRIMARY KEY (`banner_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=".DB_ENCODING."";
         $query_data[] = "alter table ".DB_PREFIX."_banner add column description text";
-        
+
         $query_data[] = "CREATE TABLE IF NOT EXISTS `".DB_PREFIX."_banner_informer` (`biid` int(11) NOT NULL AUTO_INCREMENT, `access_code` varchar(10) NOT NULL, `informer_parameters` text NOT NULL, `is_active` tinyint(1) NOT NULL, PRIMARY KEY (`biid`)) ENGINE=MyISAM  DEFAULT CHARSET=".DB_ENCODING."";
-        
+
         $rs = '<h3>'.Multilanguage::_('SQL_NOW','system').'</h3>';
         $DBC=DBC::getInstance();
-        
+
         foreach ( $query_data as $query ) {
         	$success=false;
         	$stmt=$DBC->query($query, array(), $rows, $success);

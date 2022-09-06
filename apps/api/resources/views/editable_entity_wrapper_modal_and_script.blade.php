@@ -44,24 +44,6 @@
     </style>
     <script type="text/javascript">
         $(document).ready(function () {
-            /*$(".editable_entity_wrapper").click(function(e){
-                e.stopPropagation();
-                let component_params = {
-                    component: $(this).attr('data-entity-name'),
-                    form_mode: 'true',
-                    table_name: $(this).attr('data-entity-name'),
-                    success_message: 'Запись обновлена успешно. Можете обновить страницу.',
-                    primary_key: '',
-                    entity_uri: $(this).attr('data-entity-uri'),
-                    only_field_name: $(this).attr('data-entity-key'),
-                };
-                $('#{{$modal_id}}_iframe').attr(
-                    'src', '{{$estate_folder}}/apps/api/rest.php?action=standalone_runner&do=run&modal_id={{$modal_id}}&' + jQuery.param( component_params )
-                );
-
-                $('#{{$modal_id}}').modal('toggle');
-                return false;
-            });*/
             $(".editable_entity_wrapper").hover(
                 function () {
                     $(this).find('.editable_entity_wrapper_ctrl').show();
@@ -74,13 +56,14 @@
                 e.stopPropagation();
                 let component_params = {
                     component: $(this).attr('data-entity-name'),
-                    form_mode: 'true',
+                    form_mode: true,
                     table_name: $(this).attr('data-entity-name'),
                     success_message: 'Запись обновлена успешно. Можете обновить страницу.',
                     primary_key: '',
                     entity_uri: $(this).attr('data-entity-uri'),
                     only_field_name: $(this).attr('data-entity-key'),
                 };
+                ($(this).attr('data-entity-name') == 'light_config'?delete(component_params['form_mode']):'');
                 $('#{{$modal_id}}_iframe').attr(
                     'src', '{{$estate_folder}}/apps/api/rest.php?action=standalone_runner&do=run&modal_id={{$modal_id}}&' + jQuery.param( component_params )
                 );

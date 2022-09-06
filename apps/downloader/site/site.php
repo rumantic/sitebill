@@ -30,7 +30,7 @@ class downloader_site extends downloader_admin {
     function download_from_url ($url) {
         //$url = 'https://sh3.sitebill.ru/storage/banzai72.ru/5/ce/5ce284af9a260863619056a3f0c4846f.jpg';
         $host = parse_url($url, PHP_URL_HOST);
-        if ( $host != 'sh3.sitebill.ru' and $host != $_SERVER['HTTP_HOST'] ) {
+        if ( $host != 'sh3.sitebill.ru' and $host != 'sh4.sitebill.ru' and $host != $_SERVER['HTTP_HOST'] ) {
             echo 'bad file url = '.$url.', you can download files only from this domain '.$_SERVER['HTTP_HOST'];
             exit;
         }

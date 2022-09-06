@@ -6,13 +6,15 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * Group manager
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
-class Group_Manager extends Object_Manager {
+class Group_Manager extends Object_Manager
+{
 
     /**
      * Constructor
      */
-    function Group_Manager() {
-        $this->Sitebill();
+    function __construct()
+    {
+        parent::__construct();
         $this->table_name = 'group';
         $this->action = 'group';
         $this->app_title = Multilanguage::_('GROUP_APP_NAME', 'system');
@@ -40,7 +42,8 @@ class Group_Manager extends Object_Manager {
      * @param string $system_name
      * @return array
      */
-    function load_by_system_name($system_name) {
+    function load_by_system_name($system_name)
+    {
         $DBC = DBC::getInstance();
         $group_id = 0;
         $query = "SELECT `group_id` FROM " . DB_PREFIX . "_group WHERE `system_name`=?";
@@ -58,72 +61,75 @@ class Group_Manager extends Object_Manager {
      * @param
      * @return
      */
-    function get_group_model() {
-    	
-    	require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
-    		$ATH = new Admin_Table_Helper();
-    		$form_data = $ATH->load_model('group', false);
-    		if (empty($form_data)) {
-    			$form_data = array();
-    			$form_data = $this->getUserGroupModelDescription();
-    			require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
-    			require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php';
-    			$TA = new table_admin();
-    			$TA->create_table_and_columns($form_data, 'group');
-    			$form_data = array();
-    			$form_data = $ATH->load_model('group', false);
-    		}
-    	
-    		return $form_data;
-    }
-    
-    function getUserGroupModelDescription(){
-    	$form_group = array();
-    	
-    	/*$form_group['group']['is_aggr']['name'] = 'is_aggr';
-    	$form_group['group']['is_aggr']['title'] = Multilanguage::_('IS_AGGREGABLE','system');
-    	$form_group['group']['is_aggr']['value'] = '';
-    	$form_group['group']['is_aggr']['length'] = 40;
-    	$form_group['group']['is_aggr']['type'] = 'checkbox';
-    	$form_group['group']['is_aggr']['required'] = 'off';
-    	$form_group['group']['is_aggr']['unique'] = 'off';
-    	
-    	$form_group['group']['aggr_list']['name'] = 'aggr_list';
-    	$form_group['group']['aggr_list']['title'] = Multilanguage::_('IS_AGGR_LIST','system');
-    	$form_group['group']['aggr_list']['value'] = '';
-    	$form_group['group']['aggr_list']['length'] = 40;
-    	$form_group['group']['aggr_list']['type'] = 'safe_string';
-    	$form_group['group']['aggr_list']['required'] = 'off';
-    	$form_group['group']['aggr_list']['unique'] = 'off';*/
-    	
-    	$form_group['group']['group_id']['name'] = 'group_id';
-    	$form_group['group']['group_id']['title'] = Multilanguage::_('L_ID');
-    	$form_group['group']['group_id']['value'] = 0;
-    	$form_group['group']['group_id']['length'] = 40;
-    	$form_group['group']['group_id']['type'] = 'primary_key';
-    	$form_group['group']['group_id']['required'] = 'off';
-    	$form_group['group']['group_id']['unique'] = 'off';
-    	
-    	$form_group['group']['name']['name'] = 'name';
-    	$form_group['group']['name']['title'] = Multilanguage::_('GROUP_NAME', 'system');
-    	$form_group['group']['name']['value'] = '';
-    	$form_group['group']['name']['length'] = 40;
-    	$form_group['group']['name']['type'] = 'safe_string';
-    	$form_group['group']['name']['required'] = 'on';
-    	$form_group['group']['name']['unique'] = 'off';
-    	
-    	$form_group['group']['system_name']['name'] = 'system_name';
-    	$form_group['group']['system_name']['title'] = Multilanguage::_('SYSTEM_NAME', 'system') . ' (' . Multilanguage::_('LATIN_LETTERS_ONLY', 'system') . ')';
-    	$form_group['group']['system_name']['value'] = '';
-    	$form_group['group']['system_name']['length'] = 40;
-    	$form_group['group']['system_name']['type'] = 'safe_string';
-    	$form_group['group']['system_name']['required'] = 'on';
-    	$form_group['group']['system_name']['unique'] = 'off';
-    	
-    	return $form_group;
+    function get_group_model()
+    {
+
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
+        $ATH = new Admin_Table_Helper();
+        $form_data = $ATH->load_model('group', false);
+        if (empty($form_data)) {
+            $form_data = array();
+            $form_data = $this->getUserGroupModelDescription();
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php';
+            $TA = new table_admin();
+            $TA->create_table_and_columns($form_data, 'group');
+            $form_data = array();
+            $form_data = $ATH->load_model('group', false);
+        }
+
+        return $form_data;
     }
 
-    function create_dna_table() {
+    function getUserGroupModelDescription()
+    {
+        $form_group = array();
+
+        /*$form_group['group']['is_aggr']['name'] = 'is_aggr';
+        $form_group['group']['is_aggr']['title'] = Multilanguage::_('IS_AGGREGABLE','system');
+        $form_group['group']['is_aggr']['value'] = '';
+        $form_group['group']['is_aggr']['length'] = 40;
+        $form_group['group']['is_aggr']['type'] = 'checkbox';
+        $form_group['group']['is_aggr']['required'] = 'off';
+        $form_group['group']['is_aggr']['unique'] = 'off';
+
+        $form_group['group']['aggr_list']['name'] = 'aggr_list';
+        $form_group['group']['aggr_list']['title'] = Multilanguage::_('IS_AGGR_LIST','system');
+        $form_group['group']['aggr_list']['value'] = '';
+        $form_group['group']['aggr_list']['length'] = 40;
+        $form_group['group']['aggr_list']['type'] = 'safe_string';
+        $form_group['group']['aggr_list']['required'] = 'off';
+        $form_group['group']['aggr_list']['unique'] = 'off';*/
+
+        $form_group['group']['group_id']['name'] = 'group_id';
+        $form_group['group']['group_id']['title'] = Multilanguage::_('L_ID');
+        $form_group['group']['group_id']['value'] = 0;
+        $form_group['group']['group_id']['length'] = 40;
+        $form_group['group']['group_id']['type'] = 'primary_key';
+        $form_group['group']['group_id']['required'] = 'off';
+        $form_group['group']['group_id']['unique'] = 'off';
+
+        $form_group['group']['name']['name'] = 'name';
+        $form_group['group']['name']['title'] = Multilanguage::_('GROUP_NAME', 'system');
+        $form_group['group']['name']['value'] = '';
+        $form_group['group']['name']['length'] = 40;
+        $form_group['group']['name']['type'] = 'safe_string';
+        $form_group['group']['name']['required'] = 'on';
+        $form_group['group']['name']['unique'] = 'off';
+
+        $form_group['group']['system_name']['name'] = 'system_name';
+        $form_group['group']['system_name']['title'] = Multilanguage::_('SYSTEM_NAME', 'system') . ' (' . Multilanguage::_('LATIN_LETTERS_ONLY', 'system') . ')';
+        $form_group['group']['system_name']['value'] = '';
+        $form_group['group']['system_name']['length'] = 40;
+        $form_group['group']['system_name']['type'] = 'safe_string';
+        $form_group['group']['system_name']['required'] = 'on';
+        $form_group['group']['system_name']['unique'] = 'off';
+
+        return $form_group;
+    }
+
+    function create_dna_table()
+    {
         $query = "
 CREATE TABLE `" . DB_PREFIX . "_dna` (
   `group_id` int(11) NOT NULL DEFAULT '0',
@@ -135,7 +141,8 @@ CREATE TABLE `" . DB_PREFIX . "_dna` (
         $stmt = $DBC->query($query);
     }
 
-    function create_table() {
+    function create_table()
+    {
         $query = "
 CREATE TABLE `" . DB_PREFIX . "_group` (
   `group_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -152,7 +159,8 @@ CREATE TABLE `" . DB_PREFIX . "_group` (
      * @param void
      * @return string
      */
-    function main() {
+    function main()
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         $form_data = $this->data_model;
@@ -166,69 +174,76 @@ CREATE TABLE `" . DB_PREFIX . "_group` (
                 return $rs;
                 break;
 
-            case 'edit_done' : {
-                    $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
-                    if (!$this->check_data($form_data[$this->table_name])) {
-                        $rs = $this->get_form($form_data[$this->table_name], 'edit');
-                    } else {
-                        $this->edit_data($form_data[$this->table_name]);
-                        $rs .= $this->grid();
-                    }
-                    break;
-                }
-
-            case 'edit' : {
-                    $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
-                    //echo '<pre>';
-                    //print_r($form_data[$this->table_name]);			    
+            case 'edit_done' :
+            {
+                $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
+                if (!$this->check_data($form_data[$this->table_name])) {
                     $rs = $this->get_form($form_data[$this->table_name], 'edit');
-
-                    break;
+                } else {
+                    $this->edit_data($form_data[$this->table_name]);
+                    $rs .= $this->grid();
                 }
-            case 'delete' : {
-                    $this->delete_data($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key));
-                    if ($this->getError()) {
-                        $rs .= '<div align="center">' . Multilanguage::_('L_ERROR_ON_DELETE') . ': ' . $this->GetErrorMessage() . '<br>';
-                        $rs .= '<a href="?action=' . $this->action . '">ОК</a>';
-                        $rs .= '</div>';
-                    } else {
-                        $rs .= $this->grid();
-                    }
+                break;
+            }
 
-                    break;
-                }
+            case 'edit' :
+            {
+                $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
+                //echo '<pre>';
+                //print_r($form_data[$this->table_name]);
+                $rs = $this->get_form($form_data[$this->table_name], 'edit');
 
-            case 'new_done' : {
-
-                    $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
-                    //echo '<pre>';
-                    //print_r($form_data['data']);
-
-                    if (!$this->check_data($form_data[$this->table_name])) {
-                        $rs = $this->get_form($form_data[$this->table_name], 'new');
-                    } else {
-                        $this->add_data($form_data[$this->table_name]);
-                        $rs .= $this->grid();
-                    }
-                    break;
+                break;
+            }
+            case 'delete' :
+            {
+                $this->delete_data($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key));
+                if ($this->getError()) {
+                    $rs .= '<div align="center">' . Multilanguage::_('L_ERROR_ON_DELETE') . ': ' . $this->GetErrorMessage() . '<br>';
+                    $rs .= '<a href="?action=' . $this->action . '">ОК</a>';
+                    $rs .= '</div>';
+                } else {
+                    $rs .= $this->grid();
                 }
 
-            case 'new' : {
-                    $rs = $this->get_form($form_data[$this->table_name]);
-                    break;
+                break;
+            }
+
+            case 'new_done' :
+            {
+
+                $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
+                //echo '<pre>';
+                //print_r($form_data['data']);
+
+                if (!$this->check_data($form_data[$this->table_name])) {
+                    $rs = $this->get_form($form_data[$this->table_name], 'new');
+                } else {
+                    $this->add_data($form_data[$this->table_name]);
+                    $rs .= $this->grid();
                 }
-            case 'mass_delete' : {
-                    $id_array = array();
-                    $ids = trim($this->getRequestValue('ids'));
-                    if ($ids != '') {
-                        $id_array = explode(',', $ids);
-                    }
-                    $rs .= $this->mass_delete_data($this->table_name, $this->primary_key, $id_array);
-                    break;
+                break;
+            }
+
+            case 'new' :
+            {
+                $rs = $this->get_form($form_data[$this->table_name]);
+                break;
+            }
+            case 'mass_delete' :
+            {
+                $id_array = array();
+                $ids = trim($this->getRequestValue('ids'));
+                if ($ids != '') {
+                    $id_array = explode(',', $ids);
                 }
-            default : {
-                    $rs .= $this->grid($user_id);
-                }
+                $rs .= $this->mass_delete_data($this->table_name, $this->primary_key, $id_array);
+                break;
+            }
+            default :
+            {
+                $rs .= $this->grid($user_id);
+            }
         }
         $rs_new = $this->get_app_title_bar();
         $rs_new .= $rs;
@@ -241,7 +256,8 @@ CREATE TABLE `" . DB_PREFIX . "_group` (
      * @param
      * @return
      */
-    function structurePermissionProcessor() {
+    function structurePermissionProcessor()
+    {
         //echo $this->getRequestValue('structure_permission_do', 'default');
         switch ($this->getRequestValue('structure_permission_do')) {
             case 'update':
@@ -260,7 +276,8 @@ CREATE TABLE `" . DB_PREFIX . "_group` (
      * @param int $group_id group ID
      * @return string
      */
-    function updateStructurePermission($group_id) {
+    function updateStructurePermission($group_id)
+    {
 
         //delete dna items for this group_id
         $query = "delete from " . DB_PREFIX . "_dna where group_id=$group_id";
@@ -271,7 +288,7 @@ CREATE TABLE `" . DB_PREFIX . "_group` (
 
         foreach ($component_list as $component_id => $function_list) {
             foreach ($function_list as $function_id) {
-                if (( $this->getRequestValue($component_id . ':' . $function_id) == $function_id)) {
+                if (($this->getRequestValue($component_id . ':' . $function_id) == $function_id)) {
                     $query = "insert into " . DB_PREFIX . "_dna (group_id, component_id, function_id) values ($group_id, $component_id, $function_id)";
                     //echo $query;
                     $stmt = $DBC->query($query, array(), $row, $succes_mark);
@@ -290,7 +307,8 @@ CREATE TABLE `" . DB_PREFIX . "_group` (
      * @param void
      * @return array
      */
-    function loadComponentList() {
+    function loadComponentList()
+    {
         $query = "select * from " . DB_PREFIX . "_component_function order by component_id, function_id";
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query);
@@ -306,9 +324,10 @@ CREATE TABLE `" . DB_PREFIX . "_group` (
     /**
      * Get structure permission edit form
      * @param int $group_id group ID
-     * @return string 
+     * @return string
      */
-    function getStructurePermissionEditForm($group_id) {
+    function getStructurePermissionEditForm($group_id)
+    {
         $rs = '<form method="post">';
         $rs .= '<table id="structure" class="table table-hover">';
         $rs .= '<thead>';
@@ -327,10 +346,11 @@ CREATE TABLE `" . DB_PREFIX . "_group` (
 
     /**
      * Get component list
-     * @param int $group_id group ID 
+     * @param int $group_id group ID
      * @return string
      */
-    function getComponentList($group_id) {
+    function getComponentList($group_id)
+    {
         $ra = array();
         $query = "select * from " . DB_PREFIX . "_component order by name";
         $DBC = DBC::getInstance();
@@ -352,7 +372,8 @@ CREATE TABLE `" . DB_PREFIX . "_group` (
      * @param int $group_id group ID
      * @return string
      */
-    function getFunctionRow($component_id, $group_id) {
+    function getFunctionRow($component_id, $group_id)
+    {
         $molekula = array();
 
         //load DNA structure
@@ -372,7 +393,7 @@ CREATE TABLE `" . DB_PREFIX . "_group` (
         $rs .= '<tr>';
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
-                if (@in_array($ar['function_id'], $component)) {
+                if (is_array($component) and @in_array($ar['function_id'], $component)) {
                     $checked = "checked";
                 } else {
                     $checked = '';
@@ -390,7 +411,8 @@ CREATE TABLE `" . DB_PREFIX . "_group` (
      * @param void
      * @return string
      */
-    function grid($params = array(), $default_params = array()) {
+    function grid($params = array(), $default_params = array())
+    {
         global $_SESSION;
         $DBC = DBC::getInstance();
 
@@ -429,7 +451,8 @@ CREATE TABLE `" . DB_PREFIX . "_group` (
      * @param string $primary_key
      * @param int $primary_key_value
      */
-    function delete_data($table_name, $primary_key, $primary_key_value) {
+    function delete_data($table_name, $primary_key, $primary_key_value)
+    {
         $search_queries = array(
             Multilanguage::_('TABLE_USER', 'system') => 'SELECT COUNT(*) AS rs FROM ' . DB_PREFIX . '_user WHERE group_id=?'
         );

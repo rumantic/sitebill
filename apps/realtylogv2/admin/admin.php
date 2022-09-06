@@ -13,7 +13,7 @@ class realtylogv2_admin extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
         //$this->table_name = 'realtylogv2';
         $this->action = 'realtylogv2';
         //$this->primary_key = 'realtylog_id';
@@ -363,7 +363,7 @@ class realtylogv2_admin extends Object_Manager {
 
         if (!in_array($type, array('delete', 'edit', 'new'))) {
             $query = 'SELECT SQL_CALC_FOUND_ROWS l.`realtylog_id`, l.`id`, l.`user_id`, u.`login`, l.`log_date`, l.`action`, l.`log_data` FROM ' . DB_PREFIX . '_' . $this->table_name . ' l LEFT JOIN `' . DB_PREFIX . '_user` u ON l.`editor_id`=u.`user_id`' . ($ids != 0 ? ' WHERE l.`id`=?' : '') . ' ORDER BY l.`log_date` DESC LIMIT ' . (($page - 1) * $per_page) . ', ' . $per_page;
-            
+
             if ($ids != 0) {
                 $stmt = $DBC->query($query, array($ids));
             } else {
@@ -388,7 +388,7 @@ class realtylogv2_admin extends Object_Manager {
         $query = 'SELECT FOUND_ROWS() AS _cnt';
         $stmt = $DBC->query($query);
         $ar = $DBC->fetch($stmt);
-        
+
         if ( $search_params ) {
             $total = 0;
         } else {
@@ -440,7 +440,7 @@ class realtylogv2_admin extends Object_Manager {
                             $total++;
                         }
                     }
-                    
+
 
                     foreach ($placeholders as $field => $mask) {
                         if (isset($_model[$field])) {
@@ -480,7 +480,7 @@ class realtylogv2_admin extends Object_Manager {
         }else{
             return 0;
         }
-        
+
     }
 
     function getLogs($data_id, $user_id = FALSE) {
@@ -648,7 +648,7 @@ class realtylogv2_admin extends Object_Manager {
         print_r($cdata_model);
         echo '</pre>';
     }
-    
+
     /**
      * Функция выполняет поиск среди логов по ключам. Ключи задаются в конфиге
      * @return string - таблица результатов
@@ -670,7 +670,7 @@ class realtylogv2_admin extends Object_Manager {
     }
 
     function getTopMenu() {
-        
+
     }
 
 }

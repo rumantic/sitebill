@@ -10,6 +10,10 @@ if ( !empty($settings['Settings']['HTTP_HOST']) ) {
     $_SERVER['HTTP_HOST'] = $settings['Settings']['HTTP_HOST'];
 }
 $sitebill_document_root = rtrim($_SERVER['DOCUMENT_ROOT'], '/').$folder;
-define('SITEBILL_DOCUMENT_ROOT', $sitebill_document_root);
+if ( !defined('SITEBILL_DOCUMENT_ROOT') ) {
+    define('SITEBILL_DOCUMENT_ROOT', $sitebill_document_root);
+}
 define('SITEBILL_MAIN_URL', $folder);
-define('DB_PREFIX', $__db_prefix);
+if ( isset($__db_prefix) ) {
+    define('DB_PREFIX', $__db_prefix);
+}

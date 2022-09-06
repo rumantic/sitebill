@@ -4,26 +4,32 @@
  * Grid constructor
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
-require_once (SITEBILL_DOCUMENT_ROOT .'/apps/system/lib/frontend/grid/grid_constructor_root.php');
-class Grid_Constructor extends Grid_Constructor_Root {
+require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/grid/grid_constructor_root.php');
+
+class Grid_Constructor extends Grid_Constructor_Root
+{
 
     public $grid_total;
     protected $grid_item_data_model = null;
     protected $billing_mode = false;
     protected $currency_admin = null;
+    private $grid_label;
+    private $query_stack;
 
     /**
      * Constructor
      */
-    function __construct() {
-        $this->SiteBill();
+    function __construct()
+    {
+        parent::__construct();
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
         $this->grid_item_data_model = $data_model->get_kvartira_model(false, true);
         $this->grid_item_data_model = $this->grid_item_data_model['data'];
     }
 
-    function vip_right($params) {
+    function vip_right($params)
+    {
         if (!isset($params['_no_interactive_search'])) {
             $params['_no_interactive_search'] = 1;
         }
@@ -31,7 +37,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         $this->template->assign('special_items2', $res);
     }
 
-    function vip_array($params) {
+    function vip_array($params)
+    {
         $params['per_page'] = 100;
         if (!isset($params['_no_interactive_search'])) {
             $params['_no_interactive_search'] = 1;
@@ -45,20 +52,22 @@ class Grid_Constructor extends Grid_Constructor_Root {
      * Возвращает массив имен свойств, передаваемых запросом на получение данных для отрисовки информации об объекте поверх карты
      * @return array
      */
-    function get_map_search_items_fields(){
-        return array('href','type_sh','price','city','image','image_cache');
+    function get_map_search_items_fields()
+    {
+        return array('href', 'type_sh', 'price', 'city', 'image', 'image_cache', 'currency_name');
     }
 
-    function map_search_items($ids){
-        $params['id']=$ids;
-        $params['no_portions']=1;
-        $res = $this->get_sitebill_adv_core( $params, false, false, false, false );
+    function map_search_items($ids)
+    {
+        $params['id'] = $ids;
+        $params['no_portions'] = 1;
+        $res = $this->get_sitebill_adv_core($params, false, false, false, false);
 
         $fields = $this->get_map_search_items_fields();
         $data = array();
         foreach ($res['data'] as $k => $datum) {
             foreach ($fields as $field) {
-                if(isset($datum[$field])){
+                if (isset($datum[$field])) {
                     $data[$k][$field] = $datum[$field];
                 }
             }
@@ -69,13 +78,14 @@ class Grid_Constructor extends Grid_Constructor_Root {
     }
 
 
-    function map_search_listing(){
+    function map_search_listing()
+    {
         $theme = $this->getConfigValue('theme');
-        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/sitebill_krascap.php');
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/sitebill_krascap.php');
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $theme . '/main/main.php')) {
-            require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $theme . '/main/main.php');
+            require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $theme . '/main/main.php');
             $frontend = new frontend_main();
-        }else{
+        } else {
             $frontend = new SiteBill_Krascap();
         }
 
@@ -85,7 +95,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         $result_set = array();
 
         global $smarty;
-        $tpl = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'. $this->getConfigValue('theme').'/activemap_listing.tpl';
+        $tpl = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/activemap_listing.tpl';
 
         $responce = array(
             'status' => 0,
@@ -96,7 +106,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         //$overall_limit = intval($this->getConfigValue('apps.geodata.iframe_map_limit'));
 
 
-        $params['has_geo']=1;
+        $params['has_geo'] = 1;
         /*if ($overall_limit > 0) {
             $params['page_limit'] = $overall_limit;
         } else {
@@ -109,12 +119,12 @@ class Grid_Constructor extends Grid_Constructor_Root {
         $bounds = $this->getRequestValue('bounds');
         $coords = $this->getRequestValue('polylineString');
 
-        if($all){
-            $res = $this->get_sitebill_adv_core( $params, false, false, true, false );
+        if ($all) {
+            $res = $this->get_sitebill_adv_core($params, false, false, true, false);
             $msg = '';
 
-            if($res['_showed'] < $res['_total_records']){
-                $msg = 'Показано '.$res['_showed'].' из '.$res['_total_records'];
+            if ($res['_showed'] < $res['_total_records']) {
+                $msg = 'Показано ' . $res['_showed'] . ' из ' . $res['_total_records'];
             }
 
             $smarty->assign('activemap_listing', $res['data']);
@@ -127,10 +137,10 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 'msg' => $msg,
                 'paging' => $res['paging']
             );
-        }elseif(null === $coords && null !== $bounds){
+        } elseif (null === $coords && null !== $bounds) {
             $msg = '';
             $params['map_bounds'] = $bounds;
-            $res = $this->get_sitebill_adv_core( $params, false, false, true, false );
+            $res = $this->get_sitebill_adv_core($params, false, false, true, false);
             $smarty->assign('activemap_listing', $res['data']);
             $responce = array(
                 'status' => 1,
@@ -140,85 +150,85 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 'msg' => $msg,
                 'paging' => $res['paging']
             );
-        }else{
-            $lines=array();
+        } else {
+            $lines = array();
 
-            if(null !== $coords){
-                if(!is_array($coords)){
-                    $pairs=explode(';', $coords);
-                    foreach ($pairs as $p){
-                        $points[]=explode(',', $p);
+            if (null !== $coords) {
+                if (!is_array($coords)) {
+                    $pairs = explode(';', $coords);
+                    foreach ($pairs as $p) {
+                        $points[] = explode(',', $p);
                     }
-                    $endel=end($points);
+                    $endel = end($points);
                     reset($points);
-                    if($endel[0]!=$points[0][0] && $endel[1]!=$points[0][1]){
-                        $points[]=$points[0];
+                    if ($endel[0] != $points[0][0] && $endel[1] != $points[0][1]) {
+                        $points[] = $points[0];
                     }
-                }else{
+                } else {
                     $points = $coords;
-                    $points[]=$coords[0];
+                    $points[] = $coords[0];
                 }
 
 
-                $count=count($points);
-                $i=0;
-                $max_lat=false;
-                $min_lat=false;
-                $max_lng=false;
-                $min_lng=false;
-                foreach ($points as $k=>$point){
-                    $lines[$k]['s']['lat']=$point[0];
-                    $lines[$k]['s']['lng']=$point[1];
-                    $lines[$k]['e']['lat']=$points[$k+1][0];
-                    $lines[$k]['e']['lng']=$points[$k+1][1];
-                    $delta_lat=$lines[$k]['e']['lat']-$lines[$k]['s']['lat'];
-                    $delta_lng=$lines[$k]['e']['lng']-$lines[$k]['s']['lng'];
-                    if($delta_lng==0){
-                        $lines[$k]['type']='v';
-                        $koef=0;
-                    }elseif($delta_lat==0){
-                        $lines[$k]['type']='h';
-                        $koef=0;
-                    }else{
-                        $lines[$k]['type']='c';
-                        $koef=($delta_lat)/($delta_lng);
+                $count = count($points);
+                $i = 0;
+                $max_lat = false;
+                $min_lat = false;
+                $max_lng = false;
+                $min_lng = false;
+                foreach ($points as $k => $point) {
+                    $lines[$k]['s']['lat'] = $point[0];
+                    $lines[$k]['s']['lng'] = $point[1];
+                    $lines[$k]['e']['lat'] = $points[$k + 1][0];
+                    $lines[$k]['e']['lng'] = $points[$k + 1][1];
+                    $delta_lat = $lines[$k]['e']['lat'] - $lines[$k]['s']['lat'];
+                    $delta_lng = $lines[$k]['e']['lng'] - $lines[$k]['s']['lng'];
+                    if ($delta_lng == 0) {
+                        $lines[$k]['type'] = 'v';
+                        $koef = 0;
+                    } elseif ($delta_lat == 0) {
+                        $lines[$k]['type'] = 'h';
+                        $koef = 0;
+                    } else {
+                        $lines[$k]['type'] = 'c';
+                        $koef = ($delta_lat) / ($delta_lng);
                     }
 
-                    $lines[$k]['koef']=$koef;
-                    if($lines[$k]['type']=='c'){
-                        $lines[$k]['ckoef']=$lines[$k]['s']['lat']-$koef*$lines[$k]['s']['lng'];
-                    }else{
-                        $lines[$k]['ckoef']=0;
+                    $lines[$k]['koef'] = $koef;
+                    if ($lines[$k]['type'] == 'c') {
+                        $lines[$k]['ckoef'] = $lines[$k]['s']['lat'] - $koef * $lines[$k]['s']['lng'];
+                    } else {
+                        $lines[$k]['ckoef'] = 0;
                     }
                     //$lines[$k]['ckoef']=$lines[$k]['s']['lat']-$koef*$lines[$k]['s']['lng'];
                     //echo $point[0].'<br>';
                     //echo $point[1].'<br>';
-                    if($max_lat!==false && $point[0]>$max_lat){
-                        $max_lat=$point[0];
-                    }elseif($max_lat===false){
-                        $max_lat=$point[0];
+                    if ($max_lat !== false && $point[0] > $max_lat) {
+                        $max_lat = $point[0];
+                    } elseif ($max_lat === false) {
+                        $max_lat = $point[0];
                     }
-                    if($min_lat!==false && $point[0]<$min_lat){
-                        $min_lat=$point[0];
-                    }elseif($min_lat===false){
-                        $min_lat=$point[0];
+                    if ($min_lat !== false && $point[0] < $min_lat) {
+                        $min_lat = $point[0];
+                    } elseif ($min_lat === false) {
+                        $min_lat = $point[0];
                     }
-                    if($max_lng!==false && $point[1]>$max_lng){
-                        $max_lng=$point[1];
-                    }elseif($max_lng===false){
-                        $max_lng=$point[1];
+                    if ($max_lng !== false && $point[1] > $max_lng) {
+                        $max_lng = $point[1];
+                    } elseif ($max_lng === false) {
+                        $max_lng = $point[1];
                     }
-                    if($min_lng!==false && $point[1]<$min_lng){
-                        $min_lng=$point[1];
-                    }elseif($min_lng===false){
-                        $min_lng=$point[1];
+                    if ($min_lng !== false && $point[1] < $min_lng) {
+                        $min_lng = $point[1];
+                    } elseif ($min_lng === false) {
+                        $min_lng = $point[1];
                     }
                     $i++;
-                    if($i==$count-1){
+                    if ($i == $count - 1) {
                         break;
                     }
                 }
-            }else{
+            } else {
                 $smarty->assign('activemap_listing', array());
                 $responce = array(
                     'status' => 0,
@@ -230,88 +240,80 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 return json_encode(array($responce));
             }
 
-            $ids=array();
+            $ids = array();
 
-            $DBC=DBC::getInstance();
-            $query='SELECT id, topic_id, geo_lat AS lat, geo_lng AS lng FROM '.DB_PREFIX.'_data WHERE geo_lat IS NOT NULL AND geo_lng IS NOT NULL AND geo_lat>=? AND geo_lat<=? AND geo_lng>=? AND geo_lng<=? AND active=1';
+            $DBC = DBC::getInstance();
+            $query = 'SELECT id, topic_id, geo_lat AS lat, geo_lng AS lng FROM ' . DB_PREFIX . '_data WHERE geo_lat IS NOT NULL AND geo_lng IS NOT NULL AND geo_lat>=? AND geo_lat<=? AND geo_lng>=? AND geo_lng<=? AND active=1';
             //print_r(array($min_lat, $max_lat, $min_lng, $max_lng));
-            $stmt=$DBC->query($query, array($min_lat, $max_lat, $min_lng, $max_lng));
-            if($stmt){
-                while($ar=$DBC->fetch($stmt)){
-                    $ret[]=$ar;
+            $stmt = $DBC->query($query, array($min_lat, $max_lat, $min_lng, $max_lng));
+            if ($stmt) {
+                while ($ar = $DBC->fetch($stmt)) {
+                    $ret[] = $ar;
                 }
             }
 
-            $finded_count=count($ret);
-            $max_count=(int)$this->getConfigValue('apps.mapviewer.max_objects_onmap');
-            if($max_count==0){
-                $max_count=1000000;
+            $finded_count = count($ret);
+            $max_count = (int)$this->getConfigValue('apps.mapviewer.max_objects_onmap');
+            if ($max_count == 0) {
+                $max_count = 1000000;
             }
-    //echo $finded_count;
+            //echo $finded_count;
 
-            if($finded_count>$max_count){
-                return json_encode('В выбранной Вами области содержится '.$finded_count.' объектов. Пожалуйста выберите меньшую область.');
+            if ($finded_count > $max_count) {
+                return json_encode('В выбранной Вами области содержится ' . $finded_count . ' объектов. Пожалуйста выберите меньшую область.');
             }
 
             //echo count($ret);
 
-            $points=array();
+            $points = array();
 
-            if(count($ret)>0){
-                if(!empty($lines)){
-                    foreach($ret as $pk=>$point){
-                        $res=$this->isInRegion($point, $lines);
-                        if($res){
-                            $ids[]=$point['id'];
+            if (count($ret) > 0) {
+                if (!empty($lines)) {
+                    foreach ($ret as $pk => $point) {
+                        $res = $this->isInRegion($point, $lines);
+                        if ($res) {
+                            $ids[] = $point['id'];
 
-                        }else{
+                        } else {
                             unset($ret[$pk]);
                         }
                     }
-                }else{
-                    foreach($ret as $pk=>$point){
-                        $ids[]=$point['id'];
+                } else {
+                    foreach ($ret as $pk => $point) {
+                        $ids[] = $point['id'];
                     }
                 }
 
 
-
                 $params = $frontend->gatherRequestParams();
                 //$params=$this->getRequestValue('params');
-                $params['id']=$ids;
+                $params['id'] = $ids;
                 //$params['no_portions']=1;
                 //$params['has_geo']=1;
                 //$params['geo_only'] = 1;
-                $res = $this->get_sitebill_adv_core( $params, false, false, true, false );
+                $res = $this->get_sitebill_adv_core($params, false, false, true, false);
                 $smarty->assign('activemap_listing', $res['data']);
-
-
-
 
 
                 $responce = array(
                     'status' => 1,
                     /*'data' => $res['data'],*/
                     'listing' => $smarty->fetch($tpl),
-                'total' => $res['_total_records'],
+                    'total' => $res['_total_records'],
                     'paging' => $res['paging'],
                     'msg' => $msg
                 );
-            }else{
+            } else {
                 //$res['data']=array();
             }
         }
 
 
-
-
-
-
-
         return json_encode($responce);
     }
 
-    function map_search(){
+    function map_search()
+    {
 
         $responce = array(
             'status' => 0,
@@ -322,11 +324,11 @@ class Grid_Constructor extends Grid_Constructor_Root {
         $overall_limit = intval($this->getConfigValue('apps.geodata.iframe_map_limit'));
 
         $theme = $this->getConfigValue('theme');
-        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/sitebill_krascap.php');
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/sitebill_krascap.php');
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $theme . '/main/main.php')) {
-            require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $theme . '/main/main.php');
+            require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $theme . '/main/main.php');
             $frontend = new frontend_main();
-        }else{
+        } else {
             $frontend = new SiteBill_Krascap();
         }
 
@@ -334,7 +336,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
 
 
         //$params=$this->getRequestValue('params');
-        $params['has_geo']=1;
+        $params['has_geo'] = 1;
         if ($overall_limit > 0) {
             $params['page_limit'] = $overall_limit;
         } else {
@@ -347,246 +349,276 @@ class Grid_Constructor extends Grid_Constructor_Root {
         $bounds = $this->getRequestValue('bounds');
         $coords = $this->getRequestValue('polylineString');
 
-        if($all){
-            $res = $this->get_sitebill_adv_core( $params, false, false, true, false );
+        if ($all) {
+            $res = $this->get_sitebill_adv_core($params, false, false, true, false);
             $msg = '';
 
-            if($res['_showed'] < $res['_total_records']){
-                $msg = 'Показано '.$res['_showed'].' из '.$res['_total_records'];
+            if ($res['_showed'] < $res['_total_records']) {
+                $msg = 'Показано ' . $res['_showed'] . ' из ' . $res['_total_records'];
             }
             $responce = array(
                 'status' => 1,
                 'data' => $res['data'],
-                'msg' => $msg
+                'msg' => $msg,
+                'all' => true,
             );
-        }elseif(null === $coords && null !== $bounds){
+        } elseif (null === $coords && null !== $bounds) {
             $msg = '';
             $params['map_bounds'] = $bounds;
-            $res = $this->get_sitebill_adv_core( $params, false, false, true, false );
+            $res = $this->get_sitebill_adv_core($params, false, false, true, false);
             $responce = array(
                 'status' => 1,
                 'data' => $res['data'],
-                'msg' => $msg
+                'msg' => $msg,
+                'coords_and_bounds' => true,
             );
-        }else{
-            $lines=array();
+        } else {
+            $lines = array();
+            //
 
-            if(null !== $coords){
-                if(!is_array($coords)){
-                    $pairs=explode(';', $coords);
-                    foreach ($pairs as $p){
-                        $points[]=explode(',', $p);
-                    }
-                    $endel=end($points);
-                    reset($points);
-                    if($endel[0]!=$points[0][0] && $endel[1]!=$points[0][1]){
-                        $points[]=$points[0];
-                    }
-                }else{
-                    $points = $coords;
-                    $points[]=$coords[0];
+            if (null !== $coords) {
+                if ( is_scalar($coords) ) {
+                    $coords = $this->fromStringToPolylineStringPairs($coords);
                 }
-
-
-                $count=count($points);
-                $i=0;
-                $max_lat=false;
-                $min_lat=false;
-                $max_lng=false;
-                $min_lng=false;
-                foreach ($points as $k=>$point){
-                    $lines[$k]['s']['lat']=$point[0];
-                    $lines[$k]['s']['lng']=$point[1];
-                    $lines[$k]['e']['lat']=$points[$k+1][0];
-                    $lines[$k]['e']['lng']=$points[$k+1][1];
-                    $delta_lat=$lines[$k]['e']['lat']-$lines[$k]['s']['lat'];
-                    $delta_lng=$lines[$k]['e']['lng']-$lines[$k]['s']['lng'];
-                    if($delta_lng==0){
-                        $lines[$k]['type']='v';
-                        $koef=0;
-                    }elseif($delta_lat==0){
-                        $lines[$k]['type']='h';
-                        $koef=0;
-                    }else{
-                        $lines[$k]['type']='c';
-                        $koef=($delta_lat)/($delta_lng);
-                    }
-
-                    $lines[$k]['koef']=$koef;
-                    if($lines[$k]['type']=='c'){
-                        $lines[$k]['ckoef']=$lines[$k]['s']['lat']-$koef*$lines[$k]['s']['lng'];
-                    }else{
-                        $lines[$k]['ckoef']=0;
-                    }
-                    //$lines[$k]['ckoef']=$lines[$k]['s']['lat']-$koef*$lines[$k]['s']['lng'];
-                    //echo $point[0].'<br>';
-                    //echo $point[1].'<br>';
-                    if($max_lat!==false && $point[0]>$max_lat){
-                        $max_lat=$point[0];
-                    }elseif($max_lat===false){
-                        $max_lat=$point[0];
-                    }
-                    if($min_lat!==false && $point[0]<$min_lat){
-                        $min_lat=$point[0];
-                    }elseif($min_lat===false){
-                        $min_lat=$point[0];
-                    }
-                    if($max_lng!==false && $point[1]>$max_lng){
-                        $max_lng=$point[1];
-                    }elseif($max_lng===false){
-                        $max_lng=$point[1];
-                    }
-                    if($min_lng!==false && $point[1]<$min_lng){
-                        $min_lng=$point[1];
-                    }elseif($min_lng===false){
-                        $min_lng=$point[1];
-                    }
-                    $i++;
-                    if($i==$count-1){
-                        break;
-                    }
-                }
-            }else{
+                $min_max_coords = $this->coords_to_min_max($coords);
+                $max_lat = $min_max_coords['max_lat'];
+                $min_lat = $min_max_coords['min_lat'];
+                $max_lng = $min_max_coords['max_lng'];
+                $min_lng = $min_max_coords['min_lng'];
+            } else {
                 $responce = array(
                     'status' => 0,
                     'data' => array(),
-                    'msg' => ''
+                    'msg' => '',
+                    'only_coords' => true,
                 );
                 return json_encode(array($responce));
             }
 
-            $ids=array();
+            $ids = array();
 
-            $DBC=DBC::getInstance();
+            $DBC = DBC::getInstance();
             $limit_and_order_map_query = '';
-            if ( $this->getConfigValue('apps.geodata.iframe_map_limit') > 0 ) {
-                $limit_and_order_map_query = ' ORDER by date_added LIMIT '.(int)$this->getConfigValue('apps.geodata.iframe_map_limit');
+            if ($this->getConfigValue('apps.geodata.iframe_map_limit') > 0) {
+                $limit_and_order_map_query = ' ORDER by date_added LIMIT ' . (int)$this->getConfigValue('apps.geodata.iframe_map_limit');
             }
-            $query='SELECT id, topic_id, geo_lat AS lat, geo_lng AS lng FROM '.DB_PREFIX.'_data WHERE geo_lat IS NOT NULL AND geo_lng IS NOT NULL AND geo_lat>=? AND geo_lat<=? AND geo_lng>=? AND geo_lng<=? AND active=1'.$limit_and_order_map_query;
+            $query = 'SELECT id, topic_id, geo_lat AS lat, geo_lng AS lng 
+                            FROM ' . DB_PREFIX . '_data 
+                            WHERE geo_lat IS NOT NULL AND geo_lng IS NOT NULL 
+                            AND geo_lat>=? AND geo_lat<=? AND geo_lng>=? AND geo_lng<=? 
+                            AND active=1' . $limit_and_order_map_query;
             //print_r(array($min_lat, $max_lat, $min_lng, $max_lng));
-            $stmt=$DBC->query($query, array($min_lat, $max_lat, $min_lng, $max_lng));
-            if($stmt){
-                while($ar=$DBC->fetch($stmt)){
-                    $ret[]=$ar;
+            $stmt = $DBC->query($query, array($min_lat, $max_lat, $min_lng, $max_lng));
+            if ($stmt) {
+                while ($ar = $DBC->fetch($stmt)) {
+                    $ret[] = $ar;
                 }
             }
 
-            $finded_count=count($ret);
-            $max_count=(int)$this->getConfigValue('apps.mapviewer.max_objects_onmap');
-            if($max_count==0){
-                $max_count=1000000;
+            $finded_count = count($ret);
+            $max_count = (int)$this->getConfigValue('apps.mapviewer.max_objects_onmap');
+            if ($max_count == 0) {
+                $max_count = 1000000;
             }
-    //echo $finded_count;
+            //echo $finded_count;
 
-            if($finded_count>$max_count){
-                return json_encode('В выбранной Вами области содержится '.$finded_count.' объектов. Пожалуйста выберите меньшую область.');
+            if ($finded_count > $max_count) {
+                return json_encode('В выбранной Вами области содержится ' . $finded_count . ' объектов. Пожалуйста выберите меньшую область.');
             }
 
             //echo count($ret);
 
-            $points=array();
+            $points = array();
 
-            if(count($ret)>0){
-                if(!empty($lines)){
-                    foreach($ret as $pk=>$point){
-                        $res=$this->isInRegion($point, $lines);
-                        if($res){
-                            $ids[]=$point['id'];
+            if (count($ret) > 0) {
+                if (!empty($lines)) {
+                    foreach ($ret as $pk => $point) {
+                        $res = $this->isInRegion($point, $lines);
+                        if ($res) {
+                            $ids[] = $point['id'];
 
-                        }else{
+                        } else {
                             unset($ret[$pk]);
                         }
                     }
-                }else{
-                    foreach($ret as $pk=>$point){
-                        $ids[]=$point['id'];
+                } else {
+                    foreach ($ret as $pk => $point) {
+                        $ids[] = $point['id'];
                     }
                 }
 
 
-
                 $params = $frontend->gatherRequestParams();
                 //$params=$this->getRequestValue('params');
-                $params['id']=$ids;
-                $params['no_portions']=1;
-                $params['has_geo']=1;
+                $params['id'] = $ids;
+                $params['no_portions'] = 1;
+                $params['has_geo'] = 1;
                 $params['geo_only'] = 1;
-                $res = $this->get_sitebill_adv_core( $params, false, false, true, false );
+                $res = $this->get_sitebill_adv_core($params, false, false, true, false);
                 $responce = array(
                     'status' => 1,
                     'data' => $res['data'],
-                    'msg' => $msg
+                    'msg' => $msg,
+                    'ids_search' => true
                 );
-            }else{
+            } else {
                 //$res['data']=array();
             }
         }
 
 
-
-
         return json_encode($responce);
     }
 
-    private function isInRegion($point, $lines){
-    	$point_lat=$point['lat'];
-    	$point_lng=$point['lng'];
-    	//echo 'POINT: '.$point_lat.' '.$point_lng."\n\r";
+    private function coords_to_min_max($coords)
+    {
+        if (!is_array($coords)) {
+            $pairs = explode(';', $coords);
+            foreach ($pairs as $p) {
+                $points[] = explode(',', $p);
+            }
+            $endel = end($points);
+            reset($points);
+            if ($endel[0] != $points[0][0] && $endel[1] != $points[0][1]) {
+                $points[] = $points[0];
+            }
+        } else {
+            $points = $coords;
+            $points[] = $coords[0];
+        }
 
-    	foreach($lines as $line){
-    		if($line['type']=='v' && $this->isBetween($point_lat, $line['s']['lat'], $line['e']['lat']) && $point_lng==$line['s']['lng']){
-    			return true;
-    		}elseif($line['type']=='h' && $this->isBetween($point_lng, $line['s']['lng'], $line['e']['lng']) && $point_lat==$line['s']['lat']){
-    			return true;
-    		}
-    	}
 
-    	$intersectCount=0;
+        $count = count($points);
+        $i = 0;
+        $max_lat = false;
+        $min_lat = false;
+        $max_lng = false;
+        $min_lng = false;
+        foreach ($points as $k => $point) {
+            $lines[$k]['s']['lat'] = $point[0];
+            $lines[$k]['s']['lng'] = $point[1];
+            $lines[$k]['e']['lat'] = $points[$k + 1][0];
+            $lines[$k]['e']['lng'] = $points[$k + 1][1];
+            $delta_lat = $lines[$k]['e']['lat'] - $lines[$k]['s']['lat'];
+            $delta_lng = $lines[$k]['e']['lng'] - $lines[$k]['s']['lng'];
+            if ($delta_lng == 0) {
+                $lines[$k]['type'] = 'v';
+                $koef = 0;
+            } elseif ($delta_lat == 0) {
+                $lines[$k]['type'] = 'h';
+                $koef = 0;
+            } else {
+                $lines[$k]['type'] = 'c';
+                $koef = ($delta_lat) / ($delta_lng);
+            }
 
-    	foreach($lines as $line){
-    		if($line['type']=='v'){
+            $lines[$k]['koef'] = $koef;
+            if ($lines[$k]['type'] == 'c') {
+                $lines[$k]['ckoef'] = $lines[$k]['s']['lat'] - $koef * $lines[$k]['s']['lng'];
+            } else {
+                $lines[$k]['ckoef'] = 0;
+            }
+            //$lines[$k]['ckoef']=$lines[$k]['s']['lat']-$koef*$lines[$k]['s']['lng'];
+            //echo $point[0].'<br>';
+            //echo $point[1].'<br>';
+            if ($max_lat !== false && $point[0] > $max_lat) {
+                $max_lat = $point[0];
+            } elseif ($max_lat === false) {
+                $max_lat = $point[0];
+            }
+            if ($min_lat !== false && $point[0] < $min_lat) {
+                $min_lat = $point[0];
+            } elseif ($min_lat === false) {
+                $min_lat = $point[0];
+            }
+            if ($max_lng !== false && $point[1] > $max_lng) {
+                $max_lng = $point[1];
+            } elseif ($max_lng === false) {
+                $max_lng = $point[1];
+            }
+            if ($min_lng !== false && $point[1] < $min_lng) {
+                $min_lng = $point[1];
+            } elseif ($min_lng === false) {
+                $min_lng = $point[1];
+            }
+            $i++;
+            if ($i == $count - 1) {
+                break;
+            }
+        }
+        $ra = [
+            'max_lat' => $max_lat,
+            'min_lat' => $min_lat,
+            'max_lng' => $max_lng,
+            'min_lng' => $min_lng
+        ];
 
-    		}elseif($line['type']=='h' && $this->isBetween($point_lng, $line['s']['lng'], $line['e']['lng']) && $point_lat<$line['s']['lat']){
-    			$intersectCount++;
-    		}else{
-    			//echo 'LINE: '.$line['s']['lng'].' '.$line['e']['lng']."\n\r";
-    			if($this->isBetween($point_lng, $line['s']['lng'], $line['e']['lng'])){
-    				$intersect_lat=$line['koef']*$point_lng+$line['ckoef'];
-    				if($intersect_lat>=$point_lat){
-    					$intersectCount++;
-    				}
-    			}
-    		}
-    	}
-    	//echo $intersectCount;
+        return $ra;
 
-    	if($intersectCount==0){
-    		return false;
-    	}
-    	if($intersectCount==1){
-    		return true;
-    	}
-    	if($intersectCount%2==0){
-    		return false;
-    	}
-    	return true;
     }
 
-    private function isBetween($point, $fp1, $fp2){
-    	$start=$fp1;
-    	if($fp2<$start){
-    		$start=$fp2;
-    		$end=$fp1;
-    	}else{
-    		$end=$fp2;
-    	}
-    	if($point>=$start && $point<=$end){
-    		return true;
-    	}
-    	return false;
+    private function isInRegion($point, $lines)
+    {
+        $point_lat = $point['lat'];
+        $point_lng = $point['lng'];
+        //echo 'POINT: '.$point_lat.' '.$point_lng."\n\r";
+
+        foreach ($lines as $line) {
+            if ($line['type'] == 'v' && $this->isBetween($point_lat, $line['s']['lat'], $line['e']['lat']) && $point_lng == $line['s']['lng']) {
+                return true;
+            } elseif ($line['type'] == 'h' && $this->isBetween($point_lng, $line['s']['lng'], $line['e']['lng']) && $point_lat == $line['s']['lat']) {
+                return true;
+            }
+        }
+
+        $intersectCount = 0;
+
+        foreach ($lines as $line) {
+            if ($line['type'] == 'v') {
+
+            } elseif ($line['type'] == 'h' && $this->isBetween($point_lng, $line['s']['lng'], $line['e']['lng']) && $point_lat < $line['s']['lat']) {
+                $intersectCount++;
+            } else {
+                //echo 'LINE: '.$line['s']['lng'].' '.$line['e']['lng']."\n\r";
+                if ($this->isBetween($point_lng, $line['s']['lng'], $line['e']['lng'])) {
+                    $intersect_lat = $line['koef'] * $point_lng + $line['ckoef'];
+                    if ($intersect_lat >= $point_lat) {
+                        $intersectCount++;
+                    }
+                }
+            }
+        }
+        //echo $intersectCount;
+
+        if ($intersectCount == 0) {
+            return false;
+        }
+        if ($intersectCount == 1) {
+            return true;
+        }
+        if ($intersectCount % 2 == 0) {
+            return false;
+        }
+        return true;
     }
 
-    function tryGetSimilarTopicsByTranslitName($topic_id) {
+    private function isBetween($point, $fp1, $fp2)
+    {
+        $start = $fp1;
+        if ($fp2 < $start) {
+            $start = $fp2;
+            $end = $fp1;
+        } else {
+            $end = $fp2;
+        }
+        if ($point >= $start && $point <= $end) {
+            return true;
+        }
+        return false;
+    }
+
+    function tryGetSimilarTopicsByTranslitName($topic_id)
+    {
         $translit_name = false;
         $result = array();
         $DBC = DBC::getInstance();
@@ -624,7 +656,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
      * @param array $param
      * @return array
      */
-    function main($params) {
+    function main($params)
+    {
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
@@ -634,7 +667,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         $this->template->assign('category_tree', $this->get_category_tree($params, $category_structure));
 
         $this->template->assign('breadcrumbs', $this->prepareBreadcrumbs($params));
-        $sp=$params;
+        $sp = $params;
         unset($sp['page']);
         unset($sp['order']);
         $this->template->assign('search_params', json_encode($sp));
@@ -642,7 +675,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
 
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/billing/lib/billing.php') && $this->getConfigValue('apps.billing.enable') == 1) {
             $_billing_on = true;
-            if(1 == $this->getConfigValue('apps.billing.disable_premium_popup')){
+            if (1 == $this->getConfigValue('apps.billing.disable_premium_popup')) {
                 $_billing_on = false;
             }
         } else {
@@ -665,11 +698,11 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 } else {
                     $FGG = new Front_Grid_Constructor();
                 }
-                $this->writeLog('$front_grid_constructor_path = '.$front_grid_constructor_path);
+                //$this->writeLog('$front_grid_constructor_path = ' . $front_grid_constructor_path);
 
 
                 if (!is_array($params['topic_id']) && $params['topic_id'] != '' && $params['topic_id'] != 0) {
-                    $topic = (array) $params['topic_id'];
+                    $topic = (array)$params['topic_id'];
                     if ($this->getConfigValue('theme') == 'etown') {
                         if ($params['city_id'] != 0 and $params['city_id'] != '') {
                             $topic = array_merge($topic, $this->tryGetSimilarTopicsByTranslitName($params['topic_id']));
@@ -686,7 +719,6 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 } elseif (is_array($params['topic_id'])) {
                     $topic = $params['topic_id'];
                 }
-
 
 
                 if ($columns_data = $FGG->grid_exists($topic)) {
@@ -730,7 +762,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
      * @param array $param
      * @return array
      */
-    function main_contact($params) {
+    function main_contact($params)
+    {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
         $Structure_Manager = new Structure_Manager();
         $category_structure = $Structure_Manager->loadCategoryStructure();
@@ -743,7 +776,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         $this->get_sales_grid($res);
     }
 
-    function add_user_account_info($res) {
+    function add_user_account_info($res)
+    {
         if (!is_array($res)) {
             return $res;
         }
@@ -763,7 +797,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
      * Special
      * @param array $params
      */
-    function special($params) {
+    function special($params)
+    {
         if (!isset($params['_no_interactive_search'])) {
             $params['_no_interactive_search'] = 1;
         }
@@ -775,7 +810,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
      * Special right
      * @param unknown_type $params
      */
-    function special_right($params) {
+    function special_right($params)
+    {
         if ($this->getConfigValue('theme') == '3columns') {
             $params['only_img'] = 1;
         }
@@ -792,7 +828,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
      * @param array $category_structure
      * @return string
      */
-    function get_category_tree($params, $category_structure) {
+    function get_category_tree($params, $category_structure)
+    {
         if (isset($params['topic_id']) && is_array($params['topic_id'])) {
             return '';
         }
@@ -811,11 +848,13 @@ class Grid_Constructor extends Grid_Constructor_Root {
         return '';
     }
 
-    function get_grid_total_records() {
+    function get_grid_total_records()
+    {
         return $this->grid_total;
     }
 
-    function get_sitebill_adv_ext($params, $random = false, $premium = false) {
+    function get_sitebill_adv_ext($params, $random = false, $premium = false)
+    {
         /* if(defined('IS_DEVELOPER') && IS_DEVELOPER==1){
 
           return $this->get_sitebill_adv_ext_modern($params, $random);
@@ -844,7 +883,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
      * @param boolean $random
      * @return array
      */
-    function get_sitebill_adv_ext_base($params, $random = false, $premium = false) {
+    function get_sitebill_adv_ext_base($params, $random = false, $premium = false)
+    {
 
         $data = $this->get_sitebill_adv_core($params, $random, $premium, true, true);
         $this->template->assert('pager_array', $data['paging']);
@@ -865,12 +905,14 @@ class Grid_Constructor extends Grid_Constructor_Root {
         return $data['data'];
     }
 
-    protected function get_data($params, $needle_fields = array()) {
+    protected function get_data($params, $needle_fields = array())
+    {
         $select_fields = array();
         $return = array();
     }
 
-    function get_sitebill_adv_geomarkers($params) {
+    function get_sitebill_adv_geomarkers($params)
+    {
         $select_fields = array();
         $return = array();
 
@@ -907,7 +949,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-        if (isset($params['_no_interactive_search']) && 1 == (int) $params['_no_interactive_search']) {
+        if (isset($params['_no_interactive_search']) && 1 == (int)$params['_no_interactive_search']) {
 
         } else {
             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/main/template_search.php')) {
@@ -962,7 +1004,6 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 $i++;
             }
         }
-
 
 
         $return['_total_records'] = count($ra);
@@ -1148,34 +1189,35 @@ class Grid_Constructor extends Grid_Constructor_Root {
       return $return;
       } */
 
-    function get_sitebill_adv_core($params, $random = false, $premium = false, $paging = true, $geodata = false) {
-        $this->writeLog('Call root get_sitebill_adv_core');
+    function get_sitebill_adv_core($params, $random = false, $premium = false, $paging = true, $geodata = false)
+    {
+        //$this->writeLog('Call root get_sitebill_adv_core');
 
         $ids_only = false;
         $geo_only = false;
 
-        if(isset($params['ids_only'])){
+        if (isset($params['ids_only'])) {
             $ids_only = true;
         }
 
         $select_fields = array();
 
-        if(isset($params['geo_only'])){
+        if (isset($params['geo_only'])) {
             $select_fields = array(
-                DB_PREFIX.'_data.id',
-                DB_PREFIX.'_data.geo_lat',
-                DB_PREFIX.'_data.geo_lng'
+                DB_PREFIX . '_data.id',
+                DB_PREFIX . '_data.geo_lat',
+                DB_PREFIX . '_data.geo_lng'
             );
             $geo_only = true;
             unset($params['geo_only']);
         }
 
-		$routed_params = array();
-		if(isset($params['routed_params'])){
+        $routed_params = array();
+        if (isset($params['routed_params'])) {
             $routed_params = $params['routed_params'];
             unset($params['routed_params']);
 
-            foreach ($routed_params as $k => $v){
+            foreach ($routed_params as $k => $v) {
                 $params[$k] = $v;
             }
         }
@@ -1230,10 +1272,9 @@ class Grid_Constructor extends Grid_Constructor_Root {
             }
         }
 
-        if($geo_only){
+        if ($geo_only) {
             $_collect_user_info = false;
         }
-
 
 
         $this->grid_total = 0;
@@ -1255,7 +1296,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         //$left_joins[]='LEFT JOIN '.DB_PREFIX.'_topic ON '.DB_PREFIX.'_data.topic_id='.DB_PREFIX.'_topic.id';
 
         if ($this->getConfigValue('currency_enable')) {
-            if ( !defined('CURRENT_CURRENCY') ) {
+            if (!defined('CURRENT_CURRENCY')) {
                 define('CURRENT_CURRENCY', 'RUR');
             }
             $select_what[] = DB_PREFIX . '_currency.code AS currency_code';
@@ -1268,7 +1309,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-        if (isset($params['_no_interactive_search']) && 1 == (int) $params['_no_interactive_search']) {
+        if (isset($params['_no_interactive_search']) && 1 == (int)$params['_no_interactive_search']) {
 
         } else {
 
@@ -1278,10 +1319,10 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 $results = $Template_Search->run();
 
                 if (isset($results['where_prepared'])) {
-                	$where_array_prepared = array_merge($where_array_prepared, $results['where_prepared']);
+                    $where_array_prepared = array_merge($where_array_prepared, $results['where_prepared']);
                 }
                 if (isset($results['where_value_prepared'])) {
-                	$where_value_prepared = array_merge($where_value_prepared, $results['where_value_prepared']);
+                    $where_value_prepared = array_merge($where_value_prepared, $results['where_value_prepared']);
                 }
 
                 if (isset($results['where'])) {
@@ -1293,7 +1334,6 @@ class Grid_Constructor extends Grid_Constructor_Root {
             }
         }
         unset($params['_no_interactive_search']);
-
 
 
         $REQUESTURIPATH = Sitebill::getClearRequestURI();
@@ -1313,10 +1353,10 @@ class Grid_Constructor extends Grid_Constructor_Root {
         $order = $this->prepareSortOrder($params, $random, $premium);
 
 
-        if (!isset($params['page']) || (int) $params['page'] == 0) {
+        if (!isset($params['page']) || (int)$params['page'] == 0) {
             $page = 1;
         } else {
-            $page = (int) $params['page'];
+            $page = (int)$params['page'];
         }
         $DBC = DBC::getInstance();
         if ($paging) {
@@ -1374,7 +1414,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         $start = $pageLimitParams['start'];
         $limit = $pageLimitParams['limit'];
         $max_page = $pageLimitParams['max_page'];
-        $page = (isset($params['page']) ? (int) $params['page'] : 0);
+        $page = (isset($params['page']) ? (int)$params['page'] : 0);
 
         if (isset($_REQUEST['REST_API']) && $_REQUEST['REST_API'] == 1) {
             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/api/classes/class.static_data.php')) {
@@ -1383,11 +1423,11 @@ class Grid_Constructor extends Grid_Constructor_Root {
             }
         }
 
-		if(!empty($routed_params)){
-			foreach($routed_params as $rk => $rv){
-				unset($params[$rk]);
-			}
-		}
+        if (!empty($routed_params)) {
+            foreach ($routed_params as $rk => $rv) {
+                unset($params[$rk]);
+            }
+        }
 
 
         $this->template->assign('grid_params', $params);
@@ -1460,7 +1500,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             $Structure_Manager = new Structure_Manager();
             $category_structure = $Structure_Manager->loadCategoryStructure();
             if ($this_is_favorites) {
-                $pageurl = 'myfavorites';
+                $pageurl = $this->get_myfavorites_uri();
                 unset($params['favorites']);
                 unset($pager_params['favorites']);
             } else {
@@ -1549,45 +1589,6 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-
-        /* foreach ( $pager_params as $key => $value ) {
-          if($key=='page_url' || $key=='page_limit'){
-
-          }else{
-
-          if(is_array($value)){
-          if(count($value)>0){
-          foreach($value as $v){
-          if(is_array($v)){
-          foreach($v as $sk=>$sv){
-          $pairs[] = $key.'['.$sk.']='.$sv;
-          }
-          }else{
-          if($v!=''){
-          $pairs[] = $key.'[]='.$v;
-          }
-          }
-
-
-          }
-          }
-          }elseif ( $value != '') {
-          if($key!='topic_id'){
-          $pairs[] = "$key=$value";
-          }elseif($params['admin']){
-          $pairs[] = "$key=$value";
-          }
-
-          }
-          }
-
-          } */
-
-        /* if ( is_array($pairs) ) {
-          $url = $pageurl.'?'.implode('&', $pairs);
-          }else{
-          $url = $pageurl.'?key=value';
-          } */
         $return['pagerurl'] = $url;
         //$this->template->assert('pagerurl', $url);
 
@@ -1614,7 +1615,6 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 $pairs[] = "$key=$value";
             }
         }
-
 
 
         if ($is_country_view) {
@@ -1644,11 +1644,12 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-        if(strpos($url, 'account/data') === 0){
+        if (strpos($url, 'account/data') === 0) {
             $url = preg_replace('/^(account\/data)/', '', $url);
         }
 
-        $return['url'] = /*SITEBILL_MAIN_URL.'/'.*/$url;
+        $return['url'] = /*SITEBILL_MAIN_URL.'/'.*/
+            $url;
 
         if (count($select_fields) == 0) {
             $select_what[] = DB_PREFIX . '_data.*';
@@ -1656,9 +1657,22 @@ class Grid_Constructor extends Grid_Constructor_Root {
             $select_what = array_merge($select_what, $select_fields);
         }
 
-        $query = 'SELECT ' . implode(', ', $select_what) . ' ' . $add_select_value . ' FROM ' . DB_PREFIX . '_data' . (count($left_joins) > 0 ? ' ' . implode(' ', $left_joins) . ' ' : '') . ' ' . $where_statement_prepared . ($order!='' ? ' ORDER BY '.$order : '') . ((isset($params['no_portions']) && $params['no_portions'] == 1) ? '' : ' LIMIT ' . $start . ', ' . $limit);
+        $_select_columns = implode(', ', $select_what) . ' ' . $add_select_value;
+        $_limit = ((isset($params['no_portions']) && $params['no_portions'] == 1) ? '' : ' LIMIT ' . $start . ', ' . $limit);
+        /*        echo '<pre>';
+                print_r($where_statement_prepared);
+                echo '</pre>';*/
 
-        $stmt = $DBC->query($query, $where_value_prepared, $success);
+        $query = $this->compile_query($_select_columns, $left_joins, $where_statement_prepared, $order, $_limit);
+        //echo $query;
+        //exit;
+
+
+        $query_all_ids = $this->compile_query(' id ', $left_joins, $where_statement_prepared, $order, '');
+
+        $this->set_query_stack($query_all_ids, $where_value_prepared, 'all_ids_in_grid');
+
+        $stmt = $DBC->query($query . '/* .. grid .. */', $where_value_prepared, $success);
 
         $ra = array();
         if ($stmt) {
@@ -1672,11 +1686,11 @@ class Grid_Constructor extends Grid_Constructor_Root {
             while ($ar = $DBC->fetch($stmt)) {
                 if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/company/company.xml')) {
                     $company_profile = $Account->get_company_profile($ar['user_id']);
-                    $ar['company'] = $company_profile['name']['value'];
+                    $ar['company'] = @$company_profile['name']['value'];
                 }
-                if($ids_only){
+                if ($ids_only) {
                     $ra[$i] = $ar['id'];
-                }else{
+                } else {
                     $ra[$i] = $ar;
                 }
 
@@ -1704,15 +1718,14 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-
         $return['_total_records'] = $total;
         $return['_max_page'] = $max_page;
         $return['_per_page'] = $limit;
         $return['_showed'] = count($ra);
         $return['_params'] = $params;
         $return['_mysearch_params'] = $mysearch_params;
-        $return['_grid_show_start'] = $start+1;
-        $return['_grid_show_end'] = (($start+$limit)>$total ? $total : ($start+$limit));
+        $return['_grid_show_start'] = $start + 1;
+        $return['_grid_show_end'] = (($start + $limit) > $total ? $total : ($start + $limit));
 
 
         $return['data'] = $ra;
@@ -1720,7 +1733,42 @@ class Grid_Constructor extends Grid_Constructor_Root {
         return $return;
     }
 
-    function prepareDataForGeo(&$ra, $geotpl) {
+    protected function get_myfavorites_uri()
+    {
+        return $this->myfavorites_uri ? $this->myfavorites_uri : 'myfavorites';
+    }
+
+    public function set_myfavorites_uri($uri)
+    {
+        $this->myfavorites_uri = $uri;
+    }
+
+    private function compile_query($_select_columns, $left_joins, $where_statement_prepared, $order, $limit)
+    {
+        $query = 'SELECT ' . $_select_columns . ' FROM ' . DB_PREFIX . '_data' . (count($left_joins) > 0 ? ' ' . implode(' ', $left_joins) . ' ' : '') . ' ' . $where_statement_prepared . ($order != '' ? ' ORDER BY ' . $order : '') . $limit;
+        return $query;
+    }
+
+    function set_query_stack($query, $where_value_prepared, $query_label)
+    {
+        $this->query_stack[$this->get_label()] = [
+            $query_label => [
+                'query' => $query,
+                'where_value_prepared' => $where_value_prepared
+            ]
+        ];
+    }
+
+    function get_query_stack($grid_label, $query_label)
+    {
+        if (isset($this->query_stack[$grid_label]) and isset($this->query_stack[$grid_label][$query_label])) {
+            return $this->query_stack[$grid_label][$query_label];
+        }
+        return false;
+    }
+
+    function prepareDataForGeo(&$ra, $geotpl)
+    {
         global $smarty;
         $gdata = array();
         //return false;
@@ -1729,14 +1777,14 @@ class Grid_Constructor extends Grid_Constructor_Root {
 
             if (isset($d['geo_lat']) && isset($d['geo_lng']) && $d['geo_lat'] != '' && $d['geo_lat'] != '0.000000' && $d['geo_lng'] != '' && $d['geo_lng'] != '0.000000') {
                 $gdata[$k]['currency_name'] = '';
-                if(isset($d['currency_name'])){
+                if (isset($d['currency_name'])) {
                     $gdata[$k]['currency_name'] = SiteBill::iconv(SITE_ENCODING, 'utf-8', $d['currency_name']);
                 }
 
                 if (isset($d['currency_id'])) {
                     $gdata[$k]['currency_id'] = $d['currency_id'];
                 }
-                if ((int) $d['price'] != 0) {
+                if ((int)$d['price'] != 0) {
                     $gdata[$k]['price'] = number_format($d['price'], 0, '.', ' ');
                 } else {
                     $gdata[$k]['price'] = $d['price'];
@@ -1793,25 +1841,23 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-
-        if ( $this->getConfigValue('apps.complex.push_map') ) {
-            require_once (SITEBILL_DOCUMENT_ROOT.'/apps/complex/admin/admin.php');
+        if ($this->getConfigValue('apps.complex.push_map')) {
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/complex/admin/admin.php');
             $complex_admin = new complex_admin();
             $complex_geodata = $complex_admin->get_geodata();
-            if ( $complex_geodata ) {
+            if ($complex_geodata) {
                 $gdata = array_merge($gdata, $complex_geodata);
             }
         }
 
-        if ( $this->getConfigValue('apps.mapbanner.enable') ) {
-            require_once (SITEBILL_DOCUMENT_ROOT.'/apps/mapbanner/admin/admin.php');
+        if ($this->getConfigValue('apps.mapbanner.enable')) {
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/mapbanner/admin/admin.php');
             $mapbanner_admin = new mapbanner_admin();
             $mapbanner_geodata = $mapbanner_admin->get_geodata();
-            if ( $mapbanner_geodata ) {
+            if ($mapbanner_geodata) {
                 $gdata = array_merge($gdata, $mapbanner_geodata);
             }
         }
-
 
 
         $geoobjects_collection = array();
@@ -1820,12 +1866,12 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 $gc = $gd['geo_lat'] . '_' . $gd['geo_lng'];
                 if (isset($geoobjects_collection[$gc])) {
                     $geoobjects_collection[$gc]['html'] .= $gd['html'];
-                    if ( isset($gd['banner']) ) {
+                    if (isset($gd['banner'])) {
                         $geoobjects_collection[$gc]['banner'] = $gd['banner'];
                     } else {
                         $geoobjects_collection[$gc]['banner'] = false;
                     }
-                    $geoobjects_collection[$gc]['count'] ++;
+                    $geoobjects_collection[$gc]['count']++;
                     $geoobjects_collection[$gc]['ids'][] = $gd['id'];
                 } else {
                     /* if($gd['topic_id']==44){
@@ -1833,7 +1879,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                       } */
                     $geoobjects_collection[$gc]['lat'] = $gd['geo_lat'];
                     $geoobjects_collection[$gc]['lng'] = $gd['geo_lng'];
-                    if ( isset($gd['banner']) ) {
+                    if (isset($gd['banner'])) {
                         $geoobjects_collection[$gc]['banner'] = $gd['banner'];
                     } else {
                         $geoobjects_collection[$gc]['banner'] = false;
@@ -1852,20 +1898,22 @@ class Grid_Constructor extends Grid_Constructor_Root {
         return $return;
     }
 
-    function get_sitebill_adv_ext_base_ajax($params, $random = false, $premium = false, $paging = true, $geodata = false) {
+    function get_sitebill_adv_ext_base_ajax($params, $random = false, $premium = false, $paging = true, $geodata = false)
+    {
         $data = $this->get_sitebill_adv_core($params, $random, $premium, true, true);
         return $data;
     }
 
-    function getTranslitAlias($city, $street, $number) {
+    function getTranslitAlias($city, $street, $number)
+    {
         if ($city != '') {
             $p[] = $this->transliteMe($city);
         }
         if ($street != '') {
             $p[] = $this->transliteMe($street);
         }
-        if ((int) $number != 0) {
-            $p[] = (int) $number;
+        if ((int)$number != 0) {
+            $p[] = (int)$number;
         }
         return implode('-', $p);
     }
@@ -1875,14 +1923,15 @@ class Grid_Constructor extends Grid_Constructor_Root {
      * @param array $adv res
      * @return string
      */
-    function get_sales_grid($adv) {
-        $this->writeLog('apps/system/lib/frontend/grid/grid_constructor.php:get_sales_grid');
+    function get_sales_grid($adv)
+    {
+        //$this->writeLog('apps/system/lib/frontend/grid/grid_constructor.php:get_sales_grid');
         global $topic_id;
 
         if (
             $this->getConfigValue('theme') != 'estate' and
-            ! file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/realty_grid.tpl') and
-            ! file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/resources/views/pages/realty_grid.blade.php')
+            !file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/realty_grid.tpl') and
+            !file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/resources/views/pages/realty_grid.blade.php')
         ) {
             $this->template->assign('main_file_tpl', '../estate/realty_grid.tpl');
         } else {
@@ -1904,7 +1953,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         return true;
     }
 
-    function createMapListing($ra) {
+    function createMapListing($ra)
+    {
         global $smarty;
         $clustered_objects = array();
         foreach ($ra as $k => $d) {
@@ -1925,7 +1975,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         return $html = $smarty->fetch($template);
     }
 
-    protected function prepareSortOrder($params, $random = false, $premium = false) {
+    protected function prepareSortOrder($params, $random = false, $premium = false)
+    {
 
         $order = '';
         $asc = '';
@@ -1935,78 +1986,93 @@ class Grid_Constructor extends Grid_Constructor_Root {
 
         if ($default_sorts != '') {
             switch ($default_sorts) {
-                case 'priceup' : {
-                        $sorts[] = DB_PREFIX . '_data.price_ue ASC';
-                        break;
-                    }
-                case 'pricedown' : {
-                        $sorts[] = DB_PREFIX . '_data.price_ue DESC';
-                        break;
-                    }
-                default : {
-                        $matches = array();
-                        preg_match_all('/([a-z0-9_]+)\|(asc|desc)[;]?/i', $default_sorts, $matches);
+                case 'priceup' :
+                {
+                    $sorts[] = DB_PREFIX . '_data.price_ue ASC';
+                    break;
+                }
+                case 'pricedown' :
+                {
+                    $sorts[] = DB_PREFIX . '_data.price_ue DESC';
+                    break;
+                }
+                default :
+                {
+                    $matches = array();
+                    preg_match_all('/([a-z0-9_]+)\|(asc|desc)[;]?/i', $default_sorts, $matches);
 
-                        if (count($matches[0]) > 0) {
-                            foreach ($matches[1] as $k => $fkey) {
-                                if ($matches[2][$k] == 'asc' || $matches[2][$k] == 'desc') {
-                                    switch ($fkey) {
-                                        case 'id' : {
-                                                $sorts[] = DB_PREFIX . '_data.id ' . $matches[2][$k];
-                                                break;
-                                            }
-                                        case 'type' : {
-                                                $sorts[] = 'type_sh ' . $matches[2][$k];
-                                                break;
-                                            }
-                                        case 'street' : {
-                                                $sorts[] = 'street ' . $matches[2][$k];
-                                                break;
-                                            }
-                                        case 'square_all' : {
-                                                $sorts[] = DB_PREFIX . '_data.square_all*1 ' . $matches[2][$k];
-                                                break;
-                                            }
-                                        case 'floor' : {
-                                                $sorts[] = DB_PREFIX . '_data.floor*1 ' . $matches[2][$k];
-                                                break;
-                                            }
-                                        case 'district' : {
-                                                $sorts[] = 'district ' . $matches[2][$k];
-                                                break;
-                                            }
-                                        case 'metro' : {
-                                                $sorts[] = 'metro ' . $matches[2][$k];
-                                                break;
-                                            }
-                                        case 'city' : {
-                                                $sorts[] = 'city ' . $matches[2][$k];
-                                                break;
-                                            }
-                                        case 'date_added' : {
-                                                $sorts[] = DB_PREFIX . '_data.date_added ' . $matches[2][$k];
-                                                break;
-                                            }
-                                        case 'date' : {
-                                                $field = trim($this->getConfigValue('apps.realty.updated_at_field'));
-                                                if ($field == '') {
-                                                    $field = 'date_added';
-                                                }
-                                                $sorts[] = DB_PREFIX . '_data.`' . $field . '` ' . $matches[2][$k];
-                                                break;
-                                            }
-                                        case 'price' : {
-                                                $sorts[] = 'price_ue ' . $matches[2][$k];
-                                                break;
-                                            }
-                                        default : {
-                                            $sorts[]=DB_PREFIX.'_data.`'.$fkey.'` '.$matches[2][$k];
+                    if (count($matches[0]) > 0) {
+                        foreach ($matches[1] as $k => $fkey) {
+                            if ($matches[2][$k] == 'asc' || $matches[2][$k] == 'desc') {
+                                switch ($fkey) {
+                                    case 'id' :
+                                    {
+                                        $sorts[] = DB_PREFIX . '_data.id ' . $matches[2][$k];
+                                        break;
+                                    }
+                                    case 'type' :
+                                    {
+                                        $sorts[] = 'type_sh ' . $matches[2][$k];
+                                        break;
+                                    }
+                                    case 'street' :
+                                    {
+                                        $sorts[] = 'street ' . $matches[2][$k];
+                                        break;
+                                    }
+                                    case 'square_all' :
+                                    {
+                                        $sorts[] = DB_PREFIX . '_data.square_all*1 ' . $matches[2][$k];
+                                        break;
+                                    }
+                                    case 'floor' :
+                                    {
+                                        $sorts[] = DB_PREFIX . '_data.floor*1 ' . $matches[2][$k];
+                                        break;
+                                    }
+                                    case 'district' :
+                                    {
+                                        $sorts[] = 'district ' . $matches[2][$k];
+                                        break;
+                                    }
+                                    case 'metro' :
+                                    {
+                                        $sorts[] = 'metro ' . $matches[2][$k];
+                                        break;
+                                    }
+                                    case 'city' :
+                                    {
+                                        $sorts[] = 'city ' . $matches[2][$k];
+                                        break;
+                                    }
+                                    case 'date_added' :
+                                    {
+                                        $sorts[] = DB_PREFIX . '_data.date_added ' . $matches[2][$k];
+                                        break;
+                                    }
+                                    case 'date' :
+                                    {
+                                        $field = trim($this->getConfigValue('apps.realty.updated_at_field'));
+                                        if ($field == '') {
+                                            $field = 'date_added';
                                         }
+                                        $sorts[] = DB_PREFIX . '_data.`' . $field . '` ' . $matches[2][$k];
+                                        break;
+                                    }
+                                    case 'price' :
+                                    {
+                                        $sorts[] = 'price_ue ' . $matches[2][$k];
+                                        break;
+                                    }
+                                    default :
+                                    {
+                                        $sorts[] = DB_PREFIX . '_data.`' . $fkey . '` ' . $matches[2][$k];
                                     }
                                 }
                             }
                         }
                     }
+                }
             }
         }
 
@@ -2020,7 +2086,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             if ($field == '') {
                 $field = 'date_added';
             }
-			$default_sorts = DB_PREFIX . '_data.`' . $field . '` DESC, ' . DB_PREFIX . '_data.id DESC';
+            $default_sorts = DB_PREFIX . '_data.`' . $field . '` DESC, ' . DB_PREFIX . '_data.id DESC';
             /*if($premium){
                 $default_sorts = '_prem_sort DESC, '.DB_PREFIX . '_data.`' . $field . '` DESC, ' . DB_PREFIX . '_data.id DESC';
             }*/
@@ -2043,87 +2109,105 @@ class Grid_Constructor extends Grid_Constructor_Root {
             }
 
             switch ($params['order']) {
-                case 'id' : {
-                        $order = 'id ' . $asc;
-                        break;
+                case 'id' :
+                {
+                    $order = 'id ' . $asc;
+                    break;
+                }
+                case 'type' :
+                {
+                    $order = 'type_sh ' . $asc;
+                    //$order=DB_PREFIX.'_data.topic_id '.$asc;
+                    break;
+                }
+                case 'street' :
+                {
+                    if (isset($this->grid_item_data_model['street_id'])) {
+                        $order = 'street ' . $asc;
+                    } else {
+                        $order = $default_sorts;
                     }
-                case 'type' : {
-                        $order = 'type_sh ' . $asc;
-                        //$order=DB_PREFIX.'_data.topic_id '.$asc;
-                        break;
-                    }
-                case 'street' : {
-                        if (isset($this->grid_item_data_model['street_id'])) {
-                            $order = 'street ' . $asc;
-                        } else {
-                            $order = $default_sorts;
-                        }
 
-                        break;
+                    break;
+                }
+                case 'square_all' :
+                {
+                    $order = DB_PREFIX . '_data.square_all*1 ' . $asc;
+                    break;
+                }
+                case 'floor' :
+                {
+                    $order = DB_PREFIX . '_data.floor*1 ' . $asc;
+                    break;
+                }
+                case 'district' :
+                {
+                    $order = 'district ' . $asc;
+                    break;
+                }
+                case 'metro' :
+                {
+                    $order = 'metro ' . $asc;
+                    break;
+                }
+                case 'city' :
+                {
+                    $order = 'city ' . $asc;
+                    break;
+                }
+                case 'date_added' :
+                {
+                    $order = DB_PREFIX . '_data.date_added ' . $asc;
+                    break;
+                }
+                case 'price' :
+                {
+                    $order = 'price_ue ' . $asc;
+                    break;
+                }
+                case 'popular' :
+                {
+                    $order = DB_PREFIX . '_data.view_count ' . $asc;
+                    break;
+                }
+                case 'priceup' :
+                {
+                    $order = 'price_ue ASC';
+                    break;
+                }
+                case 'pricedown' :
+                {
+                    $order = 'price_ue DESC';
+                    break;
+                }
+                case 'popularup' :
+                {
+                    $order = DB_PREFIX . '_data.view_count ASC';
+                    break;
+                }
+                case 'populardown' :
+                {
+                    $order = DB_PREFIX . '_data.view_count DESC';
+                    break;
+                }
+                case 'dateup' :
+                {
+                    $order = DB_PREFIX . '_data.date_added ASC';
+                    break;
+                }
+                case 'datedown' :
+                {
+                    $order = DB_PREFIX . '_data.date_added DESC';
+                    break;
+                }
+                default :
+                {
+                    if (isset($params['_sortmodel']) && $params['_sortmodel'] == 1) {
+                        $order = DB_PREFIX . '_data.`' . $params['order'] . '` ' . $asc;
+                    } else {
+                        $order = $default_sorts;
                     }
-                case 'square_all' : {
-                        $order = DB_PREFIX . '_data.square_all*1 ' . $asc;
-                        break;
-                    }
-                case 'floor' : {
-                        $order = DB_PREFIX . '_data.floor*1 ' . $asc;
-                        break;
-                    }
-                case 'district' : {
-                        $order = 'district ' . $asc;
-                        break;
-                    }
-                case 'metro' : {
-                        $order = 'metro ' . $asc;
-                        break;
-                    }
-                case 'city' : {
-                        $order = 'city ' . $asc;
-                        break;
-                    }
-                case 'date_added' : {
-                        $order = DB_PREFIX . '_data.date_added ' . $asc;
-                        break;
-                    }
-                case 'price' : {
-                        $order = 'price_ue ' . $asc;
-                        break;
-                    }
-                case 'popular' : {
-                        $order = DB_PREFIX . '_data.view_count ' . $asc;
-                        break;
-                    }
-                case 'priceup' : {
-                        $order = 'price_ue ASC';
-                        break;
-                    }
-                case 'pricedown' : {
-                        $order = 'price_ue DESC';
-                        break;
-                    }
-                case 'popularup' : {
-                        $order = DB_PREFIX . '_data.view_count ASC';
-                        break;
-                    }
-                case 'populardown' : {
-                        $order = DB_PREFIX . '_data.view_count DESC';
-                        break;
-                    }
-                case 'dateup' : {
-                        $order = DB_PREFIX . '_data.date_added ASC';
-                        break;
-                    }
-                case 'datedown' : {
-                        $order = DB_PREFIX . '_data.date_added DESC';
-                        break;
-                    }
-                default : {
-                        if (isset($params['_sortmodel']) && $params['_sortmodel'] == 1) {
-                            $order = DB_PREFIX . '_data.`' . $params['order'] . '` ' . $asc;
-                        } else {
-                            $order = $default_sorts;
-                        }
-                    }
+                }
             }
             //$order='_prem_sort DESC, '.$order;
 
@@ -2146,7 +2230,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
               $order .= $asc; */
         } else {
             if ($premium) {
-                if ((int) $params['page'] == 1 || (int) $params['page'] == 0) {
+                if ((int)$params['page'] == 1 || (int)$params['page'] == 0) {
                     $order = ' ' . DB_PREFIX . '_data.premium_status_end ASC';
                 } else {
                     $order = ' ' . DB_PREFIX . '_data.premium_status_end ASC';
@@ -2160,7 +2244,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         return $order;
     }
 
-    protected function generateGridGeoDataOld($ra) {
+    protected function generateGridGeoDataOld($ra)
+    {
         $grid_geodata = array();
         foreach ($ra as $item_id => $item_array) {
             if (isset($item_array['geo_lat']) && isset($item_array['geo_lng']) && $item_array['geo_lat'] != '' && $item_array['geo_lng'] != '') {
@@ -2174,10 +2259,11 @@ class Grid_Constructor extends Grid_Constructor_Root {
         return $grid_geodata;
     }
 
-    function transformGridData($ra, $_collect_user_info = false) {
+    function transformGridData($ra, $_collect_user_info = false)
+    {
 
         $uselangs = false;
-        if (1 === intval($this->getConfigValue('apps.language.use_langs'))){
+        if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
             $uselangs = true;
             $postfix = $this->getLangPostfix($this->getCurrentLang());
         }
@@ -2222,7 +2308,6 @@ class Grid_Constructor extends Grid_Constructor_Root {
 
 
         foreach ($ra as $item_id => $item_array) {
-
 
 
             if (isset($item_array['geo_lat']) && isset($item_array['geo_lng']) && $item_array['geo_lat'] != '' && $item_array['geo_lng'] != '') {
@@ -2299,7 +2384,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                         $fields = array();
                     } else {
                         $fields = explode(',', $fields_str);
-                        $fields = array_map(function($it) {
+                        $fields = array_map(function ($it) {
                             if (trim($it) !== '') {
                                 return trim($it);
                             }
@@ -2309,16 +2394,15 @@ class Grid_Constructor extends Grid_Constructor_Root {
                         $fields = array('phone', 'login', 'fio');
                     }
                     $DBC = DBC::getInstance();
-                    if(!isset($collected[$item_array['user_id']])){
+                    if (!isset($collected[$item_array['user_id']])) {
                         $stmt = $DBC->query('SELECT `' . implode('`,`', $fields) . '` FROM ' . DB_PREFIX . '_user WHERE user_id=? LIMIT 1', array($item_array['user_id']));
                         if ($stmt) {
                             $ar = $DBC->fetch($stmt);
                             $collected[$item_array['user_id']] = $ar;
                         }
                     }
-                    $ra[$item_id]['_user_info']=$collected[$item_array['user_id']];
+                    $ra[$item_id]['_user_info'] = $collected[$item_array['user_id']];
                 }
-
 
 
                 $ra[$item_id]['user'] = $data_model->get_string_value_by_id('user', 'user_id', 'fio', $item_array['user_id'], true);
@@ -2332,8 +2416,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
 
             foreach ($_model['data'] as $k => $v) {
                 if ($v['type'] == 'select_box') {
-                    $ra[$item_id]['_' . $k . '_'] = $ra[$item_id][$k];
-                    if (isset($_model['data'][$k]['select_data'][$ra[$item_id][$k]])) {
+                    $ra[$item_id]['_' . $k . '_'] = @$ra[$item_id][$k];
+                    if (@isset($_model['data'][$k]['select_data'][$ra[$item_id][$k]])) {
                         $ra[$item_id][$k] = $_model['data'][$k]['select_data'][$ra[$item_id][$k]];
                     } else {
                         $ra[$item_id][$k] = '';
@@ -2342,10 +2426,9 @@ class Grid_Constructor extends Grid_Constructor_Root {
             }
 
 
-
             if (!empty($sbf)) {
-            	//print_r($sbf);
-            	$tmp_cache=array();
+                //print_r($sbf);
+                $tmp_cache = array();
                 foreach ($sbf as $kn => $vn) {
                     if (isset($_model['data'][$kn]) && $_model['data'][$kn]['type'] == 'select_by_query') {
                         if ($item_array[$kn] > 0) {
@@ -2355,24 +2438,22 @@ class Grid_Constructor extends Grid_Constructor_Root {
                             }
                             $parameters = $_model['data'][$kn]['parameters'];
                             $fname = $_model['data'][$kn]['value_name'];
-                            if(isset($tmp_cache[$kn][$item_array[$kn]])){
-                            	$txt=$tmp_cache[$kn][$item_array[$kn]];
-                            }else{
-                            	if ($uselangs && (!isset($parameters['no_ml']) || 0 === intval($parameters['no_ml']))) {
-                            		$fname .= $postfix;
-                            	}
-                            	$txt = $data_model->get_string_value_by_id($_model['data'][$kn]['primary_key_table'], $_model['data'][$kn]['primary_key_name'], $fname, $item_array[$kn], true);
+                            if (isset($tmp_cache[$kn][$item_array[$kn]])) {
+                                $txt = $tmp_cache[$kn][$item_array[$kn]];
+                            } else {
+                                if ($uselangs && (!isset($parameters['no_ml']) || 0 === intval($parameters['no_ml']))) {
+                                    $fname .= $postfix;
+                                }
+                                $txt = $data_model->get_string_value_by_id($_model['data'][$kn]['primary_key_table'], $_model['data'][$kn]['primary_key_name'], $fname, $item_array[$kn], true);
                             }
 
-                            $ra[$item_id][$vn]=$txt;
+                            $ra[$item_id][$vn] = $txt;
                         } else {
                             $ra[$item_id][$vn] = '';
                         }
                     }
                 }
             }
-
-
 
 
             if ($uselangs) {
@@ -2395,9 +2476,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
             }
 
 
-
             $ra[$item_id]['date'] = date('d.m', strtotime($ra[$item_id]['date_added']));
-            $ra[$item_id]['_posted_days'] = ceil((time()-strtotime($ra[$item_id]['date_added']))/86400);
+            $ra[$item_id]['_posted_days'] = ceil((time() - strtotime($ra[$item_id]['date_added'])) / 86400);
             $ra[$item_id]['datetime'] = date('d.m H:i', strtotime($ra[$item_id]['date_added']));
             $ra[$item_id]['text'] = strip_tags($ra[$item_id]['text']);
 
@@ -2415,12 +2495,12 @@ class Grid_Constructor extends Grid_Constructor_Root {
 
 
             if ($uselangs) {
-                $fname = 'name'.$postfix;
-                $ra[$item_id]['topic_info'][$fname] = $ra[$item_id]['topic_info'][$fname];
+                $fname = 'name' . $postfix;
+                $ra[$item_id]['topic_info'][$fname] = @$ra[$item_id]['topic_info'][$fname];
             }
             $ra[$item_id]['type_sh'] = $ra[$item_id]['topic_info']['name'];
 
-            $ra[$item_id]['href'] = $this->getRealtyHREF($ra[$item_id]['id'], false, array('topic_id' => $ra[$item_id]['topic_id'], 'alias' => $ra[$item_id]['translit_alias']));
+            $ra[$item_id]['href'] = @$this->getRealtyHREF($ra[$item_id]['id'], false, array('topic_id' => $ra[$item_id]['topic_id'], 'alias' => $ra[$item_id]['translit_alias']));
 
             if ($billing) {
                 if (isset($item_array['premium_status_end']) && isset($_model['data']['premium_status_end']) && $ra[$item_id]['premium_status_end'] > time()) {
@@ -2460,7 +2540,6 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-
         if (!empty($hasMultipleFields)) {
             $elements_keys = array();
             $data = array();
@@ -2494,8 +2573,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 foreach ($ra as $item_id => $item_array) {
                     if (isset($data[$item_array['id']])) {
                         foreach ($data[$item_array['id']] as $ek => $v) {
-                            if(!is_array($ra[$item_id][$ek])){
-                                $ra[$item_id][$ek]=array();
+                            if (!is_array($ra[$item_id][$ek])) {
+                                $ra[$item_id][$ek] = array();
                             }
                             $ra[$item_id][$ek][0] = $v;
                             foreach ($v as $_v) {
@@ -2542,14 +2621,22 @@ class Grid_Constructor extends Grid_Constructor_Root {
                         $ra[$k]['img'] = $old_uploadify_images[$ra[$k]['id']];
                     }
 
-                    if ( isset($item['image_cache']) ) {
+                    if (isset($item['image_cache'])) {
                         $ra[$k]['image_cache'] = unserialize($item['image_cache']);
-                        if ( is_array($ra[$k]['image_cache']) and count($ra[$k]['image_cache']) > 0 ) {
+                        if (is_array($ra[$k]['image_cache']) and count($ra[$k]['image_cache']) > 0) {
                             $i = 0;
                             foreach ($ra[$k]['image_cache'] as $cache_item) {
                                 $ra[$k]['img'][$i]['preview'] = $cache_item;
                                 $ra[$k]['img'][$i]['normal'] = $cache_item;
                                 $ra[$k]['img'][$i]['remote'] = 'true';
+
+                                if (!@is_array($ra[$k]['image'][$i])) {
+                                    $ra[$k]['image'] = array();
+                                    $ra[$k]['image'][$i]['preview'] = $cache_item;
+                                    $ra[$k]['image'][$i]['normal'] = $cache_item;
+                                    $ra[$k]['image'][$i]['remote'] = 'true';
+                                }
+
                                 $i++;
                             }
                         }
@@ -2565,6 +2652,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                         unset($ra[$k]['img']);
                         //$ra[$k]['img']='';
                     } else {
+                        $ims = $data_model->sharder_mirror($ims, true);
                         $ra[$k]['img'] = $ims;
                     }
                 }
@@ -2575,7 +2663,10 @@ class Grid_Constructor extends Grid_Constructor_Root {
             foreach ($ra as $e => $item) {
                 foreach ($_model['data'] as $k => $v) {
                     if (isset($v['type']) && $v['type'] == 'uploads') {
-                        $ra[$e][$k] = unserialize($ra[$e][$k]);
+                        if ( is_scalar($ra[$e][$k]) ) {
+                            $ra[$e][$k] = unserialize($ra[$e][$k]);
+                            $ra[$e][$k] = $data_model->sharder_mirror($ra[$e][$k], true);
+                        }
                     } elseif (isset($ra[$e]['image_cache']) && $v['type'] == 'uploads') {
                         $ra[$e]['image_cache'] = unserialize($ra[$e]['image_cache']);
                     }
@@ -2616,7 +2707,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         return $item['type_sh'];
     }*/
 
-    function get_uploadify_images($_ids) {
+    function get_uploadify_images($_ids)
+    {
         $key = 'id';
 
         if (count($_ids) > 0) {
@@ -2637,7 +2729,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         return false;
     }
 
-    protected function prepareBreadcrumbs($params, $url = '') {
+    protected function prepareBreadcrumbs($params, $url = '')
+    {
         //print_r($params);
         //if($params)
         //var_dump(Multilanguage::is_set('LT_BC_HOME_GRID', '_template'));
@@ -2726,10 +2819,11 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
     }
 
-    protected function preparePageLimitParams(&$params, $page, $total, $premium) {
+    protected function preparePageLimitParams(&$params, $page, $total, $premium)
+    {
 
         if ($premium) {
-            $limit = (int) $this->getConfigValue('apps.billing.premium_count');
+            $limit = (int)$this->getConfigValue('apps.billing.premium_count');
             if ($limit == 0) {
                 $limit = 5;
             }
@@ -2739,15 +2833,15 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 $limit = $this->getConfigValue('per_page_admin');
             }
 
-            if (isset($params['vip']) && (int) $params['vip'] == 1) {
-                if (isset($params['per_page']) && (int) $params['per_page'] > 0) {
-                    $limit = (int) $params['per_page'];
+            if (isset($params['vip']) && (int)$params['vip'] == 1) {
+                if (isset($params['per_page']) && (int)$params['per_page'] > 0) {
+                    $limit = (int)$params['per_page'];
                 } else {
                     $limit = $this->getConfigValue('vip_rotator_number');
                 }
             } else {
-                if (isset($params['page_limit']) && (int) $params['page_limit'] != 0) {
-                    $limit = (int) $params['page_limit'];
+                if (isset($params['page_limit']) && (int)$params['page_limit'] != 0) {
+                    $limit = (int)$params['page_limit'];
                 }/* else{
                   if(isset($params['admin']) && $params['admin']==1){
                   $limit = 10;
@@ -2770,16 +2864,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         return array('start' => $start, 'limit' => $limit, 'max_page' => $max_page);
     }
 
-    protected function prepareRequestParams($params, $premium = false) {
-
-
-
-        /* if($this->grid_model===null){
-          require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/model/model.php');
-          $data_model = new Data_Model();
-          $this->grid_model=$data_model->get_kvartira_model(false, true);
-          } */
-
+    protected function prepareRequestParams($params, $premium = false)
+    {
 
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/billing/lib/billing.php') && $this->getConfigValue('apps.billing.enable') == 1) {
             $_billing_on = true;
@@ -2788,12 +2874,11 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-
-        if (isset($params['currency_id']) && 0 != (int) $params['currency_id'] && 1 == $this->getConfigValue('currency_enable')) {
+        if (isset($params['currency_id']) && 0 != (int)$params['currency_id'] && 1 == $this->getConfigValue('currency_enable')) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/currency/admin/admin.php';
             $CA = new currency_admin();
             $this->use_currency = true;
-            $this->price_koefficient = $CA->getCourse((int) $params['currency_id']);
+            $this->price_koefficient = $CA->getCourse((int)$params['currency_id']);
         } elseif (!isset($params['currency_id']) && 1 == $this->getConfigValue('currency_enable')) {
             $def_currency = intval($this->getConfigValue('apps.currency.default_grid_currency_id'));
             if ($def_currency != 0) {
@@ -2811,7 +2896,6 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-
         $where_array = array();
         $add_from_table = '';
         $add_select_value = '';
@@ -2821,54 +2905,15 @@ class Grid_Constructor extends Grid_Constructor_Root {
         $where_array_prepared = array();
         $where_value_prepared = array();
 
-        /* foreach($params as $param=>$pval){
-          $method='prepareRequestParam_'.$param;
-
-          if(method_exists($this, $method)){
-
-          $d=$this->$method($pval, $params);
-          if(false!==$d){
-          if(isset($d['where_array']) && is_array($d['where_array'])){
-          $where_array=array_merge($where_array, $d['where_array']);
-          }
-          if(isset($d['add_from_table']) && is_array($d['add_from_table'])){
-          $add_from_table=array_merge($add_from_table, $d['add_from_table']);
-          }
-          if(isset($d['add_select_value']) && is_array($d['add_select_value'])){
-          $add_select_value=array_merge($add_select_value, $d['add_select_value']);
-          }
-          if(isset($d['params']) && is_array($d['params'])){
-          $params=array_merge($params, $d['params']);
-          }
-          if(isset($d['wa']) && is_array($d['wa'])){
-          $where_array_prepared=array_merge($where_array_prepared, $d['wa']);
-          }
-          if(isset($d['wv']) && is_array($d['wv'])){
-          $where_value_prepared=array_merge($where_value_prepared, $d['wv']);
-          }
-          if(isset($d['select_what']) && is_array($d['select_what'])){
-          $select_what=array_merge($select_what, $d['select_what']);
-          }
-          if(isset($d['left_joins']) && is_array($d['left_joins'])){
-          $left_joins=array_merge($left_joins, $d['left_joins']);
-          }
-          }
-          }
-          } */
-
-        /*if($premium){
-            $select_what[] = 'IF('.DB_PREFIX.'_data.`premium_status_end`>'.time().', 1, 0) AS _prem_sort';
-        }*/
-
 
         if (isset($params['order']) && $params['order'] == 'city') {
             if ($this->getConfigValue('apps.language.use_langs')) {
-                $field='name';
+                $field = 'name';
                 $no_ml = 0;
                 if (isset($this->grid_item_data_model['city_id']['parameters']['no_ml'])) {
                     $no_ml = intval($this->grid_item_data_model['city_id']['parameters']['no_ml']);
                 }
-                if(0 === intval($parameters['no_ml'])){
+                if (0 === intval($parameters['no_ml'])) {
                     $field .= $this->getLangPostfix($this->getCurrentLang());
                 }
 
@@ -2902,11 +2947,9 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-
-
         //Подключать модель и проверять на наличие такого поля
         if (isset($params['srch_export_cian']) && $params['srch_export_cian'] == 1 && isset($this->grid_item_data_model['export_cian'])) {
-           $where_array_prepared[] = '(' . DB_PREFIX . '_data.export_cian=1)';
+            $where_array_prepared[] = '(' . DB_PREFIX . '_data.export_cian=1)';
         } else {
             unset($params['srch_export_cian']);
         }
@@ -2914,29 +2957,27 @@ class Grid_Constructor extends Grid_Constructor_Root {
         if (isset($params['memorylist_id'])) {
             $mids = array();
             $DBC = DBC::getInstance();
-            $mquery = 'SELECT id FROM '.DB_PREFIX.'_memorylist_item WHERE memorylist_id = ?';
+            $mquery = 'SELECT id FROM ' . DB_PREFIX . '_memorylist_item WHERE memorylist_id = ?';
             $stmt = $DBC->query($mquery, array($params['memorylist_id']));
-            if($stmt){
-                while($ar = $DBC->fetch($stmt)){
+            if ($stmt) {
+                while ($ar = $DBC->fetch($stmt)) {
                     $mids[] = $ar['id'];
                 }
             }
-            if(!empty($mids)){
-                $where_array_prepared[] = DB_PREFIX . '_data.id IN ('.implode(',', array_fill(0, count($mids), '?')).')';
+            if (!empty($mids)) {
+                $where_array_prepared[] = DB_PREFIX . '_data.id IN (' . implode(',', array_fill(0, count($mids), '?')) . ')';
                 $where_value_prepared = array_merge($where_value_prepared, $mids);
-            }else{
+            } else {
                 $where_array_prepared[] = DB_PREFIX . '_data.id = -1';
             }
         }
 
 
-
-
         if (isset($params['favorites']) && !empty($params['favorites'])) {
             $favorites_array = $params['favorites'];
             foreach ($favorites_array as $k => $v) {
-                if ((int) $v != 0) {
-                    $favorites_array[$k] = (int) $v;
+                if ((int)$v != 0) {
+                    $favorites_array[$k] = (int)$v;
                 } else {
                     unset($favorites_array[$k]);
                 }
@@ -2951,16 +2992,16 @@ class Grid_Constructor extends Grid_Constructor_Root {
             }
         }
 
-        if (isset($params['client_id']) && (int) $params['client_id'] != 0) {
+        if (isset($params['client_id']) && (int)$params['client_id'] != 0) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.client_id = ?)';
-            $where_value_prepared[] = (int) $params['client_id'];
+            $where_value_prepared[] = (int)$params['client_id'];
         } else {
             unset($params['client_id']);
         }
 
-        if (isset($params['uniq_id']) && (int) $params['uniq_id'] != 0) {
+        if (isset($params['uniq_id']) && (int)$params['uniq_id'] != 0) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.uniq_id = ?)';
-            $where_value_prepared[] = (int) $params['uniq_id'];
+            $where_value_prepared[] = (int)$params['uniq_id'];
         } else {
             unset($params['uniq_id']);
         }
@@ -2968,8 +3009,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         if (isset($params['optype']) && is_array($params['optype'])) {
             $optypes_array = $params['optype'];
             foreach ($optypes_array as $k => $v) {
-                if ((int) $v != 0) {
-                    $optypes_array[$k] = (int) $v;
+                if ((int)$v != 0) {
+                    $optypes_array[$k] = (int)$v;
                 } else {
                     unset($optypes_array[$k]);
                 }
@@ -2984,7 +3025,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             }
         } elseif (isset($params['optype']) && $params['optype'] > 0) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.optype = ?)';
-            $where_value_prepared[] = (int) $params['optype'];
+            $where_value_prepared[] = (int)$params['optype'];
         }
 
         //$where_array_prepared[]='('.DB_PREFIX.'_topic.id='.DB_PREFIX.'_data.topic_id)';
@@ -2994,7 +3035,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             $topics = $params['topic_id'];
 
             if (!is_array($topics)) {
-                $topics = (array) $topics;
+                $topics = (array)$topics;
             }
             if (!empty($topics)) {
                 $list = array();
@@ -3021,83 +3062,46 @@ class Grid_Constructor extends Grid_Constructor_Root {
             }
         }
 
-
-
-        /* if ( !is_array($params['topic_id']) && $params['topic_id'] != '' &&  (int)$params['topic_id'] != 0) {
-          $topic_id=(int)$params['topic_id'];
-          require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
-          $Structure_Manager = new Structure_Manager();
-          $category_structure = $Structure_Manager->loadCategoryStructure();
-          $childs = $Structure_Manager->get_all_childs($topic_id, $category_structure);
-          if ( count($childs) > 0 ) {
-          array_push($childs, $topic_id);
-          $str_a=array();
-          foreach($childs as $a){
-          $str_a[]='?';
-          }
-          $where_array_prepared[]='('.DB_PREFIX.'_data.topic_id IN ('.implode(',', $str_a).'))';
-          $where_value_prepared=array_merge($where_value_prepared, $childs);
-          } else {
-          $where_array_prepared[]='('.DB_PREFIX.'_data.topic_id=?)';
-          $where_value_prepared[]=$topic_id;
-          }
-          }elseif(is_array($params['topic_id'])){
-          $topics_array=$params['topic_id'];
-          foreach ($topics_array as $k=>$v){
-          if((int)$v!=0){
-          $topics_array[$k]=(int)$v;
-          }else{
-          unset($topics_array[$k]);
-          }
-          }
-          if(count($topics_array)>0){
-          $str_a=array();
-          foreach($topics_array as $a){
-          $str_a[]='?';
-          }
-          $where_array_prepared[]='('.DB_PREFIX.'_data.topic_id IN ('.implode(',', $str_a).'))';
-          $where_value_prepared=array_merge($where_value_prepared, $topics_array);
-          }
-
-          }else{
-          unset($params['topic_id']);
-          } */
-
-
-        if(isset($params['wlocation']) && is_array($params['wlocation']) && !empty($params['wlocation'])){
-            $wsubquery=array();
-            $wsubqueryparams=array();
-            foreach($params['wlocation'] as $wlocation){
-                $subquery=array();
-                $subqueryparams=array();
-                foreach($wlocation as $k=>$v){
-                    switch($k){
-                        case 'country_id' : {
+        if (isset($params['wlocation']) && is_array($params['wlocation']) && !empty($params['wlocation'])) {
+            $wsubquery = array();
+            $wsubqueryparams = array();
+            foreach ($params['wlocation'] as $wlocation) {
+                $subquery = array();
+                $subqueryparams = array();
+                foreach ($wlocation as $k => $v) {
+                    switch ($k) {
+                        case 'country_id' :
+                        {
                             $subquery[] = '' . DB_PREFIX . '_data.country_id=?';
                             $subqueryparams[] = $v;
                             break;
                         }
-                        case 'region_id' : {
+                        case 'region_id' :
+                        {
                             $subquery[] = '' . DB_PREFIX . '_data.region_id=?';
                             $subqueryparams[] = $v;
                             break;
                         }
-                        case 'city_id' : {
+                        case 'city_id' :
+                        {
                             $subquery[] = '' . DB_PREFIX . '_data.city_id=?';
                             $subqueryparams[] = $v;
                             break;
                         }
-                        case 'district_id' : {
+                        case 'district_id' :
+                        {
                             $subquery[] = '' . DB_PREFIX . '_data.district_id=?';
                             $subqueryparams[] = $v;
                             break;
                         }
-                        case 'street_id' : {
+                        case 'street_id' :
+                        {
                             $subquery[] = '' . DB_PREFIX . '_data.street_id=?';
                             $subqueryparams[] = $v;
                             break;
                         }
-                        case 'number' : {
+                        case 'number' :
+                        {
                             $subquery[] = '' . DB_PREFIX . '_data.number=?';
                             $subqueryparams[] = $v;
                             break;
@@ -3105,68 +3109,68 @@ class Grid_Constructor extends Grid_Constructor_Root {
                     }
                 }
 
-                if(!empty($subquery)){
-                    $wsubquery[]=implode(' AND ', $subquery);
+                if (!empty($subquery)) {
+                    $wsubquery[] = implode(' AND ', $subquery);
                     $wsubqueryparams = array_merge($wsubqueryparams, $subqueryparams);
                 }
 
             }
 
-            if(!empty($wsubquery)){
-                $where_array_prepared[] = '(('.implode(') OR (', $wsubquery).'))';
+            if (!empty($wsubquery)) {
+                $where_array_prepared[] = '((' . implode(') OR (', $wsubquery) . '))';
                 $where_value_prepared = array_merge($where_value_prepared, $wsubqueryparams);
             }
 
         }
 
-        if(isset($params['loc'])){
-			$pairs=array();
-			foreach($params['loc'] as $k=>$loc){
-                $loc=urldecode($loc);
-				if(preg_match('/^(\d+)\|(.*)/', $loc, $matches)){
-					$sid=$matches[1];
-					$nid=preg_replace('/[^[a-zа-я0-9-] ]/i', '', trim($matches[2]));
-					if($sid>0 && $nid!=''){
-						$pairs[]=array('sid'=>$sid, 'nid'=>$nid);
-					}
-				}
-			}
+        if (isset($params['loc'])) {
+            $pairs = array();
+            foreach ($params['loc'] as $k => $loc) {
+                $loc = urldecode($loc);
+                if (preg_match('/^(\d+)\|(.*)/', $loc, $matches)) {
+                    $sid = $matches[1];
+                    $nid = preg_replace('/[^[a-zа-я0-9-] ]/i', '', trim($matches[2]));
+                    if ($sid > 0 && $nid != '') {
+                        $pairs[] = array('sid' => $sid, 'nid' => $nid);
+                    }
+                }
+            }
 
-			if(!empty($pairs)){
-				$q=array();
-				$v=array();
-				foreach($pairs as $pair){
-					$q[]='('.DB_PREFIX.'_data.street_id=? AND '.DB_PREFIX.'_data.number=?)';
-					$v[]=$pair['sid'];
-					$v[]=$pair['nid'];
-				}
-				$where_array_prepared[]='('.implode(' OR ', $q).')';
-				$where_value_prepared=array_merge($where_value_prepared, $v);
+            if (!empty($pairs)) {
+                $q = array();
+                $v = array();
+                foreach ($pairs as $pair) {
+                    $q[] = '(' . DB_PREFIX . '_data.street_id=? AND ' . DB_PREFIX . '_data.number=?)';
+                    $v[] = $pair['sid'];
+                    $v[] = $pair['nid'];
+                }
+                $where_array_prepared[] = '(' . implode(' OR ', $q) . ')';
+                $where_value_prepared = array_merge($where_value_prepared, $v);
 
-				unset($pairs);
-				unset($q);
-				unset($v);
-			}
+                unset($pairs);
+                unset($q);
+                unset($v);
+            }
 
-		}
+        }
 
 
-        if (isset($params['country_id']) && (int) $params['country_id'] != 0) {
+        if (isset($params['country_id']) && (int)$params['country_id'] != 0) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.country_id=?)';
-            $where_value_prepared[] = (int) $params['country_id'];
+            $where_value_prepared[] = (int)$params['country_id'];
         } else {
             unset($params['country_id']);
         }
 
         if (isset($params['community_id'])) {
-            require_once SITEBILL_DOCUMENT_ROOT.'/apps/community/admin/admin.php';
-            require_once SITEBILL_DOCUMENT_ROOT.'/apps/community/site/site.php';
-            $CS=new community_site();
-            $ids=$CS->getCommunityUsersIds($params['community_id']);
-            if(!empty($ids)){
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/community/admin/admin.php';
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/community/site/site.php';
+            $CS = new community_site();
+            $ids = $CS->getCommunityUsersIds($params['community_id']);
+            if (!empty($ids)) {
                 $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id IN (' . implode(',', array_fill(0, count($ids), '?')) . '))';
                 $where_value_prepared = array_merge($where_value_prepared, $ids);
-            }else{
+            } else {
                 $where_array_prepared[] = '1=0';
             }
         }
@@ -3175,8 +3179,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
             if (is_array($params['complex_id'])) {
                 $complex_array = $params['complex_id'];
                 foreach ($complex_array as $k => $v) {
-                    if ((int) $v != 0) {
-                        $complex_array[$k] = (int) $v;
+                    if ((int)$v != 0) {
+                        $complex_array[$k] = (int)$v;
                     } else {
                         unset($complex_array[$k]);
                     }
@@ -3205,8 +3209,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
             if (is_array($params['complex_building_id'])) {
                 $complex_array = $params['complex_building_id'];
                 foreach ($complex_array as $k => $v) {
-                    if ((int) $v != 0) {
-                        $complex_array[$k] = (int) $v;
+                    if ((int)$v != 0) {
+                        $complex_array[$k] = (int)$v;
                     } else {
                         unset($complex_array[$k]);
                     }
@@ -3231,25 +3235,12 @@ class Grid_Constructor extends Grid_Constructor_Root {
             }
         }
 
-        /* if ( isset($params['complex_id']) && (int)$params['complex_id'] != 0  ) {
-          $where_array_prepared[]='('.DB_PREFIX.'_data.complex_id=?)';
-          $where_value_prepared[]=(int)$params['complex_id'];
-          }else{
-          unset($params['complex_id']);
-          } */
-
-        /*
-          if ( isset($params['id']) && (int)$params['id'] != 0  ) {
-          $where_array_prepared[]='('.DB_PREFIX.'_data.id=?)';
-          $where_value_prepared[]=(int)$params['id'];
-          }
-         */
         if (isset($params['id']) && is_array($params['id'])) {
 
             if (!empty($params['id'])) {
                 $str_a = array();
                 foreach ($params['id'] as $k => $_id) {
-                    if ((int) $_id != 0) {
+                    if ((int)$_id != 0) {
                         $str_a[] = '?';
                     } else {
                         unset($params['id'][$k]);
@@ -3263,51 +3254,36 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 unset($params['id']);
             }
         } elseif (isset($params['id'])) {
-            if ((int) $params['id'] != 0) {
+            if ((int)$params['id'] != 0) {
                 $where_array_prepared[] = '(' . DB_PREFIX . '_data.id=?)';
-                $where_value_prepared[] = (int) $params['id'];
+                $where_value_prepared[] = (int)$params['id'];
             } else {
                 unset($params['id']);
             }
         }
 
         //echo $_SESSION['user_domain_owner'];
-        if (isset($_SESSION['user_domain_owner']) && (int) $_SESSION['user_domain_owner']['user_id'] != 0) {
+        if (isset($_SESSION['user_domain_owner']) && (int)$_SESSION['user_domain_owner']['user_id'] != 0) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id=?)';
-            $where_value_prepared[] = (int) $_SESSION['user_domain_owner']['user_id'];
+            $where_value_prepared[] = (int)$_SESSION['user_domain_owner']['user_id'];
         } else {
-
-            /*if (isset($params['user_id']) && (int) $params['user_id'] > 0) {
-                if(isset($params['coworked_ids']) && !empty($params['coworked_ids'])){
-                    $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id=? OR ' . DB_PREFIX . '_data.id IN ('.implode(',', array_fill(0, count($params['coworked_ids']), '?')).'))';
-                    $where_value_prepared[] = (int) $params['user_id'];
-                    $where_value_prepared= array_merge($where_value_prepared, $params['coworked_ids']);
-                }else{
-                    $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id=?)';
-                    $where_value_prepared[] = (int) $params['user_id'];
-                }
-
-            } else {
-                unset($params['user_id']);
-            }*/
-
-            if(isset($params['user_id'])){
-                if(isset($params['coworked_ids']) && !empty($params['coworked_ids'])){
-                    $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id=? OR ' . DB_PREFIX . '_data.id IN ('.implode(',', array_fill(0, count($params['coworked_ids']), '?')).'))';
-                    $where_value_prepared[] = (int) $params['user_id'];
+            if (isset($params['user_id'])) {
+                if (isset($params['coworked_ids']) && !empty($params['coworked_ids'])) {
+                    $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id=? OR ' . DB_PREFIX . '_data.id IN (' . implode(',', array_fill(0, count($params['coworked_ids']), '?')) . '))';
+                    $where_value_prepared[] = (int)$params['user_id'];
                     $where_value_prepared = array_merge($where_value_prepared, $params['coworked_ids']);
-                }elseif(isset($params['coworked_users']) && !empty($params['coworked_users'])){
-                    $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id=? OR ' . DB_PREFIX . '_data.user_id IN ('.implode(',', array_fill(0, count($params['coworked_users']), '?')).'))';
-                    $where_value_prepared[] = (int) $params['user_id'];
+                } elseif (isset($params['coworked_users']) && !empty($params['coworked_users'])) {
+                    $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id=? OR ' . DB_PREFIX . '_data.user_id IN (' . implode(',', array_fill(0, count($params['coworked_users']), '?')) . '))';
+                    $where_value_prepared[] = (int)$params['user_id'];
                     $where_value_prepared = array_merge($where_value_prepared, $params['coworked_users']);
-                }else{
-                    if(is_array($params['user_id'])){
-                        $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id IN ('.implode(',', array_fill(0, count($params['user_id']), '?')).'))';
+                } else {
+                    if (is_array($params['user_id'])) {
+                        $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id IN (' . implode(',', array_fill(0, count($params['user_id']), '?')) . '))';
                         $where_value_prepared = array_merge($where_value_prepared, $params['user_id']);
-                    }else{
-                        if((int) $params['user_id'] > 0){
+                    } else {
+                        if ((int)$params['user_id'] > 0) {
                             $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id=?)';
-                            $where_value_prepared[] = (int) $params['user_id'];
+                            $where_value_prepared[] = (int)$params['user_id'];
                         }
 
                     }
@@ -3317,7 +3293,6 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-
         if (isset($params['agg_user_id'])) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.user_id IN (' . implode(',', array_fill(0, count($params['agg_user_id']), '?')) . '))';
             $where_value_prepared = array_merge($where_value_prepared, array_values($params['agg_user_id']));
@@ -3325,17 +3300,23 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-        if (isset($params['onlyspecial']) && (int) $params['onlyspecial'] > 0) {
+        if (isset($params['onlyspecial']) && (int)$params['onlyspecial'] > 0) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.hot=1)';
         } else {
             unset($params['onlyspecial']);
+        }
+
+        if (isset($params['dv_ipoteka']) && (int)$params['dv_ipoteka'] > 0) {
+            $where_array_prepared[] = '(' . DB_PREFIX . '_data.dv_ipoteka=1)';
+        } else {
+            unset($params['dv_ipoteka']);
         }
 
 
         if (isset($params['price']) && $params['price'] != 0) {
 
             //$price_str=preg_replace('/[^\d.,]/', '', $params['price']);
-            $price_str = (int) str_replace(' ', '', $params['price']);
+            $price_str = (int)str_replace(' ', '', $params['price']);
             if ($this->use_currency) {
                 $where_array_prepared[] = '(((' . DB_PREFIX . '_data.price*' . DB_PREFIX . '_currency.course)/' . $this->price_koefficient . ')<=?)';
                 $where_value_prepared[] = $price_str;
@@ -3349,9 +3330,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-
         if (isset($params['price_min']) && $params['price_min'] != 0) {
-            $price_str = (int) str_replace(' ', '', $params['price_min']);
+            $price_str = (int)str_replace(' ', '', $params['price_min']);
             if ($this->use_currency) {
                 $where_array_prepared[] = '(((' . DB_PREFIX . '_data.price*' . DB_PREFIX . '_currency.course)/' . $this->price_koefficient . ')>=?)';
                 $where_value_prepared[] = $price_str;
@@ -3364,7 +3344,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
         ////
         if (isset($params['price_pm']) && $params['price_pm'] != 0) {
-            $price_str = (int) str_replace(' ', '', $params['price_pm']);
+            $price_str = (int)str_replace(' ', '', $params['price_pm']);
 
             if ($this->use_currency) {
                 $where_array_prepared[] = '(((' . DB_PREFIX . '_data.price_pm*' . DB_PREFIX . '_currency.course)/' . $this->price_koefficient . ')<=?)';
@@ -3377,7 +3357,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             unset($params['price_pm']);
         }
         if (isset($params['price_pm_min']) && $params['price_pm_min'] != 0) {
-            $price_str = (int) str_replace(' ', '', $params['price_pm_min']);
+            $price_str = (int)str_replace(' ', '', $params['price_pm_min']);
 
             if ($this->use_currency) {
                 $where_array_prepared[] = '(((' . DB_PREFIX . '_data.price_pm*' . DB_PREFIX . '_currency.course)/' . $this->price_koefficient . ')>=?)';
@@ -3399,12 +3379,12 @@ class Grid_Constructor extends Grid_Constructor_Root {
             unset($params['house_number']);
         }
 
-        if (isset($params['region_id']) && (int) $params['region_id'] != 0) {
+        if (isset($params['region_id']) && (int)$params['region_id'] != 0) {
             if (is_array($params['region_id']) && !empty($params['region_id'])) {
                 $regions_array = $params['region_id'];
                 foreach ($regions_array as $k => $v) {
-                    if ((int) $v != 0) {
-                        $regions_array[$k] = (int) $v;
+                    if ((int)$v != 0) {
+                        $regions_array[$k] = (int)$v;
                     } else {
                         unset($regions_array[$k]);
                     }
@@ -3419,7 +3399,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 }
             } else {
                 $where_array_prepared[] = '(' . DB_PREFIX . '_data.region_id=?)';
-                $where_value_prepared[] = (int) $params['region_id'];
+                $where_value_prepared[] = (int)$params['region_id'];
             }
         } else {
             unset($params['region_id']);
@@ -3440,8 +3420,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
             if (is_array($params['district_id']) && !empty($params['district_id'])) {
                 $districts_array = $params['district_id'];
                 foreach ($districts_array as $k => $v) {
-                    if ((int) $v != 0) {
-                        $districts_array[$k] = (int) $v;
+                    if ((int)$v != 0) {
+                        $districts_array[$k] = (int)$v;
                     } else {
                         unset($districts_array[$k]);
                     }
@@ -3457,7 +3437,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 unset($districts_array);
             } else {
                 $where_array_prepared[] = '(' . DB_PREFIX . '_data.district_id=?)';
-                $where_value_prepared[] = (int) $params['district_id'];
+                $where_value_prepared[] = (int)$params['district_id'];
             }
         } else {
             unset($params['district_id']);
@@ -3467,8 +3447,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
             if (is_array($params['city_id']) && !empty($params['city_id'])) {
                 $city_array = $params['city_id'];
                 foreach ($city_array as $k => $v) {
-                    if ((int) $v != 0) {
-                        $city_array[$k] = (int) $v;
+                    if ((int)$v != 0) {
+                        $city_array[$k] = (int)$v;
                     } else {
                         unset($city_array[$k]);
                     }
@@ -3484,7 +3464,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 unset($city_array);
             } else {
                 $where_array_prepared[] = '(' . DB_PREFIX . '_data.city_id=?)';
-                $where_value_prepared[] = (int) $params['city_id'];
+                $where_value_prepared[] = (int)$params['city_id'];
             }
         } else {
             unset($params['city_id']);
@@ -3494,8 +3474,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
             if (is_array($params['metro_id']) && !empty($params['metro_id'])) {
                 $metro_array = $params['metro_id'];
                 foreach ($metro_array as $k => $v) {
-                    if ((int) $v != 0) {
-                        $metro_array[$k] = (int) $v;
+                    if ((int)$v != 0) {
+                        $metro_array[$k] = (int)$v;
                     } else {
                         unset($metro_array[$k]);
                     }
@@ -3511,7 +3491,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 unset($metro_array);
             } else {
                 $where_array_prepared[] = '(' . DB_PREFIX . '_data.metro_id=?)';
-                $where_value_prepared[] = (int) $params['metro_id'];
+                $where_value_prepared[] = (int)$params['metro_id'];
             }
         } else {
             unset($params['metro_id']);
@@ -3521,8 +3501,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
             if (is_array($params['street_id']) && !empty($params['street_id'])) {
                 $street_array = $params['street_id'];
                 foreach ($street_array as $k => $v) {
-                    if ((int) $v != 0) {
-                        $street_array[$k] = (int) $v;
+                    if ((int)$v != 0) {
+                        $street_array[$k] = (int)$v;
                     } else {
                         unset($street_array[$k]);
                     }
@@ -3538,12 +3518,11 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 unset($street_array);
             } else {
                 $where_array_prepared[] = '(' . DB_PREFIX . '_data.street_id=?)';
-                $where_value_prepared[] = (int) $params['street_id'];
+                $where_value_prepared[] = (int)$params['street_id'];
             }
         } else {
             unset($params['street_id']);
         }
-
 
 
         if (isset($params['srch_phone']) && $params['srch_phone'] !== NULL && trim($params['srch_phone']) !== '') {
@@ -3598,25 +3577,25 @@ class Grid_Constructor extends Grid_Constructor_Root {
                     if ($rq == 4) {
                         $sub_where[] = 'room_count>3';
                         $where_array_prepared_sub[] = '(' . DB_PREFIX . '_data.room_count>3)';
-                    } elseif (0 != (int) $rq) {
-                        $sub_where[] = 'room_count=' . (int) $rq;
+                    } elseif (0 != (int)$rq) {
+                        $sub_where[] = 'room_count=' . (int)$rq;
                         $where_array_prepared_sub[] = '(' . DB_PREFIX . '_data.room_count=?)';
-                        $where_value_prepared[] = (int) $rq;
+                        $where_value_prepared[] = (int)$rq;
                     }
                 }
                 if (count($sub_where) > 0) {
                     $where_array_prepared[] = '(' . implode(' OR ', $where_array_prepared_sub) . ')';
                 }
-            } elseif ((int) $params['room_count'] != 0) {
-                $where_value_prepared[] = (int) $params['room_count'];
+            } elseif ((int)$params['room_count'] != 0) {
+                $where_value_prepared[] = (int)$params['room_count'];
                 $where_array_prepared[] = '(' . DB_PREFIX . '_data.room_count=?)';
             } else {
                 unset($params['room_count']);
             }
         }
 
-        if (isset($params['added_in_days']) && 0 != (int) $params['added_in_days']) {
-            $date_limit = time() - ((int) $params['added_in_days']) * 24 * 3600;
+        if (isset($params['added_in_days']) && 0 != (int)$params['added_in_days']) {
+            $date_limit = time() - ((int)$params['added_in_days']) * 24 * 3600;
             $where_value_prepared[] = date('Y-m-d H:i:s', $date_limit);
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.date_added>=?)';
         } else {
@@ -3659,36 +3638,36 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-        if (isset($params['floor_min']) && (int) $params['floor_min'] != 0) {
-            $where_value_prepared[] = (int) $params['floor_min'];
+        if (isset($params['floor_min']) && (int)$params['floor_min'] != 0) {
+            $where_value_prepared[] = (int)$params['floor_min'];
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.floor*1 >= ?)';
         } else {
             unset($params['floor_min']);
         }
 
-        if (isset($params['floor_max']) && (int) $params['floor_max'] != 0) {
-            $where_value_prepared[] = (int) $params['floor_max'];
+        if (isset($params['floor_max']) && (int)$params['floor_max'] != 0) {
+            $where_value_prepared[] = (int)$params['floor_max'];
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.floor*1 <= ?)';
         } else {
             unset($params['floor_max']);
         }
 
-        if (isset($params['floor_count_min']) && (int) $params['floor_count_min'] != 0) {
-            $where_value_prepared[] = (int) $params['floor_count_min'];
+        if (isset($params['floor_count_min']) && (int)$params['floor_count_min'] != 0) {
+            $where_value_prepared[] = (int)$params['floor_count_min'];
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.floor_count*1 >= ?)';
         } else {
             unset($params['floor_count_min']);
         }
 
-        if (isset($params['floor_count_max']) && (int) $params['floor_count_max'] != 0) {
-            $where_value_prepared[] = (int) $params['floor_count_max'];
+        if (isset($params['floor_count_max']) && (int)$params['floor_count_max'] != 0) {
+            $where_value_prepared[] = (int)$params['floor_count_max'];
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.floor_count*1 <= ?)';
         } else {
             unset($params['floor_count_max']);
         }
 
 
-        if (isset($params['square_min']) && (int) $params['square_min'] != 0) {
+        if (isset($params['square_min']) && (int)$params['square_min'] != 0) {
             $square_min = preg_replace('/[^\d.,]/', '', $params['square_min']);
             $where_value_prepared[] = $square_min;
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.square_all*1 >= ?)';
@@ -3696,7 +3675,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             unset($params['square_min']);
         }
 
-        if (isset($params['square_max']) && (int) $params['square_max'] != 0) {
+        if (isset($params['square_max']) && (int)$params['square_max'] != 0) {
             $square_max = preg_replace('/[^\d.,]/', '', $params['square_max']);
             $where_value_prepared[] = $square_max;
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.square_all*1 <= ?)';
@@ -3705,13 +3684,13 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-        if (isset($params['not_first_floor']) && (int) $params['not_first_floor'] == 1) {
+        if (isset($params['not_first_floor']) && (int)$params['not_first_floor'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.floor*1 > 1)';
         } else {
             unset($params['not_first_floor']);
         }
 
-        if (isset($params['not_last_floor']) && (int) $params['not_last_floor'] == 1) {
+        if (isset($params['not_last_floor']) && (int)$params['not_last_floor'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.floor*1 > 0 AND ' . DB_PREFIX . '_data.floor*1 <> ' . DB_PREFIX . '_data.floor_count*1)';
         } else {
             unset($params['not_last_floor']);
@@ -3751,25 +3730,25 @@ class Grid_Constructor extends Grid_Constructor_Root {
         }
 
 
-        if (isset($params['is_phone']) && (int) $params['is_phone'] == 1) {
+        if (isset($params['is_phone']) && (int)$params['is_phone'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.is_telephone=1)';
         } else {
             unset($params['is_phone']);
         }
 
-        if (isset($params['is_internet']) && (int) $params['is_internet'] == 1) {
+        if (isset($params['is_internet']) && (int)$params['is_internet'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.is_internet=1)';
         } else {
             unset($params['is_internet']);
         }
 
-        if (isset($params['is_furniture']) && (int) $params['is_furniture'] == 1) {
+        if (isset($params['is_furniture']) && (int)$params['is_furniture'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.furniture=1)';
         } else {
             unset($params['is_furniture']);
         }
 
-        if (isset($params['owner']) && (int) $params['owner'] == 1) {
+        if (isset($params['owner']) && (int)$params['owner'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.whoyuaare=1)';
         } else {
             unset($params['owner']);
@@ -3782,7 +3761,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             unset($params['status_id']);
         }
 
-        if (isset($params['has_photo']) && (int) $params['has_photo'] == 1) {
+        if (isset($params['has_photo']) && (int)$params['has_photo'] == 1) {
             //print_r($_model);
             $hasUploadify = false;
             $hasUploads = false;
@@ -3812,49 +3791,49 @@ class Grid_Constructor extends Grid_Constructor_Root {
             unset($params['has_photo']);
         }
 
-        if (isset($params['infra_greenzone']) && (int) $params['infra_greenzone'] == 1) {
+        if (isset($params['infra_greenzone']) && (int)$params['infra_greenzone'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.infra_greenzone=1)';
         } else {
             unset($params['infra_greenzone']);
         }
 
-        if (isset($params['infra_sea']) && (int) $params['infra_sea'] == 1) {
+        if (isset($params['infra_sea']) && (int)$params['infra_sea'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.infra_sea=1)';
         } else {
             unset($params['infra_sea']);
         }
 
-        if (isset($params['infra_sport']) && (int) $params['infra_sport'] == 1) {
+        if (isset($params['infra_sport']) && (int)$params['infra_sport'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.infra_sport=1)';
         } else {
             unset($params['infra_sport']);
         }
 
-        if (isset($params['infra_clinic']) && (int) $params['infra_clinic'] == 1) {
+        if (isset($params['infra_clinic']) && (int)$params['infra_clinic'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.infra_clinic=1)';
         } else {
             unset($params['infra_clinic']);
         }
 
-        if (isset($params['infra_terminal']) && (int) $params['infra_terminal'] == 1) {
+        if (isset($params['infra_terminal']) && (int)$params['infra_terminal'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.infra_terminal=1)';
         } else {
             unset($params['infra_terminal']);
         }
 
-        if (isset($params['infra_airport']) && (int) $params['infra_airport'] == 1) {
+        if (isset($params['infra_airport']) && (int)$params['infra_airport'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.infra_airport=1)';
         } else {
             unset($params['infra_airport']);
         }
 
-        if (isset($params['infra_bank']) && (int) $params['infra_bank'] == 1) {
+        if (isset($params['infra_bank']) && (int)$params['infra_bank'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.infra_bank=1)';
         } else {
             unset($params['infra_bank']);
         }
 
-        if (isset($params['infra_restaurant']) && (int) $params['infra_restaurant'] == 1) {
+        if (isset($params['infra_restaurant']) && (int)$params['infra_restaurant'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.infra_restaurant=1)';
         } else {
             unset($params['infra_restaurant']);
@@ -3863,8 +3842,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         if (isset($params['object_state']) && is_array($params['object_state']) && count($params['object_state']) > 0) {
             $state_array = $params['object_state'];
             foreach ($state_array as $k => $v) {
-                if ((int) $v != 0) {
-                    $state_array[$k] = (int) $v;
+                if ((int)$v != 0) {
+                    $state_array[$k] = (int)$v;
                 } else {
                     unset($state_array[$k]);
                 }
@@ -3884,8 +3863,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         if (isset($params['object_type']) && is_array($params['object_type']) && count($params['object_type']) > 0) {
             $state_array = $params['object_type'];
             foreach ($state_array as $k => $v) {
-                if ((int) $v != 0) {
-                    $state_array[$k] = (int) $v;
+                if ((int)$v != 0) {
+                    $state_array[$k] = (int)$v;
                 } else {
                     unset($state_array[$k]);
                 }
@@ -3905,8 +3884,8 @@ class Grid_Constructor extends Grid_Constructor_Root {
         if (isset($params['aim']) && is_array($params['aim']) && count($params['aim']) > 0) {
             $state_array = $params['aim'];
             foreach ($state_array as $k => $v) {
-                if ((int) $v != 0) {
-                    $state_array[$k] = (int) $v;
+                if ((int)$v != 0) {
+                    $state_array[$k] = (int)$v;
                 } else {
                     unset($state_array[$k]);
                 }
@@ -3923,17 +3902,18 @@ class Grid_Constructor extends Grid_Constructor_Root {
             unset($params['aim']);
         }
 
-        if (isset($params['export_afy']) && (int) $params['export_afy'] == 1 && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/afyexporter/admin/admin.php')) {
+        if (isset($params['export_afy']) && (int)$params['export_afy'] == 1 && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/afyexporter/admin/admin.php')) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.export_afy=1)';
         } else {
             unset($params['export_afy']);
         }
 
-        if (isset($params['export_cian']) && (int) $params['export_cian'] == 1 && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/cianexporter/admin/admin.php')) {
+        if (isset($params['export_cian']) && (int)$params['export_cian'] == 1 && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/cianexporter/admin/admin.php')) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.export_cian=1)';
         } else {
             unset($params['export_cian']);
         }
+
 
         if (isset($params['map_bounds'])) {
             $where_array_prepared[] = '((' . DB_PREFIX . '_data.geo_lat BETWEEN ? AND ?) AND (' . DB_PREFIX . '_data.geo_lng BETWEEN ? AND ?))';
@@ -3942,6 +3922,23 @@ class Grid_Constructor extends Grid_Constructor_Root {
             $where_value_prepared[] = $params['map_bounds'][0][1];
             $where_value_prepared[] = $params['map_bounds'][1][1];
         }
+        if ($this->request()->get('polylineString') and is_scalar($this->request()->get('polylineString'))) {
+            $polylineString = $this->request()->get('polylineString');
+            $polylineStringPairs = $this->fromStringToPolylineStringPairs($polylineString);
+            $min_max_coords = $this->coords_to_min_max($polylineStringPairs);
+            $max_lat = $min_max_coords['max_lat'];
+            $min_lat = $min_max_coords['min_lat'];
+            $max_lng = $min_max_coords['max_lng'];
+            $min_lng = $min_max_coords['min_lng'];
+
+            $where_array_prepared[] = '( ' . DB_PREFIX . '_data.geo_lat>=? AND ' . DB_PREFIX . '_data.geo_lat<=? AND ' . DB_PREFIX . '_data.geo_lng>=? AND ' . DB_PREFIX . '_data.geo_lng<=? )';
+            $where_value_prepared[] = $min_lat;
+            $where_value_prepared[] = $max_lat;
+            $where_value_prepared[] = $min_lng;
+            $where_value_prepared[] = $max_lng;
+        }
+
+
         //Сомнительно
         if (isset($params['geocoords'])) {
             if (preg_match('/([-]?[0-9]{2,3}\.[0-9]{6}),([-]?[0-9]{2,3}\.[0-9]{6}):([-]?[0-9]{2,3}\.[0-9]{6}),([-]?[0-9]{2,3}\.[0-9]{6})/', $params['geocoords'], $matches)) {
@@ -3987,27 +3984,27 @@ class Grid_Constructor extends Grid_Constructor_Root {
 
                 $where_array_prepared[] = '(' . implode(' OR ', $subarray) . ')';
             }
-        } elseif (isset($params['has_geo']) && (int) $params['has_geo'] == 1) {
+        } elseif (isset($params['has_geo']) && (int)$params['has_geo'] == 1) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.geo_lat IS NOT NULL AND ' . DB_PREFIX . '_data.geo_lng IS NOT NULL)';
         } else {
             unset($params['has_geo']);
         }
 
-        if (isset($params['minbeds']) && (int) $params['minbeds'] != 0) {
-            $where_value_prepared[] = (int) $params['minbeds'];
+        if (isset($params['minbeds']) && (int)$params['minbeds'] != 0) {
+            $where_value_prepared[] = (int)$params['minbeds'];
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.bedrooms_count>=?)';
         } else {
             unset($params['minbeds']);
         }
 
-        if (isset($params['minbaths']) && (int) $params['minbaths'] != 0) {
-            $where_value_prepared[] = (int) $params['minbaths'];
+        if (isset($params['minbaths']) && (int)$params['minbaths'] != 0) {
+            $where_value_prepared[] = (int)$params['minbaths'];
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.bathrooms_count>=?)';
         } else {
             unset($params['minbaths']);
         }
 
-        if (isset($params['vip_status']) && (int) $params['vip_status'] != 0) {
+        if (isset($params['vip_status']) && (int)$params['vip_status'] != 0) {
             $_time = strtotime(date('Y-m-d H:00:00', time() + 3600));
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.vip_status_end<>0 AND ' . DB_PREFIX . '_data.vip_status_end >= ?)';
             $where_value_prepared[] = $_time;
@@ -4015,7 +4012,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             unset($params['vip_status']);
         }
 
-        if (isset($params['premium_status']) && (int) $params['premium_status'] != 0) {
+        if (isset($params['premium_status']) && (int)$params['premium_status'] != 0) {
             $_time = strtotime(date('Y-m-d H:00:00', time() + 3600));
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.premium_status_end<>0 AND ' . DB_PREFIX . '_data.premium_status_end >= ?)';
             $where_value_prepared[] = $_time;
@@ -4023,7 +4020,7 @@ class Grid_Constructor extends Grid_Constructor_Root {
             unset($params['premium_status']);
         }
 
-        if (isset($params['bold_status']) && (int) $params['bold_status'] != 0) {
+        if (isset($params['bold_status']) && (int)$params['bold_status'] != 0) {
             $_time = strtotime(date('Y-m-d H:00:00', time() + 3600));
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.bold_status_end<>0 AND ' . DB_PREFIX . '_data.bold_status_end >= ?)';
             $where_value_prepared[] = $_time;
@@ -4033,22 +4030,24 @@ class Grid_Constructor extends Grid_Constructor_Root {
 
         if (!isset($params['admin']) || (isset($params['admin']) && $params['admin'] != 1)) {
             $where_array_prepared[] = '(' . DB_PREFIX . '_data.`active`=1)';
-            if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting') && isset($this->grid_item_data_model['archived'])) {
+            if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting') && isset($this->grid_item_data_model['archived'])) {
                 $where_array_prepared[] = '(' . DB_PREFIX . '_data.`archived`<>1)';
             }
             //echo $_SESSION['current_user_group_name'];
         } else {
-
-            if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting') && $params['archived'] == 1 && isset($this->grid_item_data_model['archived'])) {
+            if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting') && @$params['archived'] == 1 && isset($this->grid_item_data_model['archived'])) {
                 $where_array_prepared[] = '(' . DB_PREFIX . '_data.`archived`=1)';
-            } elseif (1 == (int) $this->getConfigValue('apps.realty.use_predeleting') && isset($this->grid_item_data_model['archived'])) {
-                if( defined('ADMIN_MODE') && ADMIN_MODE==1){
+            } elseif (1 == (int)$this->getConfigValue('apps.realty.use_predeleting') && isset($this->grid_item_data_model['archived'])) {
+
+                if (defined('ADMIN_MODE') && ADMIN_MODE == 1) {
                     if (isset($params['active']) && $params['active'] == 1) {
                         $where_array_prepared[] = '(' . DB_PREFIX . '_data.`archived`=0)';
                     } elseif (isset($params['active']) && $params['active'] == 'notactive') {
                         $where_array_prepared[] = '(' . DB_PREFIX . '_data.`archived`=0)';
+                    } else {
+                        $where_array_prepared[] = '(' . DB_PREFIX . '_data.`archived`=0)';
                     }
-                }else{
+                } else {
                     $where_array_prepared[] = '(' . DB_PREFIX . '_data.`archived`<>1)';
                 }
 
@@ -4060,7 +4059,6 @@ class Grid_Constructor extends Grid_Constructor_Root {
                 $where_array_prepared[] = '(' . DB_PREFIX . '_data.`active`=0)';
             }
         }
-
 
 
         if ($this->getConfigValue('apps.company.timelimit')) {
@@ -4115,4 +4113,23 @@ class Grid_Constructor extends Grid_Constructor_Root {
         );
     }
 
+    public function set_label($label)
+    {
+        $this->grid_label = $label;
+    }
+
+    public function get_label()
+    {
+        return $this->grid_label;
+    }
+
+    private function fromStringToPolylineStringPairs($polylineString)
+    {
+        $polylineStringArray = explode(',', $polylineString);
+        for ($i = 0; $i < count($polylineStringArray); $i++) {
+            $polylineStringArrayPairs[] = $polylineStringArray[$i] . ',' . $polylineStringArray[++$i];
+        }
+        $polylineStringPairs = implode(';', $polylineStringArrayPairs);
+        return $polylineStringPairs;
+    }
 }

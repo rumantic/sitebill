@@ -27,7 +27,7 @@ class Data_Model extends SiteBill
      */
     function __construct()
     {
-        $this->SiteBill();
+        parent::__construct();
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php');
         $this->permission = new Permission();
         $this->compose_functions = new compose_functions();
@@ -167,7 +167,7 @@ class Data_Model extends SiteBill
                     $id_value = (int)$this->getRequestValue($key);
                     $geoautocomplete_text_value = $this->getRequestValue('geoautocomplete');
 
-                    $geoautocomplete_text_value[$key] = trim(strip_tags($this->htmlspecialchars_decode($geoautocomplete_text_value[$key])));
+                    $geoautocomplete_text_value[$key] = @trim(strip_tags($this->htmlspecialchars_decode($geoautocomplete_text_value[$key])));
 
                     if ($geoautocomplete_text_value[$key] != '') {
                         $name = $model_array[$key]['value_name'];
@@ -468,6 +468,17 @@ class Data_Model extends SiteBill
                 }
                 if ((isset($parameters['allow_htmltags']) && (int)$parameters['allow_htmltags'] == 1) || (isset($parameters['html']) && (int)$parameters['html'] == 1)) {
                     $model_array[$key]['value'] = $this->htmlspecialchars_decode($this->getRequestValue($model_array[$key]['name']));
+                } elseif ($parameters['serialize_array'] and $parameters['serialize_array'] == 1) {
+                    if ( $this->getRequestValue($model_array[$key]['name']) != '' ) {
+                        $explode_array = explode($this->getConfigValue('apps.excel.images_delimiter'), $this->getRequestValue($model_array[$key]['name']));
+                        if ( is_array($explode_array) and count($explode_array) > 0 ) {
+                            $model_array[$key]['value'] = serialize($explode_array);
+                        }
+                    }
+                } elseif ($parameters['structure_chain'] and $parameters['structure_chain'] == 1) {
+                    require_once SITEBILL_DOCUMENT_ROOT . '/apps/excelfree/admin/data_manager_export.php';
+                    $data_manager_export = new Data_Manager_Export();
+                    $model_array[$key]['value'] = $data_manager_export->getTopicIdFromChain($this->getRequestValue($model_array[$key]['name']));
                 } else {
                     $model_array[$key]['value'] = strip_tags($this->htmlspecialchars_decode($this->getRequestValue($model_array[$key]['name'])));
                 }
@@ -628,7 +639,8 @@ class Data_Model extends SiteBill
     }
     */
 
-    function init_model_data_from_db_multi($table_name, $primary_key_name, $primary_key_values, $model_array, $force_select_values = false, $simplificate = false, $trimmed_data = false) {
+    function init_model_data_from_db_multi($table_name, $primary_key_name, $primary_key_values, $model_array, $force_select_values = false, $simplificate = false, $trimmed_data = false)
+    {
         $this->set_table_name($table_name);
 
         $uselangs = false;
@@ -668,7 +680,7 @@ class Data_Model extends SiteBill
         //$direct=array('safe_string', 'hidden', 'primary_key', 'checkbox', 'select_box_structure');
         foreach ($model_array as $model_item) {
             //echo $model_item['name'].'='.$model_item['dbtype'].'<br>';
-            if ($model_item['dbtype'] == 'notable' && $model_item['type'] != 'select_by_query_multi') {
+            if (@$model_item['dbtype'] == 'notable' && @$model_item['type'] != 'select_by_query_multi') {
                 continue;
             }
             if (!isset($model_item['type'])) {
@@ -707,7 +719,7 @@ class Data_Model extends SiteBill
                 }
                 case 'select_by_query' :
                 {
-                    $parameters = $model_item['parameters'];
+                    $parameters = @$model_item['parameters'];
                     $fname = $model_item['value_name'];
                     if ($uselangs && (!isset($parameters['no_ml']) || 0 === intval($parameters['no_ml']))) {
                         $fname .= $postfix;
@@ -1016,12 +1028,17 @@ class Data_Model extends SiteBill
             if (isset($model_item['parameters']['composed']) && '' != $model_item['parameters']['composed']) {
                 $need_compose_columns[$key] = $key;
             }
+            if (isset($model_item['parameters']['messenger']) && $model_item['parameters']['messenger'] == '1') {
+                $need_compose_columns[$key] = $key;
+            }
 
             if ($model_item['type'] == 'primary_key') {
                 $need_compose_columns[$key] = $key;
             } elseif ($model_item['type'] == 'price') {
                 $need_compose_columns[$key] = $key;
             } elseif ($model_item['type'] == 'compose') {
+                $need_compose_columns[$key] = $key;
+            } elseif ($model_item['name'] == 'phone') {
                 $need_compose_columns[$key] = $key;
             }
         }
@@ -1069,7 +1086,7 @@ class Data_Model extends SiteBill
                     $model[$key]['value_string'] = $cdata[$key];
                 } elseif ($model_item['type'] == 'select_box_structure') {
                     $model[$key]['value'] = $cdata[$key];
-                    $model[$key]['value_string'] = $cs['catalog'][$cdata[$key]]['name'];
+                    $model[$key]['value_string'] = @$cs['catalog'][$cdata[$key]]['name'];
                 } elseif ($model_item['type'] == 'select_by_query') {
                     $model[$key]['value'] = $cdata[$key];
                     $model[$key]['value_string'] = '';
@@ -1226,11 +1243,11 @@ class Data_Model extends SiteBill
 
                 } elseif ($model_item['type'] == 'docuploads') {
                     if ($cdata[$key] != '') {
-                        $model[$key]['value'] = unserialize($cdata[$key]);
+                        $model[$key]['value'] = @unserialize($cdata[$key]);
                         $model[$key]['image_array'] = $model[$key]['value'];
                     }
                 } elseif ($model_item['type'] == 'uploads') {
-                    if (isset($cdata['image_cache']) && $cdata['image_cache'] != '' && $cdata[$key] == '') {
+                    if (isset($cdata['image_cache']) && $cdata['image_cache'] != '' && $cdata[$key] == '' && $key == 'image') {
                         $model[$key]['image_cache'] = unserialize($cdata['image_cache']);
                         $model[$key]['value'] = $this->init_image_from_cache($model[$key]['image_cache']);
                         $model[$key]['image_array'] = $model[$key]['value'];
@@ -1238,7 +1255,9 @@ class Data_Model extends SiteBill
                         $model[$key]['value'] = unserialize($cdata[$key]);
 
 
+                        $model[$key]['value'] = $this->sharder_mirror($model[$key]['value'], true);
                         $model[$key]['image_array'] = $model[$key]['value'];
+
                     } else {
                         if ($table_name == 'data') {
                             $model[$key]['image_array'] = $this->get_image_array('data', 'data', 'id', $cdata[$primary_key_name]);
@@ -1248,9 +1267,9 @@ class Data_Model extends SiteBill
                     }
                 } elseif ($model_item['type'] == 'values_list') {
                 } elseif ($model_item['type'] == 'parameter') {
-                    if(isset($parameters['type']) && $parameters['type'] == 'json'){
+                    if (isset($parameters['type']) && $parameters['type'] == 'json') {
                         $model_array[$key]['value'] = $model[$key]['value_string'] = json_decode($cdata[$key], true);
-                    }else{
+                    } else {
                         $model_array[$key]['value'] = $model[$key]['value_string'] = unserialize($cdata[$key]);
                     }
                 } elseif ($model_item['type'] == 'compose') {
@@ -1263,7 +1282,11 @@ class Data_Model extends SiteBill
                     $has_access = $this->check_access($table_name, $this->getSessionUserId(), $check_control_name, $primary_key_name, $pkid);
                     //$this->writeLog(__METHOD__.', has_access = '.$has_access."$table_name, ".$this->getSessionUserId()." , $check_control_name, $primary_key_name, $primary_key_value");
                     //$this->writeLog(__METHOD__. '<pre>'.var_export($model_array[$key], true).'</pre>');
-                    if (!$has_access and $_SESSION['current_user_group_name'] != 'admin') {
+                    if (
+                        !$has_access and
+                        $_SESSION['current_user_group_name'] != 'admin' and
+                        !$this->permission->get_access($this->getSessionUserId(), $table_name, 'admin_access')
+                    ) {
                         $model[$key]['value_string'] = _e('скрыто');
                         $model[$key]['value'] = _e('скрыто');
                     }
@@ -1326,11 +1349,12 @@ class Data_Model extends SiteBill
     function get_crud_permissions($model, $key)
     {
         $current_user_id = $this->getSessionUserId();
+        $component_name = (isset($model[$key]['table_name']) ? $model[$key]['table_name'] : '');
         $crud = array(
-            'C' => $this->permission->get_access($current_user_id, $model[$key]['table_name'], 'create'),
+            'C' => $this->permission->get_access($current_user_id, $component_name, 'create'),
             'R' => true, // пока всем можно читать
-            'U' => $this->permission->get_access($current_user_id, $model[$key]['table_name'], 'update'),
-            'D' => $this->permission->get_access($current_user_id, $model[$key]['table_name'], 'delete'),
+            'U' => $this->permission->get_access($current_user_id, $component_name, 'update'),
+            'D' => $this->permission->get_access($current_user_id, $component_name, 'delete'),
         );
 
         if (isset($model['user_id']) && $current_user_id == $model['user_id']['value']) {
@@ -1365,6 +1389,18 @@ class Data_Model extends SiteBill
         }
         if ($model[$key]['type'] == 'primary_key') {
             $model[$key]['permissions'] = $this->get_crud_permissions($model, $key);
+            return $model;
+        }
+
+        if ($model[$key]['name'] == 'phone' or (isset($model[$key]['parameters']['messenger']) and $model[$key]['parameters']['messenger'] == '1')) {
+            $messages_object = $this->get_api_common()->init_custom_model_object('messages');
+            try {
+                if (is_object($messages_object) and method_exists($messages_object, 'get_message_count_by_client_id')) {
+                    $model[$key]['whatsapp_history'] = @$messages_object->get_message_count_by_client_id($model['client_id']['value']);
+                }
+            } catch (Exception $e) {
+
+            }
             return $model;
         }
 
@@ -1541,12 +1577,12 @@ class Data_Model extends SiteBill
             }
 
             if ($model_array[$key]['type'] == 'safe_string') {
-                $model_array[$key]['value_string'] = $row[$key];
+                $model_array[$key]['value_string'] = (isset($row[$key]) ? $row[$key] : '');
             }
             if ($model_array[$key]['type'] == 'uploadify_image' or $model_array[$key]['type'] == 'uploadify_file') {
                 $model_array[$key]['primary_key_value'] = $primary_key_value;
             }
-            if ($model_array[$key]['type'] == 'uploads' || $model_array[$key]['type'] == 'docuploads') {
+            if ( ($model_array[$key]['type'] == 'uploads' || $model_array[$key]['type'] == 'docuploads') && $key == 'image') {
                 $model_array[$key]['primary_key_value'] = $primary_key_value;
                 $model_array[$key]['primary_key'] = $primary_key_name;
                 $model_array[$key]['table_name'] = $table_name;
@@ -1560,6 +1596,13 @@ class Data_Model extends SiteBill
                 $model_array[$key]['table_name'] = $table_name;
             }
             if ($model_array[$key]['type'] == 'price') {
+                $need_compose_columns[] = $key;
+            }
+            if ($model_array[$key]['name'] == 'phone') {
+                $need_compose_columns[] = $key;
+            }
+
+            if (isset($model_array[$key]['parameters']['messenger']) && $model_array[$key]['parameters']['messenger'] == '1') {
                 $need_compose_columns[] = $key;
             }
             if ($model_array[$key]['type'] == 'select_box_structure_simple_multiple') {
@@ -1709,9 +1752,9 @@ class Data_Model extends SiteBill
                 //SELECT tag_name FROM re_tag WHERE tag_id IN (SELECT tag_id FROM re_shop_product_tag WHERE shop_product_id=5)
             }
             if ($model_array[$key]['type'] == 'parameter') {
-                if(isset($parameters['type']) && $parameters['type'] == 'json'){
+                if (isset($parameters['type']) && $parameters['type'] == 'json') {
                     $model_array[$key]['value'] = json_decode($model_array[$key]['value'], true);
-                }else{
+                } else {
                     $model_array[$key]['value'] = unserialize($model_array[$key]['value']);
                 }
             }
@@ -1728,7 +1771,8 @@ class Data_Model extends SiteBill
                     $this->getConfigValue('apps.excel.use_image_cache') == 1 and
                     $this->getConfigValue('apps.excel.image_cache_source') == 1 and
                     $row['image_cache'] != '' and
-                    $model_array[$key]['value'] == ''
+                    $model_array[$key]['value'] == '' and
+                    $key == 'image'
                 ) {
                     //echo $row['image_cache'];
 
@@ -1753,6 +1797,7 @@ class Data_Model extends SiteBill
 
                             if (!empty($model_array[$key]['value'][$i]['remote']) and $model_array[$key]['value'][$i]['remote'] === 'true') {
                                 $model_array[$key]['value'][$i]['normal_url'] = $model_array[$key]['value'][$i]['normal'];
+                                $model_array[$key]['value'][$i] = $this->sharder_mirror($model_array[$key]['value'][$i]);
                             } else {
                                 $model_array[$key]['value'][$i]['normal_url'] = $this->getServerFullUrl() .
                                     (($model_array[$key]['type'] == 'uploads') ? $this->getImgDataDir() : $this->getMediaDocsDir()) .
@@ -1891,7 +1936,11 @@ class Data_Model extends SiteBill
                 $has_access = $this->check_access($table_name, $this->getSessionUserId(), $check_control_name, $primary_key_name, $primary_key_value);
                 //$this->writeLog(__METHOD__.', has_access = '.$has_access."$table_name, ".$this->getSessionUserId()." , $check_control_name, $primary_key_name, $primary_key_value");
                 //$this->writeLog(__METHOD__. '<pre>'.var_export($model_array[$key], true).'</pre>');
-                if (!$has_access and $_SESSION['current_user_group_name'] != 'admin') {
+                if (
+                    !$has_access and
+                    $_SESSION['current_user_group_name'] != 'admin' and
+                    !$this->permission->get_access($this->getSessionUserId(), $table_name, 'admin_access')
+                ) {
                     $model_array[$key]['value_string'] = _e('скрыто');
                     $model_array[$key]['value'] = _e('скрыто');
                 }
@@ -1906,6 +1955,30 @@ class Data_Model extends SiteBill
         $model_array = $this->compile_compose_columns($model_array, $need_compose_columns);
 
         return $model_array;
+    }
+
+    function sharder_mirror ($image_array, $from_array = false) {
+        if ( !$this->getConfigValue('apps.sharder.mirroring.enable') ) {
+            return $image_array;
+        }
+        if ( $from_array and is_array($image_array) ) {
+            foreach ($image_array as $index => $item) {
+                $image_array[$index] = $this->replace_one_mirror_item($item);
+            }
+        } else {
+            $image_array = $this->replace_one_mirror_item($image_array);
+        }
+        return $image_array;
+    }
+
+    function replace_one_mirror_item ($image_array) {
+        $image_array['normal_url'] =
+            str_replace($this->getConfigValue('apps.sharder.mirroring.find'), $this->getConfigValue('apps.sharder.mirroring.replace'), $image_array['normal_url']);
+        $image_array['preview'] =
+            str_replace($this->getConfigValue('apps.sharder.mirroring.find'), $this->getConfigValue('apps.sharder.mirroring.replace'), $image_array['preview']);
+        $image_array['normal'] =
+            str_replace($this->getConfigValue('apps.sharder.mirroring.find'), $this->getConfigValue('apps.sharder.mirroring.replace'), $image_array['normal']);
+        return $image_array;
     }
 
     function applyGCompose($model_array)
@@ -2086,7 +2159,7 @@ class Data_Model extends SiteBill
                     //echo '</pre>';
                 }
             }
-            return self::$cache[$primary_key_table][$value][$value_name];
+            return @self::$cache[$primary_key_table][$value][$value_name];
         } else {
             $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $primary_key_table . ' WHERE `' . $primary_key_name . '` = ?';
 
@@ -2473,6 +2546,18 @@ class Data_Model extends SiteBill
                     $errors[] = sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                     $error_fields[$key][] = sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
                 }
+            } elseif ($model_array[$key]['type'] == 'select_box_structure') {
+                if ( $is_field_required and $model_array[$key]['value'] == 0 ) {
+                    $errors[] = _e('Укажите тип недвижимости') . ': ' . $model_array[$key]['title'];
+                    $error_fields[$key][] = _e('Укажите тип недвижимости') . ': ' . $model_array[$key]['title'];
+                }
+                if ( @$parameters['level_required'] > 0 ) {
+                    if ( ($model_array[$key]['value'] != '') && (!$this->validateLevelRequired($model_array[$key]['value'], $parameters['level_required'])) ) {
+                        $errors[] = _e('Укажите подтип недвижимости') . ': ' . $model_array[$key]['title'];
+                        $error_fields[$key][] = _e('Укажите подтип недвижимости') . ': ' . $model_array[$key]['title'];
+                    }
+                }
+
             } elseif ($model_array[$key]['type'] == 'select_by_query_multiple') {
                 if ($is_field_required && count($model_array[$key]['values_array']) == 0) {
                     $errors[] = sprintf(Multilanguage::_('L_ERROR_FIELD_NOT_FILLED'), $model_array[$key]['title']);
@@ -2765,6 +2850,9 @@ class Data_Model extends SiteBill
         $qvals = array();
 
         foreach ($model_array as $key => $item_array) {
+            if ( !isset($item_array['type']) ) {
+                $item_array['type'] = '';
+            }
 
             if ($item_array['type'] == 'primary_key') {
                 $primary_key = $item_array['name'];
@@ -5492,6 +5580,17 @@ class Data_Model extends SiteBill
                 );
             }
         }
+    }
+
+    private function validateLevelRequired($value, $level_required)
+    {
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/structure/structure_manager.php');
+        $SM = new Structure_Manager();
+        $category_structure = $SM->loadCategoryStructure();
+        if ( $category_structure['catalog'][$value]['parent_id'] == 0 and $level_required > 0 ) {
+            return false;
+        }
+        return true;
     }
 
 }

@@ -46,17 +46,15 @@ class Kernel
             $router->aliasMiddleware($key, $middleware);
         }
 
-        // Load the routes
-        if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.\SiteBill::getConfigValue('theme').'/routes/routes.php') ) {
-            require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.\SiteBill::getConfigValue('theme').'/routes/routes.php';
-        }
+        // Loading apps routes
         $routes_apps = array(
             'agents',
             'articles',
             'complex',
             'admin3',
             'reviewer',
-            'table'
+            'table',
+            'agency'
         );
 
         foreach ( $routes_apps as $app_name ) {
@@ -65,9 +63,13 @@ class Kernel
             }
         }
 
-
-
+        // Loading system routes
         require_once SITEBILL_DOCUMENT_ROOT.'/apps/bridge/routes/routes.php';
+
+        // Load template and localized routes
+        if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.\SiteBill::getConfigValueStatic('theme').'/routes/routes.php') ) {
+            require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.\SiteBill::getConfigValueStatic('theme').'/routes/routes.php';
+        }
 
         // Create a request from server variables
         $request = Request::capture();

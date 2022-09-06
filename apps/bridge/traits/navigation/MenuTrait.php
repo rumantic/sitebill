@@ -28,7 +28,7 @@ trait MenuTrait {
                 default:
                     $result[] = array(
                         'title' => $item['title'],
-                        'href' => $this->createUrlTpl($item['href']),
+                        'href' => (filter_var($item['href'], FILTER_VALIDATE_URL)?$item['href']:$this->createUrlTpl($item['href'])),
                         'childs' => $this->buildNavigationFromArray($item['childs']),
                     );
             }

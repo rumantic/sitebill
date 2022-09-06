@@ -12,7 +12,7 @@ class lang_words_admin extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
         $this->table_name = 'lang_words';
         $this->action = 'lang_words';
         $this->primary_key = 'word_id';

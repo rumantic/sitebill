@@ -6,16 +6,19 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * News fronend
  * @author Abushyk Kostyantyn <abushyk@gmail.com> http://www.sitebill.ru
  */
-class news_site extends news_admin {
+class news_site extends news_admin
+{
 
-    public function front_account() {
+    public function front_account()
+    {
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/news/admin/user_admin.php';
         $AUN = new user_news_admin();
         $this->template->assert('main', $AUN->main());
         return true;
     }
 
-    public function front_news_grid($topic_id = 0) {
+    public function front_news_grid($topic_id = 0)
+    {
 
         if ('' != $this->getConfigValue('apps.news.alias')) {
             $app_alias = $this->getConfigValue('apps.news.alias');
@@ -29,7 +32,7 @@ class news_site extends news_admin {
             $app_title = Multilanguage::_('PAGE_TITLE', 'news');
         }
 
-        if (1 == (int) $this->getConfigValue('apps.seo.no_trailing_slashes')) {
+        if (1 == (int)$this->getConfigValue('apps.seo.no_trailing_slashes')) {
             $trailing_slashe = '';
         } else {
             $trailing_slashe = '/';
@@ -114,8 +117,7 @@ class news_site extends news_admin {
         }
 
 
-
-        $page = (int) $this->getRequestValue('page');
+        $page = (int)$this->getRequestValue('page');
         $per_page = $this->getConfigValue('apps.news.front.per_page');
 
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/news/site/news_grid_constructor.php';
@@ -150,11 +152,13 @@ class news_site extends news_admin {
         return true;
     }
 
-    public function front_news_grid_by_topic($topic_id) {
+    public function front_news_grid_by_topic($topic_id)
+    {
         return $this->front_news_grid($topic_id);
     }
 
-    public function front_news_item($news_id, $by_alias = false) {
+    public function front_news_item($news_id, $by_alias = false)
+    {
         //require_once(SITEBILL_DOCUMENT_ROOT.'/apps/news/admin/news_model.php');
         //$Object=new News_Model();
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
@@ -199,7 +203,7 @@ class news_site extends news_admin {
             $app_title = Multilanguage::_('PAGE_TITLE', 'news');
         }
 
-        if (1 == (int) $this->getConfigValue('apps.seo.no_trailing_slashes')) {
+        if (1 == (int)$this->getConfigValue('apps.seo.no_trailing_slashes')) {
             $trailing_slashe = '';
         } else {
             $trailing_slashe = '/';
@@ -240,13 +244,13 @@ class news_site extends news_admin {
                 $news['img'] = $image_array;
             }
         } elseif ($uploads !== false && is_array($news[$uploads]['value'])) {
-            if ( $news[$uploads]['value'][0]['preview'] != '' ) {
+            if ($news[$uploads]['value'][0]['preview'] != '') {
                 $news['prev_img'] = $this->createMediaIncPath($news[$uploads]['value'][0], 'preview');
             }
             if ($news[$uploads]['value'][0]['normal'] != '') {
                 $news['normal_img'] = $this->createMediaIncPath($news[$uploads]['value'][0]);
             }
-            if ( is_array($news[$uploads]['value']) and count($news[$uploads]['value']) > 0 ) {
+            if (is_array($news[$uploads]['value']) and count($news[$uploads]['value']) > 0) {
                 $news['img'] = $news[$uploads]['value'];
             }
         }
@@ -300,12 +304,11 @@ class news_site extends news_admin {
         $this->template->assert('breadcrumbs', $this->get_breadcrumbs($breadcrumbs));
         $this->template->assert('news', $news);
 
-        if (1 == (int) $this->getConfigValue('apps.news.append_more_news_view')) {
+        if (1 == (int)$this->getConfigValue('apps.news.append_more_news_view')) {
             $this->template->assert('more_news', $this->get_more_news($news_id));
         } else {
             $this->template->assert('more_news', array());
         }
-
 
 
         $this->set_apps_template('news', $this->getConfigValue('theme'), 'main_file_tpl', 'news_view.tpl');
@@ -315,14 +318,15 @@ class news_site extends news_admin {
         return true;
     }
 
-    protected function getSocialTagsData($art){
+    protected function getSocialTagsData($art)
+    {
 
         $params = array();
 
         $params['title'] = $art['title']['value'];
         $params['description'] = $art['anons']['value'];
         $params['image'] = '';
-        if(isset($art['image']['value'][0])){
+        if (isset($art['image']['value'][0])) {
             $params['image'] = $art['image']['value'][0]['preview'];
         }
         $params['url'] = $this->getNewsRoute($art['news_id']['value'], $art['alias']['value'], true);
@@ -334,7 +338,8 @@ class news_site extends news_admin {
 
     }
 
-    public function getNewsIdByAlias($url) {
+    public function getNewsIdByAlias($url)
+    {
 
         $DBC = DBC::getInstance();
         $query = 'SELECT news_id, newsalias FROM ' . DB_PREFIX . '_news WHERE newsalias=? AND `date`<=? LIMIT 1';
@@ -356,7 +361,8 @@ class news_site extends news_admin {
         return false;
     }
 
-    public function getNewsTopicIdByAlias($url) {
+    public function getNewsTopicIdByAlias($url)
+    {
         if (1 == $this->getConfigValue('apps.news.use_news_topics')) {
             $DBC = DBC::getInstance();
             $query = 'SELECT id, url FROM ' . DB_PREFIX . '_news_topic WHERE url=? LIMIT 1';
@@ -378,7 +384,8 @@ class news_site extends news_admin {
         return false;
     }
 
-    function frontend() {
+    function frontend()
+    {
 
         if (!$this->getConfigValue('apps.news.enable')) {
             return false;
@@ -409,8 +416,7 @@ class news_site extends news_admin {
 
 
         if (preg_match('/' . $app_alias . '\/(.*)[\/]?/', $REQUESTURIPATH, $matches) && false !== ($tid = $this->getNewsTopicIdByAlias($matches[1]))) {
-            return $this->front_news_grid_by_topic($tid);
-            ;
+            return $this->front_news_grid_by_topic($tid);;
         }
 
         if (preg_match('/' . $app_alias . '\/(.*)[\/]?/', $REQUESTURIPATH, $matches) && false !== ($nid = $this->getNewsIdByAlias($matches[1]))) {
@@ -424,7 +430,8 @@ class news_site extends news_admin {
         return false;
     }
 
-    function get_more_news($current_news_id) {
+    function get_more_news($current_news_id)
+    {
         $news = array();
 
         if ('' != $this->getConfigValue('apps.news.item_alias')) {
@@ -433,8 +440,8 @@ class news_site extends news_admin {
             $app_item_alias = 'news';
         }
 
-        if (0 != (int) $this->getConfigValue('apps.news.append_more_news_view_count')) {
-            $count = (int) $this->getConfigValue('apps.news.append_more_news_view_count');
+        if (0 != (int)$this->getConfigValue('apps.news.append_more_news_view_count')) {
+            $count = (int)$this->getConfigValue('apps.news.append_more_news_view_count');
         } else {
             $count = $this->getConfigValue('apps.news.news_line.per_page');
         }
@@ -444,11 +451,10 @@ class news_site extends news_admin {
         }
 
         $checkuser = false;
-        if (isset($_SESSION['user_domain_owner']) && (int) $_SESSION['user_domain_owner']['user_id'] != 0) {
+        if (isset($_SESSION['user_domain_owner']) && (int)$_SESSION['user_domain_owner']['user_id'] != 0) {
             $checkuser = true;
         }
         $DBC = DBC::getInstance();
-        $stmt = $DBC->query($query);
         if ($this->data_model[$this->table_name]['date']['type'] == 'dtdatetime') {
             $date = date('Y-m-d H:i:s', time());
         } else {
@@ -500,11 +506,11 @@ class news_site extends news_admin {
                     }
                 }
             }
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
+            $data_model = new Data_Model();
 
             if ($hasUploadify) {
                 foreach ($news as $k => $n) {
-                    require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
-                    $data_model = new Data_Model();
                     $image_array = $data_model->get_image_array('news', 'news', 'news_id', $n['news_id']);
                     if (count($image_array) > 0) {
                         $news[$k]['prev_img'] = $image_array[0]['img_preview'];
@@ -518,6 +524,8 @@ class news_site extends news_admin {
                         $ims = array();
                     }
                     if (isset($ims[0])) {
+                        //
+                        $ims = $data_model->sharder_mirror($ims, true);
                         $news[$k]['prev_img'] = $this->createMediaIncPath($ims[0], 'preview');
                         $news[$k]['norm_img'] = $this->createMediaIncPath($ims[0]);
                     }

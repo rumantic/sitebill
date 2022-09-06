@@ -271,7 +271,7 @@ class client_site extends client_admin {
                             /* require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/mailer/mailer.php');
 
                               $mailer = new Mailer(); */
-                            $subject = $_SERVER['SERVER_NAME'] . ': Новая заявка от клиента';
+                            $subject = $_SERVER['SERVER_NAME'] . ': '._e('Новая заявка от клиента');
                             $to = $this->get_email_list();
                             $from = $this->getConfigValue('system_email');
 

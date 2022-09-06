@@ -8,9 +8,9 @@ class Check_Address_Ajax extends SiteBill {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
     }
-    
+
     /**
      * Get address string, split it into parts and check each chunk in database
      * @param string $address
@@ -29,7 +29,7 @@ class Check_Address_Ajax extends SiteBill {
                 $item = trim($item);
                 if ( $city_id = $this->get_id_by_value('city', 'name', $item, 'city_id') ) {
                     $city_ok = true;
-                    //$rs .= "<br>city = $item, city_id = $city_id<br>"; 
+                    //$rs .= "<br>city = $item, city_id = $city_id<br>";
                 } else {
                     return false;
                 }
@@ -39,7 +39,7 @@ class Check_Address_Ajax extends SiteBill {
                 $item = trim($item);
                 if ( $region_id = $this->get_id_by_value('region', 'name', $item, 'region_id') ) {
                     $region_ok = true;
-                    //$rs .= "region = $item, region_id = $region_id<br>"; 
+                    //$rs .= "region = $item, region_id = $region_id<br>";
                 } else {
                     return false;
                 }
@@ -48,26 +48,26 @@ class Check_Address_Ajax extends SiteBill {
                 $item = trim($item);
                 if ( $street_id = $this->get_id_by_value('street', 'name', $item, 'street_id') ) {
                     $street_ok = true;
-                    //$rs .= "street = $item, stteet_id = $street_id<br>"; 
+                    //$rs .= "street = $item, stteet_id = $street_id<br>";
                 } else {
                     return false;
                 }
-                
+
             }
-            //$rs .= "$item_id = $item<br>"; 
+            //$rs .= "$item_id = $item<br>";
         }
         //return $rs;
-        
+
         if ( $city_ok and $street_ok and $region_ok ) {
             return ' <img src="/img/ok_round.png" width="16" height="16" border="0" alt="Адрес верный" title="Адрес верный"> ';
         }
-        
+
         //$address_array[] = $address;
         //return 'check '.implode('|',$address_array);
         return '';
         //return 'check '.var_export($address_array, true);
     }
-    
+
 	function get_id_by_value ( $table, $key, $value, $id_key ) {
 	    $query = "select * from ".DB_PREFIX."_".$table." where $key='$value'";
 	    $DBC=DBC::getInstance();

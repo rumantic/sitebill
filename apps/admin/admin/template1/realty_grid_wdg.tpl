@@ -1,5 +1,9 @@
 <script src="{$assets_folder}/assets/js/jquery.colorbox-min.js"></script>
 
+<link rel="stylesheet" href="{$assets_folder}/assets/fotorama/fotorama.css"/>
+<script src="{$assets_folder}/assets/fotorama/fotorama.js"></script>
+
+
 <link rel="stylesheet" href="{$estate_folder}/apps/system/js/bootstrap/css/bootstrap-datetimepicker.min.css" media="screen">
 <script type="text/javascript" src="{$estate_folder}/apps/system/js/bootstrap/js/bootstrap-datetimepicker.min.js"></script>
 
@@ -10,12 +14,31 @@
     {include file="$local_controls_js"}
 {/if}
 
+{assign var="api_call_template" value=$SITEBILL_DOCUMENT_ROOT|cat:'/apps/system/fields/api_call.tpl'}
+
 {literal}
     <script type="text/javascript">
         var fast_previews = [];
         var column_values_for_tags = [];
         var datastr = {};
 
+        function setFotoramaWrapper (id) {
+            let photoslider_id = '.photoslider' + id;
+            $(photoslider_id).on('fotorama:fullscreenenter fotorama:fullscreenexit', function (e, fotorama) {
+                if (e.type === 'fotorama:fullscreenenter') {
+                    fotorama.setOptions({fit: 'contain',nav: "thumbs", arrows: 'always'});
+                } else {
+                    fotorama.setOptions({fit: 'cover',nav: false, arrows: true});
+                }
+            }).fotorama({
+                arrows: true,
+                nav: false,
+                allowfullscreen: true,
+                width: "100px",
+                ratio: "800/500",
+                fit: "cover",
+            });
+        }
 
         function setColorboxWrapper(id) {
             var $overflow = '';
@@ -49,8 +72,14 @@
         $(document).ready(function () {
 
             $('.colorboxed').each(function (item) {
+                setFotoramaWrapper($(this).data('cbxid'));
+            });
+
+/*
+            $('.colorboxed').each(function (item) {
                 setColorboxWrapper($(this).data('cbxid'));
             });
+*/
 
             $('.go_up').click(function () {
                 var id = $(this).attr('alt');
@@ -682,7 +711,12 @@
                     </tr>
                 </thead>
                 {section name=i loop=$grid_items}
-                    <tr valign="top" class="{if $grid_items[i].hot.value}row3hot{/if}{if intval($grid_items[i].status_id.value)>0} row_status_id{$grid_items[i].status_id.value}{/if}{if $grid_items[i].active.value == 0} notactive{/if}{if intval($grid_items[i].archived.value) === 1} archived{/if}{if $grid_items[i]._classes ne ''} {$grid_items[i]._classes}{/if}">
+                    <tr valign="top"
+                        class="{if $grid_items[i].postponded_to && strtotime($grid_items[i].postponded_to.value) > time()}postponded{/if}
+                        {if $grid_items[i].hot.value}row3hot{/if}
+                        {if intval($grid_items[i].status_id.value)>0} row_status_id{$grid_items[i].status_id.value}{/if}
+                        {if $grid_items[i].active.value == 0} notactive{/if}
+                        {if intval($grid_items[i].archived.value) === 1} archived{/if}{if $grid_items[i]._classes ne ''} {$grid_items[i]._classes}{/if}">
 
                         <td><input id="grid_check_all_{$grid_items[i].id.value}" type="checkbox" class="grid_check_one ace" value="{$grid_items[i].id.value}" /><label for="grid_check_all_{$grid_items[i].id.value}" class="lbl"></label></td>
                         <!-- td>
@@ -725,30 +759,13 @@
                             {elseif $grid_items[i][$grid_data_column].type=='uploads'}
                                 <td>
                                     {if is_array($grid_items[i][$grid_data_column].value) && !empty($grid_items[i][$grid_data_column].value)}
-                                    <ul class="ace-thumbnails clearfix">
-                                        <li>
-                                            <a href="{mediaincpath data=$grid_items[i][$grid_data_column].value[0]}">
-                                                <img src="{mediaincpath data=$grid_items[i][$grid_data_column].value[0] type='preview'}" style="min-width: 40px; max-width: 100px;" />
-                                            </a>
-                                            <div class="tags">
-                                                <span class="label-holder">
-                                                    <span class="label label-info">{$grid_items[i][$grid_data_column].value|count}</span>
-                                                </span>
+                                        <div class="colorboxed" style="max-width: 50px;" data-cbxid="{$grid_items[i].id.value}">
+                                            <div class="photoslider{$grid_items[i].id.value}">
+                                                {foreach from=$grid_items[i][$grid_data_column].value item=image key=k}
+                                                    <img {if $k != 0}style="display: none;"{/if} src="{mediaincpath data=$image}">
+                                                {/foreach}
                                             </div>
-                                            <div class="tools tools-top">
-                                                <a href="{if $grid_items[i][$grid_data_column].value[0].remote === 'true'}{$grid_items[i][$grid_data_column].value[0].normal}{else}{$estate_folder}/img/data/{$grid_items[i][$grid_data_column].value[0].normal}{/if}"  data-rel="colorbox{$grid_items[i].id.value}" class="colorboxed" data-cbxid="{$grid_items[i].id.value}">
-                                                    <i class="ace-icon fa fa-search-plus"></i>
-                                                </a>
-                                            </div>
-                                        </li>
-                                        {foreach from=$grid_items[i][$grid_data_column].value item=image key=k}
-                                            {if $k != 0}
-                                                <li style="display: none;">
-                                                    <a href="{mediaincpath data=$image}"  data-rel="colorbox{$grid_items[i].id.value}"></a>
-                                                </li>
-                                            {/if}
-                                        {/foreach}
-                                    </ul>
+                                        </div>
                                     {/if}
                                 </td>
                             {elseif $grid_items[i][$grid_data_column].type=='geodata' && is_array($grid_items[i][$grid_data_column].value)}
@@ -766,6 +783,10 @@
                                     {if isset($grid_items[i][$grid_data_column]._hint)}
                                     <span class="hint">{$grid_items[i][$grid_data_column]._hint}</span>
                                     {/if}
+                                    {if $core_model[$grid_data_column].api}
+                                        {include file=$api_call_template api=$core_model[$grid_data_column].api model_item=$grid_items[i]}
+                                    {/if}
+
                                 </td>
                             {/if}
                         {/foreach}

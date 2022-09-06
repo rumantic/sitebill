@@ -356,7 +356,7 @@ class search_forms_admin extends table_admin {
                 }
                 $form_body = $smarty->fetch($tpl);
                 $forms[$_f['title']]['body'] = $form_body;
-                $forms[$_f['title']]['id'] = md5($_f['title']);
+                $forms[$_f['title']]['id'] = 'lsf'.md5($_f['title']);
 
                 if (count(array_intersect($_topic_id, $topic_id)) > 0) {
                     $forms[$_f['title']]['active'] = 1;

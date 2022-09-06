@@ -9,8 +9,8 @@ class Component_Manager extends Object_Manager {
     /**
      * Constructor
      */
-    function Component_Manager() {
-        $this->Sitebill();
+    function __construct() {
+        parent::__construct();
         $this->table_name = 'component';
         $this->action = 'component';
         $this->app_title = Multilanguage::_('COMPONENT_APP_NAME', 'system');

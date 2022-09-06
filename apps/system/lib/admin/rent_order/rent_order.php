@@ -9,9 +9,9 @@ class Rent_Order extends Sitebill_Data_Get_Rent {
      * Constructor
      */
     function __construct() {
-        $this->Sitebill_Data_Get_Rent();
+        parent::__construct();
     }
-    
+
     /**
      * Main
      * @param void
@@ -26,10 +26,10 @@ class Rent_Order extends Sitebill_Data_Get_Rent {
 
             default:
                 $rs .= $this->grid();
-        }                
+        }
         return $rs;
     }
-    
+
     /**
      * Delete record
      * @param int $record_id record ID
@@ -41,7 +41,7 @@ class Rent_Order extends Sitebill_Data_Get_Rent {
 		$stmt=$DBC->query($query);
         return true;
     }
-    
+
     /**
      * Grid
      * @param void
@@ -58,11 +58,11 @@ class Rent_Order extends Sitebill_Data_Get_Rent {
 				$ra[] = $ar;
 			}
 		}
-        
+
         if ( count($ra) < 1 ) {
             return Multilanguage::_('NO_RENT_APPLICATIONS','system');
         }
-        
+
         $rs = '<div align="left"><table border="0" width="90%">';
         $rs .= '<td class="row_title">'.Multilanguage::_('L_DATE').'</td>';
         $rs .= '<td class="row_title">'.Multilanguage::_('L_FIO').'</td>';
@@ -74,7 +74,7 @@ class Rent_Order extends Sitebill_Data_Get_Rent {
         $rs .= '<td class="row_title">'.Multilanguage::_('WISHES','system').'</td>';
         $rs .= '<td class="row_title"></td>';
         $rs .= '</tr>';
-        
+
         foreach ( $ra as $item_id => $item_array ) {
             $j++;
             if ( ceil($j/2) > floor($j/2)  ) {

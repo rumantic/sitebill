@@ -5,16 +5,17 @@
  * @author Kondin Dmitriy <kondin@etown.ru>
  */
 class Data_Manager extends Object_Manager {
+    use \system\traits\PermissionsTrait;
 
     protected $billing_mode_on = false;
     protected $data_model_object;
     public $notwatermarked_folder = SITEBILL_DOCUMENT_ROOT.'/img/nwtm/';
-    private $nowatermark_folder_with_id = false;
+    protected $nowatermark_folder_with_id = false;
     /**
      * Constructor
      */
-    function Data_Manager() {
-        $this->SiteBill();
+    function __construct() {
+        parent::__construct();
         $this->table_name = 'data';
         $this->action = 'data';
         $this->app_title = Multilanguage::_('DATA_APP_NAME', 'system');
@@ -41,12 +42,12 @@ class Data_Manager extends Object_Manager {
         $this->data_model['data']['user_id']['type'] = 'select_by_query';
         if ($this->getConfigValue('theme') == 'ipn') {
             $this->data_model['data']['user_id']['query'] = 'select * from ' . DB_PREFIX . '_user  where group_id <> 3 order by fio';
-        } elseif ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && (1 === (int) $this->getConfigValue('data_adv_share_access')) and $this->getConfigValue('data_adv_share_access_extended') != '') {
+        } elseif ((1 === (int) $this->getConfigValue('check_permissions')) && (@$_SESSION['current_user_group_name'] !== 'admin') && (1 === (int) $this->getConfigValue('data_adv_share_access')) and $this->getConfigValue('data_adv_share_access_extended') != '') {
             $extended_user_list = array();
             $extended_user_list = explode(',', $this->getConfigValue('data_adv_share_access_extended'));
             array_push($extended_user_list, (int) $_SESSION['user_id_value']);
             $this->data_model['data']['user_id']['query'] = 'select * from ' . DB_PREFIX . '_user  where user_id in (' . implode(',', $extended_user_list) . ') order by fio';
-        } elseif ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && (1 === (int) $this->getConfigValue('data_adv_share_access')) and (int) $this->getConfigValue('data_adv_share_access_user_list_strict') == 1) {
+        } elseif ((1 === (int) $this->getConfigValue('check_permissions')) && (@$_SESSION['current_user_group_name'] !== 'admin') && (1 === (int) $this->getConfigValue('data_adv_share_access')) and (int) $this->getConfigValue('data_adv_share_access_user_list_strict') == 1) {
             $this->data_model['data']['user_id']['query'] = 'select * from ' . DB_PREFIX . '_user  where user_id = ' . (int) $_SESSION['user_id_value'] . ' order by fio';
         } else {
             $this->data_model['data']['user_id']['query'] = 'select * from ' . DB_PREFIX . '_user order by fio';
@@ -79,11 +80,31 @@ class Data_Manager extends Object_Manager {
         if ($this->getConfigValue('dadata_autocomplete_force')) {
             $this->data_model['data'] = $this->prepare_model_for_dadata($this->data_model['data']);
         }
+        if ( file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/bitrix24/handler/HandlerController.php') ) {
+            $Sitebill_Registry = Sitebill_Registry::getInstance();
+            $Sitebill_Registry::add_handler('bitrix24\handler\HandlerController');
+        }
+
     }
 
     function get_model() {
         return $this->data_model;
     }
+
+    protected function _defaultAction() {
+        if ( $this->getConfigValue('apps.realty.use_predeleting') ) {
+            $data_model = new Data_Model();
+            $model = $data_model->get_kvartira_model(false, true);
+            if ( !isset($model['data']['archived']) ) {
+                return _e('Вы включили опцию').' apps.realty.use_predeleting<br> '.
+                    _e('Но для корректной работы нужно добавить поле archived в таблицу data с типом hidden');
+            }
+
+
+        }
+        return parent::_defaultAction();
+    }
+
 
     function structure_processor() {
         if ($this->getRequestValue('subdo') == 'sms') {
@@ -635,6 +656,9 @@ class Data_Manager extends Object_Manager {
         if (intval($this->getConfigValue('apps.realty.use_predeleting')) !== 1) {
             return '';
         }
+        if ( !$this->get_permission_instance()->get_access($this->getSessionUserId(), 'data', 'delete_final') ) {
+            return _e('Доступ запрещен').'<br>'._e('Проверьте права доступа группы: ').'data.delete_final';
+        }
 
         if ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && (1 === (int) $this->getConfigValue('data_adv_share_access'))) {
             $user_id = (int) $_SESSION['user_id_value'];
@@ -1091,7 +1115,7 @@ class Data_Manager extends Object_Manager {
         $params['_collect_user_info'] = 1;
 
         $share_and_permission = false;
-        if ((1 === (int) $this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && (1 === (int) $this->getConfigValue('data_adv_share_access'))) {
+        if ((1 === (int) $this->getConfigValue('check_permissions')) && (@$_SESSION['current_user_group_name'] !== 'admin') && (1 === (int) $this->getConfigValue('data_adv_share_access'))) {
             $params['user_id'] = (int) $_SESSION['user_id_value'];
             $share_and_permission = true;
         }
@@ -1155,18 +1179,18 @@ class Data_Manager extends Object_Manager {
             $GMA = new gridmanager_admin();
             $smarty->assign('grid_data_columns', $GMA->getGridColumns());
             if (file_exists(SITEBILL_DOCUMENT_ROOT . "/template/frontend/" . $this->getConfigValue('theme') . "/apps/admin/template/realty_grid_wdg.tpl")) {
-                $html = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . "/template/frontend/" . $this->getConfigValue('theme') . "/apps/admin/template/realty_grid_wdg.tpl");
+                $html = @$smarty->fetch(SITEBILL_DOCUMENT_ROOT . "/template/frontend/" . $this->getConfigValue('theme') . "/apps/admin/template/realty_grid_wdg.tpl");
             } else {
-                $html = $smarty->fetch($smarty->template_dir . "/realty_grid_wdg.tpl");
+                $html = @$smarty->fetch($this->get_smarty_template_dir() . "/realty_grid_wdg.tpl");
             }
         } else {
             if (file_exists(SITEBILL_DOCUMENT_ROOT . "/template/frontend/" . $this->getConfigValue('theme') . "/apps/admin/template/realty_grid.tpl")) {
-                $html = $smarty->fetch(SITEBILL_DOCUMENT_ROOT . "/template/frontend/" . $this->getConfigValue('theme') . "/apps/admin/template/realty_grid.tpl");
+                $html = @$smarty->fetch(SITEBILL_DOCUMENT_ROOT . "/template/frontend/" . $this->getConfigValue('theme') . "/apps/admin/template/realty_grid.tpl");
             } else {
-                $html = $smarty->fetch($smarty->template_dir . "/realty_grid.tpl");
+                $html = @$smarty->fetch($this->get_smarty_template_dir() . "/realty_grid.tpl");
             }
         }
-        if ( $billing_plugin != '' ) {
+        if ( isset($billing_plugin) and $billing_plugin != '' ) {
             $html .= $billing_plugin;
         }
         return $html;
@@ -1539,7 +1563,7 @@ class Data_Manager extends Object_Manager {
         if (1 == $this->getConfigValue('apps.geodata.enable')) {
             $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/geodata/js/geodata.js"></script>';
         }
-        $rs .= '<form method="post" class="form-horizontal" action="index.php" enctype="multipart/form-data">';
+        $rs .= '<form method="post" class="form-horizontal" action="' . ($this->get_default_form_action()?$this->get_default_form_action():$action) . '" enctype="multipart/form-data">';
         /* $id=md5('data_form_'.time());
           $rs .= '<form method="post" id="'.$id.'" class="form-horizontal" action="index.php" enctype="multipart/form-data">';
           $rs .= '<script>var control_visibility="'.$id.'";</script>'; */
@@ -1823,12 +1847,12 @@ class Data_Manager extends Object_Manager {
 
             if ($need_send_message == 1) {
                 $n_id = $id;
-                $n_pass = $form_data['tmp_password']['value'];
-                $n_email = $form_data['email']['value'];
-                $n_phone = $form_data['phone']['value'];
-                $n_fio = $form_data['fio']['value'];
+                $n_pass = @$form_data['tmp_password']['value'];
+                $n_email = @$form_data['email']['value'];
+                $n_phone = @$form_data['phone']['value'];
+                $n_fio = @$form_data['fio']['value'];
 
-                $user_id = $form_data['user_id']['value'];
+                $user_id = @$form_data['user_id']['value'];
                 if ($user_id > 0) {
                     $DBC = DBC::getInstance();
                     $query = 'SELECT email, phone, user_id, fio, group_id, login FROM ' . DB_PREFIX . '_user WHERE user_id=?';
@@ -2342,6 +2366,8 @@ class Data_Manager extends Object_Manager {
             }
         }
 
+        // Обработка handler
+        $this->tryHandlers('data', 'edit_data', $form_data, $new_record_id);
 
 
 
@@ -2435,10 +2461,14 @@ class Data_Manager extends Object_Manager {
             $ret .= '<select name="user_id" onchange="this.form.submit()">';
             $ret .= '<option value="">' . Multilanguage::_('L_CHOOSE_USER') . '</option>';
             while ($ar = $DBC->fetch($stmt)) {
-                if ($this->getRequestValue('user_id') == $ar['user_id']) {
-                    $ret .= '<option value="' . $ar['user_id'] . '" selected="selected">' . $ar['login'] . ' (' . $ar['fio'] . ')</option>';
+                if ( isset($ar['hide_from_search']) and $ar['hide_from_search'] == 1 ) {
+
                 } else {
-                    $ret .= '<option value="' . $ar['user_id'] . '">' . $ar['login'] . ' (' . $ar['fio'] . ')</option>';
+                    if ($this->getRequestValue('user_id') == $ar['user_id']) {
+                        $ret .= '<option value="' . $ar['user_id'] . '" selected="selected">' . $ar['login'] . ' (' . $ar['fio'] . ')</option>';
+                    } else {
+                        $ret .= '<option value="' . $ar['user_id'] . '">' . $ar['login'] . ' (' . $ar['fio'] . ')</option>';
+                    }
                 }
             }
             $ret .= '</select>';
@@ -2555,6 +2585,7 @@ class Data_Manager extends Object_Manager {
                 $imgs_ids[] = $ar['image_id'];
             }
         }
+        $form_data = $this->load_by_id($primary_key_value);
 
         $delete_result = parent::delete_data($table_name, $primary_key, $primary_key_value);
         if ($delete_result) {
@@ -2568,6 +2599,8 @@ class Data_Manager extends Object_Manager {
 
             $query = 'DELETE FROM ' . DB_PREFIX . '_userlists WHERE `id` = ? AND `lcode` = ?';
             $stmt = $DBC->query($query, array($primary_key_value, 'fav'));
+            // Обработка handler
+            $this->tryHandlers('data', 'delete_data', $form_data, $primary_key_value);
         }
         return $delete_result;
     }
@@ -2708,7 +2741,7 @@ class Data_Manager extends Object_Manager {
 
         $smarty->assign('views', $views);
         //$smarty->assign('view_data', $order_table);
-        $html = $smarty->fetch($smarty->template_dir . "/realty_view_stat.tpl");
+        $html = $smarty->fetch($this->get_smarty_template_dir() . "/realty_view_stat.tpl");
         return $html;
     }
 
@@ -2743,7 +2776,7 @@ class Data_Manager extends Object_Manager {
         }
         $smarty->assign('view_data_notes', $notes);
         $smarty->assign('view_data', $order_table);
-        $html = $smarty->fetch($smarty->template_dir . "/realty_view.tpl");
+        $html = $smarty->fetch($this->get_smarty_template_dir() . "/realty_view.tpl");
         return $html;
     }
 

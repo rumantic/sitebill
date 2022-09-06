@@ -15,9 +15,20 @@
 <script>
 $(document).ready(function() {
 		var editor = CodeMirror.fromTextArea(document.getElementById("tple_filetext"),{
-			mode: "{/literal}{$editor_mode}{literal}", 
-			tabMode: "indent",
-			lineNumbers: true
+			mode: "htmlmixed",
+            lineNumbers: true,
+            viewportMargin: Infinity,
+            lineWrapping: true,
+            foldGutter: true,
+            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+            extraKeys: {
+                "F11": function() {
+                    editor.setOption("fullScreen", !editor.getOption("fullScreen"));
+                },
+                "Esc": function() {
+                    if (editor.getOption("fullScreen")) editor.setOption("fullScreen", false);
+                }
+            }
 		});
 	});
 </script>

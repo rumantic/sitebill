@@ -8,7 +8,7 @@ class page_update extends SiteBill {
      * Construct
      */
     function __construct() {
-        $this->sitebill();
+        parent::__construct();
     }
 
     function main() {
@@ -43,6 +43,7 @@ class page_update extends SiteBill {
 
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_page ADD COLUMN is_service INT(11) not null default 0";
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_page ADD COLUMN template VARCHAR(255)";
+        $query_data[] = "ALTER TABLE " . DB_PREFIX . "_page ADD COLUMN meta_title TEXT";
         $rs .= '<h3>' . Multilanguage::_('SQL_NOW', 'system') . '</h3>';
 
 

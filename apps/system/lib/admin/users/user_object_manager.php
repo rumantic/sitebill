@@ -13,7 +13,7 @@ class User_Object_Manager extends Object_Manager {
      * Constructor
      */
     function __construct() {
-        $this->SiteBill();
+        parent::__construct();
         $this->table_name = 'user';
         $this->action = 'user';
         $this->app_title = Multilanguage::_('USER_APP_NAME', 'system');
@@ -28,11 +28,11 @@ class User_Object_Manager extends Object_Manager {
         }
 
         if (!$config_manager->check_config_item('user_pic_width')) {
-            $config_manager->addParamToConfig('user_pic_width', '270', 'Ширина картинки пользователя');
+            $config_manager->addParamToConfig('user_pic_width', '470', 'Ширина картинки пользователя');
         }
 
         if (!$config_manager->check_config_item('user_pic_height')) {
-            $config_manager->addParamToConfig('user_pic_height', '270', 'Высота картинки пользователя');
+            $config_manager->addParamToConfig('user_pic_height', '470', 'Высота картинки пользователя');
         }
     }
 
@@ -1272,6 +1272,7 @@ class User_Object_Manager extends Object_Manager {
 
         $rs = '';
         $rs .= '<a href="?action=' . $this->action . '&do=new" class="btn btn-primary">' . Multilanguage::_('ADD_USER', 'system') . '</a>';
+        $rs .= $this->get_extended_items();
 
         //select * from re_company order by name
         //$rs .= '<a href="?action='.$this->action.'&do=new" class="btn btn-primary">Добавить пользователя</a>';

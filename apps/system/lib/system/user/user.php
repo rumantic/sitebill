@@ -8,7 +8,7 @@ class User_Object extends SiteBill {
     * Constructor
     */
     function System_User_Object () {
-        $this->SiteBill();
+        parent::__construct();
     }
     /**
      * Get user info string

@@ -4,9 +4,9 @@ class client_update extends SiteBill {
      * Construct
      */
     function __construct() {
-        $this->sitebill();
+        parent::__construct();
     }
-    
+
     function main () {
         $rs='';
         $DBC=DBC::getInstance();

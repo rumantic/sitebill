@@ -19,8 +19,8 @@ class Helpers
         }
     }
     public static function normalize_admin_href ( $href ) {
-        if ( !preg_match('/'.\SConfig::getConfigValue('apps.admin3.alias').'/', $href) ) {
-            $href = str_replace('admin', \SConfig::getConfigValue('apps.admin3.alias'), $href);
+        if ( !preg_match('/'.\SConfig::getConfigValueStatic('apps.admin3.alias').'/', $href) ) {
+            $href = str_replace('admin', \SConfig::getConfigValueStatic('apps.admin3.alias'), $href);
         }
         return str_replace('index.php', '', $href);
     }
@@ -59,12 +59,15 @@ class Helpers
             }
             if ( !empty(self::$entity_storage[$name][$uri]['data'][$key]) ) {
                 if (is_array(self::$entity_storage[$name][$uri]['data'][$key][$value_key]) and self::$entity_storage[$name][$uri]['data'][$key]['type'] == 'uploads') {
-                    return self::$entity_storage[$name]['instance']->createMediaIncPath(
-                        self::$entity_storage[$name][$uri]['data'][$key][$value_key][0],
-                        'normal',
-                        1
-                    );
-
+                    if ( self::$entity_storage[$name][$uri]['data'][$key][$value_key][0] != '' ) {
+                        return self::$entity_storage[$name]['instance']->createMediaIncPath(
+                            self::$entity_storage[$name][$uri]['data'][$key][$value_key][0],
+                            'normal',
+                            1
+                        );
+                    } else {
+                        return '';
+                    }
                 } elseif ( !empty(self::$entity_storage[$name][$uri]['data'][$key][$value_key]) ) {
                     return self::$entity_storage[$name][$uri]['data'][$key][$value_key];
                 }
@@ -106,6 +109,23 @@ class Helpers
                 return '';
             }
             $entity_content = '<img src="'.$entity_content.'" width="50">';
+        }
+        return self::editor_wrapper($entity_content, $name, $uri, $key, $value_key);
+    }
+
+    public static function entity_editable_with_default_image ($name, $uri, $key, $value_key = 'value', $default_image = '') {
+        $entity_content = self::fetch_entity($name, $uri, $key, $value_key);
+        if ( filter_var($entity_content, FILTER_VALIDATE_URL) ) {
+            if ( !\SConfig::getConfigValueStatic('editor_mode') ) {
+                return '';
+            }
+            $entity_content = '<img src="'.$entity_content.'" width="50">';
+        }
+        if (empty($entity_content) and $default_image != '') {
+            if ( !\SConfig::getConfigValueStatic('editor_mode') ) {
+                return '';
+            }
+            $entity_content = '<img src="'.$default_image.'" width="50">';
         }
         return self::editor_wrapper($entity_content, $name, $uri, $key, $value_key);
     }

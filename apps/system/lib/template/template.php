@@ -59,25 +59,14 @@ class Template {
     }*/
 
     /**
+     * DEPRECATED
      * Assert template set
      * @param string - set variable name
      * @param string - value
      * @return boolean
      */
     function assign ( $set, $value ) {
-        global $smarty;
-
-        $this->item[$set] = $value;
-        SiteBill::set_template_store($set, $value);
-
-        //if ( $set == 'grid_items' ) {
-        	//echo '<pre>';
-        	//print_r($this->item);
-        	//echo '</pre>';
-        //}
-
-        $smarty->assign($set, $value);
-        return true;
+        return $this->assert($set, $value);
     }
 
     function fetch ($template) {
