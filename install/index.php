@@ -1,6 +1,6 @@
 <?php
 date_default_timezone_set('Europe/Moscow');
-error_reporting(E_ERROR | E_WARNING | E_PARSE);
+error_reporting(E_ERROR );
 //error_reporting(E_ALL);
 ini_set('display_errors', 'On');
 
