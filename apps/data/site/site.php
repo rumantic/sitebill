@@ -776,6 +776,8 @@ class data_site extends data_admin
 
         }
 
+        $rs .= $this->get_extended_items();
+
 
         //$rs .= '</div>';
         //$rs .= '<form method="post"><input type="hidden" name="action" value="add" /><input type="submit" name="submit" value="Добавить объявление" /></form>';

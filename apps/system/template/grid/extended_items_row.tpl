@@ -1,7 +1,7 @@
-{if isset($disable_excel_export) and !$disable_excel_export}<a class="btn btn-warning btn-xs pull-right" href="?action={$action}&do=export" title="{_e t="Скачать записи в формате Excel"}"><i class="icon-white icon-download-alt"></i></a>{/if}
-{if isset($disable_excel_import) and !$disable_excel_import}<a class="btn btn-info btn-xs pull-right" href="?action={$action}&do=import" title="{_e t="Загрузить записи в формате Excel"}"><i class="icon-white icon-upload"></i></a>{/if}
-{if isset($disable_format_grid) and !$disable_format_grid}<a class="btn btn-pink btn-xs pull-right" href="?action={$action}&do=formatgrid" title="{_e t="Формировать сетку"}"><i class="icon-white icon-align-justify"></i></a>{/if}
-{if isset($disable_pdf) and !$disable_pdf}{if $pdf_enable == 1}<a class="btn btn-warning btn-xs pull-right" href="?action={$action}&do=getpdf" title="{_e t="Скачать записи в формате PDF"}" download><i class="icon-white fa-print"></i></a>{/if}{/if}
+{if isset($disable_excel_export) and $disable_excel_export}{else}<a class="btn btn-warning btn-xs pull-right" href="?action={$action}&do=export" title="{_e t="Скачать записи в формате Excel"}"><i class="icon-white icon-download-alt"></i></a>{/if}
+{if isset($disable_excel_import) and $disable_excel_import}{else}<a class="btn btn-info btn-xs pull-right" href="?action={$action}&do=import" title="{_e t="Загрузить записи в формате Excel"}"><i class="icon-white icon-upload"></i></a>{/if}
+{if isset($disable_format_grid) and $disable_format_grid}{else}<a class="btn btn-pink btn-xs pull-right" href="?action={$action}&do=formatgrid" title="{_e t="Формировать сетку"}"><i class="icon-white icon-align-justify"></i></a>{/if}
+{if isset($disable_pdf) and $disable_pdf}{else}{if $pdf_enable == 1}<a class="btn btn-warning btn-xs pull-right" href="?action={$action}&do=getpdf" title="{_e t="Скачать записи в формате PDF"}" download><i class="icon-white fa-print"></i></a>{/if}{/if}
 {if $total_count != ''}<button class="btn btn-xs pull-right" disabled="disabled"><i class="icon-white icon-ok"></i> {_e t="Всего:"} {$total_count}</button>{/if}
 {literal}
 <script>

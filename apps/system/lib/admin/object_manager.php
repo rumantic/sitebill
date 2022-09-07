@@ -910,19 +910,20 @@ class Object_Manager extends SiteBill {
             $action = '_defaultAction';
         }
 
-        $rs = $this->$action();
+        $rs_action = $this->$action();
 
-        $rs_new = $this->get_app_title_bar();
+        $rs_top = $this->get_app_title_bar();
         if ( !self::admin3_compatible() ) {
-            $rs_new .= '<div class="page-header">'.$this->getTopMenu().'</div>';
+            $rs_top .= '<div class="page-header">'.$this->getTopMenu().'</div>';
         }
-        $rs .= '<div class="row">';
+        $rs = '<div class="row-fluid">';
         $rs .= '<div class="col-xs-12">';
-        $rs_new .= $rs;
+        $rs .= $rs_top;
+        $rs .= $rs_action;
         $rs .= '</div>';
         $rs .= '</div>';
 
-        return $rs_new;
+        return $rs;
     }
 
     function checkUniquety($form_data) {
