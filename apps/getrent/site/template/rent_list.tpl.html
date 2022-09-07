@@ -1,0 +1,86 @@
+<ul class="breadcrumb">
+{foreach from=$breadcrumbs_array item=crumb}
+<li><a href="{$crumb.href}">{$crumb.title}</a>{if $crumb.last ne 'true'} <span class="divider">/</span>{/if}</li>
+{/foreach}
+</ul>
+
+                <div id="search_main">
+                        {include file="search_form_rent.tpl"}
+                </div>
+
+<table class="content_main" cellspacing="2" cellpadding="2">
+    <tr  class="row_head">
+        <td width="1%" class="row_title"></td>
+        <td width="1%" class="row_title">{$L_DATE}</td>
+        <td width="1%" class="row_title">{$L_ID}</td>
+        <td width="70" class="row_title">{$L_TYPE}&nbsp;<noindex><a href="{$estate_folder}/{$url}&order=type&asc=asc" rel="nofollow">&darr;</a></noindex>&nbsp;<noindex><a href="{$estate_folder}/{$url}&order=type&asc=desc" rel="nofollow">&uarr;</a></noindex></td>
+        <td width=13% class="row_title">{$L_CITY}&nbsp;<noindex><a href="{$estate_folder}/{$url}&order=city&asc=asc" rel="nofollow">&darr;</a></noindex>&nbsp;<noindex><a href="{$estate_folder}/{$url}&order=city&asc=desc" rel="nofollow">&uarr;</a></noindex></td>
+        <td width=13% class="row_title">Метро</td>
+        <td width=13% class="row_title">{$L_DISTRICT}&nbsp;<noindex><a href="{$estate_folder}/{$url}&order=district&asc=asc" rel="nofollow">&darr;</a></noindex>&nbsp;<noindex><a href="{$estate_folder}/{$url}&order=district&asc=desc" rel="nofollow">&uarr;</a></noindex></td>
+        <td width=13% class="row_title">{$L_STREET}&nbsp;<noindex><a href="{$estate_folder}/{$url}&order=street&asc=asc" rel="nofollow">&darr;</a></noindex>&nbsp;<noindex><a href="{$estate_folder}/{$url}&order=street&asc=desc" rel="nofollow">&uarr;</a></noindex></td>
+        <td class="row_title">Площадь</td>
+        <td class="row_title" nowrap>{$L_PRICE}&nbsp;<noindex><a href="{$estate_folder}/{$url}&order=price&asc=asc" rel="nofollow">&darr;</a></noindex>&nbsp;<noindex><a href="{$estate_folder}/{$url}&order=price&asc=desc" rel="nofollow">&uarr;</a></noindex></td>
+    </tr>
+    {section name=i loop=$grid}
+    
+    <tr valign="top" class="row3{if $grid[i].bold_status==1} grid_table_bold{/if}{if $grid[i].premium_status==1} grid_table_premium{/if}">
+        
+        <td><a name="row{$grid[i].id}"></a>
+        {if isset($smarty.session.favorites)}
+            {if in_array($grid[i].id,$smarty.session.favorites)}
+                <a class="remove_from_favorites" alt="{$grid[i].id}" title="{$L_DELETEFROMFAVORITES}" href="#remove_from_favorites"></a>
+            {else}
+                <a class="add_to_favorites" alt="{$grid[i].id}" title="{$L_ADDTOFAVORITES}" href="#add_to_favorites"></a>
+            {/if}
+        {/if}
+        </td>
+        <td{if $admin == ''}  onClick="document.location='/rentlist/view/{$grid[i].data_get_rent_id}'" {/if}><b><a href="{$grid[i].href}">{$grid[i].date}</a></b></td>
+        <td{if $admin == ''}  onClick="document.location='/rentlist/view/{$grid[i].data_get_rent_id}'" {/if}><b><a href="{$grid[i].href}">{$grid[i].data_get_rent_id}{if isset($grid[i].uniq_id)} ({$grid[i].uniq_id}){/if}</a></b></td>
+        <td{if $admin == ''}  onClick="document.location='/rentlist/view/{$grid[i].data_get_rent_id}'" {/if}><b>{if $grid[i].topic_info.$lang_topic_name != ''}{$grid[i].topic_info.$lang_topic_name}{else}{$grid[i].type_sh}{/if}</b></td>
+        <td{if $admin == ''}  onClick="document.location='/rentlist/view/{$grid[i].data_get_rent_id}'" {/if}>{$grid[i].city_id.value_string}</td>
+        <td{if $admin == ''}  onClick="document.location='/rentlist/view/{$grid[i].data_get_rent_id}'" {/if}>{$grid[i].metro_id.value_string}</td>
+        <td{if $admin == ''}  onClick="document.location='/rentlist/view/{$grid[i].data_get_rent_id}'" {/if}>{$grid[i].district_id.value_string}</td>
+        <td{if $admin == ''}  onClick="document.location='/rentlist/view/{$grid[i].data_get_rent_id}'" {/if}>{$grid[i].street_id.value_string}</td>
+        <td{if $admin == ''}  onClick="document.location='/rentlist/view/{$grid[i].data_get_rent_id}'" {/if}>{$grid[i].square_all}</td>
+        <td{if $admin == ''}  onClick="document.location='/rentlist/view/{$grid[i].data_get_rent_id}'" {/if} nowrap><b>{$grid[i].price_min|number_format:0:",":" "}/{$grid[i].price_max|number_format:0:",":" "}</b></td>
+    </tr>
+    
+    {/section}
+
+    {if $pager != ''}
+    <tr>
+        <td colspan="9" class="pager">{$pager}</td>
+    </tr>
+    {/if}
+</table>
+
+
+<!-- table class="table table-hover">
+    <thead>
+    <tr>
+        <td>ID</td>
+        <td>Город</td>
+        <td>Район</td>
+        <td>Улица</td>
+        <td>Площадь мин/макс</td>
+        <td>Цена мин/макс</td>
+        <td></td>
+    </tr>
+    </thead>
+    <tbody>
+    {section name=i loop=$grid}
+    <tr>
+        <td>{$grid[i].data_get_rent_id}</td>
+        <td>{$grid[i].city_id.value_string}</td>
+        <td>{$grid[i].district_id.value_string}</td>
+        <td>{$grid[i].street_id.value_string}</td>
+        <td>{$grid[i].square_min}/{$grid[i].square_max}</td>
+        <td>{$grid[i].price_min}/{$grid[i].price_max}</td>
+        <td><a href="/rentlist/view/{$grid[i].data_get_rent_id}" class="btn btn-info"><i class="icon-white icon-eye-open"></i></a></td>
+    </tr>
+    {/section}
+    </tbody>
+</table>
+<div class="pagination" align="center">
+{$pager}
+</div-->
