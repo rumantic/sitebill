@@ -2457,6 +2457,7 @@ class SiteBill_Krascap extends SiteBill
 
             if (SITEBILL_MAIN_URL != '') {
                 $cmp_url = SITEBILL_MAIN_URL . '';
+                $url_info['path'] .= SITEBILL_MAIN_URL;
             } else {
                 $cmp_url = '';
             }
@@ -2465,6 +2466,7 @@ class SiteBill_Krascap extends SiteBill
                 $this->getRequestValue('city_id') == '' &&
                 $this->getRequestValue('topic_id') == '' and
                 (
+                    //
                     $url_info['path'] != $cmp_url and
                     $url_info['path'] != $cmp_url . 'index.php' and
                     $url_info['path'] != $cmp_url . 'search/' and

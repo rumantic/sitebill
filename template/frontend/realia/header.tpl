@@ -10,7 +10,7 @@
     {if isset($_socialtags)}{$_socialtags}{/if}
     {if isset($canonicalurl)}<link rel="canonical" href="{$canonicalurl}"/>{/if}
 
-    <link rel="stylesheet" href="/apps/admin/admin/template1/assets/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="{$estate_folder}/apps/admin/admin/template1/assets/css/font-awesome.min.css" />
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700,300&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
     <link rel="shortcut icon" href="{$theme_folder}/img/favicon.png" type="image/png">
     <link rel="stylesheet" href="{$theme_folder}/css/bootstrap.css" type="text/css">

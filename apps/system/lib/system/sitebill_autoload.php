@@ -4,6 +4,9 @@ spl_autoload_register(function ($className) {
     //@todo: Нужно четко определить как не использовать strtolower
     $className = str_replace("\\", DIRECTORY_SEPARATOR, $className);
     $document_root = $_SERVER['DOCUMENT_ROOT'];
+    if ( defined('SITEBILL_MAIN_URL') ) {
+        $document_root .= SITEBILL_MAIN_URL;
+    }
 
     $file_name = $document_root . '/apps/' . $className . '.php';
 

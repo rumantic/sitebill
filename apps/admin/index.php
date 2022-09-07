@@ -17,7 +17,7 @@ require_once('../system/bootstrap.php');
 
         <link rel="icon" type="image/x-icon" href="/favicon.ico">
         <link href="https://fonts.googleapis.com/css?family=Muli:300,400,600,700" rel="stylesheet">
-        <script type="text/javascript" src="/apps/system/js/jquery/jquery.js"></script>
+        <script type="text/javascript" src="<?=SITEBILL_MAIN_URL?>/apps/system/js/jquery/jquery.js"></script>
 
         <!-- FUSE Splash Screen CSS -->
         <style type="text/css">
