@@ -2,10 +2,12 @@
 <li><a href="{relativeurl path="account/profile"}" >{$L_MY_PROFILE}</a></li>
 <li><a href="{relativeurl path="account/data"}" >{$L_MY_ADVS}</a></li>
 
-{if {get_access_smarty user_id=$smarty.session.user_id model_name='agency' function_name='access'} eq 1}
+{if {getConfig key='apps.agency.enable'} eq 1 and
+    {get_access_smarty user_id=$smarty.session.user_id model_name='agency' function_name='access'} eq 1}
     <li><a href="{$estate_folder}/account/myagency/" >Филиалы</a></li>
 {/if}
-{if {get_access_smarty user_id=$smarty.session.user_id model_name='cowork_users' function_name='access'} eq 1}
+{if {getConfig key='apps.agency.enable'} eq 1 and
+    {get_access_smarty user_id=$smarty.session.user_id model_name='cowork_users' function_name='access'} eq 1}
     <li><a href="{$estate_folder}/account/coworker/" >Мои сотрудники</a></li>
 {/if}
 
