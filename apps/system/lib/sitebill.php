@@ -61,6 +61,14 @@ if (!defined('MEDIA_FOLDER')) {
     define('MEDIA_FOLDER', SITEBILL_DOCUMENT_ROOT . '/img/data');
 }
 
+if(!defined('STR_MEDIA')){
+    define('STR_MEDIA',true);
+}
+if(!defined('STR_MEDIA_FOLDERFDAYS')){
+    define('STR_MEDIA_FOLDERFDAYS', 1);
+}
+
+
 
 if (!defined('ESTATE_FOLDER')) {
     define('ESTATE_FOLDER', $folder);
