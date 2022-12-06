@@ -44,7 +44,7 @@
         "babel-polyfill": "^6.26.0",
         "date-fns": "^2.20.0",
         "fingerprintjs2": "^2.1.4",
-        "qs": "^6.10.1",
+        "qs": "^6.10.3",
         "ua-parser-js": "^0.7.27",
         "util": "^0.12.3",
         "vue-image-crop-upload": "^2.5.0",
