@@ -45,7 +45,7 @@
         "date-fns": "^2.20.0",
         "fingerprintjs2": "^2.1.4",
         "qs": "^6.10.1",
-        "ua-parser-js": "^0.7.27",
+        "ua-parser-js": "^0.7.33",
         "util": "^0.12.3",
         "vue-image-crop-upload": "^2.5.0",
         "vue-js-modal": "^2.0.0-rc.6",
