@@ -146,7 +146,14 @@ if (@$_POST['ready']) {
     $install_manager = new Install_Manager();
     //insert license key
     echo 'Установка начальных данных<br>';
-    $install_manager->install_default_data($folder);
+
+    if(!isset($_POST['db_testdata'])){
+        $installtestdata = 1;
+    }else{
+        $installtestdata = (int)$_POST['db_testdata'];
+    }
+
+    $install_manager->install_default_data($folder, $installtestdata);
 
 
 
@@ -297,6 +304,13 @@ if (@$_POST['ready']) {
 
     <div class="page-header" align="center"><h1>Все готово для установки<br/> Нажмите кнопку Установить</h1></div>
     <form method="post" class="form-horizontal" role="form">
+        <div class="form-group">
+            <label class="col-sm-3 control-label no-padding-right" for="form-field-1"> Установить тестовые данные</label>
+            <div class="col-sm-9">
+                <input type="hidden" name="db_testdata" value="0"" />
+                <input id="id-db_testdata" type="checkbox" name="db_testdata" value="1" checked="checked" class="ace" /><label class="lbl" for="id-db_testdata"></label>
+            </div>
+        </div>
 
         <div class="space-4"></div>
 
