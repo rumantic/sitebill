@@ -167,31 +167,6 @@ class Install_Manager
     function install_default_data($main_url = '')
     {
         $DBC = DBC::getInstance();
-        $query = "select count(id) as cid from " . DB_PREFIX . "_type";
-
-        $stmt = $DBC->query($query);
-        if ($stmt) {
-            $ar = $DBC->fetch($stmt);
-            if ($ar['cid'] == 0) {
-                $install_default = 1;
-                $query = "INSERT INTO `re_type` (`id`, `name`, `short_name1`) VALUES
-				(1, 'дом', '\$type_sh = ''дом'';'),
-				(2, 'квартира', '\$type_sh = $rc . ''-комн.'';'),
-				(3, 'комната', '\$type_sh = ''комната'';'),
-				(4, 'гостинка', '\$type_sh = ''гостинка'';'),
-				(5, 'секционка', '\$type_sh = ''секция'';'),
-				(8, 'гараж', '\$type_sh = ''гараж'';'),
-				(9, 'офис', '\$type_sh = ''офис'';'),
-				(10, 'торговая площадь', '\$type_sh = ''торг.пл.'';'),
-				(11, 'магазин', '\$type_sh = ''магазин'';'),
-				(12, 'коттедж', '\$type_sh = ''коттедж'';'),
-				(13, 'дача', '\$type_sh = ''дача'';'),
-				(14, 'земельный участок', '\$type_sh = ''зем.уч.'';'),
-				(15, 'землеотвод', '\$type_sh = ''землеотвод'';')";
-                $stmt = $DBC->query($query);
-            }
-        }
-
 
         $query = "select count(id) as cid from " . DB_PREFIX . "_topic";
         $stmt = $DBC->query($query);
