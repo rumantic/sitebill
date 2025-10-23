@@ -52,7 +52,7 @@
 
 ```bash
 # 1. Клонирование репозитория
-git clone https://github.com/rumantic/cms.git
+git clone https://github.com/rumantic/sitebill.git
 
 # 2. Настройка веб-сервера
 # Убедитесь, что корневая директория указывает на папку проекта
