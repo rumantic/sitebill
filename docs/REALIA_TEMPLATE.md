@@ -36,7 +36,7 @@
 1. **CKEditor** — Шаблон использует версию jQuery, несовместимую с CLEditor
    - В **Настройки → Общее → WYSIWYG-редактор** должен быть выбран **CKEditor**
    - Папка `ckeditor` должна находиться в корне сайта
-   - Скачать: http://ckeditor.com/download
+   - Скачать: https://ckeditor.com/download
 
 2. **Приложение "Клиент"** — версия 1.0.2 или выше
    - Должно быть установлено и активировано
@@ -1312,6 +1312,13 @@ function clearCompare() {
 {/if}
 ```
 
+> 🔒 **Примечание по безопасности:** При использовании внешних CDN рекомендуется добавлять атрибуты SRI (Subresource Integrity) для защиты от подмены скриптов. Пример:
+> ```html
+> <script src="https://cdn.example.com/script.js" 
+>         integrity="sha384-hash..." 
+>         crossorigin="anonymous"></script>
+> ```
+
 ---
 
 ## Устранение неполадок
@@ -1653,7 +1660,7 @@ git commit -m "Добавлен новый виджет в sidebar"
 
 - **Сайт Sitebill:** https://www.sitebill.ru/
 - **Форум поддержки:** https://www.sitebill.ru/forum/
-- **Email поддержки:** kondin@etown.ru
+- **Контакты:** https://www.sitebill.ru/ (форма обратной связи на сайте)
 
 ### Документация по технологиям
 
