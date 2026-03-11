@@ -340,15 +340,6 @@ CREATE TABLE IF NOT EXISTS `re_data_get_rent` (
   PRIMARY KEY (`data_get_rent_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-DROP TABLE IF EXISTS `re_data_image`;
-CREATE TABLE IF NOT EXISTS `re_data_image` (
-  `data_image_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `id` int(11) NOT NULL DEFAULT '0',
-  `image_id` int(11) NOT NULL DEFAULT '0',
-  `sort_order` int(11) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`data_image_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
 DROP TABLE IF EXISTS `re_data_note`;
 CREATE TABLE IF NOT EXISTS `re_data_note` (
   `data_note_id` int(11) NOT NULL AUTO_INCREMENT,
@@ -467,14 +458,6 @@ CREATE TABLE IF NOT EXISTS `re_land` (
   PRIMARY KEY (`land_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-DROP TABLE IF EXISTS `re_land_image`;
-CREATE TABLE IF NOT EXISTS `re_land_image` (
-  `land_image_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `land_id` int(11) NOT NULL DEFAULT '0',
-  `image_id` int(11) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`land_image_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
 DROP TABLE IF EXISTS `re_logger`;
 CREATE TABLE IF NOT EXISTS `re_logger` (
   `logger_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -572,15 +555,6 @@ CREATE TABLE IF NOT EXISTS `re_news` (
   PRIMARY KEY (`news_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-DROP TABLE IF EXISTS `re_news_image`;
-CREATE TABLE IF NOT EXISTS `re_news_image` (
-  `news_image_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `news_id` int(11) NOT NULL DEFAULT '0',
-  `image_id` int(11) NOT NULL DEFAULT '0',
-  `sort_order` int(11) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`news_image_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
 DROP TABLE IF EXISTS `re_news_topic`;
 CREATE TABLE IF NOT EXISTS `re_news_topic` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -597,13 +571,6 @@ CREATE TABLE IF NOT EXISTS `re_oauth` (
   `ip` varchar(255) NOT NULL,
   `date_login` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`oauth_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
-DROP TABLE IF EXISTS `re_operation_type`;
-CREATE TABLE IF NOT EXISTS `re_operation_type` (
-  `operation_type_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name` text,
-  PRIMARY KEY (`operation_type_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `re_page`;
@@ -750,23 +717,6 @@ CREATE TABLE IF NOT EXISTS `re_topic` (
   KEY `parent` (`parent_id`),
   KEY `erased` (`active`),
   KEY `name` (`name`(3))
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
-DROP TABLE IF EXISTS `re_topic_image`;
-CREATE TABLE IF NOT EXISTS `re_topic_image` (
-  `topic_image_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `id` int(11) NOT NULL DEFAULT '0',
-  `image_id` int(11) NOT NULL DEFAULT '0',
-  `sort_order` int(11) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`topic_image_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-
-DROP TABLE IF EXISTS `re_type`;
-CREATE TABLE IF NOT EXISTS `re_type` (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `name` text,
-  `short_name1` text,
-  PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `re_upload`;
