@@ -1,0 +1,17 @@
+{
+    "require": {
+        "phpoffice/phpspreadsheet": "^1.29",
+        "dompdf/dompdf": "^2.0",
+        "jenssegers/blade": "^2.0",
+        "illuminate/database": "^10.38",
+        "illuminate/routing": "^10.39",
+        "maximebf/debugbar": "^1.19",
+        "vonage/client": "^4.0",
+        "aws/aws-sdk-php": "^3.295",
+        "sabre/xml": "^4.0",
+        "php-amqplib/php-amqplib": "^3.6",
+        "algo26-matthias/idna-convert": "^4.0",
+        "irazasyed/telegram-bot-sdk": "^3.14",
+        "html2text/html2text": "^4.3"
+    }
+}

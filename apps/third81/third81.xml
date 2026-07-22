@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<install>
+    <name>third81</name>
+    <creationDate>January 2024</creationDate>
+    <author>The Sitebill Development Team</author>
+    <authorEmail>kondin@etown.ru</authorEmail>
+    <authorUrl>https://www.sitebill.ru</authorUrl>
+    <copyright>Copyright (C) 2012 Sitebill Team. All rights reserved.</copyright>
+    <license>https://www.sitebill.ru/licenses/sitebill.html</license>
+    <backendMenu>false</backendMenu>
+    <version status="beta">0.0.1</version>
+    <administration>
+        <!-- Administration Menu Section -->
+        <menu>Third-party libraries (PHP 8.1)</menu>
+    </administration>
+</install>
