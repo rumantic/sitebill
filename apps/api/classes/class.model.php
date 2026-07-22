@@ -172,7 +172,8 @@ class API_model extends API_Common {
         if ($model_object) {
             if ( !empty($entity_uri) ) {
                 if ( $model_object->table_name == 'lang_words' ) {
-                    $key_value = $model_object->get_id_by_filter('word_key', $entity_uri, array('lang_key' => 'ru'));
+                    $lang_key = $this->getConfigValue('apps.language.default_lang_code') != '' ? $this->getConfigValue('apps.language.default_lang_code') : 'ru';
+                    $key_value = $model_object->get_id_by_filter('word_key', $entity_uri, array('lang_key' => $lang_key));
                 } else {
                     $key_value = $model_object->get_id_by_filter('uri', $entity_uri);
                 }
@@ -313,7 +314,21 @@ class API_model extends API_Common {
         if ($this->request->get('model_name') == 'user') {
             $images = $model_object->appendUploadsUser($this->request->get('model_name'), $this->request->get('primary_key'), $this->request->get('key_value'));
         } else {
-            $images = $model_object->appendUploads($this->request->get('model_name'), $model_object->data_model[$this->request->get('model_name')][$this->request->get('image_field')], $this->request->get('primary_key'), $this->request->get('key_value'));
+            if ( $model_object->data_model[$this->request->get('model_name')][$this->request->get('image_field')]['type'] == 'docuploads' ) {
+                $images = $model_object->appendDocUploads(
+                    $this->request->get('model_name'),
+                    $model_object->data_model[$this->request->get('model_name')][$this->request->get('image_field')],
+                    $this->request->get('primary_key'),
+                    $this->request->get('key_value')
+                );
+            } else {
+                $images = $model_object->appendUploads(
+                    $this->request->get('model_name'),
+                    $model_object->data_model[$this->request->get('model_name')][$this->request->get('image_field')],
+                    $this->request->get('primary_key'),
+                    $this->request->get('key_value')
+                );
+            }
         }
 
         if ($images) {
@@ -324,6 +339,38 @@ class API_model extends API_Common {
             return $this->json_string($ret);
         }
         return $this->request_failed('uppend_uploads failed '.$model_object->getError());
+    }
+
+    public function _delete_all() {
+        $model_name = $this->request->get('model_name');
+        $primary_key = $this->request->get('primary_key');
+
+        $data = json_decode($this->_get_data(), true);
+        if ( isset($data) and isset($data['rows_index']) ) {
+            $model_object = $this->init_custom_model_object($model_name);
+
+            foreach ( $data['rows_index'] as $item_id => $index ) {
+                if (!$model_object->delete_data($model_name, $primary_key, $item_id)) {
+                    $errors[] = $model_object->GetErrorMessage();
+                }
+            }
+            if ( $errors ) {
+                $response = new API_Response('error', implode($errors), $errors);
+            } else {
+
+                $remains = $data['total_count'] - count($data['rows_index']);
+                if ( $remains <= 0 ) {
+                    $remains = 0;
+                }
+
+                $response = new API_Response('success', 'delete_complete', [
+                    'deleted_ids' => $data['rows_index'],
+                    'deleted_count' => count($data['rows_index']),
+                    'records_remains' => $remains,
+                ]);
+            }
+        }
+        return $this->json_string($response->get());
     }
 
     public function _delete() {
@@ -631,9 +678,9 @@ class API_model extends API_Common {
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/register_using_model.php');
             $Register = new Register_Using_Model();
             $allowed_group_array = $Register->newuser_registration_shared_groupid_array();
-            echo '<pre>';
+/*            echo '<pre>';
             print_r($allowed_group_array);
-            echo '</pre>';
+            echo '</pre>';*/
             if ( $allowed_group_array ) {
                 foreach ( $dictionary_array as $idx => $item ) {
                     if ( in_array($item['id'], $allowed_group_array) ) {
@@ -829,6 +876,9 @@ class API_model extends API_Common {
                 }
 
             }
+            if ( $key == 'user_id' and $value == '$owner' ) {
+                $value = $this->get_my_user_id();
+            }
             $_REQUEST[$key] = $value;
             $_POST[$key] = $value;
             $this->setRequestValue($key, $value);
@@ -841,8 +891,10 @@ class API_model extends API_Common {
         $ql_items = $this->request->get('ql_items');
         $only_ql = $this->request->get('only_ql');
         $user_id = $this->get_my_user_id();
-        //$this->writeArrayLog($ql_items);
+        return $this->_native_update_with_params($model_name, $key_value, $ql_items, $only_ql, $user_id);
+    }
 
+    public function _native_update_with_params($model_name, $key_value, $ql_items, $only_ql, $user_id) {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
 
@@ -879,6 +931,8 @@ class API_model extends API_Common {
         }
         return $this->json_string($response->get());
     }
+
+
     public function _native_insert_with_params($model_name, $key_value, $ql_items, $only_ql, $user_id) {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
@@ -921,6 +975,37 @@ class API_model extends API_Common {
         $user_id = $this->get_my_user_id();
         return $this->_native_insert_with_params($model_name, $key_value, $ql_items, $only_ql, $user_id);
     }
+
+    public function _native_upsert() {
+        $model_name = $this->request->get('model_name');
+        $key_value = $this->request->get('key_value');
+        $ql_items = $this->request->get('ql_items');
+        $upsert_key = $this->request->get('upsert_key');
+        $only_ql = $this->request->get('only_ql');
+        $user_id = $this->get_my_user_id();
+        $record_id = false;
+
+        if ( isset($upsert_key) ) {
+            $model_object = $this->init_custom_model_object($model_name);
+            if (count($upsert_key) > 0) {
+                foreach ($upsert_key as $key => $value) {
+                    if ( $key == 'user_id' and $value == '$owner' ) {
+                        $upsert_key[$key] = $this->get_my_user_id();
+                    }
+                }
+            }
+            $record_id = $model_object->get_data_model_object()->get_key_value_by_filters($model_name, $model_object->primary_key, $upsert_key);
+            $this->writeLog('upsert id = '.$record_id);
+        }
+
+        if ( $record_id ) {
+            return $this->_native_update_with_params($model_name, $record_id, $ql_items, $only_ql, $user_id);
+        } else {
+            return $this->_native_insert_with_params($model_name, $key_value, $ql_items, $only_ql, $user_id);
+        }
+
+    }
+
 
     /**
      * Универсальный метод для редактирования любой сущности. В аргументах передаем массив редактируемых значений
@@ -1040,11 +1125,6 @@ class API_model extends API_Common {
             if ($model_object->getError()) {
                 $response = new API_Response('error', $model_object->GetErrorMessage());
             } else {
-                if ($this->getConfigValue('apps.realtylog.enable')) {
-                    require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylog/admin/admin.php';
-                    $Logger = new realtylog_admin();
-                    $Logger->addLog($model_data[$primary_key]['value'], $user_id, 'edit', 'data');
-                }
                 if ($this->getConfigValue('apps.realtylogv2.enable')) {
                     require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylogv2/admin/admin.php';
                     $Logger = new realtylogv2_admin();
@@ -1580,7 +1660,11 @@ class API_model extends API_Common {
             } else {
                 $params['grid_conditions'][$key] = $value;
             }
+            if ( $key == 'user_id' and $value == '$owner' ) {
+                $params['grid_conditions'][$key] = $this->get_my_user_id();
+            }
         }
+
         return $params;
     }
 

@@ -6,7 +6,8 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * Sitemap admin backend
  * @author Abushyk Kostyantyn <abushyk@gmail.com> http://www.sitebill.ru
  */
-class sitemap_admin extends Object_Manager {
+class sitemap_admin extends Object_Manager
+{
 
     private $urls = array();
     private $site_link;
@@ -19,15 +20,18 @@ class sitemap_admin extends Object_Manager {
      * Will exist only for new System ver. 3.0.42
      */
 
-    public function _getServerFullUrl($domain_only = false) {
-        return (1 === (int) $this->getConfigValue('work_on_https') ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . (!$domain_only ? SITEBILL_MAIN_URL : '');
+    public function _getServerFullUrl($domain_only = false)
+    {
+        return (1 === (int)$this->getConfigValue('work_on_https') ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . (!$domain_only ? SITEBILL_MAIN_URL : '');
     }
 
     //private $action='sitemap';
+
     /**
      * Constructor
      */
-    function __construct($realty_type = false) {
+    function __construct($realty_type = false)
+    {
         parent::__construct();
         Multilanguage::appendAppDictionary('sitemap');
         $this->checkConfiguration();
@@ -63,25 +67,26 @@ class sitemap_admin extends Object_Manager {
 
         $this->priority['company_topic'] = str_replace(',', '.', $this->getConfigValue('apps.sitemap.priority.company_topic'));
 
-        $this->changefreq['news'] = $changefreq_values[((int) $this->getConfigValue('apps.sitemap.changefreq.news') < 7 ? (int) $this->getConfigValue('apps.sitemap.changefreq.news') : '6')][0];
-        $this->changefreq['topic'] = $changefreq_values[((int) $this->getConfigValue('apps.sitemap.changefreq.topic') < 7 ? (int) $this->getConfigValue('apps.sitemap.changefreq.topic') : '6')][0];
-        $this->changefreq['country'] = $changefreq_values[((int) $this->getConfigValue('apps.sitemap.changefreq.country') < 7 ? (int) $this->getConfigValue('apps.sitemap.changefreq.country') : '6')][0];
-        $this->changefreq['city'] = $changefreq_values[((int) $this->getConfigValue('apps.sitemap.changefreq.city') < 7 ? (int) $this->getConfigValue('apps.sitemap.changefreq.city') : '6')][0];
-        $this->changefreq['page'] = $changefreq_values[((int) $this->getConfigValue('apps.sitemap.changefreq.page') < 7 ? (int) $this->getConfigValue('apps.sitemap.changefreq.page') : '6')][0];
-        $this->changefreq['menu'] = $changefreq_values[((int) $this->getConfigValue('apps.sitemap.changefreq.menu') < 7 ? (int) $this->getConfigValue('apps.sitemap.changefreq.menu') : '6')][0];
+        $this->changefreq['news'] = $changefreq_values[((int)$this->getConfigValue('apps.sitemap.changefreq.news') < 7 ? (int)$this->getConfigValue('apps.sitemap.changefreq.news') : '6')][0];
+        $this->changefreq['topic'] = $changefreq_values[((int)$this->getConfigValue('apps.sitemap.changefreq.topic') < 7 ? (int)$this->getConfigValue('apps.sitemap.changefreq.topic') : '6')][0];
+        $this->changefreq['country'] = $changefreq_values[((int)$this->getConfigValue('apps.sitemap.changefreq.country') < 7 ? (int)$this->getConfigValue('apps.sitemap.changefreq.country') : '6')][0];
+        $this->changefreq['city'] = $changefreq_values[((int)$this->getConfigValue('apps.sitemap.changefreq.city') < 7 ? (int)$this->getConfigValue('apps.sitemap.changefreq.city') : '6')][0];
+        $this->changefreq['page'] = $changefreq_values[((int)$this->getConfigValue('apps.sitemap.changefreq.page') < 7 ? (int)$this->getConfigValue('apps.sitemap.changefreq.page') : '6')][0];
+        $this->changefreq['menu'] = $changefreq_values[((int)$this->getConfigValue('apps.sitemap.changefreq.menu') < 7 ? (int)$this->getConfigValue('apps.sitemap.changefreq.menu') : '6')][0];
 
-        $this->changefreq['data'] = $changefreq_values[((int) $this->getConfigValue('apps.sitemap.changefreq.data') < 7 ? (int) $this->getConfigValue('apps.sitemap.changefreq.data') : '6')][0];
+        $this->changefreq['data'] = $changefreq_values[((int)$this->getConfigValue('apps.sitemap.changefreq.data') < 7 ? (int)$this->getConfigValue('apps.sitemap.changefreq.data') : '6')][0];
 
-        $this->changefreq['company'] = $changefreq_values[((int) $this->getConfigValue('apps.sitemap.changefreq.company') < 7 ? (int) $this->getConfigValue('apps.sitemap.changefreq.company') : '6')][0];
+        $this->changefreq['company'] = $changefreq_values[((int)$this->getConfigValue('apps.sitemap.changefreq.company') < 7 ? (int)$this->getConfigValue('apps.sitemap.changefreq.company') : '6')][0];
 
-        $this->changefreq['company_topic'] = $changefreq_values[((int) $this->getConfigValue('apps.sitemap.changefreq.company_topic') < 7 ? (int) $this->getConfigValue('apps.sitemap.changefreq.company_topic') : '6')][0];
+        $this->changefreq['company_topic'] = $changefreq_values[((int)$this->getConfigValue('apps.sitemap.changefreq.company_topic') < 7 ? (int)$this->getConfigValue('apps.sitemap.changefreq.company_topic') : '6')][0];
 
 
         //print_r($this->priority);
         //print_r($this->changefreq);
     }
 
-    function main() {
+    function main()
+    {
         $rs = $this->getTopMenu();
         return $rs;
     }
@@ -90,7 +95,8 @@ class sitemap_admin extends Object_Manager {
      * Build sitemap index file
      */
 
-    protected function createSitemapIndexFile($file_name, $urls) {
+    protected function createSitemapIndexFile($file_name, $urls)
+    {
         $output_file = $file_name;
         $ret = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         $ret .= '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
@@ -117,7 +123,8 @@ class sitemap_admin extends Object_Manager {
         chmod($output_file, 0755);
     }
 
-    protected function createSitemapFile($file_name, $urls) {
+    protected function createSitemapFile($file_name, $urls)
+    {
         $output_file = $file_name;
         $ret = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
         $ret .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
@@ -150,7 +157,6 @@ class sitemap_admin extends Object_Manager {
                 }
 
 
-
                 /* if(preg_match('/^http:/', $u['url'])){
                   if(parse_url($u['url'] ,PHP_URL_HOST)==$domain){
                   $ret.='<loc>'.$u['url'].'</loc>'."\n";
@@ -180,13 +186,14 @@ class sitemap_admin extends Object_Manager {
         chmod($output_file, 0755);
     }
 
-    protected function buildSitemap() {
+    protected function buildSitemap()
+    {
         //Блокируем с помощью лок-файла обращение к сайтмапу, пока он не будет сгенерирован
         $this->create_lock_file();
         $max_count = 10000;
         $urls = $this->getSitemapItems();
         $sitemap_prefix = md5($_SERVER['HTTP_HOST']) . '.';
-        if (1 === intval($this->getConfigValue('apps.language.use_langs'))){
+        if (1 === intval($this->getConfigValue('apps.language.use_langs'))) {
             $sitemap_prefix .= $this->getCurrentLang() . '.';
         }
         $output_file = SITEBILL_DOCUMENT_ROOT . '/cache/' . $sitemap_prefix . 'sitemap.xml';
@@ -214,30 +221,31 @@ class sitemap_admin extends Object_Manager {
         $this->remove_lock_file();
     }
 
-    protected function getSitemapItemsHTML() {
+    protected function getSitemapItemsHTML()
+    {
 
         $apps_urls = array();
         if (is_dir(SITEBILL_DOCUMENT_ROOT . '/apps')) {
             if ($dh = opendir(SITEBILL_DOCUMENT_ROOT . '/apps')) {
                 while (($app_dir = readdir($dh)) !== false) {
-                    if (is_dir(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
+                    if (is_dir(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir) and !preg_match('/\./', $app_dir)) {
                         if (is_file(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php')) {
 
                             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/admin/admin.php')) {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/admin/admin.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/admin/admin.php');
                             } else {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/admin/admin.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/admin/admin.php');
                             }
 
                             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/local_site.php')) {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php');
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/local_site.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/local_site.php');
                                 $app_class_name = 'local_' . $app_dir . '_site';
                             } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/site.php')) {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/site.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/site.php');
                                 $app_class_name = $app_dir . '_site';
                             } else {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php');
                                 $app_class_name = $app_dir . '_site';
                             }
 
@@ -259,7 +267,8 @@ class sitemap_admin extends Object_Manager {
         return $apps_urls;
     }
 
-    protected function getSitemapItems() {
+    protected function getSitemapItems()
+    {
 
         $urls = array();
         $DBC = DBC::getInstance();
@@ -279,12 +288,10 @@ class sitemap_admin extends Object_Manager {
                 $stmt = $DBC->query($query, array($host));
                 if ($stmt) {
                     $ar = $DBC->fetch($stmt);
-                    $region_id = (int) $ar['region_id'];
+                    $region_id = (int)$ar['region_id'];
                 }
             }
         }
-
-
 
 
         /*
@@ -372,7 +379,6 @@ class sitemap_admin extends Object_Manager {
         }
 
 
-
         /*
          * Prepare Data urls
          */
@@ -431,7 +437,6 @@ class sitemap_admin extends Object_Manager {
               } */
 
 
-
             $ret = array();
             if ($region_id != 0) {
                 $query = 'SELECT company_id, company_topic_id, alias FROM ' . DB_PREFIX . '_company WHERE region_id=' . $region_id . ' ORDER BY company_id';
@@ -480,27 +485,27 @@ class sitemap_admin extends Object_Manager {
             if ($dh = opendir(SITEBILL_DOCUMENT_ROOT . '/apps')) {
                 while (($app_dir = readdir($dh)) !== false) {
                     //echo '$app_dir = '.$app_dir.'<br>';
-                    if (is_dir(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
+                    if (is_dir(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir) and !preg_match('/\./', $app_dir)) {
                         if (is_file(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php')) {
-                            if ( $app_dir === 'fasteditor' ) {
+                            if ($app_dir === 'fasteditor') {
                                 continue;
                             }
 
                             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/admin/admin.php')) {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/admin/admin.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/admin/admin.php');
                             } else {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/admin/admin.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/admin/admin.php');
                             }
 
                             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/local_site.php')) {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php');
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/local_site.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/local_site.php');
                                 $app_class_name = 'local_' . $app_dir . '_site';
                             } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/site.php')) {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/site.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/site.php');
                                 $app_class_name = $app_dir . '_site';
                             } else {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php');
                                 $app_class_name = $app_dir . '_site';
                             }
 
@@ -527,14 +532,28 @@ class sitemap_admin extends Object_Manager {
                 }
             }
         }
+
+        $urls = array_merge($urls, $this->getCustomSitemapItems($this->getCurrentLang()));
+
         return $urls;
     }
 
-    public function validatePriority($priority) {
+    /**
+     * Return custom urls for sitemap
+     * @param string $lang
+     * @return array
+     */
+    protected function getCustomSitemapItems($lang){
+        return [];
+    }
+
+    public function validatePriority($priority)
+    {
         return str_replace(',', '.', $priority);
     }
 
-    public function validateFrequency($frequency) {
+    public function validateFrequency($frequency)
+    {
 
         $changefreq_values = array(
             '1' => 'always',
@@ -558,7 +577,8 @@ class sitemap_admin extends Object_Manager {
         return 'never';
     }
 
-    private function generateSitemap() {
+    private function generateSitemap()
+    {
         $DBC = DBC::getInstance();
 
         $region_id = 0;
@@ -575,27 +595,21 @@ class sitemap_admin extends Object_Manager {
             }
 
 
-
             if ($region_alias != '') {
                 $DBC = DBC::getInstance();
                 $query = 'SELECT region_id FROM ' . DB_PREFIX . '_region WHERE domain=? LIMIT 1';
                 $stmt = $DBC->query($query, array($host));
                 if ($stmt) {
                     $ar = $DBC->fetch($stmt);
-                    $region_id = (int) $ar['region_id'];
+                    $region_id = (int)$ar['region_id'];
                 }
             }
         }
 
 
-
-
-
-
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/news/admin/admin.php') && 1 == $this->getConfigValue('apps.news.enable')) {
             $this->urls[] = array('url' => 'news/', 'changefreq' => $this->changefreq['news'], 'priority' => $this->priority['news']);
         }
-
 
 
         $level_enable = $this->getConfigValue('apps.seo.level_enable');
@@ -677,8 +691,6 @@ class sitemap_admin extends Object_Manager {
         if (1 == $this->getConfigValue('apps.sitemap.data_enable')) {
 
 
-
-
             $data = array();
             if ($region_id != 0) {
                 $query = 'SELECT `id`, `topic_id`' . (1 == $data_alias_enable ? ', `translit_alias`' : '') . ' FROM ' . DB_PREFIX . '_data WHERE `active`=1 AND `region_id`=' . $region_id . ' ORDER BY `id`';
@@ -738,7 +750,6 @@ class sitemap_admin extends Object_Manager {
             }
 
 
-
             $ret = array();
             if ($region_id != 0) {
                 $query = 'SELECT company_id, company_topic_id, alias FROM ' . DB_PREFIX . '_company WHERE region_id=' . $region_id . ' ORDER BY company_id';
@@ -784,24 +795,24 @@ class sitemap_admin extends Object_Manager {
             if ($dh = opendir(SITEBILL_DOCUMENT_ROOT . '/apps')) {
                 while (($app_dir = readdir($dh)) !== false) {
                     //echo '$app_dir = '.$app_dir.'<br>';
-                    if (is_dir(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir) and ! preg_match('/\./', $app_dir)) {
+                    if (is_dir(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir) and !preg_match('/\./', $app_dir)) {
                         if (is_file(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php')) {
 
                             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/admin/admin.php')) {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/admin/admin.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/admin/admin.php');
                             } else {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/admin/admin.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/admin/admin.php');
                             }
 
                             if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/local_site.php')) {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php');
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/local_site.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/local_site.php');
                                 $app_class_name = 'local_' . $app_dir . '_site';
                             } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/site.php')) {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/site.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/' . $app_dir . '/site/site.php');
                                 $app_class_name = $app_dir . '_site';
                             } else {
-                                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php');
+                                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_dir . '/site/site.php');
                                 $app_class_name = $app_dir . '_site';
                             }
 
@@ -855,16 +866,21 @@ class sitemap_admin extends Object_Manager {
         chmod($this->output_file, 0755);
     }
 
-    function getTopMenu() {
+    function getTopMenu()
+    {
         $rs = '';
         $rs .= '/sitemap.xml генерируется автоматически при обращении к адресу ' . SITEBILL_MAIN_URL . '/sitemap.xml Необходимо чтобы физически файла в корне sitemap.xml не было.';
         return $rs;
     }
 
-    private function checkConfiguration() {
+    private function checkConfiguration()
+    {
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php';
         $CF = new config_admin();
         if ($CF) {
+
+            $CF->addParamToConfig('apps.sitemap.enable', '1', 'Выводить города в sitemap', SConfig::$fieldtypeCheckbox);
+
             if (!$CF->check_config_item('apps.sitemap.priority.news')) {
                 $CF->addParamToConfig('apps.sitemap.priority.news', '0.5', 'Приоритетность URL <b>раздела новостей</b> относительно других URL на Вашем сайте. Диапазон от 0.0 до 1.0');
             }
@@ -965,32 +981,37 @@ class sitemap_admin extends Object_Manager {
         unset($CF);
     }
 
-    function get_lock_filename () {
+    function get_lock_filename()
+    {
         return SITEBILL_DOCUMENT_ROOT . '/cache/sitemap_lock';
     }
 
-    function is_locked () {
-        if ( !$this->getConfigValue('apps.sitemap.use_lock_file') ) {
+    function is_locked()
+    {
+        if (!$this->getConfigValue('apps.sitemap.use_lock_file')) {
             return false;
         }
-        if ( file_exists($this->get_lock_filename()) ) {
+        if (file_exists($this->get_lock_filename())) {
             return true;
         }
         return false;
     }
 
-    function create_lock_file () {
-        if ( !$this->getConfigValue('apps.sitemap.use_lock_file') ) {
+    function create_lock_file()
+    {
+        if (!$this->getConfigValue('apps.sitemap.use_lock_file')) {
             return false;
         }
-        if ( !$this->is_locked() ) {
-            file_put_contents($this->get_lock_filename(), date());
+        if (!$this->is_locked()) {
+            file_put_contents($this->get_lock_filename(), date("Y-m-d"));
             return true;
         }
         return false;
     }
-    function remove_lock_file () {
-        if ( $this->is_locked() ) {
+
+    function remove_lock_file()
+    {
+        if ($this->is_locked()) {
             unlink($this->get_lock_filename());
             return true;
         }

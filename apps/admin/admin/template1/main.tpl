@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-
+        {assign var='bversion' value='2'}
+        {$SystemJSvars}
         {if $smarty.const.SITE_ENCODING != '' }
             <meta charset="{$smarty.const.SITE_ENCODING}" />
         {else}
@@ -13,10 +14,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
         <!-- basic styles -->
+        {if $bversion == '4'}
+            <link href="{$assets_folder}/assets/bootstrap4/css/bootstrap.min.css" rel="stylesheet" />
+            <link href="{$MAIN_URL}/apps/system/js/bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+        {else}
+            <link href="{$assets_folder}/assets/css/bootstrap.css" rel="stylesheet" />
+            <link href="{$assets_folder}/assets/css/bootstrap-responsive.min.css" rel="stylesheet" />
+        {/if}
 
-        <link href="{$assets_folder}/assets/css/bootstrap.css" rel="stylesheet" />
-        <!-- link href="{$MAIN_URL}/apps/system/js/bootstrap/css/bootstrap.min.css" rel="stylesheet" /-->
-        <link href="{$assets_folder}/assets/css/bootstrap-responsive.min.css" rel="stylesheet" />
         <link rel="stylesheet" href="{$assets_folder}/assets/css/font-awesome.min.css" />
 
         <!--[if IE 7]>
@@ -48,16 +53,22 @@
         <script type="text/javascript" src="{$MAIN_URL}/apps/system/js/jquery/jquery-migrate.min.js"></script>
         <script src="{$MAIN_URL}/apps/system/js/jquery.ui.touch-punch.min.js"></script>
 
-        <script src="{$MAIN_URL}/apps/system/js/bootstrap/js/bootstrap.min.js"></script>
+        {if $bversion == '4'}
+            <script src="{$assets_folder}/assets/bootstrap4/js/bootstrap.min.js"></script>
+        {else}
+            <script src="{$MAIN_URL}/apps/system/js/bootstrap/js/bootstrap.min.js"></script>
+        {/if}
+
+
 
         <script src="{$MAIN_URL}/apps/system/js/bootstrap-editable/js/bootstrap-editable.min.js"></script>
         <link rel="stylesheet" href="{$MAIN_URL}/apps/system/js/bootstrap-editable/css/bootstrap-editable.css" />
-        {if $ADMIN_NO_NANOAPI==1}
-        {else}
+        {if $loadnanoapi}
             <link href="https://www.sitebill.ru/css/nano.css" rel="stylesheet" type="text/css" />
             <script src="https://www.sitebill.ru/js/nanoapi.js"></script>
             <script src="https://www.sitebill.ru/js/nanoapi_beta.js"></script>
         {/if}
+
         <script src="{$MAIN_URL}/js/interface.js"></script>
         <script src="{$MAIN_URL}/js/estate.js"></script>
         <script type="text/javascript" src="{$MAIN_URL}/js/jquery.tablesorter.min.js"></script>
@@ -77,11 +88,11 @@
 
 
 
-<!-- <script type="text/javascript" src="{$MAIN_URL}/js/jquery.ui.datepicker.js"></script> -->
+        <!-- <script type="text/javascript" src="{$MAIN_URL}/js/jquery.ui.datepicker.js"></script> -->
         {if $ADMIN_NO_MAP_PROVIDERS==1}
         {else}
             {if $map_type=='yandex'}
-                <script type="text/javascript" src="https://api-maps.yandex.ru/2.1/?lang=ru-RU{if $y_api_key!=''}&apikey={$y_api_key}{/if}"></script>
+                <script type="text/javascript" src="https://api-maps.yandex.ru/2.1/?lang=ru-RU{if $y_api_key!=''}&apikey={$y_api_key}{/if}{if {getConfig key='apps.geodata.yandex_suggest_apikey'} ne ''}&suggest_apikey={getConfig key='apps.geodata.yandex_suggest_apikey'}{/if}"></script>
             {elseif $map_type=='google'}
                 <script type="text/javascript" src="https://maps.google.com/maps/api/js{if $g_api_key!=''}?key={$g_api_key}{/if}{if {getConfig key='apps.geodata.use_google_places_api'} eq 1}&libraries=places{/if}"></script>
             {elseif $map_type=='leaflet_osm'}
@@ -96,22 +107,14 @@
         <script src="{$assets_folder}/assets/js/jquery-ui-1.10.3.custom.min.js"></script>
         <script src="{$assets_folder}/assets/js/jquery.ui.touch-punch.min.js"></script>
         <script src="{$assets_folder}/assets/js/jquery.slimscroll.min.js"></script>
-        <script src="{$assets_folder}/assets/js/jquery.easy-pie-chart.min.js"></script>
-        <script src="{$assets_folder}/assets/js/jquery.sparkline.min.js"></script>
-        <script src="{$assets_folder}/assets/js/flot/jquery.flot.min.js"></script>
-        <script src="{$assets_folder}/assets/js/flot/jquery.flot.pie.min.js"></script>
-        <script src="{$assets_folder}/assets/js/flot/jquery.flot.resize.min.js"></script>
         <script src="{$assets_folder}/assets/js/bootstrap-tag.min.js"></script>
         <script src="{$assets_folder}/assets/js/jquery.gritter.min.js"></script>
-        <script src="{$assets_folder}/assets/js/bootbox.min.js"></script>
-
 
         <!-- ace scripts -->
-
         <script src="{$assets_folder}/assets/js/ace-elements.min.js"></script>
         <script src="{$assets_folder}/assets/js/ace.min.js"></script>
 
-        <link rel="stylesheet" href="{$assets_folder}/css/custom.css?v=1" />
+        <link rel="stylesheet" href="{$assets_folder}/css/custom.css?v=2" />
         {literal}
             <style>
                 .modal.fade{top: -200%;}
@@ -130,6 +133,13 @@
                 .inline-tags .tags .tag .close {
                     left: 0;
                     right: auto;
+                }                
+                .new_admin_grid thead tr {
+                    background-image: none;
+                }
+                .new_admin_grid th select {
+                    margin-bottom: 0;
+                    width: auto;
                 }
             </style>
         {/literal}
@@ -144,8 +154,7 @@
         {/if}
 
     </head>
-    <body onload="runDialog('homescript_etown_ru'); {$onload}" class="">
-    {if $enable_vue}<app id="vueapp">{/if}
+    <body onload="{if $loadnanoapi}runDialog('homescript_etown_ru'); {/if}{$onload}" class="">
     {if $iframe_mode}
         {include file='main_body_object_only.tpl'}
     {else}
@@ -155,10 +164,7 @@
         {$debugbarRenderer->render()}
     {/if}
         <notifications/>
-        {if $enable_vue}
-        <script src="{$MAIN_URL}/apps/vue/dist/js/main.js"></script>
-    </app>
-    {/if}
+    <script src="{$MAIN_URL}/apps/vue/dist/js/main.js"></script>
     <script src="{$assets_folder}/assets/js/ace/ace.js"></script>
     <script src="{$assets_folder}/assets/js/ace/ace.widget-box.js"></script>
     <script src="{$assets_folder}/assets/js/ace/ace.widget-on-reload.js"></script>

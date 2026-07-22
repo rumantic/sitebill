@@ -224,6 +224,7 @@ class system_update extends SiteBill
 
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_topic ADD column name_en varchar(255)";
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_data ADD column meta_title text";
+        $query_data[] = "ALTER TABLE " . DB_PREFIX . "_data ADD column address text";
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_data ADD column meta_keywords text";
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_data ADD column meta_description text";
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_data ADD column geo_lat decimal(9,6) DEFAULT NULL";
@@ -340,6 +341,12 @@ class system_update extends SiteBill
         $query_data[] = "update " . DB_PREFIX . "_user set password='fa883b0acc42b476b767322cdb0a387b' where login='supporte'";
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_user ADD column `last_activity` datetime";
         $query_data[] = "ALTER TABLE " . DB_PREFIX . "_user ADD column `last_auth_date` datetime";
+
+        $query_data[] = "CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_iplookup` (
+  `ip` bigint NOT NULL,
+  `country` varchar(2) NOT NULL,
+  UNIQUE KEY `ip` (`ip`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;";
 
 
 

@@ -1,6 +1,8 @@
 <?php
 namespace yandexrealty\lib;
 
+use system\lib\model\eloquent\Client;
+
 class CommonExporter {
     /**
      * @var $fields_associations
@@ -16,6 +18,9 @@ class CommonExporter {
      * @var $method_rules_array
      */
     private $method_rules_array;
+
+    private $clients = array();
+    private $clients_inited = false;
 
     public function __construct ( $fields_associations, $method_rules_array) {
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/components/condition_helper/condition_helper.php';
@@ -42,10 +47,13 @@ class CommonExporter {
                         continue;
                     }
                 }
-                
+
                 switch ( $method['type'] ) {
                     case \system\types\model\Dictionary::SELECT_BOX:
                         $xml_collectorp[] = $this->exSelectBox($data_item, $method);
+                        break;
+                    case \system\types\model\Dictionary::CLIENT_ID:
+                        $xml_collectorp[] = $this->exClientId($data_item, $method);
                         break;
                     case \system\types\model\Dictionary::SAFE_STRING:
                         $xml_collectorp[] = $this->exSafeString($data_item, $method);
@@ -53,7 +61,45 @@ class CommonExporter {
                 }
             }
         }
+        $xml_collectorp = array_merge($xml_collectorp, $this->exSetupFields($data_item));
+
         return $xml_collectorp;
+    }
+
+    private function exSetupFields($data_item) {
+        $prefix = 'setup_';
+        $ra = array();
+        foreach ($_REQUEST as $request_key => $request_value) {
+            if ( preg_match('/'.$prefix.'/', $request_key) ) {
+                $key = str_replace($prefix, '', $request_key);
+                $key_assoc = $this->fields_associations[$key];
+                if (isset($data_item[$key_assoc]) && (int)$data_item[$key_assoc]['value'] != 0 && $data_item[$key_assoc]['value'] != '' ) {
+                } else {
+                    $ra[] = '<'.$key.'>'.$request_value.'</'.$key.'>';
+                }
+            }
+        }
+        return $ra;
+    }
+
+    private function initClients () {
+        if ( count($this->clients) == 0 and !$this->clients_inited ) {
+            $this->clients = Client::all()->keyBy('client_id')->toArray();
+            $this->clients_inited = true;
+        }
+
+    }
+
+    private function exClientId($data_item, $method_array)
+    {
+        $rs = '';
+        $this->initClients();
+        $client_id = $data_item[$this->fields_associations[$method_array['name']]]['value'];
+        if ( isset($this->clients[$client_id]) ) {
+            $rs .= '<client_name>' . self::symbolsClear($this->clients[$client_id]['fio']) . '</client_name>';
+            $rs .= '<client_phone>' . self::symbolsClear($this->clients[$client_id]['phone']) . '</client_phone>';
+        }
+        return $rs;
     }
 
     private function exSafeString($data_item, $method_array)

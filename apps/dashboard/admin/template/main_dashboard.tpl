@@ -5,7 +5,7 @@
     var estate_folder = '{$estate_folder}';
 </script>
 <script type="text/javascript" src="{$estate_folder}/apps/system/js/jquery/jquery.js"></script>
-<script type="text/javascript" src="{$estate_folder}/apps/dashboard/js/dashboard.js"></script>
+<script type="text/javascript" src="{$estate_folder}/apps/dashboard/js/dashboard.js?v=7"></script>
 <script type="text/javascript" src="{$estate_folder}/apps/dashboard/js/editor.js"></script>
 <link rel="stylesheet" href="{$estate_folder}/apps/dashboard/css/style.css" type="text/css">
 
@@ -16,12 +16,23 @@
                 <p></p>
             </div>
         </div>
+        {foreach $allowed_config_items as $item}
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-inline">
+                        <div class="form-group mb-2">
+                            <label>{$item['title']}</label>
+                        </div>
+                        <div class="form-group mx-sm-3 mb-2">
+                            {$item['html']}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {/foreach}
 
         <div class="row">
             <div class="col-md-6">
-
-
-
                 <div class="form-inline">
                     <div class="form-group mb-2">
                         <label>Тема оформления</label>
@@ -30,21 +41,38 @@
                         {$theme_select}
                     </div>
                     <p></p>
-                    <input type="submit" name="save" id="save" value="Сохранить" style="margin-top: -8px;" class="btn btn-success">
-                    <p>&nbsp;&nbsp; <a href="https://www.sitebill.ru/client/cart.php?gid=6" target="_blank">Купить платную тему</a></p>
+                    <input type="submit" name="save" id="save" value="Сохранить" style="margin-top: -8px;"
+                           class="btn btn-success">
+                    <p>&nbsp;&nbsp; <a href="https://www.sitebill.ru/client/cart.php?gid=6" target="_blank">Посмотреть
+                            все темы</a></p>
 
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-inline">
+                    <div class="form-group mx-sm-3 mb-2">
+                        <input type="submit" name="switch_off_dashboard" id="switch_off_dashboard" value="Выключить режим редактирования сайта"
+                               style="margin-top: -8px;" class="btn btn-danger">
+                    </div>
                 </div>
             </div>
         </div>
 
 
         <div class="row">
+            <div class="col-12">
+                <hr>
+            </div>
             <div class="col-md-6">
-                <p style="float: left;"><img src="https://www.sitebill.ru/storage/lessons/start1.gif" width="600" height="286" class="img-fluid"/></p>
+                <p style="float: left;"><img src="https://www.sitebill.ru/storage/lessons/start1.gif" width="600"
+                                             height="286" class="img-fluid"/></p>
             </div>
             <p></p>
             <div class="col-md-6">
-                <div class="alert alert-danger">Выключить режим редактирования можно в <a href="/admin/?action=config" target="_parent">панели управления</a> в пункте Настройки - Помощник</div>
+                <div class="alert alert-warning">Включить/Выключить режим редактирования можно в <a
+                            href="/admin/?action=config" target="_parent">панели управления</a> в пункте Настройки -
+                    Помощник
+                </div>
             </div>
         </div>
         <div class="row">

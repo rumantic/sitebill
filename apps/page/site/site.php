@@ -22,7 +22,7 @@ class page_site extends page_admin {
             return false;
         }
 
-        if (preg_match('/^blog(\/?)$/', $REQUESTURIPATH, $matches) and $this->getConfigValue('apps.page.blog_enable')) {
+        if ($this->getConfigValue('apps.page.blog_enable') && $REQUESTURIPATH == 'blog') {
             $rs = $this->showBlog();
             return true;
         } elseif (preg_match('/^recommendations(\/?)$/', $REQUESTURIPATH, $matches) and $this->getConfigValue('apps.page.recommendations_enable')) {
@@ -30,13 +30,6 @@ class page_site extends page_admin {
             $rs = $this->showBlogCategory();
             return true;
         } else {
-            /* if ( $_SERVER['REQUEST_URI'] == SITEBILL_MAIN_URL.'/' and ($page_array = $this->getPageByURI('index.html')) ) {
-
-              } else {
-              $page_array=$this->getPageByURI($REQUESTURIPATH);
-              } */
-            
-
             $page_id = $this->getPageIDByURI($REQUESTURIPATH);
 
             if ($page_id > 0) {
@@ -82,7 +75,7 @@ class page_site extends page_admin {
                                     if($params_list['caption'] != ''){
                                         $params_list['alt'] = $params_list['caption'];
                                     }else{
-                                        $params_list['alt'] = $art['title']['value'].' фото '.($im_index+1);
+                                        $params_list['alt'] = $model['title']['value'].' фото '.($im_index+1);
                                     }
 
                                 }
@@ -108,9 +101,9 @@ class page_site extends page_admin {
                                     }
 
                                     if(1==intval($this->getConfigValue('apps.articles.photo_div'))){
-                                        $rep .= '<div class="imbuildimg-image" style="background-image:url(\''.$this->getServerFullUrl().'/img/data/'.$model[$im_fname]['value'][$im_index]['normal'].'\');"></div>';
+                                        $rep .= '<div class="imbuildimg-image" style="background-image:url(\''.$this->createMediaIncPath($model[$im_fname]['value'][$im_index], 'normal', 1).$this->getServerFullUrl().'\');"></div>';
                                     }else{
-                                        $rep .= '<div class="imbuildimg-image"><img src="'.$this->getServerFullUrl().'/img/data/'.$model[$im_fname]['value'][$im_index]['normal'].'"'.($params_list['alt'] != '' ? ' alt="'.$params_list['alt'].'"' : '').'></div>';
+                                        $rep .= '<div class="imbuildimg-image"><img src="'.$this->createMediaIncPath($model[$im_fname]['value'][$im_index], 'normal', 1).'"'.($params_list['alt'] != '' ? ' alt="'.$params_list['alt'].'"' : '').'></div>';
                                     }
 
                                     if($params_list['link'] != ''){
@@ -151,15 +144,23 @@ class page_site extends page_admin {
                 }
 
                 $this->template->assert('title', $model['title']['value']);
-                $this->template->assert('breadcrumbs', $this->get_breadcrumbs(array('<a href="' . SITEBILL_MAIN_URL . '/">' . Multilanguage::_('L_HOME') . '</a>', $model['title']['value'])));
+                $bc = [
+                    [
+                        'href' => $this->createUrlTpl(''),
+                        'name' => Multilanguage::_('L_HOME')
+                    ],
+                    [
+                        'href' => '',
+                        'name' => $model['title']['value']
+                    ]
+                ];
+                $this->template->assert('breadcrumbs', $this->getFrontend()->breadcrumbs2tpl($bc));
 
                 $this->template->assert('meta_title', $model['meta_title']['value']);
                 $this->template->assert('meta_keywords', $model['meta_keywords']['value']);
                 $this->template->assert('meta_description', $model['meta_description']['value']);
                 $this->template->assert('apps_page_view', 1);
 
-                //$this->template->render();
-                //$rs = $this->template->toHTML();
                 return true;
             }
 
@@ -199,11 +200,6 @@ class page_site extends page_admin {
     }
 
     private function showBlogCategory() {
-        if (1 == (int) $this->getConfigValue('apps.seo.no_trailing_slashes')) {
-            $trailing_slashe = '';
-        } else {
-            $trailing_slashe = '/';
-        }
         $blogRecords = array();
         $DBC = DBC::getInstance();
         $page = ((int) $this->getRequestValue('page') > 0 ? (int) $this->getRequestValue('page') : 1);
@@ -217,7 +213,7 @@ class page_site extends page_admin {
         $where[] = '`topic_id`=?';
         $where_v[] = 1;
         if (isset($this->data_model[$this->table_name]['is_service'])) {
-            $where[] = '( `is_service` <> 1 or `is_service` is NULL )';
+            $where[] = '( `is_service` <> 1 OR `is_service` IS NULL )';
         }
 
         $query = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . DB_PREFIX . '_' . $this->table_name . (!empty($where) ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY ' . $this->primary_key . ' DESC LIMIT ' . $start . ', ' . $per_page;
@@ -243,9 +239,7 @@ class page_site extends page_admin {
                         }
                     }
                 }
-
-
-                $ar['href'] = SITEBILL_MAIN_URL . '/' . trim($ar['uri'], '/') . (false !== strpos($ar['uri'], '.') ? '' : $trailing_slashe);
+                $ar['href'] = $this->createUrlTpl($ar['uri']);
                 $fp = strpos($ar['body'], '<p>');
                 $lp = strpos($ar['body'], '</p>');
                 if ($fp !== false && $lp !== false) {
@@ -257,8 +251,6 @@ class page_site extends page_admin {
             }
         }
 
-
-
         $total = 0;
         $query = 'SELECT FOUND_ROWS() AS ttl';
         $stmt = $DBC->query($query);
@@ -267,33 +259,16 @@ class page_site extends page_admin {
             $total = $ar['ttl'];
         }
 
+        $blogalias = 'blog';
+
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/page_navigator.php')) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/page_navigator.php';
-            $url = '';
-            if (isset($params['pager_url'])) {
-                $url = $params['pager_url'];
-                unset($params['pager_url']);
-            }
-
-            if ($params['admin']) {
-                $nurl = 'account/data';
-            } else {
-                $nurl = $pageurl;
-            }
-            //print_r($params);
-
-
-            $paging = Page_Navigator::getPagingArray($total, $page, $per_page, array(), 'blog');
-
+            $paging = Page_Navigator::getPagingArray($total, $page, $per_page, array(), $blogalias);
             $this->template->assert('blog_pager_array', $paging);
         } else {
-            $pager_params['page_url'] = 'blog';
+            $pager_params['page_url'] = $blogalias;
             $this->template->assert('blog_pager', $this->get_page_links_list($page, $total, $per_page, $pager_params));
         }
-
-
-
-
 
         $this->template->assert('title', 'Рекомендации');
         $this->template->assert('meta_title', 'Рекомендации');
@@ -302,11 +277,7 @@ class page_site extends page_admin {
     }
 
     private function showBlog() {
-        if (1 == (int) $this->getConfigValue('apps.seo.no_trailing_slashes')) {
-            $trailing_slashe = '';
-        } else {
-            $trailing_slashe = '/';
-        }
+
         $blogRecords = array();
         $DBC = DBC::getInstance();
         $page = ((int) $this->getRequestValue('page') > 0 ? (int) $this->getRequestValue('page') : 1);
@@ -317,7 +288,7 @@ class page_site extends page_admin {
         $where = array();
         $where_v = array();
         if (isset($this->data_model[$this->table_name]['is_service'])) {
-            $where[] = '( `is_service` <> 1  or `is_service` is NULL )';
+            $where[] = '( `is_service` <> 1  OR `is_service` IS NULL )';
         }
 
         $query = 'SELECT SQL_CALC_FOUND_ROWS * FROM ' . DB_PREFIX . '_' . $this->table_name . (!empty($where) ? ' WHERE ' . implode(' AND ', $where) : '') . ' ORDER BY ' . $this->primary_key . ' DESC LIMIT ' . $start . ', ' . $per_page;
@@ -344,8 +315,8 @@ class page_site extends page_admin {
                     }
                 }
 
+                $ar['href'] = $this->createUrlTpl($ar['uri']);
 
-                $ar['href'] = SITEBILL_MAIN_URL . '/' . trim($ar['uri'], '/') . (false !== strpos($ar['uri'], '.') ? '' : $trailing_slashe);
                 $fp = strpos($ar['body'], '<p>');
                 $lp = strpos($ar['body'], '</p>');
                 if ($fp !== false && $lp !== false) {
@@ -369,20 +340,6 @@ class page_site extends page_admin {
 
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/page_navigator.php')) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/page_navigator.php';
-            $url = '';
-            if (isset($params['pager_url'])) {
-                $url = $params['pager_url'];
-                unset($params['pager_url']);
-            }
-
-            if ($params['admin']) {
-                $nurl = 'account/data';
-            } else {
-                $nurl = $pageurl;
-            }
-            //print_r($params);
-
-
             $paging = Page_Navigator::getPagingArray($total, $page, $per_page, array(), 'blog');
 
             $this->template->assert('blog_pager_array', $paging);
@@ -401,11 +358,11 @@ class page_site extends page_admin {
         $where = array();
         $where_v = array();
         if (isset($this->data_model[$this->table_name]['is_service'])) {
-            $where[] = '( `is_service` <> 1 or `is_service` is NULL )';
+            $where[] = '( `is_service` <> 1 OR `is_service` IS NULL )';
         }
-        $where[] = '`uri`=?';
+        $where[] = '`uri` = ?';
         $where_v[] = $uri;
-        $query = 'SELECT page_id FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE ' . implode(' AND ', $where) . ' LIMIT 1';
+        $query = 'SELECT `page_id` FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE ' . implode(' AND ', $where) . ' LIMIT 1';
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query, $where_v);
         if ($stmt) {
@@ -434,7 +391,7 @@ class page_site extends page_admin {
           } */
         $where[] = '`uri`=?';
         $where_v[] = $uri;
-        //$uri = mysql_real_escape_string($uri);
+
         $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE ' . implode(' AND ', $where) . ' LIMIT 1';
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query, array($uri));

@@ -1,5 +1,5 @@
 <?php
-if (!class_exists('Sitebill') and !defined('INSTALL_MODE')) {
+if (!class_exists('Sitebill') and !defined('INSTALL_MODE') and !defined('SITEBILL_LOADING')) {
     require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/bootstrap.php');
 }
 
@@ -12,9 +12,9 @@ class DBC
     protected static $lastError;
 
     /**
-     * Obtain DB instance
+     * Obtain DBC instance
      *
-     * @return DB
+     * @return DBC
      */
     public static function getInstance()
     {
@@ -48,11 +48,47 @@ class DBC
                 'prefix' => DB_PREFIX . '_',
             ]);
 
+            if ( defined('KLADR_ENABLE') and KLADR_ENABLE ) {
+                $capsule->addConnection([
+                    'driver' => 'mysql',
+                    'host' => KLADR_HOST,
+                    'database' => KLADR_DB,
+                    'username' => KLADR_USER,
+                    'password' => KLADR_PASS,
+                    'charset' => 'utf8',
+                    'collation' => 'utf8_unicode_ci',
+                    'prefix' => '',
+                ], 'kladr');
+            }
+
+            if ( defined('WHMCS_ENABLE') and WHMCS_ENABLE ) {
+                // WHMCS's own app connects without forcing a charset (mysql_charset is
+                // commented out in client/configuration.php), so MySQL falls back to its
+                // 'latin1' connection default. Since tblclients etc. are declared utf8mb3
+                // but store text that only round-trips correctly through that latin1
+                // path, forcing 'utf8' here (as Sitebill's other connections do) makes
+                // MySQL skip that transcode and return doubly-encoded mojibake for any
+                // Cyrillic text (e.g. client names in the site header). Match WHMCS's
+                // own connection charset instead of Sitebill's usual utf8 convention.
+                $capsule->addConnection([
+                    'driver' => 'mysql',
+                    'host' => WHMCS_HOST,
+                    'database' => WHMCS_DB,
+                    'username' => WHMCS_USER,
+                    'password' => WHMCS_PASS,
+                    'charset' => 'latin1',
+                    'collation' => 'latin1_swedish_ci',
+                    'prefix' => '',
+                ], 'whmcs');
+            }
+
+
+
             $capsule->setAsGlobal();
 
             $capsule->bootEloquent();
 
-            if (!defined('INSTALL_MODE')) {
+            if (!defined('INSTALL_MODE') && class_exists('SiteBill', false)) {
                 SiteBill::add_pdo_debugbar_collector($this->pdo, $capsule);
             }
 
@@ -63,7 +99,9 @@ class DBC
         /* $f=fopen($_SERVER["DOCUMENT_ROOT"].'/ddd.txt', 'a');
           fwrite($f, "1\n");
           fclose($f); */
-        $white_list = array("5.9.72.112", "5.9.72.121", "194.58.111.5", "5.9.92.11", "193.124.207.3", "127.0.0.1", "159.69.119.38", "89.108.114.190");
+        // @todo: добавить IPV6 нового сервера
+        $white_list = array("5.63.153.251", "5.9.72.112", "5.9.72.121", "194.58.111.5", "5.9.92.11", "193.124.207.3",
+            "127.0.0.1", "159.69.119.38", "89.108.114.190", "127.127.126.55");
         if (!preg_match("/admin/", $_SERVER["REQUEST_URI"]) and !in_array($_SERVER["SERVER_ADDR"], $white_list) and !defined('STDIN')) {
             try {
                 $stmt = $this->pdo->query("select * from " . DB_PREFIX . "_config where config_key = 'license_key'");

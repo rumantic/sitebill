@@ -77,6 +77,9 @@ class Admin3Controller extends BaseController
 
     function index()
     {
+        if ( config('apps.admin3.redirect_from_new_admin') ) {
+            $this->sitebill->go301($this->sitebill->createUrlTpl('admin'));
+        }
         $params = $this->init_params();
 
 
@@ -120,8 +123,17 @@ class Admin3Controller extends BaseController
 
     private function legacy_admin ($sitebill) {
         global $smarty;
-        $smarty->template_dir = SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template1';
-        $smarty->assign('assets_folder', SITEBILL_MAIN_URL.'/apps/admin/admin/template1');
+        // Admin template switching
+        $_admin_template_allowed = array('template1', 'tailwind');
+        $_admin_template = $this->sitebill->getConfigValue('apps.admin.template');
+        if ( !empty($_SESSION['admin_template']) && in_array($_SESSION['admin_template'], $_admin_template_allowed, true) ) {
+            $_admin_template = $_SESSION['admin_template'];
+        }
+        if ( !in_array($_admin_template, $_admin_template_allowed, true) ) {
+            $_admin_template = 'template1';
+        }
+        $smarty->template_dir = SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/'.$_admin_template;
+        $smarty->assign('assets_folder', SITEBILL_MAIN_URL.'/apps/admin/admin/'.$_admin_template);
 
         $action = $this->sitebill->getRequestValue('action');
 

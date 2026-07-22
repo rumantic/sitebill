@@ -251,6 +251,10 @@ class Page_Navigator {
             $current_page = 1;
         }
 		
+		if($per_page <= 0){
+            $per_page = 10;
+        }
+		
 		if($url==''){
 			$url=SITEBILL_MAIN_URL.'/?';
 		}else{

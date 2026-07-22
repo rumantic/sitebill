@@ -35,7 +35,7 @@ class Logger {
             $ip = $_SERVER['REMOTE_ADDR'];
         }
 
-        $user_id = intval($_SESSION['user_id']);
+        $user_id = @intval($_SESSION['user_id']);
         $query = 'INSERT INTO ' . DB_PREFIX . '_activitylog (`message`, `user_id`, `ipaddr`) VALUES (?, ?, ?)';
         $stmt = $DBC->query($query, array($message, $user_id, $ip));
         // echo $DBC->getLastError();

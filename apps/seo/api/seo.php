@@ -34,4 +34,27 @@ class seo extends API_common_alias
             ->orderBy('name')
             ->get();
     }
+
+    function get_city_list( $country_id )
+    {
+        $city_ids = [];
+        $filter = '';
+        if ( $this->getConfigValue('apps.seo.add_city_list_inside_country_filter_column') != '' ) {
+            $filter = " AND c.".$this->getConfigValue('apps.seo.add_city_list_inside_country_filter_column')."=1 ";
+        }
+        $query = "select 
+        c.city_id from " . DB_PREFIX . "_city c, " . DB_PREFIX . "_region r, " . DB_PREFIX . "_country co 
+        where c.region_id=r.region_id and r.country_id=co.country_id and co.country_id=? $filter ORDER BY c.name";
+        $city_object = $this->init_custom_model_object('city');
+
+        $DBC = \DBC::getInstance();
+        $stmt = $DBC->query($query, [$country_id]);
+        if ($stmt) {
+            while ($ar = $DBC->fetch($stmt)) {
+                $city_ids[] = $ar['city_id'];
+            }
+        }
+        $city_list = $city_object->load_by_id($city_ids);
+        return $city_list;
+    }
 }

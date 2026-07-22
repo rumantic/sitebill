@@ -1,0 +1,508 @@
+/* Tailwind Admin Template — Custom Styles
+   ========================================
+   This file contains overrides and compatibility styles
+   for legacy Bootstrap components used alongside Tailwind.
+*/
+
+/* ---- Geist (Sans + Mono) via Fontsource CDN ---- */
+@font-face{font-family:'Geist';font-style:normal;font-weight:400;font-display:swap;src:url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-400-normal.woff2') format('woff2');}
+@font-face{font-family:'Geist';font-style:normal;font-weight:500;font-display:swap;src:url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-500-normal.woff2') format('woff2');}
+@font-face{font-family:'Geist';font-style:normal;font-weight:600;font-display:swap;src:url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-600-normal.woff2') format('woff2');}
+@font-face{font-family:'Geist';font-style:normal;font-weight:700;font-display:swap;src:url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-700-normal.woff2') format('woff2');}
+@font-face{font-family:'Geist Mono';font-style:normal;font-weight:400;font-display:swap;src:url('https://cdn.jsdelivr.net/fontsource/fonts/geist-mono@latest/latin-400-normal.woff2') format('woff2');}
+@font-face{font-family:'Geist Mono';font-style:normal;font-weight:500;font-display:swap;src:url('https://cdn.jsdelivr.net/fontsource/fonts/geist-mono@latest/latin-500-normal.woff2') format('woff2');}
+
+:root{
+    --accent:#2563eb;
+    --accent-600:#2563eb;
+    --accent-700:#1d4ed8;
+}
+
+.tw-admin{ font-family:'Geist','Segoe UI',system-ui,sans-serif; font-feature-settings:"cv01","ss01"; }
+.tw-admin .font-mono{ font-family:'Geist Mono',ui-monospace,monospace; }
+
+/* thin, modern scrollbars */
+.tw-admin .scroll-thin{ scrollbar-width:thin; scrollbar-color:#cbd5e1 transparent; }
+.tw-admin .scroll-thin::-webkit-scrollbar{ height:9px; width:9px; }
+.tw-admin .scroll-thin::-webkit-scrollbar-thumb{ background:#cbd5e1; border-radius:9999px; border:2px solid transparent; background-clip:content-box; }
+.tw-admin .scroll-thin::-webkit-scrollbar-thumb:hover{ background:#94a3b8; background-clip:content-box; }
+.tw-admin .scroll-thin::-webkit-scrollbar-track{ background:transparent; }
+
+/* card */
+.tw-admin .card{ background:#fff; border:1px solid #e9edf2; border-radius:1rem; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+
+/* dropdown menu */
+.tw-admin .menu{ opacity:0; transform:translateY(-4px) scale(.98); pointer-events:none; transition:.13s ease; transform-origin:top right; }
+.tw-admin .menu.open{ opacity:1; transform:none; pointer-events:auto; }
+
+/* tab underline */
+.tw-admin .tab.active{ color:var(--accent-700); }
+.tw-admin .tab.active .tab-line{ opacity:1; transform:scaleX(1); }
+.tw-admin .tab-line{ opacity:0; transform:scaleX(.4); transition:.18s; }
+
+/* sidebar nav item */
+.tw-admin .nav-link.active{ background:#eff4ff; color:var(--accent-700); }
+.tw-admin .nav-link.active .nav-ind{ opacity:1; }
+
+[x-cloak]{ display:none !important; }
+
+/* Ensure legacy form controls get consistent styling.
+   `input:not([type])` is important: many Sitebill inputs ship without an
+   explicit type attribute and would otherwise stay browser-default. */
+.tw-admin .form_element_html input:not([type]),
+.tw-admin input[type="text"],
+.tw-admin input[type="password"],
+.tw-admin input[type="email"],
+.tw-admin input[type="number"],
+.tw-admin input[type="url"],
+.tw-admin input[type="tel"],
+.tw-admin input[type="search"],
+.tw-admin input[type="date"],
+.tw-admin input[type="datetime-local"],
+.tw-admin input[type="time"],
+.tw-admin input[type="month"],
+.tw-admin select,
+.tw-admin textarea,
+.tw-admin .fld {
+    display: block;
+    width: 100%;
+    background-color: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 14px;
+    line-height: 1.25rem;
+    color: #0f172a;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
+    appearance: none;
+}
+
+.tw-admin textarea { min-height: 6rem; resize: vertical; }
+
+/* Native select chevron */
+.tw-admin select,
+.tw-admin select.fld {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 16px;
+    padding-right: 34px;
+}
+
+.tw-admin .form_element_html input:not([type]):hover,
+.tw-admin input[type="text"]:hover,
+.tw-admin input[type="password"]:hover,
+.tw-admin input[type="email"]:hover,
+.tw-admin input[type="number"]:hover,
+.tw-admin input[type="url"]:hover,
+.tw-admin input[type="tel"]:hover,
+.tw-admin input[type="search"]:hover,
+.tw-admin input[type="date"]:hover,
+.tw-admin input[type="datetime-local"]:hover,
+.tw-admin select:hover,
+.tw-admin textarea:hover,
+.tw-admin .fld:hover { border-color: #cbd5e1; }
+
+.tw-admin .form_element_html input:not([type]):focus,
+.tw-admin input[type="text"]:focus,
+.tw-admin input[type="password"]:focus,
+.tw-admin input[type="email"]:focus,
+.tw-admin input[type="number"]:focus,
+.tw-admin input[type="url"]:focus,
+.tw-admin input[type="tel"]:focus,
+.tw-admin input[type="search"]:focus,
+.tw-admin input[type="date"]:focus,
+.tw-admin input[type="datetime-local"]:focus,
+.tw-admin select:focus,
+.tw-admin textarea:focus,
+.tw-admin .fld:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.tw-admin input::placeholder,
+.tw-admin textarea::placeholder { color: #9ca3af; }
+
+.tw-admin input[readonly],
+.tw-admin input:disabled,
+.tw-admin select:disabled,
+.tw-admin textarea[readonly],
+.tw-admin textarea:disabled {
+    background-color: #f9fafb;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+/* custom checkbox (".cb") */
+.tw-admin input[type="checkbox"]:not(.switch) {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 5px;
+    background: #fff;
+    cursor: pointer;
+    position: relative;
+    flex: none;
+    transition: .12s;
+}
+.tw-admin input[type="checkbox"]:not(.switch):hover { border-color: #94a3b8; }
+.tw-admin input[type="checkbox"]:not(.switch):checked {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+.tw-admin input[type="checkbox"]:not(.switch):checked::after {
+    content: "";
+    position: absolute;
+    left: 4.5px;
+    top: 1.5px;
+    width: 4px;
+    height: 8px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.tw-admin input[type="radio"] {
+    width: 1.05rem;
+    height: 1.05rem;
+    border: 1px solid #d1d5db;
+    border-radius: 9999px;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+/* switch (toggle) */
+.tw-admin input.switch {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 38px;
+    height: 22px;
+    border-radius: 9999px;
+    background: #cbd5e1;
+    position: relative;
+    cursor: pointer;
+    transition: .18s;
+    flex: none;
+}
+.tw-admin input.switch:checked { background: var(--accent); }
+.tw-admin input.switch::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,.2);
+    transition: .18s;
+}
+.tw-admin input.switch:checked::after { transform: translateX(16px); }
+
+/* Geo coordinate input groups: the wrapper carries the border, so the
+   inner generated inputs render flush and borderless. */
+.tw-admin .geo-input-group input {
+    border: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+}
+.tw-admin .geo-input-group input:focus { box-shadow: none !important; }
+
+/* Legacy button compatibility */
+.tw-admin .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem 1.25rem;
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.25rem;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    background-color: #fff;
+    color: #374151;
+    cursor: pointer;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+    transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.05s;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.tw-admin .btn:hover { background-color: #f9fafb; }
+.tw-admin .btn:active { transform: translateY(1px); }
+.tw-admin .btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.tw-admin .btn-primary {
+    background-color: var(--accent);
+    color: white;
+    border: 1px solid var(--accent);
+}
+.tw-admin .btn-primary:hover { background-color: var(--accent-700); border-color: var(--accent-700); }
+
+.tw-admin .btn-success {
+    background-color: #22c55e;
+    color: white;
+    border: 1px solid #22c55e;
+}
+.tw-admin .btn-success:hover { background-color: #16a34a; }
+
+.tw-admin .btn-danger {
+    background-color: #ef4444;
+    color: white;
+    border: 1px solid #ef4444;
+}
+.tw-admin .btn-danger:hover { background-color: #dc2626; }
+
+.tw-admin .btn-warning {
+    background-color: #f59e0b;
+    color: white;
+    border: 1px solid #f59e0b;
+}
+.tw-admin .btn-warning:hover { background-color: #d97706; }
+
+.tw-admin .btn-info {
+    background-color: var(--accent);
+    color: white;
+    border: 1px solid var(--accent);
+}
+.tw-admin .btn-info:hover { background-color: var(--accent-700); }
+
+.tw-admin .btn-mini, .tw-admin .btn-xs {
+    padding: 0.125rem 0.375rem;
+    font-size: 0.75rem;
+}
+
+.tw-admin .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8125rem;
+}
+
+/* Table styling */
+.tw-admin .table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tw-admin .table th,
+.tw-admin .table td {
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: left;
+    font-size: 13px;
+}
+
+.tw-admin .table thead th {
+    background-color: rgba(248, 250, 252, .8);
+    font-weight: 600;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: #64748b;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.tw-admin .table-hover tbody tr:hover {
+    background-color: rgba(239, 244, 255, .4);
+}
+
+.tw-admin .table-striped tbody tr:nth-child(odd) {
+    background-color: #f9fafb;
+}
+
+/* Grid row states */
+.tw-admin tr.notactive {
+    opacity: 0.5;
+}
+
+/* Pagination compat */
+.tw-admin .pagination {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    gap: 0.25rem;
+}
+
+.tw-admin .pagination li a,
+.tw-admin .pagination li span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding: 0 0.5rem;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    border-radius: 0.5rem;
+    color: #475569;
+    text-decoration: none;
+    transition: background-color 0.15s;
+}
+
+.tw-admin .pagination li a:hover {
+    background-color: #f1f5f9;
+}
+
+.tw-admin .pagination li.active a,
+.tw-admin .pagination li.active span {
+    background-color: var(--accent);
+    color: white;
+}
+
+/* Alert boxes */
+.tw-admin .alert {
+    padding: 0.75rem 1rem;
+    border-radius: 0.625rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+}
+
+.tw-admin .alert-info {
+    background-color: #eff4ff;
+    border: 1px solid #dbe6fe;
+    color: #1d4ed8;
+}
+
+.tw-admin .alert-success {
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    color: #166534;
+}
+
+.tw-admin .alert-warning {
+    background-color: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+}
+
+.tw-admin .alert-danger, .tw-admin .alert-error {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+/* Tab content compatibility */
+.tw-admin .tab-content > .tab-pane {
+    display: none;
+}
+.tw-admin .tab-content > .tab-pane.active {
+    display: block;
+}
+
+/* Widget compat */
+.tw-admin .widget-box {
+    border: 1px solid #e9edf2;
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.tw-admin .widget-header {
+    padding: 0.75rem 1rem;
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e9edf2;
+    border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.tw-admin .widget-body {
+    padding: 0;
+}
+
+.tw-admin .widget-main {
+    padding: 1rem;
+}
+
+/* Row / grid compat (legacy Bootstrap 2) */
+.tw-admin .row-fluid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.tw-admin .span6, .tw-admin .col-xs-6 {
+    flex: 0 0 calc(50% - 0.5rem);
+    max-width: calc(50% - 0.5rem);
+}
+
+.tw-admin .span12, .tw-admin .col-xs-12 {
+    flex: 0 0 100%;
+    max-width: 100%;
+}
+
+/* Gritter notifications */
+.tw-admin .gritter-success .gritter-item {
+    background-color: #22c55e;
+}
+.tw-admin .gritter-error .gritter-item {
+    background-color: #ef4444;
+}
+
+/* Legacy form compat */
+.tw-admin .control-group {
+    margin-bottom: 0.75rem;
+}
+
+.tw-admin .control-label {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #475569;
+    margin-bottom: 0.25rem;
+}
+
+.tw-admin .controls {
+    min-height: 2rem;
+}
+
+.tw-admin .form-horizontal .control-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.tw-admin .form-horizontal .control-label {
+    flex: 0 0 10rem;
+    text-align: right;
+    padding-top: 0.375rem;
+}
+
+/* Badge compat */
+.tw-admin .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 9999px;
+}
+
+.tw-admin .badge-success { background-color: #dcfce7; color: #166534; }
+.tw-admin .badge-danger { background-color: #fef2f2; color: #991b1b; }
+.tw-admin .badge-warning { background-color: #fffbeb; color: #92400e; }
+.tw-admin .badge-info { background-color: #eff4ff; color: #1d4ed8; }
+
+/* Navbar compatibility for grids */
+.tw-admin .navbar {
+    background-color: #fff;
+    border: 1px solid #e9edf2;
+    border-radius: 1rem;
+    box-shadow: 0 1px 2px rgba(15,23,42,.04);
+    margin-bottom: 0.75rem;
+}
+
+.tw-admin .navbar-inner {
+    padding: 0.625rem;
+}
+
+.tw-admin .navbar .brand {
+    font-weight: 600;
+    font-size: 13px;
+    color: #475569;
+    padding: 0.375rem 0.5rem;
+}

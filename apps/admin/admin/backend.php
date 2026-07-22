@@ -38,9 +38,9 @@ if ( isset($_SESSION['need_reload_words']) && $_SESSION['need_reload_words'] ) {
 
 
 if(file_exists(SITEBILL_DOCUMENT_ROOT.'/inc/db.inc.php') && file_exists(SITEBILL_DOCUMENT_ROOT.'/install')){
-	$msgs=array();
+	$msgs = array();
 	Sitebill::removeDirectory(SITEBILL_DOCUMENT_ROOT.'/install', $msgs);
-	if(count($msgs)>0){
+	if(count($msgs) > 0){
 		foreach($msgs as $msg){
 			echo $msg.'<br/>';
 		}
@@ -56,6 +56,29 @@ if ( $sitebill->getConfigValue('apps.admin3.redirect_from_old_admin') and $siteb
     header('Location: '.$sitebill->createUrlTpl($sitebill->getConfigValue('apps.admin3.alias')));
     exit;
 }
+
+// Admin template switching
+$_admin_template_allowed = array('template1', 'tailwind');
+$_admin_template = $sitebill->getConfigValue('apps.admin.template');
+if ( !empty($_GET['admin_template']) && in_array($_GET['admin_template'], $_admin_template_allowed, true) ) {
+    $_admin_template = $_GET['admin_template'];
+    $_SESSION['admin_template'] = $_admin_template;
+} elseif ( !empty($_SESSION['admin_template']) && in_array($_SESSION['admin_template'], $_admin_template_allowed, true) ) {
+    $_admin_template = $_SESSION['admin_template'];
+}
+if ( !in_array($_admin_template, $_admin_template_allowed, true) ) {
+    $_admin_template = 'template1';
+}
+if ( $_admin_template !== 'template1' ) {
+    $smarty->template_dir = SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/'.$_admin_template;
+    $smarty->assign('assets_folder', SITEBILL_MAIN_URL.'/apps/admin/admin/'.$_admin_template);
+}
+// Keep server-side form/grid generators in sync with the selected admin template
+if ( $_admin_template === 'tailwind' ) {
+    $sitebill->setConfigValue('bootstrap_version', 'tailwind');
+}
+$smarty->assign('admin_template', $_admin_template);
+$smarty->assign('admin_template_allowed', $_admin_template_allowed);
 
 
 
@@ -96,10 +119,11 @@ function appendAppToRecently(){
 
 $smarty->assign('show_admin_helper', $sitebill->getConfigValue('show_admin_helper'));
 $smarty->assign('g_api_key', trim($sitebill->getConfigValue('google_api_key')));
-$smarty->assign('y_api_key', trim($sitebill->getConfigValue('yandex_map_key')));
+$smarty->assign('y_api_key', trim($sitebill->getConfigValue('apps.geodata.yandex_api_key_server')));
 $sitebill->template->assert('available_langs', Multilanguage::availableLanguages());
-
+$sitebill->template->assert('CurrLang', $sitebill->getCurrentLang());
 appendAppToRecently();
+Multilanguage::appendAppDictionary('admin');
 
 
 
@@ -108,7 +132,13 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
 	include_once(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/index.php');
 } else {
 
-    $access_allow=true;
+    $access_allow = true;
+
+    // Get requested action. By default - data
+    $action = $sitebill->getRequestValue('action');
+    if ( $action == '' ) {
+        $action = 'data';
+    }
 
     require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php');
     require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/sitebill_krascap_admin.php');
@@ -118,50 +148,29 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
     require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/permission/permission.php');
     $permission = new Permission();
 
-
-
-
-
     if ( $sitebill->getConfigValue('check_permissions') ) {
-        $action = $sitebill->getRequestValue('action');
-        if ( $action == '' ) {
-            $action = 'data';
+        if ( !$permission->get_access($_SESSION['user_id'], $action, 'access') and $action != 'logout' ) {
+            $access_allow = false;
         }
-
-        if ( !$permission->get_access($_SESSION['user_id_value'], $action, 'access') and $action != 'logout' ) {
-            $access_allow=false;
-            /*$smarty->assign('content', 'Доступ запрещен');
-            $smarty->display("main.tpl");
-            exit;*/
-            //continue;
-        }
-
     }
 
     $sitebill_rent_editor = new SiteBill_Rent_Editor();
-    $admin_menu = $sitebill_rent_editor->getAdminMenu();
-    $smarty->assign('admin_menu', $admin_menu);
+    $sitebill_rent_editor->buildInterface();
 
     $user_object_manager = new User_Object_Manager();
-    $current_user_info = $user_object_manager->load_by_id($_SESSION['user_id_value']);
+    $current_user_info = $user_object_manager->load_by_id($_SESSION['user_id']);
     $smarty->assign('current_user_info', $current_user_info);
 
-    $am_array=$sitebill_rent_editor->getAdminMenuArray();
-    if ( $sitebill->getConfigValue('check_permissions') ) {
-        $am_array = $permission->clear_menu_array($am_array, $_SESSION['user_id_value']);
-    }
-
-
-    $smarty->assign('admin_menua', $am_array);
-
-
+    // Has access to action
     if($access_allow){
-        if ( $_REQUEST['action'] != ''  ) {
-            if ( $_REQUEST['action'] == 'street' ) {
+        switch ($action){
+            case 'street' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/street/street_manager.php');
                 $Street_Manager = new Street_Manager();
                 $rs = $Street_Manager->main();
-            } elseif( $_REQUEST['action'] == 'apps' ) {
+                break;
+            }
+            case 'apps' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/apps/apps_processor.php');
                 $Apps_Processor = new Apps_Processor();
                 /*$do = trim($_GET['do']);
@@ -175,15 +184,21 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
                 }*/
 
                 //$rs = $Apps_Processor->load_apps_list_from_location();
-            } elseif( $_REQUEST['action'] == 'menu' ) {
+                break;
+            }
+            case 'menu' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/menu/menu_manager.php');
                 $Menu_Manager = new Menu_Manager();
                 $rs = $Menu_Manager->main();
-            } elseif( $_REQUEST['action'] == 'country' ) {
+                break;
+            }
+            case 'country' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/country/country_manager.php');
                 $Country_Manager = new Country_Manager();
                 $rs = $Country_Manager->main();
-            } elseif( $_REQUEST['action'] == 'data' ) {
+                break;
+            }
+            case 'data' : {
                 if ( $sitebill->getConfigValue('apps.realtypro.enable') ) {
                     require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/apps/realtypro/admin/admin.php');
                     $realty_pro_admin = new realtypro_admin();
@@ -191,72 +206,108 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
                 } else {
                     $rs = data_manager($sitebill, $permission);
                 }
-            } elseif( $_REQUEST['action'] == 'group' ) {
+                break;
+            }
+            case 'group' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/group/group_manager.php');
                 $Group_Manager = new Group_Manager();
                 $rs = $Group_Manager->main();
-            } elseif( $_REQUEST['action'] == 'function' ) {
+                break;
+            }
+            case 'function' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/function/function_manager.php');
                 $Function_Manager = new Function_Manager();
                 $rs = $Function_Manager->main();
-            } elseif( $_REQUEST['action'] == 'component' ) {
+                break;
+            }
+            case 'component' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/component/component_manager.php');
                 $Component_Manager = new Component_Manager();
                 $rs = $Component_Manager->main();
-            } elseif( $_REQUEST['action'] == 'region' ) {
+                break;
+            }
+            case 'region' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/region/region_manager.php');
                 $Region_Manager = new Region_Manager();
                 $rs = $Region_Manager->main();
-            } elseif( $_REQUEST['action'] == 'city' ) {
+                break;
+            }
+            case 'city' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/city/city_manager.php');
                 $City_Manager = new City_Manager();
                 $rs = $City_Manager->main();
-            } elseif( $_REQUEST['action'] == 'metro' ) {
+                break;
+            }
+            case 'metro' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/metro/metro_manager.php');
                 $Metro_Manager = new Metro_Manager();
                 $rs = $Metro_Manager->main();
-            } elseif( $_REQUEST['action'] == 'district' ) {
+                break;
+            }
+            case 'district' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/district/district_manager.php');
                 $District_Manager = new District_Manager();
                 $rs = $District_Manager->main();
-            } elseif( $_REQUEST['action'] == 'structure' ) {
+                break;
+            }
+            case 'structure' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_manager.php');
                 $Structure_Manager = new Structure_Manager();
                 $rs = $Structure_Manager->main();
-            } elseif( $_REQUEST['action'] == 'structure_company' ) {
+                break;
+            }
+            case 'structure_company' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_implements.php');
                 $Structure_Manager = Structure_Implements::getManager('company');
                 $rs = $Structure_Manager->main();
-            } elseif( $_REQUEST['action'] == 'structure_booking_hotel' ) {
+                break;
+            }
+            case 'structure_booking_hotel' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/structure/structure_implements.php');
                 $Structure_Manager = Structure_Implements::getManager('booking_hotel');
                 $rs = $Structure_Manager->main();
-            } elseif( $_REQUEST['action'] == 'rent_order' ) {
+                break;
+            }
+            case 'rent_order' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/components/com_data_get_rent/sitebill_data_get_rent.php');
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/rent_order/rent_order.php');
                 $rent_order = new Rent_Order();
                 $rs = $rent_order->main();
-            }elseif( $_REQUEST['action'] == 'user' ) {
+                break;
+            }
+            case 'user' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/users/user_object_manager.php');
                 $Users_Manager = new User_Object_Manager();
                 $rs = $Users_Manager->main();
-            } elseif( $_REQUEST['action'] == 'category' ) {
+                break;
+            }
+            case 'category' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/shop_category/shop_category_manager.php');
                 $Shop_Category_Manager = new Shop_Category_Manager();
                 $rs = $Shop_Category_Manager->main();
-            } elseif( $_REQUEST['action'] == 'product' and file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/shop/lib/shop_product/shop_product_manager.php') ) {
-                require_once(SITEBILL_DOCUMENT_ROOT.'/apps/shop/lib/shop_product/shop_product_manager.php');
-                $Shop_Product_Manager = new Shop_Product_Manager();
-                $rs = $Shop_Product_Manager->main();
-            } elseif( $_REQUEST['action'] == 'shop_order' ) {
+                break;
+            }
+            case 'product' : {
+                if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/shop/lib/shop_product/shop_product_manager.php')){
+                    require_once(SITEBILL_DOCUMENT_ROOT.'/apps/shop/lib/shop_product/shop_product_manager.php');
+                    $Shop_Product_Manager = new Shop_Product_Manager();
+                    $rs = $Shop_Product_Manager->main();
+                    break;
+                }
+            }
+            case 'shop_order' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/shop/lib/shop_order/shop_order_manager.php');
                 $Shop_Order_Manager = new Shop_Order_Manager();
                 $rs = $Shop_Order_Manager->main();
-            }  elseif( $_REQUEST['action'] == 'rubricator_component' ) {
+                break;
+            }
+            case 'rubricator_component' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/components/rubricator/rubricator_component.php');
                 $Rubricator_Component = new Rubricator_Component();
                 $rs = $Rubricator_Component->main();
-            } elseif( $_REQUEST['action'] == 'logout' ) {
+                break;
+            }
+            case 'logout' : {
                 //$Sitebill_User=Sitebill_User::getInstance();
                 //$Sitebill_User->logoutUser();
                 $sitebill->delete_session_key($_SESSION['session_key']);
@@ -286,7 +337,9 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
                 setcookie('logged_user_token', '', time()-$sitebill->get_cookie_duration_in_sec(), '/', SiteBill::$_cookiedomain);
                 header('Location: '.SITEBILL_ADMIN_BASE);
                 exit;
-            } elseif( $_REQUEST['action'] == 'loginasuser' ) {
+                break;
+            }
+            case 'loginasuser' : {
                 $user_id = intval($_GET['user_id']);
                 $sitebill->delete_session_key($_SESSION['session_key']);
                 $DBC=DBC::getInstance();
@@ -312,24 +365,27 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
 
                 header('Location: '.SITEBILL_MAIN_URL);
                 exit;
-            } elseif( $_REQUEST['action'] == 'cowork' ) {
+                break;
+            }
+            case 'cowork' : {
                 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/components/cowork/cowork.php');
                 $Cowork = new Cowork();
                 $rs = $Cowork->main();
-            } else {
-                //try run apps
+                break;
+            }
+            default : {
                 try {
                     require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/apps/apps_processor.php');
                     $apps_processor = new Apps_Processor();
-                    $rs = $apps_processor->run($_REQUEST['action'], 'admin');
+                    $rs = $apps_processor->run($action, 'admin');
                 } catch ( Exception $e ) {
                     if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/customentity/admin/admin.php')){
                         require_once(SITEBILL_DOCUMENT_ROOT.'/apps/customentity/admin/admin.php');
                         $api_common = new \api\aliases\API_common_alias();
-                        $api_common_object = $api_common->init_custom_model_object($_REQUEST['action']);
+                        $api_common_object = $api_common->init_custom_model_object($action);
                         if ( $api_common_object ) {
                             $rs = $api_common_object->main();
-                        }elseif(customentity_admin::checkEntity($_REQUEST['action'])){
+                        }elseif(customentity_admin::checkEntity($action)){
                             $CE=new customentity_admin();
                             $rs = $CE->main();
                         } else {
@@ -339,21 +395,11 @@ if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConf
                         $rs = $e->getMessage();
                     }
                 }
-
             }
-        } else {
-            $rs = data_manager($sitebill, $permission);
         }
     }
 
-
-
-
-    if(file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/customentity/admin/admin.php')){
-        require_once(SITEBILL_DOCUMENT_ROOT.'/apps/customentity/admin/admin.php');
-        $smarty->assign('custom_admin_entity_menu', customentity_admin::getEntityList());
-    }
-
+    // Doesn't have access to action
     if(!$access_allow){
         $smarty->assign('content', 'Доступ запрещен');
         $smarty->display("main.tpl");
@@ -365,8 +411,6 @@ if ( defined('IFRAME_MODE') ) {
 }
 $smarty->assign('content', $rs);
 
-
-//print_r($admin_menu);
 if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/template/main.tpl') ) {
 	$smarty->display(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/template/main.tpl');
 } else {
@@ -399,7 +443,11 @@ function data_manager ($sitebill, $permission) {
     } else {
         require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/data/data_manager.php');
         if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php') ) {
-            require_once (SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$sitebill->getConfigValue('theme').'/admin/data/data_manager.php');
+            require_once(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $sitebill->getConfigValue('theme') . '/admin/data/data_manager.php');
+            $data_manager_local = new Data_Manager_Local();
+            $rs = $data_manager_local->main();
+        } elseif ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/local/admin/data/data_manager.php') ) {
+            require_once (SITEBILL_DOCUMENT_ROOT.'/template/frontend/local/admin/data/data_manager.php');
             $data_manager_local = new Data_Manager_Local();
             $rs = $data_manager_local->main();
         } else {

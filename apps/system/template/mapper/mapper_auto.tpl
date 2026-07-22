@@ -8,7 +8,7 @@
                 {if isset($propertyItem) && is_array($propertyItem)}
 
                     <h2>{$propertyItem.title} (<a href="{$propertyItem.href}" target="_blank">{$propertyKey}</a>)</h2>
-                    {if $propertyItem.type == 'safe_string'}
+                    {if $propertyItem.type == 'safe_string' || $propertyItem.type == 'client_id' }
                         <div class="mapperitem">
                             <label>Название колонки модели данных (data), из которой поступают значения для выгрузки</label>
                             <input type="text" name="field[{$propertyKey}]" value="{$cassocc[$propertyKey]}">

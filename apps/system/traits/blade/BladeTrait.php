@@ -34,6 +34,9 @@ trait BladeTrait
         if ( !isset($this->blade) ) {
             $this->resource_path[] = SITEBILL_DOCUMENT_ROOT.'/apps/admin/resources/views';
             $this->blade = new Blade($this->resource_path, SITEBILL_DOCUMENT_ROOT.'/cache/compile');
+            if ( is_dir(SITEBILL_DOCUMENT_ROOT.'/template/frontend/admin4/resources/views') ) {
+                $this->blade->addNamespace('admin4', SITEBILL_DOCUMENT_ROOT.'/template/frontend/admin4/resources/views');
+            }
         }
     }
 

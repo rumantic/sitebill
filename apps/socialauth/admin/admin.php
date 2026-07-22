@@ -19,6 +19,8 @@ class socialauth_admin extends Object_Manager {
 
         $this->action = 'socialauth';
 
+        $config_admin->addParamToConfig('apps.socialauth.enable', '0', 'Включить socialauth', SConfig::$fieldtypeCheckbox);
+
         if (!$config_admin->check_config_item('apps.socialauth.salt')) {
             $config_admin->addParamToConfig('apps.socialauth.salt', substr(md5(time()), 0, 6), 'Соль для автоматических паролей регистраций через соцсети');
         }

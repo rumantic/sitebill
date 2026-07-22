@@ -195,25 +195,17 @@ class User_Profile_Model extends User_Profile {
                             $this->reorderImage($this->table_name, $this->getRequestValue('image_id'), $this->primary_key, $this->getRequestValue($this->primary_key), 'down');
                         }
 
-                        if ($this->getRequestValue('language_id') > 0 and ! $this->language->get_version($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $this->getRequestValue('language_id'))) {
-                            $rs .= $this->get_form($form_data[$this->table_name], 'new', $this->getRequestValue('language_id'), '', SITEBILL_MAIN_URL . '/account/profile/');
-                        } else {
-                            if ($this->getRequestValue('language_id') > 0) {
-                                $form_data[$this->table_name] = $data_model->init_model_data_from_db_language($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name], false, $this->getRequestValue('language_id'));
-                            } else {
-                                $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
-                            }
-                            unset($form_data[$this->table_name]['company_id']);
-                            unset($form_data[$this->table_name]['group_id']);
-                            unset($form_data[$this->table_name]['login']);
-                            unset($form_data[$this->table_name]['publication_limit']);
-                            unset($form_data[$this->table_name]['captcha']);
-                            unset($form_data[$this->table_name]['active']);
-                            unset($form_data[$this->table_name]['notify']);
-                            unset($form_data[$this->table_name]['email']);
+                        $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
+                        unset($form_data[$this->table_name]['company_id']);
+                        unset($form_data[$this->table_name]['group_id']);
+                        unset($form_data[$this->table_name]['login']);
+                        unset($form_data[$this->table_name]['publication_limit']);
+                        unset($form_data[$this->table_name]['captcha']);
+                        unset($form_data[$this->table_name]['active']);
+                        unset($form_data[$this->table_name]['notify']);
+                        unset($form_data[$this->table_name]['email']);
 
-                            $rs .= $this->get_form($form_data[$this->table_name], 'edit', 0, '', SITEBILL_MAIN_URL . '/account/profile/');
-                        }
+                        $rs .= $this->get_form($form_data[$this->table_name], 'edit', 0, '', SITEBILL_MAIN_URL . '/account/profile/');
 
                         break;
                     }

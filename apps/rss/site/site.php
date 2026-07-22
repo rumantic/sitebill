@@ -20,9 +20,14 @@ class rss_site extends rss_admin {
             return false;
         }
 
-        if (preg_match('/^rss\/data[\/]?$/', $REQUESTURIPATH) && 1 == $this->getConfigValue('apps.rss.enable_realty')) {
+        if (preg_match('/^rss\/data$/', $REQUESTURIPATH) && 1 == $this->getConfigValue('apps.rss.enable_realty')) {
             header('Content-Type:text/xml');
             $this->exportRssData();
+            exit();
+            return true;
+        } elseif(preg_match('/^rss\/data\/(\d+)$/', $REQUESTURIPATH, $matches) && 1 == $this->getConfigValue('apps.rss.enable_realty') && 1 == $this->getConfigValue('apps.rss.enable_realty_personal') && $this->isPersonalFeedAccessible($matches[1])){
+            header('Content-Type:text/xml');
+            $this->exportRssData(array('user_id' => $matches[1]));
             exit();
             return true;
         } elseif (preg_match('/^rss[\/]?$/', $REQUESTURIPATH)) {
@@ -44,6 +49,17 @@ class rss_site extends rss_admin {
           return true;
           } */
         return false;
+    }
+
+    protected function isPersonalFeedAccessible($userid){
+        $access = false;
+        $DBC = DBC::getInstance();
+        $query = 'SELECT user_id FROM '.DB_PREFIX.'_user WHERE user_id = ?';
+        $stmt = $DBC->query($query, array($userid));
+        if($stmt){
+            $access = true;
+        }
+        return $access;
     }
 
 }

@@ -72,9 +72,13 @@ class Sitebill_Uploadify extends Sitebill
                 return;
             }
 
-            $arr = explode('.', $_FILES[$file_container_name]['name']);
-            $file_name_without_ext = $arr[0];
-            $ext = strtolower(end($arr));
+            $pathinfo = pathinfo($_FILES[$file_container_name]['name']);
+            $file_name_without_ext = $pathinfo['filename'];
+            $ext = strtolower($pathinfo['extension']);
+
+            //$arr = explode('.', $_FILES[$file_container_name]['name']);
+            //$file_name_without_ext = $arr[0];
+            //$ext = strtolower(end($arr));
 
             if (!$this->isMimeGood($tempFile, $ext, $mime)) {
                 if ($uploader_type == 'dropzone') {
@@ -311,7 +315,7 @@ class Sitebill_Uploadify extends Sitebill
 
                     }
 
-                    $allowed_exts = array('jpg', 'png', 'gif', 'jpeg', 'webp', 'svg');
+                    $allowed_exts = array('jpg', 'png', 'gif', 'jpeg', 'webp', 'svg', 'jfif');
                 }
 
                 if (!in_array($ext, $allowed_exts)) {
@@ -431,8 +435,10 @@ class Sitebill_Uploadify extends Sitebill
         $ext = strtolower($ext);
         if (function_exists('finfo_open') && function_exists('finfo_file') && function_exists('finfo_close')) {
             $fileinfo = finfo_open(FILEINFO_MIME);
+
             $output = finfo_file($fileinfo, $tempFile);
             finfo_close($fileinfo);
+
             if ($output != '') {
                 list($mct) = explode("; ", $output);
             }
@@ -499,9 +505,11 @@ class Sitebill_Uploadify extends Sitebill
             return true;
         } elseif ($ext == 'webp' && $mct == 'image/webp') {
             return true;
-        } elseif ($ext == 'svg' && $mct == 'image/svg+xml') {
+        } elseif ($ext == 'svg' && ($mct == 'image/svg+xml' || $mct == 'image/svg')) {
             return true;
         } elseif ($ext == 'jpg' && $mct == 'image/jpeg') {
+            return true;
+        } elseif ($ext == 'jfif' && $mct == 'image/jpeg') {
             return true;
         } elseif ($ext == 'jpeg' && $mct == 'image/jpeg') {
             return true;

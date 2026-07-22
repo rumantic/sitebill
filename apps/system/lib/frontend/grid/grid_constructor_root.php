@@ -2963,8 +2963,8 @@ class Grid_Constructor_Root extends SiteBill {
         $params['has_geo'] = 1;
 
 
-        require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/grid/grid_constructor.php';
-        $grid_constructor = new Grid_Constructor();
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/grid/GridConstructorFactory.php';
+        $grid_constructor = GridConstructorFactory::create();
         $odata = array();
         $odata = $grid_constructor->get_sitebill_adv_ext($params);
 
@@ -3060,8 +3060,8 @@ class Grid_Constructor_Root extends SiteBill {
         $params['has_geo'] = 1;
 
 
-        require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/grid/grid_constructor.php';
-        $grid_constructor = new Grid_Constructor();
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/grid/GridConstructorFactory.php';
+        $grid_constructor = GridConstructorFactory::create();
         $data = $grid_constructor->get_sitebill_adv_ext($params);
 
         global $smarty;

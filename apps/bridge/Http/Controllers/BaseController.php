@@ -15,7 +15,15 @@ class BaseController
     public function __construct()
     {
         $this->sitebill = new \SiteBill();
+        if ( is_dir(SITEBILL_DOCUMENT_ROOT.'/template/frontend/local/mysite/resources/views/') ) {
+            $this->add_resource_path(SITEBILL_DOCUMENT_ROOT.'/template/frontend/local/mysite/resources/views/');
+        }
+        if ( is_dir(SITEBILL_DOCUMENT_ROOT.'/template/frontend/local/'.config('apps.dashboard.config').'/resources/views/') ) {
+            $this->add_resource_path(SITEBILL_DOCUMENT_ROOT.'/template/frontend/local/'.config('apps.dashboard.config').'/resources/views/');
+        }
+
         $this->add_resource_path(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->sitebill->getConfigValue('theme').'/resources/views');
+        $this->add_resource_path(SITEBILL_DOCUMENT_ROOT.'/apps/bridge/resources/views');
         $this->add_resource_path(SITEBILL_DOCUMENT_ROOT);
 
         if(file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->sitebill->getConfigValue('theme').'/main/main.php')){
@@ -78,6 +86,12 @@ class BaseController
         $viewparams['tpldata'] = @$this->getCommonTplData();
         $viewparams['config'] = \SConfig::getInstance();
         $viewparams['LangSwitcher'] = $this->buildLangSwitcher($this->sitebill->getClearRequestURI());
+        $viewparams['view_name'] = $view;
+
+        if ($view === 'pages.error_message') {
+            header('Status: 404 Not Found');
+        }
+
 
 
         if(!empty($params)){

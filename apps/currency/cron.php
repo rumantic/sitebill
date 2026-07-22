@@ -2,7 +2,9 @@
 error_reporting(E_WARNING);
 ini_set('display_errors','On');
 require_once("../system/starter.php");
-ini_set("include_path", $include_path );
+if(isset($include_path)){
+    ini_set("include_path", $include_path);
+}
 require_once(SITEBILL_DOCUMENT_ROOT.'/third/smarty/Smarty.class.php');
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill.php');
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php');

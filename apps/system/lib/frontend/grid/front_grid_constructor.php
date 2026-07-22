@@ -79,12 +79,12 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 				$childs = $Structure_Manager->get_all_childs($params['topic_id'], $category_structure);
 				if ( count($childs) > 0 ) {
 					array_push($childs, $params['topic_id']);
-					$query_parts['where'][] = 're_data.topic_id in ('.implode(' , ',$childs).') ';
+					$query_parts['where'][] = 're_data.topic_id in ('.implode(',', array_map('intval', $childs)).') ';
 				} else {
-					$query_parts['where'][] = 're_data.topic_id='.$params['topic_id'];
+					$query_parts['where'][] = 're_data.topic_id='.(int)$params['topic_id'];
 				}
 			}elseif(is_array($params['topic_id'])){
-				$query_parts['where'][] = 're_data.topic_id IN ('.implode(',', $params['topic_id']).')';
+				$query_parts['where'][] = 're_data.topic_id IN ('.implode(',', array_map('intval', $params['topic_id'])).')';
 			}
 		}
 			
@@ -94,11 +94,11 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		}
 			
 		if( isset($params['favorites']) && !empty($params['favorites'])){
-			$query_parts['where'][] = '`'.$main_table.'`.`id` IN ('.implode(',',$params['favorites']).')';
+			$query_parts['where'][] = '`'.$main_table.'`.`id` IN ('.implode(',', array_map('intval', $params['favorites'])).')';
 		}
 			
 		if( isset($model['uniq_id']) && isset($params['uniq_id']) && $params['uniq_id']!=0){
-			$query_parts['where'][] = '`'.$main_table.'`.`uniq_id`='.$params['uniq_id'];
+			$query_parts['where'][] = '`'.$main_table.'`.`uniq_id`='.((int)$params['uniq_id']);
 		}
 			
 		if( isset($model['optype']) && isset($params['optype'])){
@@ -106,22 +106,22 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		}
 			
 		if ( isset($model['country_id']) && isset($params['country_id']) and $params['country_id'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`country_id` = '.$params['country_id'];
+			$query_parts['where'][] = '`'.$main_table.'`.`country_id` = '.((int)$params['country_id']);
 		}else{
 			unset($params['country_id']);
 		}
 			
 		/*if ( isset($model['city_id']) && isset($params['city_id']) and $params['city_id'] != 0  ) {
-		 $query_parts['where'][] = '`'.$main_table.'`.`city_id` = '.$params['city_id'];
+		 $query_parts['where'][] = '`'.$main_table.'`.`city_id` = '.(int)$params['city_id'];
 		}else{
 		unset($params['city_id']);
 		}*/
 		
 		if ( isset($model['city_id']) && isset($params['city_id']) ) {
 			if(is_array($params['city_id']) && !empty($params['city_id'])){
-				$query_parts['where'][] = '`'.$main_table.'`.`city_id` IN ('.implode(',', $params['city_id']).')';
+				$query_parts['where'][] = '`'.$main_table.'`.`city_id` IN ('.implode(',', array_map('intval', $params['city_id'])).')';
 			}elseif((int)$params['city_id'] != 0){
-				$query_parts['where'][] = '`'.$main_table.'`.`city_id` = '.$params['city_id'];
+				$query_parts['where'][] = '`'.$main_table.'`.`city_id` = '.(int)$params['city_id'];
 			}else{
 				unset($params['city_id']);
 			}
@@ -131,9 +131,9 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		
 		if ( isset($model['district_id']) && isset($params['district_id']) ) {
 			if(is_array($params['district_id']) && !empty($params['district_id'])){
-				$query_parts['where'][] = '`'.$main_table.'`.`district_id` IN ('.implode(',', $params['district_id']).')';
+				$query_parts['where'][] = '`'.$main_table.'`.`district_id` IN ('.implode(',', array_map('intval', $params['district_id'])).')';
 			}elseif((int)$params['district_id'] != 0){
-				$query_parts['where'][] = '`'.$main_table.'`.`district_id` = '.$params['district_id'];
+				$query_parts['where'][] = '`'.$main_table.'`.`district_id` = '.(int)$params['district_id'];
 			}else{
 				unset($params['district_id']);
 			}
@@ -142,17 +142,17 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		}
 		
 		/*if ( isset($model['district_id']) && isset($params['district_id']) and $params['district_id'] != 0  ) {
-		 $query_parts['where'][] = '`'.$main_table.'`.`district_id` = '.$params['district_id'];
+		 $query_parts['where'][] = '`'.$main_table.'`.`district_id` = '.(int)$params['district_id'];
 		}else{
 		unset($params['district_id']);
 		}*/
 		
 		if ( isset($model['id']) && isset($params['id']) && $params['id'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`id` = '.$params['id'];
+			$query_parts['where'][] = '`'.$main_table.'`.`id` = '.(int)$params['id'];
 		}
 		
 		if ( isset($model['user_id']) && isset($params['user_id']) && $params['user_id'] > 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`user_id` = '.$params['user_id'];
+			$query_parts['where'][] = '`'.$main_table.'`.`user_id` = '.(int)$params['user_id'];
 		}
 		
 		if ( isset($model['hot']) && isset($params['onlyspecial']) && $params['onlyspecial'] > 0  ) {
@@ -161,36 +161,36 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		
 		
 		if ( isset($model['price']) && isset($params['price']) && $params['price'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`price`  <= '.$params['price'];
+			$query_parts['where'][] = '`'.$main_table.'`.`price`  <= '.((int)$params['price']);
 		}
 		
 		if ( isset($model['price']) && isset($params['price_min']) && $params['price_min'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`price`  >= '.$params['price_min'];
+			$query_parts['where'][] = '`'.$main_table.'`.`price`  >= '.((int)$params['price_min']);
 		}
 		////
 		if ( isset($model['price_pm']) && isset($params['price_pm']) && $params['price_pm'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`price_pm`  <= '.$params['price_pm'];
+			$query_parts['where'][] = '`'.$main_table.'`.`price_pm`  <= '.((int)$params['price_pm']);
 		}
 		if ( isset($model['price_pm']) && isset($params['price_pm_min']) && $params['price_pm_min'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`price_pm`  >= '.$params['price_pm_min'];
+			$query_parts['where'][] = '`'.$main_table.'`.`price_pm`  >= '.((int)$params['price_pm_min']);
 		}
 		//////
 		if ( isset($model['number']) && isset($params['house_number']) && $params['house_number'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`number`  = \''.$params['house_number'].'\'';
+			$query_parts['where'][] = '`'.$main_table.'`.`number`  = \''.addslashes($params['house_number']).'\'';
 		}
 		
 		
 		/*if ( isset($model['region_id']) && isset($params['region_id']) && $params['region_id'] != 0 ) {
-		 $query_parts['where'][] = '`'.$main_table.'`.`region_id` = '.$params['region_id'];
+		 $query_parts['where'][] = '`'.$main_table.'`.`region_id` = '.(int)$params['region_id'];
 		}else{
 		unset($params['region_id']);
 		}*/
 		
 		if ( isset($model['region_id']) && isset($params['region_id']) ) {
 			if(is_array($params['region_id']) && !empty($params['region_id'])){
-				$query_parts['where'][] = '`'.$main_table.'`.`region_id` IN ('.implode(',', $params['region_id']).')';
+				$query_parts['where'][] = '`'.$main_table.'`.`region_id` IN ('.implode(',', array_map('intval', $params['region_id'])).')';
 			}elseif((int)$params['region_id'] != 0){
-				$query_parts['where'][] = '`'.$main_table.'`.`region_id` = '.$params['region_id'];
+				$query_parts['where'][] = '`'.$main_table.'`.`region_id` = '.(int)$params['region_id'];
 			}else{
 				unset($params['region_id']);
 			}
@@ -207,7 +207,7 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		
 		if ( isset($model['metro_id']) && isset($params['metro_id']) ) {
 			if(is_array($params['metro_id']) && !empty($params['metro_id'])){
-				$query_parts['where'][] = '`'.$main_table.'`.`metro_id` IN ('.implode(',', $params['metro_id']).')';
+				$query_parts['where'][] = '`'.$main_table.'`.`metro_id` IN ('.implode(',', array_map('intval', $params['metro_id'])).')';
 			}elseif((int)$params['metro_id'] != 0){
 				$query_parts['where'][] = '`'.$main_table.'`.`metro_id` = '.(int)$params['metro_id'];
 			}else{
@@ -218,13 +218,13 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		}
 		
 		if ( isset($model['street_id']) && isset($params['street_id']) && $params['street_id'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`street_id` = '.$params['street_id'];
+			$query_parts['where'][] = '`'.$main_table.'`.`street_id` = '.((int)$params['street_id']);
 		}else{
 			unset($params['street_id']);
 		}
 		
 		if(isset($params['srch_phone']) && $params['srch_phone'] !== NULL){
-			$phone = preg_replace('/[^\d]/', '', $params['srch_phone']);
+			$phone = addslashes(preg_replace('/[^\d]/', '', $params['srch_phone']));
 			$sub_where=array();
 			if($phone!=''){
 				if($this->getConfigValue('allow_additional_mobile_number') && isset($model['ad_mobile_phone'])){
@@ -246,7 +246,7 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		
 		if(isset($params['srch_word']) && $params['srch_word'] !== NULL){
 			$sub_where=array();
-			$word=htmlspecialchars($params['srch_word'], ENT_QUOTES, SITE_ENCODING);
+			$word=addslashes(htmlspecialchars($params['srch_word'], ENT_QUOTES, SITE_ENCODING));
 			if(isset($model['text'])){
 				$sub_where[] = '(`'.$main_table.'`.`text` LIKE \'%'.$word.'%\')';
 			}
@@ -288,21 +288,21 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		
 		if(isset($model['date_added'])){
 			if($params['srch_date_from']!=0 && $params['srch_date_to']!=0){
-				$query_parts['where'][]="((`".$main_table."`.`date_added`>='".$params['srch_date_from']."') AND (`".$main_table."`.`date_added`<='".$params['srch_date_to']."'))";
+				$query_parts['where'][]="((`".$main_table."`.`date_added`>='".preg_replace('/[^0-9\-: ]/', '', $params['srch_date_from'])."') AND (`".$main_table."`.`date_added`<='".preg_replace('/[^0-9\-: ]/', '', $params['srch_date_to'])."'))";
 			}elseif($params['srch_date_from']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`date_added`>='".$params['srch_date_from']."')";
+				$query_parts['where'][]="(`".$main_table."`.`date_added`>='".preg_replace('/[^0-9\-: ]/', '', $params['srch_date_from'])."')";
 			}elseif($params['srch_date_to']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`date_added`<='".$params['srch_date_to']."')";
+				$query_parts['where'][]="(`".$main_table."`.`date_added`<='".preg_replace('/[^0-9\-: ]/', '', $params['srch_date_to'])."')";
 			}
 		}
 		
 		if(isset($model['floor'])){
 			if($params['floor_min']!=0 && $params['floor_max']!=0){
-				$query_parts['where'][]="(re_data.floor BETWEEN ".$params['floor_min']." AND ".$params['floor_max'].")";
+				$query_parts['where'][]="(re_data.floor BETWEEN ".((int)$params['floor_min'])." AND ".((int)$params['floor_max']).")";
 			}elseif($params['floor_min']!=0){
-				$query_parts['where'][]="(re_data.floor>=".$params['floor_min'].")";
+				$query_parts['where'][]="(re_data.floor>=".((int)$params['floor_min']).")";
 			}elseif($params['floor_max']!=0){
-				$query_parts['where'][]="(re_data.floor<=".$params['floor_max'].")";
+				$query_parts['where'][]="(re_data.floor<=".((int)$params['floor_max']).")";
 			}
 				
 			if(isset($params['not_first_floor']) && $params['not_first_floor']==1){
@@ -316,38 +316,38 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		
 		if(isset($model['floor_count'])){
 			if($params['floor_count_min']!=0 && $params['floor_count_max']!=0){
-				$query_parts['where'][]="(re_data.floor_count BETWEEN ".$params['floor_count_min']." AND ".$params['floor_count_max'].")";
+				$query_parts['where'][]="(re_data.floor_count BETWEEN ".((int)$params['floor_count_min'])." AND ".((int)$params['floor_count_max']).")";
 			}elseif($params['floor_count_min']!=0){
-				$query_parts['where'][]="(re_data.floor_count>=".$params['floor_count_min'].")";
+				$query_parts['where'][]="(re_data.floor_count>=".((int)$params['floor_count_min']).")";
 			}elseif($params['floor_count_max']!=0){
-				$query_parts['where'][]="(re_data.floor_count<=".$params['floor_count_max'].")";
+				$query_parts['where'][]="(re_data.floor_count<=".((int)$params['floor_count_max']).")";
 			}
 		}
 		
 		if(isset($model['square_all'])){
 			if($params['square_min']!=0 && $params['square_max']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`square_all` BETWEEN ".$params['square_min']." AND ".$params['square_max'].")";
+				$query_parts['where'][]="(`".$main_table."`.`square_all` BETWEEN ".((float)$params['square_min'])." AND ".((float)$params['square_max']).")";
 			}elseif($params['square_min']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`square_all`>=".$params['square_min'].")";
+				$query_parts['where'][]="(`".$main_table."`.`square_all`>=".((float)$params['square_min']).")";
 			}elseif($params['square_max']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`square_all`<=".$params['square_max'].")";
+				$query_parts['where'][]="(`".$main_table."`.`square_all`<=".((float)$params['square_max']).")";
 			}
 		}
 		
 		if(isset($model['square_live'])){
 			if(isset($params['live_square_min']) && $params['live_square_min']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`square_live` >= ".$params['live_square_min'].")";
+				$query_parts['where'][]="(`".$main_table."`.`square_live` >= ".((float)$params['live_square_min']).")";
 			}
 			if(isset($params['live_square_max']) && $params['live_square_max']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`square_live` <= ".$params['live_square_max'].")";
+				$query_parts['where'][]="(`".$main_table."`.`square_live` <= ".((float)$params['live_square_max']).")";
 			}
 		}
 		if(isset($model['square_kitchen'])){
 			if(isset($params['kitchen_square_min']) && $params['kitchen_square_min']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`square_kitchen` >= ".$params['kitchen_square_min'].")";
+				$query_parts['where'][]="(`".$main_table."`.`square_kitchen` >= ".((float)$params['kitchen_square_min']).")";
 			}
 			if(isset($params['kitchen_square_max']) && $params['kitchen_square_max']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`square_kitchen` <= ".$params['kitchen_square_max'].")";
+				$query_parts['where'][]="(`".$main_table."`.`square_kitchen` <= ".((float)$params['kitchen_square_max']).")";
 			}
 		}
 		
@@ -433,25 +433,25 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		
 		
 		if(isset($model['object_state']) && isset($params['object_state']) && is_array($params['object_state']) && count($params['object_state'])>0){
-			$query_parts['where'][]="(`".$main_table."`.`object_state` IN (".implode(',', $params['object_state'])."))";
+			$query_parts['where'][]="(`".$main_table."`.`object_state` IN (".implode(',', array_map('intval', $params['object_state']))."))";
 		}else{
 			unset($params['object_state']);
 		}
 		
 		if(isset($model['object_type']) && isset($params['object_type']) && is_array($params['object_type']) && count($params['object_type'])>0){
-			$query_parts['where'][]="(`".$main_table."`.`object_type` IN (".implode(',', $params['object_type'])."))";
+			$query_parts['where'][]="(`".$main_table."`.`object_type` IN (".implode(',', array_map('intval', $params['object_type']))."))";
 		}else{
 			unset($params['object_type']);
 		}
 		
 		if(isset($model['object_destination']) && isset($params['object_destination']) && is_array($params['object_destination']) && count($params['object_destination'])>0){
-			$query_parts['where'][]="(`".$main_table."`.`object_destination` IN (".implode(',', $params['object_destination'])."))";
+			$query_parts['where'][]="(`".$main_table."`.`object_destination` IN (".implode(',', array_map('intval', $params['object_destination']))."))";
 		}else{
 			unset($params['object_destination']);
 		}
 		
 		if(isset($model['aim']) && isset($params['aim']) && is_array($params['aim']) && count($params['aim'])>0){
-			$query_parts['where'][]="(`".$main_table."`.`aim` IN (".implode(',', $params['aim'])."))";
+			$query_parts['where'][]="(`".$main_table."`.`aim` IN (".implode(',', array_map('intval', $params['aim']))."))";
 		}else{
 			unset($params['aim']);
 		}
@@ -937,12 +937,12 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 				$childs = $Structure_Manager->get_all_childs($params['topic_id'], $category_structure);
 				if ( count($childs) > 0 ) {
 					array_push($childs, $params['topic_id']);
-					$query_parts['where'][] = 're_data.topic_id in ('.implode(' , ',$childs).') ';
+					$query_parts['where'][] = 're_data.topic_id in ('.implode(',', array_map('intval', $childs)).') ';
 				} else {
-					$query_parts['where'][] = 're_data.topic_id='.$params['topic_id'];
+					$query_parts['where'][] = 're_data.topic_id='.(int)$params['topic_id'];
 				}
 			}elseif(is_array($params['topic_id'])){
-				$query_parts['where'][] = 're_data.topic_id IN ('.implode(',', $params['topic_id']).')';
+				$query_parts['where'][] = 're_data.topic_id IN ('.implode(',', array_map('intval', $params['topic_id'])).')';
 			}
 		}
 		 
@@ -952,11 +952,11 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		}
 		 
 		if( isset($params['favorites']) && !empty($params['favorites'])){
-			$query_parts['where'][] = '`'.$main_table.'`.`id` IN ('.implode(',',$params['favorites']).')';
+			$query_parts['where'][] = '`'.$main_table.'`.`id` IN ('.implode(',', array_map('intval', $params['favorites'])).')';
 		}
 		 
 		if( isset($model['uniq_id']) && isset($params['uniq_id']) && $params['uniq_id']!=0){
-			$query_parts['where'][] = '`'.$main_table.'`.`uniq_id`='.$params['uniq_id'];
+			$query_parts['where'][] = '`'.$main_table.'`.`uniq_id`='.((int)$params['uniq_id']);
 		}
 		 
 		if( isset($model['optype']) && isset($params['optype'])){
@@ -964,22 +964,22 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		}
 		 
 		if ( isset($model['country_id']) && isset($params['country_id']) and $params['country_id'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`country_id` = '.$params['country_id'];
+			$query_parts['where'][] = '`'.$main_table.'`.`country_id` = '.((int)$params['country_id']);
 		}else{
 			unset($params['country_id']);
 		}
 		 
 		/*if ( isset($model['city_id']) && isset($params['city_id']) and $params['city_id'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`city_id` = '.$params['city_id'];
+			$query_parts['where'][] = '`'.$main_table.'`.`city_id` = '.(int)$params['city_id'];
 		}else{
 			unset($params['city_id']);
 		}*/
 		
 		if ( isset($model['city_id']) && isset($params['city_id']) ) {
 			if(is_array($params['city_id']) && !empty($params['city_id'])){
-				$query_parts['where'][] = '`'.$main_table.'`.`city_id` IN ('.implode(',', $params['city_id']).')';
+				$query_parts['where'][] = '`'.$main_table.'`.`city_id` IN ('.implode(',', array_map('intval', $params['city_id'])).')';
 			}elseif((int)$params['city_id'] != 0){
-				$query_parts['where'][] = '`'.$main_table.'`.`city_id` = '.$params['city_id'];
+				$query_parts['where'][] = '`'.$main_table.'`.`city_id` = '.(int)$params['city_id'];
 			}else{
 				unset($params['city_id']);
 			}
@@ -989,9 +989,9 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		
 		if ( isset($model['district_id']) && isset($params['district_id']) ) {
 			if(is_array($params['district_id']) && !empty($params['district_id'])){
-				$query_parts['where'][] = '`'.$main_table.'`.`district_id` IN ('.implode(',', $params['district_id']).')';
+				$query_parts['where'][] = '`'.$main_table.'`.`district_id` IN ('.implode(',', array_map('intval', $params['district_id'])).')';
 			}elseif((int)$params['district_id'] != 0){
-				$query_parts['where'][] = '`'.$main_table.'`.`district_id` = '.$params['district_id'];
+				$query_parts['where'][] = '`'.$main_table.'`.`district_id` = '.(int)$params['district_id'];
 			}else{
 				unset($params['district_id']);
 			}
@@ -1000,17 +1000,17 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		}
 		
 		/*if ( isset($model['district_id']) && isset($params['district_id']) and $params['district_id'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`district_id` = '.$params['district_id'];
+			$query_parts['where'][] = '`'.$main_table.'`.`district_id` = '.(int)$params['district_id'];
 		}else{
 			unset($params['district_id']);
 		}*/
 		
 		if ( isset($model['id']) && isset($params['id']) && $params['id'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`id` = '.$params['id'];
+			$query_parts['where'][] = '`'.$main_table.'`.`id` = '.(int)$params['id'];
 		}
 		
 		if ( isset($model['user_id']) && isset($params['user_id']) && $params['user_id'] > 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`user_id` = '.$params['user_id'];
+			$query_parts['where'][] = '`'.$main_table.'`.`user_id` = '.(int)$params['user_id'];
 		}
 		
 		if ( isset($model['hot']) && isset($params['onlyspecial']) && $params['onlyspecial'] > 0  ) {
@@ -1019,36 +1019,36 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		
 		
 		if ( isset($model['price']) && isset($params['price']) && $params['price'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`price`  <= '.$params['price'];
+			$query_parts['where'][] = '`'.$main_table.'`.`price`  <= '.((int)$params['price']);
 		}
 		
 		if ( isset($model['price']) && isset($params['price_min']) && $params['price_min'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`price`  >= '.$params['price_min'];
+			$query_parts['where'][] = '`'.$main_table.'`.`price`  >= '.((int)$params['price_min']);
 		}
 		////
 		if ( isset($model['price_pm']) && isset($params['price_pm']) && $params['price_pm'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`price_pm`  <= '.$params['price_pm'];
+			$query_parts['where'][] = '`'.$main_table.'`.`price_pm`  <= '.((int)$params['price_pm']);
 		}
 		if ( isset($model['price_pm']) && isset($params['price_pm_min']) && $params['price_pm_min'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`price_pm`  >= '.$params['price_pm_min'];
+			$query_parts['where'][] = '`'.$main_table.'`.`price_pm`  >= '.((int)$params['price_pm_min']);
 		}
 		//////
 		if ( isset($model['number']) && isset($params['house_number']) && $params['house_number'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`number`  = \''.$params['house_number'].'\'';
+			$query_parts['where'][] = '`'.$main_table.'`.`number`  = \''.addslashes($params['house_number']).'\'';
 		}
 		
 		
 		/*if ( isset($model['region_id']) && isset($params['region_id']) && $params['region_id'] != 0 ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`region_id` = '.$params['region_id'];
+			$query_parts['where'][] = '`'.$main_table.'`.`region_id` = '.(int)$params['region_id'];
 		}else{
 			unset($params['region_id']);
 		}*/
 		
 		if ( isset($model['region_id']) && isset($params['region_id']) ) {
 			if(is_array($params['region_id']) && !empty($params['region_id'])){
-				$query_parts['where'][] = '`'.$main_table.'`.`region_id` IN ('.implode(',', $params['region_id']).')';
+				$query_parts['where'][] = '`'.$main_table.'`.`region_id` IN ('.implode(',', array_map('intval', $params['region_id'])).')';
 			}elseif((int)$params['region_id'] != 0){
-				$query_parts['where'][] = '`'.$main_table.'`.`region_id` = '.$params['region_id'];
+				$query_parts['where'][] = '`'.$main_table.'`.`region_id` = '.(int)$params['region_id'];
 			}else{
 				unset($params['region_id']);
 			}
@@ -1065,7 +1065,7 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		
 		if ( isset($model['metro_id']) && isset($params['metro_id']) ) {
 			if(is_array($params['metro_id']) && !empty($params['metro_id'])){
-				$query_parts['where'][] = '`'.$main_table.'`.`metro_id` IN ('.implode(',', $params['metro_id']).')';
+				$query_parts['where'][] = '`'.$main_table.'`.`metro_id` IN ('.implode(',', array_map('intval', $params['metro_id'])).')';
 			}elseif((int)$params['metro_id'] != 0){
 				$query_parts['where'][] = '`'.$main_table.'`.`metro_id` = '.(int)$params['metro_id'];
 			}else{
@@ -1076,13 +1076,13 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		}
 		
 		if ( isset($model['street_id']) && isset($params['street_id']) && $params['street_id'] != 0  ) {
-			$query_parts['where'][] = '`'.$main_table.'`.`street_id` = '.$params['street_id'];
+			$query_parts['where'][] = '`'.$main_table.'`.`street_id` = '.((int)$params['street_id']);
 		}else{
 			unset($params['street_id']);
 		}
 		
 		if(isset($params['srch_phone']) && $params['srch_phone'] !== NULL){
-			$phone = preg_replace('/[^\d]/', '', $params['srch_phone']);
+			$phone = addslashes(preg_replace('/[^\d]/', '', $params['srch_phone']));
 			$sub_where=array();
 			if($phone!=''){
 				if($this->getConfigValue('allow_additional_mobile_number') && isset($model['ad_mobile_phone'])){
@@ -1104,7 +1104,7 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		
 		if(isset($params['srch_word']) && $params['srch_word'] !== NULL){
 			$sub_where=array();
-			$word=htmlspecialchars($params['srch_word'], ENT_QUOTES, SITE_ENCODING);
+			$word=addslashes(htmlspecialchars($params['srch_word'], ENT_QUOTES, SITE_ENCODING));
 			if(isset($model['text'])){
 				$sub_where[] = '(`'.$main_table.'`.`text` LIKE \'%'.$word.'%\')';
 			}
@@ -1146,21 +1146,21 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		
 		if(isset($model['date_added'])){
 			if($params['srch_date_from']!=0 && $params['srch_date_to']!=0){
-				$query_parts['where'][]="((`".$main_table."`.`date_added`>='".$params['srch_date_from']."') AND (`".$main_table."`.`date_added`<='".$params['srch_date_to']."'))";
+				$query_parts['where'][]="((`".$main_table."`.`date_added`>='".preg_replace('/[^0-9\-: ]/', '', $params['srch_date_from'])."') AND (`".$main_table."`.`date_added`<='".preg_replace('/[^0-9\-: ]/', '', $params['srch_date_to'])."'))";
 			}elseif($params['srch_date_from']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`date_added`>='".$params['srch_date_from']."')";
+				$query_parts['where'][]="(`".$main_table."`.`date_added`>='".preg_replace('/[^0-9\-: ]/', '', $params['srch_date_from'])."')";
 			}elseif($params['srch_date_to']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`date_added`<='".$params['srch_date_to']."')";
+				$query_parts['where'][]="(`".$main_table."`.`date_added`<='".preg_replace('/[^0-9\-: ]/', '', $params['srch_date_to'])."')";
 			}
 		}
 		
 		if(isset($model['floor'])){
 			if($params['floor_min']!=0 && $params['floor_max']!=0){
-				$query_parts['where'][]="(re_data.floor BETWEEN ".$params['floor_min']." AND ".$params['floor_max'].")";
+				$query_parts['where'][]="(re_data.floor BETWEEN ".((int)$params['floor_min'])." AND ".((int)$params['floor_max']).")";
 			}elseif($params['floor_min']!=0){
-				$query_parts['where'][]="(re_data.floor>=".$params['floor_min'].")";
+				$query_parts['where'][]="(re_data.floor>=".((int)$params['floor_min']).")";
 			}elseif($params['floor_max']!=0){
-				$query_parts['where'][]="(re_data.floor<=".$params['floor_max'].")";
+				$query_parts['where'][]="(re_data.floor<=".((int)$params['floor_max']).")";
 			}
 			
 			if(isset($params['not_first_floor']) && $params['not_first_floor']==1){
@@ -1174,38 +1174,38 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		
 		if(isset($model['floor_count'])){
 			if($params['floor_count_min']!=0 && $params['floor_count_max']!=0){
-				$query_parts['where'][]="(re_data.floor_count BETWEEN ".$params['floor_count_min']." AND ".$params['floor_count_max'].")";
+				$query_parts['where'][]="(re_data.floor_count BETWEEN ".((int)$params['floor_count_min'])." AND ".((int)$params['floor_count_max']).")";
 			}elseif($params['floor_count_min']!=0){
-				$query_parts['where'][]="(re_data.floor_count>=".$params['floor_count_min'].")";
+				$query_parts['where'][]="(re_data.floor_count>=".((int)$params['floor_count_min']).")";
 			}elseif($params['floor_count_max']!=0){
-				$query_parts['where'][]="(re_data.floor_count<=".$params['floor_count_max'].")";
+				$query_parts['where'][]="(re_data.floor_count<=".((int)$params['floor_count_max']).")";
 			}
 		}
 		
 		if(isset($model['square_all'])){
 			if($params['square_min']!=0 && $params['square_max']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`square_all` BETWEEN ".$params['square_min']." AND ".$params['square_max'].")";
+				$query_parts['where'][]="(`".$main_table."`.`square_all` BETWEEN ".((float)$params['square_min'])." AND ".((float)$params['square_max']).")";
 			}elseif($params['square_min']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`square_all`>=".$params['square_min'].")";
+				$query_parts['where'][]="(`".$main_table."`.`square_all`>=".((float)$params['square_min']).")";
 			}elseif($params['square_max']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`square_all`<=".$params['square_max'].")";
+				$query_parts['where'][]="(`".$main_table."`.`square_all`<=".((float)$params['square_max']).")";
 			}
 		}
 		
 		if(isset($model['square_live'])){
 			if(isset($params['live_square_min']) && $params['live_square_min']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`square_live` >= ".$params['live_square_min'].")";
+				$query_parts['where'][]="(`".$main_table."`.`square_live` >= ".((float)$params['live_square_min']).")";
 			}
 			if(isset($params['live_square_max']) && $params['live_square_max']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`square_live` <= ".$params['live_square_max'].")";
+				$query_parts['where'][]="(`".$main_table."`.`square_live` <= ".((float)$params['live_square_max']).")";
 			}
 		}
 		if(isset($model['square_kitchen'])){
 			if(isset($params['kitchen_square_min']) && $params['kitchen_square_min']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`square_kitchen` >= ".$params['kitchen_square_min'].")";
+				$query_parts['where'][]="(`".$main_table."`.`square_kitchen` >= ".((float)$params['kitchen_square_min']).")";
 			}
 			if(isset($params['kitchen_square_max']) && $params['kitchen_square_max']!=0){
-				$query_parts['where'][]="(`".$main_table."`.`square_kitchen` <= ".$params['kitchen_square_max'].")";
+				$query_parts['where'][]="(`".$main_table."`.`square_kitchen` <= ".((float)$params['kitchen_square_max']).")";
 			}
 		}
 		
@@ -1291,25 +1291,25 @@ class Front_Grid_Constructor extends SiteBill_Krascap {
 		
 		
 		if(isset($model['object_state']) && isset($params['object_state']) && is_array($params['object_state']) && count($params['object_state'])>0){
-			$query_parts['where'][]="(`".$main_table."`.`object_state` IN (".implode(',', $params['object_state'])."))";
+			$query_parts['where'][]="(`".$main_table."`.`object_state` IN (".implode(',', array_map('intval', $params['object_state']))."))";
 		}else{
 			unset($params['object_state']);
 		}
 		
 		if(isset($model['object_type']) && isset($params['object_type']) && is_array($params['object_type']) && count($params['object_type'])>0){
-			$query_parts['where'][]="(`".$main_table."`.`object_type` IN (".implode(',', $params['object_type'])."))";
+			$query_parts['where'][]="(`".$main_table."`.`object_type` IN (".implode(',', array_map('intval', $params['object_type']))."))";
 		}else{
 			unset($params['object_type']);
 		}
 		
 		if(isset($model['object_destination']) && isset($params['object_destination']) && is_array($params['object_destination']) && count($params['object_destination'])>0){
-			$query_parts['where'][]="(`".$main_table."`.`object_destination` IN (".implode(',', $params['object_destination'])."))";
+			$query_parts['where'][]="(`".$main_table."`.`object_destination` IN (".implode(',', array_map('intval', $params['object_destination']))."))";
 		}else{
 			unset($params['object_destination']);
 		}
 		
 		if(isset($model['aim']) && isset($params['aim']) && is_array($params['aim']) && count($params['aim'])>0){
-			$query_parts['where'][]="(`".$main_table."`.`aim` IN (".implode(',', $params['aim'])."))";
+			$query_parts['where'][]="(`".$main_table."`.`aim` IN (".implode(',', array_map('intval', $params['aim']))."))";
 		}else{
 			unset($params['aim']);
 		}

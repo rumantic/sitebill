@@ -21,7 +21,6 @@ define('SITEBILL_DOCUMENT_ROOT', $sitebill_document_root);
 define('SITEBILL_MAIN_URL', $folder);
 define('DB_PREFIX', $__db_prefix);
 
-//ini_set("include_path", $include_path );
 require_once(SITEBILL_DOCUMENT_ROOT.'/third/smarty/Smarty.class.php');
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/init.php');
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/db/MySQL.php');

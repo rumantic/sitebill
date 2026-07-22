@@ -1,16 +1,25 @@
+<script>
+	const appclientwords = {
+	    inputemails: 'Введите email или несколько вписывая каждый с новой строки',
+		inputadditionalmsg: 'Возможно Вы захотите добавить сопроводительное сообщение',
+		inputlettertheme: 'и тему письма',
+		sendbtn: 'Отправить',
+		decline: 'Я передумал'
+	};
+</script>
 <form class="form-inline" method="get" action="{$estate_folder}/admin/">
 	<input type="hidden" name="action" value="client">
 	<div class="row-fluid">
 		<div class="span6">
 			<div class="control-group">
 				<h3 class="row-fluid header smaller lighter blue">
-					<span class="span7"> Тип </span>
+					<span class="span7"> {_word key='client.FILTER_TYPE'} </span>
 				</h3>
 				{foreach from=$order_types key=key item=order_type}
 					<div class="controls span4">
 						<label>
 							<input type="checkbox" name="type_id[]" class="ace" value="{$key}"{if $order_type.s==1} checked="checked"{/if}>
-							<span class="lbl"></span>{$order_type.n}
+							<span class="lbl"> {$order_type.n}</span>
 						</label>
 					</div>
 				{/foreach}
@@ -19,26 +28,26 @@
 		<div class="span6">
 			<div class="control-group">
 				<h3 class="row-fluid header smaller lighter blue">
-					<span class="span7"> Статус </span>
+					<span class="span7"> {_word key='client.FILTER_STATUS'} </span>
 				</h3>
 				{foreach from=$order_statuses key=key item=order_status}
 					<div class="controls span4">
 						<label>
 							<input type="checkbox" name="status_id[]" class="ace" value="{$key}"{if $order_status.s==1} checked="checked"{/if}>
-							<span class="lbl"></span>{$order_status.n}
+							<span class="lbl"> {$order_status.n}</span>
 						</label>
 					</div>
 				{/foreach}
 			</div>
 		</div>
 	</div>
-	<input type="submit" class="btn btn-inverse btn-mini" value="Фильтровать">
+	<input type="submit" class="btn btn-inverse btn-mini" value="{_word key='client.GRID_GOFILTER'}">
 </form>
 
 <div class="widget-box">
 	<div class="widget-header header-color-blue">
 		<h5 class="bigger lighter">
-			<i class="icon-table"></i> Заявки
+			<i class="icon-table"></i> {_word key='client.GRID_TITLE_ORDERS'}
 		</h5>
 	</div>
 	{if isset($orders) && is_array($orders) && !empty($orders)}
@@ -81,7 +90,7 @@
 					{/if}
 					<div class="btn-group set_status" data-id="{$order.client_id}">
 						<button data-toggle="dropdown" class="btn btn-inverse btn-mini dropdown-toggle">
-							Сменить статус
+							{_word key='client.GRID_CHANGESTATUS'}
 							<span class="caret"></span>
 						</button>
 
@@ -97,12 +106,12 @@
 					<td>
 						{$order.fio}<br>
 						{$order.email}<br>
-						{$order.phone}<br>
+						{$order.phone} {$order.phonecountrycountry}<br>
 					</td>
 					<td class="controlsblock">
-						<a href="#" class="btn btn-mini btn-info show_order" data-id="{$order.client_id}">Подробнее</a>
-						<a href="#" class="btn btn-mini btn-info send_email" data-id="{$order.client_id}">Отправить на e-mail</a>
-						<a href="#" class="btn btn-mini btn-danger delete" data-id="{$order.client_id}">Удалить</a>
+						<a href="#" class="btn btn-mini btn-info show_order" data-id="{$order.client_id}">{_word key='client.GRID_DETAILS'}</a>
+						<a href="#" class="btn btn-mini btn-info send_email" data-id="{$order.client_id}">{_word key='client.GRID_SEBDBYEMAIL'}</a>
+						<a href="#" class="btn btn-mini btn-danger delete" data-id="{$order.client_id}">{_word key='client.GRID_DELETE'}</a>
 						<div class="subcontrols"></div>
 					</td>
 				</tr>
@@ -115,32 +124,48 @@
 </div>
 {if isset($orders) && is_array($orders) && !empty($orders)}
 <div id="hold" style="display: none">
-{foreach from=$orders item=order}
-	<div class="hold_{$order.client_id}">
-		<p><strong>{$order.date|date_format:'Y-m-d'}</strong>
-		{if $order.status_id=='new'}
-		<span class="label label-important status_label">Новая</span>
-		{elseif $order.status_id=='inprogress'}
-		<span class="label label-warning status_label">Выполняется</span>
-		{elseif $order.status_id=='complete'}
-		<span class="label label-success status_label">Закрыта</span>
-		{elseif $order.status_id=='cancel'}
-		<span class="label status_label">Отменена</span>
-		{elseif $order.status_id=='black'}
-		<span class="label label-inverse status_label">Плохо</span>
-		{else}
-		<span class="label label-info status_label">Другое</span>
-		{/if}<strong>{$orders_m.type_id.select_data[$order.type_id]}</strong>
-		</p>
-		{$order.order_text}
-	</div>
-{/foreach}
+	{foreach from=$orders item=order}
+		<div class="hold_{$order.client_id}">
+			<p>
+				<strong>{$order.date|date_format:'Y-m-d H:i'}</strong>
+				{if $order.status_id=='new'}
+					<span class="label label-important status_label">{$order_statuses[$order.status_id].n}</span>
+				{elseif $order.status_id=='inprogress'}
+					<span class="label label-warning status_label">{$order_statuses[$order.status_id].n}</span>
+				{elseif $order.status_id=='complete'}
+					<span class="label label-success status_label">{$order_statuses[$order.status_id].n}</span>
+				{elseif $order.status_id=='cancel'}
+					<span class="label status_label">{$order_statuses[$order.status_id].n}</span>
+				{elseif $order.status_id=='black'}
+					<span class="label label-inverse status_label">{$order_statuses[$order.status_id].n}</span>
+				{else}
+					<span class="label label-info status_label">{$order_statuses[$order.status_id].n}</span>
+				{/if}
+				<strong>{$orders_m.type_id.select_data[$order.type_id]}</strong>
+			</p>
+			<hr>
+			{if $order.fio != '' || $order.email != '' || $order.phone != ''}
+				{if $order.fio != ''}
+					<p><i class="fa fa-user"></i> {$order.fio}</p>
+				{/if}
+				{if $order.email != ''}
+					<p><i class="fa fa-envelope"></i> {$order.email}</p>
+				{/if}
+				{if $order.phone != ''}
+					<p><i class="fa fa-phone"></i> {$order.phone}</p>
+				{/if}
+				<hr>
+			{/if}
+
+			{$order.order_text}
+		</div>
+	{/foreach}
 </div>
 {/if}
 <div class="modal hide fade" id="myOrderModal">
 	<div class="modal-header">
 		<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-		<h3>Просмотр заявки</h3>
+		<h3>Просмотр заявки <span class="orderid"></span></h3>
 	</div>
 	<div class="modal-body"></div>
 	<div class="modal-footer"></div>
@@ -151,6 +176,7 @@
 $(document).ready(function(){
 	$('#myOrderModal').on('hidden', function () {
 		$('#myOrderModal .modal-body').html('');
+        $('#myOrderModal .modal-header .orderid').text('');
 	});
 	$('#ordertable .delete').click(function(e){
 		e.preventDefault();
@@ -174,12 +200,13 @@ $(document).ready(function(){
 		e.preventDefault();
 		var id=$(this).data('id');
 		$('#myOrderModal .modal-body').html($('#hold .hold_'+id).html());
+        $('#myOrderModal .modal-header .orderid').text('#' + id);
 		$('#myOrderModal').modal('show');
 	});
 	$('#ordertable .send_email').click(function(e){
 		e.preventDefault();
 		var id=$(this).data('id');
-		var new_win=$('<div class="send_by_email" alt="'+id+'"><p><small>Введите email или несколько вписывая каждый с новой строки</small></p><textarea name="emails"></textarea><p><small>Возможно Вы захотите добавить сопроводительное сообщение</small></p><textarea name="message"></textarea><p><small>и тему письма</small></p><input type="text" name="theme"><p><button class="btn btn-mini ok">Отправить</button> <button class="btn btn-mini not">Я передумал</button></p></div>');
+		var new_win=$('<div class="send_by_email" alt="'+id+'"><p><small>' + appclientwords.inputemails + '</small></p><textarea name="emails"></textarea><p><small>' + appclientwords.inputadditionalmsg + '</small></p><textarea name="message"></textarea><p><small>' + appclientwords.inputlettertheme + '</small></p><input type="text" name="theme"><p><button class="btn btn-mini btn-success ok">' + appclientwords.sendbtn + '</button> <button class="btn btn-mini btn-danger not">' + appclientwords.decline + '</button></p></div>');
 		$(this).parents('.controlsblock').eq(0).find('.subcontrols').append(new_win);
 	});
 	$(document).on('click', '.send_by_email button.ok', function(){

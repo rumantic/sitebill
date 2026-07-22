@@ -56,7 +56,18 @@ class API_Controller extends API_Common {
             //$this->writeLog('$class_name = '.$class_name);
 
             $run_class_action = new $class_name;
-            echo $run_class_action->main();
+            $api_class_from_namespace = '\\'.$action.'\api\\'.$action;
+            if ( class_exists($api_class_from_namespace) ) {
+                $run_class_action_api = new $api_class_from_namespace;
+            }
+            // Так как теперь новые АПИ должны располагаться в /apps/ACTION/api, но при этом еще нужно сохранить старую
+            // совместимость, когда все апи были в /apps/api/, то приходится проверить сначала, есть ли методы в старом API
+            // А потом вызывать новое АПИ, если оно есть и в нем определены методы нужные
+            if ( !method_exists($run_class_action, '_'.$this->request->get('do')) and class_exists($api_class_from_namespace) and method_exists($run_class_action_api, '_'.$this->request->get('do')) ) {
+                echo $run_class_action_api->main();
+            } else {
+                echo $run_class_action->main();
+            }
             exit;
         } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/' . $action . '/api/class.' . $action . '.php')) {
             require_once (SITEBILL_DOCUMENT_ROOT . '/apps/' . $action . '/api/class.' . $action . '.php');
@@ -67,9 +78,18 @@ class API_Controller extends API_Common {
             echo $run_class_action->main();
             exit;
         } elseif ( class_exists('\\'.$action.'\api\\'.$action) ) {
-            $class_name = '\\'.$action.'\api\\'.$action;
-            $run_class_action = new $class_name;
-            echo $run_class_action->main();
+            try {
+                $class_name = '\\'.$action.'\api\\'.$action;
+                $run_class_action = new $class_name;
+                echo $run_class_action->main();
+            } catch (Exception $e) {
+                $ret = array(
+                    'status' => 'error',
+                    'data' => ['message' => $e->getMessage()],
+                    'request' => $this->request()->all(),
+                );
+                echo $this->json_string($ret);
+            }
             exit;
         } else {
             echo 'api error';

@@ -1,247 +1,138 @@
-                    <ul class="nav ace-nav pull-right">
-                    
-                    
-                        <!-- li class="grey">
-                            <a data-toggle="dropdown" class="dropdown-toggle" href="#">
-                                <i class="icon-tasks"></i>
-                                <span class="badge badge-grey">4</span>
-                            </a>
+<ul class="nav ace-nav pull-right">
 
-                            <ul class="pull-right dropdown-navbar dropdown-menu dropdown-caret dropdown-closer">
-                                <li class="nav-header">
-                                    <i class="icon-ok"></i>
-                                    4 Tasks to complete
-                                </li>
+    {if $interface.admin_admin3}
+        <li class="orange">
+            <a href="{$interface.admin_admin3.href}" target="_blank" class="btn-warning"><i class="{$interface.admin_admin3.icon}"></i> {$interface.admin_admin3.title}</a>
+        </li>
+    {/if}
 
-                                <li>
-                                    <a href="#">
-                                        <div class="clearfix">
-                                            <span class="pull-left">Software Update</span>
-                                            <span class="pull-right">65%</span>
-                                        </div>
 
-                                        <div class="progress progress-mini ">
-                                            <div style="width:65%" class="bar"></div>
-                                        </div>
-                                    </a>
-                                </li>
+    {if $interface.admin_site}
+        <li class="green">
+            <a href="{$interface.admin_site.href}" target="_blank"><i class="{$interface.admin_site.icon}"></i> {$interface.admin_site.title}</a>
+        </li>
+    {/if}
 
-                                <li>
-                                    <a href="#">
-                                        <div class="clearfix">
-                                            <span class="pull-left">Hardware Upgrade</span>
-                                            <span class="pull-right">35%</span>
-                                        </div>
+    {if $interface.apps}
+        <li>
+            {if $smarty.const.DEVMODE==1}
+                <a href="#myModalAPP" role="button" class="btn" data-toggle="modal">{$L_ADMIN_MENU_APPLICATIONS}</a>
+            {else}
+                <a href="#" data-toggle="dropdown" class="btn-info dropdown-toggle">
+                    {$L_ADMIN_MENU_APPLICATIONS}
+                    <i class="icon-angle-down icon-on-right"></i>
+                </a>
 
-                                        <div class="progress progress-mini progress-danger">
-                                            <div style="width:35%" class="bar"></div>
-                                        </div>
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a href="#">
-                                        <div class="clearfix">
-                                            <span class="pull-left">Unit Testing</span>
-                                            <span class="pull-right">15%</span>
-                                        </div>
-
-                                        <div class="progress progress-mini progress-warning">
-                                            <div style="width:15%" class="bar"></div>
-                                        </div>
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a href="#">
-                                        <div class="clearfix">
-                                            <span class="pull-left">Bug Fixes</span>
-                                            <span class="pull-right">90%</span>
-                                        </div>
-
-                                        <div class="progress progress-mini progress-success progress-striped active">
-                                            <div style="width:90%" class="bar"></div>
-                                        </div>
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a href="#">
-                                        See tasks with details
-                                        <i class="icon-arrow-right"></i>
-                                    </a>
-                                </li>
-                            </ul>
+                <ul class="dropdown-menu" style="max-height: 90vh; overflow: auto;">
+                    {foreach from=$interface.apps.childs item=ama}
+                        <li>
+                           <a {if isset($ama.childs) && $ama.childs|count>0}data-toggle="dropdown"  class="dropdown-toggle" href="{$ama.href}" data-target="#"{else}href="{$ama.href}"{/if}>{$ama.title}</a>
                         </li>
+                    {/foreach}
+                </ul>
+            {/if}
+        </li>
+    {/if}
+    {if isset($interface.custom_entity_menu) && $interface.custom_entity_menu|count>0}
+        <li>
+            <a href="#" data-toggle="dropdown" class="btn-info dropdown-toggle">
+                {$L_ADMIN_MENU_ADDITIONAL_APPLICATIONS}
+                <i class="icon-angle-down icon-on-right"></i>
+            </a>
 
-                        <li class="purple">
-                            <a data-toggle="dropdown" class="dropdown-toggle" href="#">
-                                <i class="icon-bell-alt icon-animated-bell"></i>
-                                <span class="badge badge-important">8</span>
-                            </a>
+            <ul class="dropdown-menu">
+                {foreach from=$interface.custom_entity_menu item=custom_admin_entity}
+                    <li>
+                        <a href="{$custom_admin_entity.href}">{$custom_admin_entity.entity_title}</a>
+                    </li>
+                {/foreach}
+            </ul>
+        </li>
+    {/if}
 
-                            <ul class="pull-right dropdown-navbar navbar-pink dropdown-menu dropdown-caret dropdown-closer">
-                                <li class="nav-header">
-                                    <i class="icon-warning-sign"></i>
-                                    8 Notifications
-                                </li>
+    {if isset($interface.langswitcher)}
+        <li>
+            <a href="#" data-toggle="dropdown" class="btn-info dropdown-toggle">
+                <i class="icon-globe icon-on-right"></i> {$interface.langswitcher.current}
+                <i class="icon-angle-down icon-on-right"></i>
+            </a>
 
-                                <li>
-                                    <a href="#">
-                                        <div class="clearfix">
-                                            <span class="pull-left">
-                                                <i class="btn btn-mini no-hover btn-pink icon-comment"></i>
-                                                New Comments
-                                            </span>
-                                            <span class="pull-right badge badge-info">+12</span>
-                                        </div>
-                                    </a>
-                                </li>
+            <ul class="dropdown-menu">
+                {foreach from=$interface.langswitcher.variants item=variant}
+                    <li{if $variant.active == 1} class="active"{/if}><a href="{$variant.href}">{$variant.name}</a></li>
+                {/foreach}
+            </ul>
+        </li>
+    {/if}
 
-                                <li>
-                                    <a href="#">
-                                        <i class="btn btn-mini btn-primary icon-user"></i>
-                                        Bob just signed up as an editor ...
-                                    </a>
-                                </li>
+    {if $smarty.const.BRANDING!=1}
+        {if $interface.knowlegebase && !empty($interface.knowlegebase)}
+            <li class="purple">
+                <a href="#" data-toggle="dropdown" class="dropdown-toggle">
+                    <i class="icon-question-sign icon-on-right"></i>
+                </a>
 
-                                <li>
-                                    <a href="#">
-                                        <div class="clearfix">
-                                            <span class="pull-left">
-                                                <i class="btn btn-mini no-hover btn-success icon-shopping-cart"></i>
-                                                New Orders
-                                            </span>
-                                            <span class="pull-right badge badge-success">+8</span>
-                                        </div>
-                                    </a>
-                                </li>
+                <ul class="dropdown-menu">
+                    {foreach from=$interface.knowlegebase item=item}
+                    <li>
+                        <a href="{$item.href}"{if $item.hreftarget != ''} target="_blank"{/if}><i class="icon-white{if $item.icon != ''} {$item.icon}{/if}"></i> {$item.title}</a>
+                    </li>
+                    {/foreach}
+                </ul>
+            </li>
+        {/if}
+    {/if}
 
-                                <li>
-                                    <a href="#">
-                                        <div class="clearfix">
-                                            <span class="pull-left">
-                                                <i class="btn btn-mini no-hover btn-info icon-twitter"></i>
-                                                Followers
-                                            </span>
-                                            <span class="pull-right badge badge-info">+11</span>
-                                        </div>
-                                    </a>
-                                </li>
 
-                                <li>
-                                    <a href="#">
-                                        See all notifications
-                                        <i class="icon-arrow-right"></i>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
+    {if $admin_template_allowed|@count > 1}
+    <li>
+        <a href="#" data-toggle="dropdown" class="dropdown-toggle">
+            <i class="icon-magic"></i>
+            <i class="icon-angle-down icon-on-right"></i>
+        </a>
+        <ul class="dropdown-menu dropdown-caret dropdown-closer">
+            {foreach from=$admin_template_allowed item=tpl_name}
+                <li{if $tpl_name == $admin_template} class="active"{/if}>
+                    <a href="?admin_template={$tpl_name}">{$tpl_name}</a>
+                </li>
+            {/foreach}
+        </ul>
+    </li>
+    {/if}
 
-                        <li class="green">
-                            <a data-toggle="dropdown" class="dropdown-toggle" href="#">
-                                <i class="icon-envelope icon-animated-vertical"></i>
-                                <span class="badge badge-success">5</span>
-                            </a>
 
-                            <ul class="pull-right dropdown-navbar dropdown-menu dropdown-caret dropdown-closer">
-                                <li class="nav-header">
-                                    <i class="icon-envelope-alt"></i>
-                                    5 Messages
-                                </li>
+    <li class="light-blue">
+        <a data-toggle="dropdown" href="#" class="dropdown-toggle">
+            {if $current_user_info.imgfile.value != ''}
+            <img class="nav-user-photo" src="{$estate_folder}/img/data/user/{$current_user_info.imgfile.value}"  />
+            {else}
+            <img class="nav-user-photo" src="{$assets_folder}/assets/avatars/avatar2.png"  />
+            {/if}
 
-                                <li>
-                                    <a href="#">
-                                        <img src="assets/avatars/avatar.png" class="msg-photo" alt="Alex's Avatar" />
-                                        <span class="msg-body">
-                                            <span class="msg-title">
-                                                <span class="blue">Alex:</span>
-                                                Ciao sociis natoque penatibus et auctor ...
-                                            </span>
+            <span class="user-info">
+                <small>Привет,</small>
+                {if $current_user_info.fio.value != ''}{$current_user_info.fio.value}{else}{$current_user_info.login.value}{/if}
+            </span>
 
-                                            <span class="msg-time">
-                                                <i class="icon-time"></i>
-                                                <span>a moment ago</span>
-                                            </span>
-                                        </span>
-                                    </a>
-                                </li>
+            <i class="icon-caret-down"></i>
+        </a>
 
-                                <li>
-                                    <a href="#">
-                                        <img src="assets/avatars/avatar3.png" class="msg-photo" alt="Susan's Avatar" />
-                                        <span class="msg-body">
-                                            <span class="msg-title">
-                                                <span class="blue">Susan:</span>
-                                                Vestibulum id ligula porta felis euismod ...
-                                            </span>
+        <ul class="user-menu pull-right dropdown-menu dropdown-yellow dropdown-caret dropdown-closer">
+            <li>
+                <a href="{$estate_folder}/admin/?action=user&do=edit&user_id={$current_user_info.user_id.value}">
+                    <i class="icon-user"></i>
+                    {$L_MY_PROFILE}
+                </a>
+            </li>
 
-                                            <span class="msg-time">
-                                                <i class="icon-time"></i>
-                                                <span>20 minutes ago</span>
-                                            </span>
-                                        </span>
-                                    </a>
-                                </li>
+            <li class="divider"></li>
 
-                                <li>
-                                    <a href="#">
-                                        <img src="assets/avatars/avatar4.png" class="msg-photo" alt="Bob's Avatar" />
-                                        <span class="msg-body">
-                                            <span class="msg-title">
-                                                <span class="blue">Bob:</span>
-                                                Nullam quis risus eget urna mollis ornare ...
-                                            </span>
-
-                                            <span class="msg-time">
-                                                <i class="icon-time"></i>
-                                                <span>3:15 pm</span>
-                                            </span>
-                                        </span>
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a href="#">
-                                        See all messages
-                                        <i class="icon-arrow-right"></i>
-                                    </a>
-                                </li>
-                            </ul>
-                        </li-->
-
-                        <li class="light-blue">
-                            <a data-toggle="dropdown" href="#" class="dropdown-toggle">
-                                {if $current_user_info.imgfile.value != ''}
-                                <img class="nav-user-photo" src="{$estate_folder}/img/data/user/{$current_user_info.imgfile.value}"  />
-                                {else}
-                                <img class="nav-user-photo" src="{$assets_folder}/assets/avatars/avatar2.png"  />
-                                {/if}
-                                
-                                <span class="user-info">
-                                    <small>Привет,</small>
-                                    {if $current_user_info.fio.value != ''}{$current_user_info.fio.value}{else}{$current_user_info.login.value}{/if}
-                                </span>
-
-                                <i class="icon-caret-down"></i>
-                            </a>
-
-                            <ul class="user-menu pull-right dropdown-menu dropdown-yellow dropdown-caret dropdown-closer">
-                                <li>
-                                    <a href="{$estate_folder}/admin/?action=user&do=edit&user_id={$current_user_info.user_id.value}">
-                                        <i class="icon-user"></i>
-                                        {$L_MY_PROFILE}
-                                    </a>
-                                </li>
-
-                                <li class="divider"></li>
-
-                                <li>
-                                    <a href="?action=logout">
-                                        <i class="icon-off"></i>
-                                        {$L_LOGOUT_BUTTON}
-                                    </a>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul><!-- /.ace-nav -->
+            <li>
+                <a href="?action=logout">
+                    <i class="icon-off"></i>
+                    {$L_LOGOUT_BUTTON}
+                </a>
+            </li>
+        </ul>
+    </li>
+</ul>

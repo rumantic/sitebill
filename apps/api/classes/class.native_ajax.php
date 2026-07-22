@@ -16,6 +16,20 @@ class Native_Ajax extends API_Common {
             echo $uploadify->main( $this->request->get('file') );
             exit;
         }
+
+        if ( $this->request->get('do') == 'view_data_event' ) {
+            $data = \system\lib\model\eloquent\Data::where('id', $this->request->get('id'))->first();
+            if ( $data ) {
+                $data->view_count = ++$data->view_count;
+                $data->save();
+                $result = "success update id = ".$data->id;
+            } else {
+                $result = "error on update id = ".$data->id;
+            }
+            echo $result;
+            exit;
+        }
+
         if ( $this->request->get('get_cms_session') == 1 ) {
             require_once (SITEBILL_DOCUMENT_ROOT . '/apps/api/classes/class.oauth.php');
             $oauth = new API_oauth();
@@ -26,6 +40,18 @@ class Native_Ajax extends API_Common {
             }
 
             echo $this->json_string($result);
+            exit;
+        }
+
+        if ( $this->request->get('exclude_id_from_grid') ) {
+            $exclude_ids_array = [];
+            if (isset($_COOKIE['exclude_ids_array'])) {
+                $exclude_ids_array = json_decode($_COOKIE['exclude_ids_array']);
+            }
+            $exclude_ids_array[] = $this->request->get('exclude_id_from_grid');
+            @setcookie('exclude_ids_array', json_encode($exclude_ids_array), strtotime('+30 days'), '/');
+            $response = ['exclude' => 1];
+            echo $this->request_success($response);
             exit;
         }
 

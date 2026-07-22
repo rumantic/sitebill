@@ -4,14 +4,18 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * Sitebill admin backend
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
-function untrailingslashit($string)
-{
-    return rtrim($string, '/');
+if(!function_exists('untrailingslashit')){
+    function untrailingslashit($string)
+    {
+        return rtrim($string, '/');
+    }
 }
 
-function trailingslashit($string)
-{
-    return untrailingslashit($string) . '/';
+if(!function_exists('trailingslashit')){
+    function trailingslashit($string)
+    {
+        return untrailingslashit($string) . '/';
+    }
 }
 
 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/sitebill/class/error.php');
@@ -33,7 +37,7 @@ class sitebill_admin extends Object_Manager
         $this->app_title = Multilanguage::_('APPLICATION_NAME', 'sitebill');
         $this->apps_dir = SITEBILL_DOCUMENT_ROOT . '/apps';
         parent::__construct();
-        $this->filesystem = new Sitebill_Filesystem($arg);
+        $this->filesystem = new Sitebill_Filesystem();
 
     }
 
@@ -69,6 +73,7 @@ class sitebill_admin extends Object_Manager
 
     function main()
     {
+        $this->template->assert('loadnanoapi', 1);
         if ($this->getRequestValue('do') == 'update') {
             $rs = $this->update_app($this->getRequestValue('app'));
         } elseif ($this->getRequestValue('do') == 'post_update') {

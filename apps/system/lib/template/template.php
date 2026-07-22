@@ -26,46 +26,35 @@ class Template {
     }
 
     /**
-    * Set main template file name
-    * Return true if set name success and false if else
-    * @param: string $template_name - template name
-    * @return: boolean
-    */
-    /*function set_name ( $template_name ) {
-        if ( $this->template_name == "" ) {
-            $this->template_name = $template_name;
-            return true;
-        } else {
-            return false;
-        }
-    }*/
-
-    /**
     * Assert template set
-    * @param string - set variable name
-    * @param string - value
+    * @param string|array $set variable name or associative array of variables
+    * @param mixed $value value
     * @return boolean
     */
-    function assert ( $set, $value ) {
+    function assert ( $set, $value = null ) {
         global $smarty;
-        $this->item[$set] = $value;
-        SiteBill::set_template_store($set, $value);
-        $smarty->assign($set, $value);
+        if(is_array($set)){
+            foreach($set as $k => $v){
+                $this->item[$k] = $v;
+                SiteBill::set_template_store($k, $v);
+            }
+            $smarty->assign($set);
+        }else{
+            $this->item[$set] = $value;
+            SiteBill::set_template_store($set, $value);
+            $smarty->assign($set, $value);
+        }        
         return true;
     }
-
-    /*function get_val ( $set ) {
-    	return $this->item[$set];
-    }*/
 
     /**
      * DEPRECATED
      * Assert template set
-     * @param string - set variable name
-     * @param string - value
+     * @param string|array - variable name or associative array of variables
+     * @param mixed - value
      * @return boolean
      */
-    function assign ( $set, $value ) {
+    function assign ( $set, $value = null ) {
         return $this->assert($set, $value);
     }
 
@@ -77,67 +66,6 @@ class Template {
         }
         return $smarty->fetch($template);
     }
-
-    /**
-    * Function to load template from table TEMPLATE
-    * @param: $init - initialize object, $event_code - EVENT CODE for identify template name
-    * @returns: $string - name of template file with path from ROOT DIR
-    */
-    /*function get_name ($init, $event_code) {
-        $this->template_dir = $init->action;
-        $this->event_code = $event_code;
-        if ( $this->template_name != "" ) {
-            return $this->template_name;
-        } else {
-            return '/system/normal.tpl';
-        }
-    }*/
-
-    /**
-    * Function load template
-    * @param: $template - file name with full path
-    * @return: $FileStringContent - string with full file content
-    */
-    /*function load_template($template){
-        return implode("",file($template));
-    }*/
-
-    /**
-    * Set template string from file
-    * get content from specified file
-    * @param string $template_file
-    * @return void
-    */
-    /*function setTemplateFile ( $template_file ) {
-        $this->templateString = $this->load_template($template_file);
-    }*/
-
-    /**
-    * Set template string
-    * @param string $templateString - string template content
-    * @return void
-    */
-    /*function setTemplateString ( $templateString ) {
-        $this->templateString = $templateString;
-    }*/
-
-    /**
-    * Render string
-    * get template string and output string with fill template sets
-    * @param string $string - template string
-    * @return string
-    * @return false - if render failed
-    */
-    /*function renderString ( $string ) {
-        if ( !is_array($this->item) ) {
-            return false;
-        }
-        //remplace template set
-        foreach ( $this->item as $itemKey => $itemValue ) {
-            $string = str_replace( '{'.$itemKey.'}', $itemValue, $string );
-        }
-        return $string;
-    }*/
 
     /**
     * Render content

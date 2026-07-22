@@ -31,6 +31,25 @@ class schedule_tour extends \Object_Manager {
         return array($this->primary_key, 'fio', 'email','phone','object_href', 'date');
     }
 
+    protected function _after_add_done_action($form_data) {
+        $subject = $_SERVER['SERVER_NAME'] . ': ' . ' Заявка с записью на просмотр';
+        $from = $this->getConfigValue('system_email');
+        $to = $this->getConfigValue('order_email_acceptor');
+
+
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/view.php');
+        $table_view = new \Table_View();
+        $body = '<table class="table">';
+        $body .= $table_view->compile_view($form_data['schedule_tour']);
+        $body .= '</table>';
+
+
+        $this->sendFirmMail($to, $from, $subject, $body);
+
+        return $form_data;
+    }
+
+
     function get_model () {
         return array(
             $this->table_name => array(

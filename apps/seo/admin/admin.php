@@ -6,18 +6,20 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * SEO admin backend
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
-class seo_admin extends Object_Manager {
+class seo_admin extends Object_Manager
+{
 
     /**
      * Constructor
      */
-    function __construct() {
+    function __construct()
+    {
         $this->action = 'seo';
         $this->app_title = 'SEO-Оптимизация';
 
         parent::__construct();
 
-        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
 
         if (!$config_admin->check_config_item('apps.seo.html_prefix_enable')) {
@@ -82,29 +84,48 @@ class seo_admin extends Object_Manager {
         $config_admin->addParamToConfig('apps.seo.city_title_postfix', '', 'Текст после заголовка на странице города');
 
 
-        if ( !$config_admin->check_config_item('apps.seo.user_alias') ) {
+        if (!$config_admin->check_config_item('apps.seo.user_alias')) {
             $config_admin->addParamToConfig('apps.seo.user_alias', 'user', 'Подстановочная часть стандартного алиаса пользователя');
         }
 
-        if ( !$config_admin->check_config_item('apps.seo.user_html_end') ) {
+        if (!$config_admin->check_config_item('apps.seo.user_html_end')) {
             $config_admin->addParamToConfig('apps.seo.user_html_end', 1, 'Включить .html постфиксы в конце URL пользователя', 1);
         }
 
-        if ( !$config_admin->check_config_item('apps.seo.user_slash_divider') ) {
+        if (!$config_admin->check_config_item('apps.seo.user_slash_divider')) {
             $config_admin->addParamToConfig('apps.seo.user_slash_divider', 0, 'Использовать разделитель-слеш после подстановочной части URL пользователя', 1);
         }
+
+        $config_admin->addParamToConfig(
+            'apps.seo.add_city_list_inside_country',
+            '0',
+            'Добавлять список городов внутри страницы определённой страны',
+            SConfig::$fieldtypeCheckbox
+        );
+
+        $config_admin->addParamToConfig(
+            'apps.seo.add_city_list_inside_country_filter_column',
+            '',
+            'Название чекбокса с признаком вывода внутри страны',
+            SConfig::$fieldtypeString
+        );
+
     }
 
-    function main() {
+    function main()
+    {
         if ($this->getRequestValue('do') == 'update') {
             $rs = $this->update_structure();
         } elseif ($this->getRequestValue('do') == 'update_data') {
             $rs = $this->update_data($this->getRequestValue('force'));
             //return $rs;
+        } elseif ($this->getRequestValue('do') == 'update_city_url') {
+            $rs = $this->update_city_url();
         } else {
             $rs = '<a href="?action=seo&do=update" class="btn btn-primary">Обновить структуру каталогов</a> ';
             $rs .= '<a href="?action=seo&do=update_data" class="btn btn-primary">Обновить алиасы объявлений (если алиасы не заданы)</a>';
             $rs .= ' <a href="?action=seo&do=update_data&force=true" class="btn btn-danger">Обновить алиасы объявлений (у всех объявлений, даже если алиасы уже указаны)</a>';
+            $rs .= '<a href="?action=seo&do=update_city_url" class="btn btn-primary">Обновить алиасы городов (если алиасы не заданы)</a>';
         }
 
         $rs_new = $this->get_app_title_bar();
@@ -113,7 +134,8 @@ class seo_admin extends Object_Manager {
         return $rs_new;
     }
 
-    function update_data($force = false) {
+    function update_data($force = false)
+    {
         $ids = array();
         $existing_aliases = array();
 
@@ -257,6 +279,7 @@ class seo_admin extends Object_Manager {
             $query = 'UPDATE ' . DB_PREFIX . '_data SET `translit_alias`=? WHERE id=?';
             foreach ($aliases as $k => $v) {
                 $rs .= 'ID = ' . $k . ', translit_alias = <a href="' . $this->getServerFullUrl() . '/realty' . $k . '.html" target="_blank">' . $v . '</a><br>';
+                $v = $this->makeUniqueAlias($v, $k);
                 $stmt = $DBC->query($query, array($v, $k), $success);
                 if (!$success) {
                     $rs .= '<p class="alert alert-danger">' . $DBC->getLastError() . '</p>';
@@ -285,7 +308,8 @@ class seo_admin extends Object_Manager {
         return $rs;
     }
 
-    function update_structure() {
+    function update_structure()
+    {
         $ra = array();
         $DBC = DBC::getInstance();
         $query = 'SELECT * FROM ' . DB_PREFIX . '_topic';
@@ -304,11 +328,15 @@ class seo_admin extends Object_Manager {
         foreach ($ra as $item_id => $item) {
             if (empty($item['url'])) {
                 $url = $this->transliteMe($item['name']);
-                $stmt = $DBC->query($query, array($url, $item['id']));
-                if ($stmt) {
-                    $rs .= 'Категория ' . $item['name'] . ' успешно обновлена, установлен SEO-тег = ' . $url . '<br>';
+                if ($url != '') {
+                    $stmt = $DBC->query($query, array($url, $item['id']));
+                    if ($stmt) {
+                        $rs .= 'Категория ' . $item['name'] . ' успешно обновлена, установлен SEO-тег = ' . $url . '<br>';
+                    } else {
+                        $rs .= 'Ошибка при обновлении категории ' . $item['name'] . '<br>';
+                    }
                 } else {
-                    $rs .= 'Ошибка при обновлении категории ' . $item['name'] . '<br>';
+                    $rs .= 'Значение URL пусто' . '<br>';
                 }
             }
         }
@@ -317,5 +345,44 @@ class seo_admin extends Object_Manager {
         }
         return $rs;
     }
+
+    function update_city_url()
+    {
+        $ra = array();
+        $DBC = DBC::getInstance();
+        $query = "SELECT * FROM " . DB_PREFIX . "_city where url = ''";
+        $stmt = $DBC->query($query);
+        if ($stmt) {
+            while ($ar = $DBC->fetch($stmt)) {
+                $ra[] = $ar;
+            }
+        }
+
+        if (empty($ra)) {
+            return 'Города не найдены';
+        }
+
+        $query = 'UPDATE ' . DB_PREFIX . '_city SET url=? WHERE city_id=?';
+        foreach ($ra as $item_id => $item) {
+            if (empty($item['url'])) {
+                $url = $this->transliteMe($item['name']);
+                if ($url != '') {
+                    $stmt = $DBC->query($query, array($url, $item['city_id']));
+                    if ($stmt) {
+                        $rs .= 'Город ' . $item['name'] . ' успешно обновлен, установлен SEO-тег = ' . $url . '<br>';
+                    } else {
+                        $rs .= 'Ошибка при обновлении' . $item['name'] . '<br>';
+                    }
+                } else {
+                    $rs .= 'Значение URL пусто' . '<br>';
+                }
+            }
+        }
+        if (empty($rs)) {
+            $rs = 'Все URL уже установлены. Если вы хотите обновить структуру, то удалите URL для города, либо очистите все URL';
+        }
+        return $rs;
+    }
+
 
 }

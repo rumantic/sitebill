@@ -10,9 +10,16 @@ class Admin_Table_Helper extends SiteBill {
 
     private static $model_storage;
 
+    /*function create_geopoint($item){
+        return "`{$item['name']}` POINT NULL";
+    }*/
+
+    function create_money($item){
+        return "`{$item['name']}` int(10) unsigned NOT NULL DEFAULT '0'";
+    }
+
     function create_int($item) {
-        $rs = "`{$item['name']}` int(10) unsigned NOT NULL DEFAULT '0'";
-        return $rs;
+        return "`{$item['name']}` int(10) unsigned NOT NULL DEFAULT '0'";
     }
 
     function reset_model_storage () {
@@ -20,12 +27,11 @@ class Admin_Table_Helper extends SiteBill {
     }
 
     function create_datetime($item) {
-        $rs = "`{$item['name']}` DATETIME NOT NULL";
-        return $rs;
+        return "`{$item['name']}` DATETIME NOT NULL";
     }
 
     function create_tlocation($item) {
-        $ret = array();
+        $ret = [];
         $ret[] = "`country_id` int(10) unsigned NOT NULL DEFAULT '0'";
         $ret[] = "`region_id` int(10) unsigned NOT NULL DEFAULT '0'";
         $ret[] = "`city_id` int(10) unsigned NOT NULL DEFAULT '0'";
@@ -35,33 +41,26 @@ class Admin_Table_Helper extends SiteBill {
     }
 
     function create_geodata_lat($item) {
-        $rs = "`" . $item['name'] . "_lat` decimal(9,6) NULL";
-        return $rs;
+        return "`" . $item['name'] . "_lat` decimal(9,6) NULL";
     }
 
     function create_geodata_lng($item) {
-        $rs = "`" . $item['name'] . "_lng` decimal(9,6) NULL";
-        return $rs;
+        return "`" . $item['name'] . "_lng` decimal(9,6) NULL";
     }
 
     function create_varchar($item) {
-        $rs = "`{$item['name']}` varchar(255) NULL DEFAULT '{$item['value']}'";
-        return $rs;
+        return "`{$item['name']}` varchar(255) NULL DEFAULT '{$item['value']}'";
     }
 
     function create_uploads($item) {
-        $rs = "`{$item['name']}` LONGTEXT NULL DEFAULT ''";
-        return $rs;
+        return "`{$item['name']}` LONGTEXT NULL DEFAULT ''";
     }
 
     function create_docuploads($item) {
-        $rs = "`{$item['name']}` LONGTEXT NULL DEFAULT ''";
-        return $rs;
+        return "`{$item['name']}` LONGTEXT NULL DEFAULT ''";
     }
 
     function create_image($item) {
-
-
         $q = 'CREATE TABLE IF NOT EXISTS `' . DB_PREFIX . '_' . $item['table_name'] . '_image` (
 		`' . $item['table_name'] . '_image_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
 		`' . $item['primary_key'] . '` int(11) NOT NULL DEFAULT 0,
@@ -70,7 +69,7 @@ class Admin_Table_Helper extends SiteBill {
 		PRIMARY KEY (`' . $item['table_name'] . '_image_id`)
 		) ENGINE=MyISAM  DEFAULT CHARSET=' . DB_ENCODING . ' AUTO_INCREMENT=1 ;';
         $DBC = DBC::getInstance();
-        $stmt = $DBC->query($q);
+        $DBC->query($q);
     }
 
     function create_select_by_query_multi($item) {
@@ -85,21 +84,18 @@ class Admin_Table_Helper extends SiteBill {
 		) ENGINE=MyISAM  DEFAULT CHARSET=' . DB_ENCODING . ' COLLATE=' . DB_ENCODING . '_unicode_ci;';
 
         $DBC = DBC::getInstance();
-        $stmt = $DBC->query($q);
+        $DBC->query($q);
     }
 
     function create_primary_key($item) {
-        $rs = "`{$item['name']}` int(11)  NOT NULL AUTO_INCREMENT, PRIMARY KEY (`{$item['name']}`) ";
-        return $rs;
+        return "`{$item['name']}` int(11)  NOT NULL AUTO_INCREMENT, PRIMARY KEY (`{$item['name']}`) ";
     }
 
     function create_text($item) {
-        $rs = "`{$item['name']}` text";
-        return $rs;
+        return "`{$item['name']}` text";
     }
 
     function add_ajax($form_data) {
-        //return $form_data;
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/table/local_helper.php')) {
             require_once SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/table/local_helper.php';
             $LH = new Local_Table_Helper();
@@ -116,7 +112,7 @@ class Admin_Table_Helper extends SiteBill {
 
         //$form_data['data']['date_added']['value'] = date('Y-m-d H:i:s',time());
 
-        if ($table_key == 'data' && $this->getConfigValue('currency_enable') && !isset($form_data[$table_key]['currency_id'])) {
+        if ($table_key === 'data' && $this->getConfigValue('currency_enable') && !isset($form_data[$table_key]['currency_id'])) {
             $form_data[$table_key]['currency_id']['name'] = 'currency_id';
             $form_data[$table_key]['currency_id']['primary_key_name'] = 'currency_id';
             $form_data[$table_key]['currency_id']['primary_key_table'] = 'currency';
@@ -254,8 +250,8 @@ class Admin_Table_Helper extends SiteBill {
                     $form_data[$table_key]['city_id']['ajax_options']['set_empty'][] = 'street_id';
                 }
             }
-            if (intval($this->getRequestValue('region_id')) != 0/* and $this->getRequestValue('region_id') != '' */) {
-                $form_data[$table_key]['city_id']['query'] = 'select * from ' . DB_PREFIX . '_city where region_id=' . intval($this->getRequestValue('region_id')) . ' order by name';
+            if ((int)$this->getRequestValue('region_id') !== 0/* and $this->getRequestValue('region_id') != '' */) {
+                $form_data[$table_key]['city_id']['query'] = 'select * from ' . DB_PREFIX . '_city where region_id=' . (int)$this->getRequestValue('region_id') . ' order by name';
             }
         }
 
@@ -264,12 +260,12 @@ class Admin_Table_Helper extends SiteBill {
                 $form_data[$table_key]['metro_id']['title_default'] = Multilanguage::_('L_CHOOSE_METRO');
             }
 
-            if (intval($this->getRequestValue('city_id')) != 0/* && $this->getRequestValue('city_id') != '' */ && intval($this->getRequestValue('district_id')) != 0/* && $this->getRequestValue('district_id') != '' */ && 1 == $this->getConfigValue('link_metro_to_district')) {
-                $form_data[$table_key]['metro_id']['query'] = 'select * from ' . DB_PREFIX . '_metro where city_id=' . intval($this->getRequestValue('city_id')) . ' AND district_id=' . intval($this->getRequestValue('district_id')) . ' order by name';
-            } elseif (1 != $this->getConfigValue('apps.realty.ajax_metro_refresh')) {
+            if ((int)$this->getRequestValue('city_id') !== 0/* && $this->getRequestValue('city_id') != '' */ && (int)$this->getRequestValue('district_id') !== 0/* && $this->getRequestValue('district_id') != '' */ && 1 === (int)$this->getConfigValue('link_metro_to_district')) {
+                $form_data[$table_key]['metro_id']['query'] = 'select * from ' . DB_PREFIX . '_metro where city_id=' . (int)$this->getRequestValue('city_id') . ' AND district_id=' . (int)$this->getRequestValue('district_id') . ' order by name';
+            } elseif (1 !== (int)$this->getConfigValue('apps.realty.ajax_metro_refresh')) {
 
-            } elseif (intval($this->getRequestValue('city_id')) != 0/* and $this->getRequestValue('city_id') != '' */) {
-                $form_data[$table_key]['metro_id']['query'] = 'select * from ' . DB_PREFIX . '_metro where city_id=' . intval($this->getRequestValue('city_id')) . ' order by name';
+            } elseif ((int)$this->getRequestValue('city_id') !== 0/* and $this->getRequestValue('city_id') != '' */) {
+                $form_data[$table_key]['metro_id']['query'] = 'select * from ' . DB_PREFIX . '_metro where city_id=' . (int)$this->getRequestValue('city_id') . ' order by name';
             }
         }
 
@@ -310,8 +306,8 @@ class Admin_Table_Helper extends SiteBill {
                     $form_data[$table_key]['district_id']['ajax_options']['update_child_list'][] = 'street_id';
                 }
             }
-            if (intval($this->getRequestValue('city_id')) != 0/* and $this->getRequestValue('city_id') != '' */) {
-                $form_data[$table_key]['district_id']['query'] = 'select * from ' . DB_PREFIX . '_district where city_id=' . intval($this->getRequestValue('city_id')) . ' order by name';
+            if ((int)$this->getRequestValue('city_id') !== 0/* and $this->getRequestValue('city_id') != '' */) {
+                $form_data[$table_key]['district_id']['query'] = 'select * from ' . DB_PREFIX . '_district where city_id=' . (int)$this->getRequestValue('city_id') . ' order by name';
             }
         }
 
@@ -321,12 +317,12 @@ class Admin_Table_Helper extends SiteBill {
                 $form_data[$table_key]['street_id']['title_default'] = Multilanguage::_('L_CHOOSE_STREET');
             }
 
-            if (intval($this->getRequestValue('district_id')) != 0/* and $this->getRequestValue('district_id') != '' */) {
-                $form_data[$table_key]['street_id']['query'] = 'select * from ' . DB_PREFIX . '_street where district_id=' . intval($this->getRequestValue('district_id')) . ' order by name';
+            if ((int)$this->getRequestValue('district_id') !== 0/* and $this->getRequestValue('district_id') != '' */) {
+                $form_data[$table_key]['street_id']['query'] = 'select * from ' . DB_PREFIX . '_street where district_id=' . (int)$this->getRequestValue('district_id') . ' order by name';
             }
             if ($this->getConfigValue('link_street_to_city')) {
-                if (intval($this->getRequestValue('city_id')) != 0/* and $this->getRequestValue('city_id') != '' */) {
-                    $form_data[$table_key]['street_id']['query'] = 'select * from ' . DB_PREFIX . '_street where city_id=' . intval($this->getRequestValue('city_id')) . ' order by name';
+                if ((int)$this->getRequestValue('city_id') !== 0/* and $this->getRequestValue('city_id') != '' */) {
+                    $form_data[$table_key]['street_id']['query'] = 'select * from ' . DB_PREFIX . '_street where city_id=' . (int)$this->getRequestValue('city_id') . ' order by name';
                 }
             }
         }
@@ -334,52 +330,50 @@ class Admin_Table_Helper extends SiteBill {
         return $form_data;
     }
 
-    function load_model($table_name, $ignore_user_group = false, $ignore_activity = false) {
-        //echo $table_name.'<br>';
-        //var_dump($ignore_user_group);
-        $group_id = 0;
-        $anonimouse_group = intval($this->getConfigValue('user_anonimouse_group_id'));
-        //$anonimouse_group=5;
-        /* if($anonimouse_group==0){
-          $anonimouse_group=-1;
-          } */
+    /**
+     * @param string $table_name Model name
+     * @param bool $ignore_user_group Is fields' group ignored
+     * @param bool $ignore_activity Is fields' activity ignored
+     * @param null|callable $blueprint Callback which returns model blueprint
+     * @return array|mixed
+     * @throws Exception
+     */
+    public function get_model($table_name, $ignore_user_group = false, $ignore_activity = false, $with_ajax = false, $blueprint = null){
+        $form_data = $this->load_model($table_name, $ignore_user_group, $ignore_activity, $blueprint);
+        if(empty($form_data) && !is_null($blueprint) && is_callable($blueprint)){
+            $form_data = $blueprint();
+            require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/admin/object_manager.php';
+            require_once SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/admin.php';
+            $TA = new table_admin();
+            $TA->create_table_and_columns($form_data, $table_name);
+            $form_data = $this->load_model($table_name, $ignore_user_group, $ignore_activity);
+        }
+        if(empty($form_data)){
+            throw new \Exception('Unable to return model \''.$table_name.'\'');
+        }
+        if($with_ajax){
+            $form_data = $this->add_ajax($form_data);
+        }
+        return $form_data;
+    }
 
-        if (isset($_SESSION['user_id_value']) && intval($_SESSION['user_id_value']) > 0) {
-            $user_id = intval($_SESSION['user_id_value']);
-        } elseif (isset($_SESSION['user_id']) && intval($_SESSION['user_id']) > 0) {
-            $user_id = intval($_SESSION['user_id']);
+    function load_model($table_name, $ignore_user_group = false, $ignore_activity = false) {
+        $group_id = 0;
+        $anonimouse_group = (int)$this->getConfigValue('user_anonimouse_group_id');
+
+        if (isset($_SESSION['user_id_value']) && (int)$_SESSION['user_id_value'] > 0) {
+            $user_id = (int)$_SESSION['user_id_value'];
+        } elseif (isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0) {
+            $user_id = (int)$_SESSION['user_id'];
         }
 
         if (!$ignore_user_group && isset($user_id)) {
             $group_id = $_SESSION['current_user_group_id'];
-            /* if(isset(self::$Heaps['user'][$user_id])){
-              $group_id=self::$Heaps['user'][$user_id]['group_id'];
-              }else{
-
-              //$group_id=$_SESSION['current_user_group_id'];
-              $q="SELECT group_id FROM ".DB_PREFIX."_user WHERE user_id=?";
-              $DBC=DBC::getInstance();
-              $stmt=$DBC->query($q, array($user_id));
-              if($stmt){
-              $ar=$DBC->fetch($stmt);
-              $group_id=(int)$ar['group_id'];
-              self::$Heaps['user'][$user_id]['group_id'] = $group_id;
-              }
-              } */
         } elseif (!$ignore_user_group && (!isset($user_id) || $user_id == 0)) {
             $group_id = $anonimouse_group;
-        }/* elseif(!$ignore_user_group && !isset($user_id)){
-          $group_id=5;
-          } *//* elseif(!$ignore_user_group && (!isset($user_id) || $user_id==0)){
-          $group_id=$anonimouse_group;
-          } */
-
-        /* if(!isset($user_id)){
-
-          } */
+        }
 
         $input_table_name = $table_name;
-
 
         $model_name = $table_name . '_' . ($ignore_user_group ? '1' : '0') . '_' . ($ignore_activity ? '1' : '0');
 
@@ -397,16 +391,11 @@ class Admin_Table_Helper extends SiteBill {
 
         $input_model_name = $model_name;
 
-        $redis_cache = unserialize(RedisCache::get('load_model_'.$model_name));
+        $redis_cache = (null !== ($cachedata = RedisCache::get('load_model_'.$model_name)) ? unserialize($cachedata, ['allow_classes' => false]) : null);
         if ( is_array($redis_cache) and count($redis_cache) > 0 ) {
             self::$model_storage[$model_name] = $redis_cache;
             return self::$model_storage[$model_name];
         }
-
-
-        /*if($table_name == 'complex'){
-            echo '<!--'.$current_lang.'-->';
-        }*/
 
         if (!isset(self::$model_storage[$model_name]) || empty(self::$model_storage[$model_name])) {
             $model_data = array();
@@ -433,18 +422,15 @@ class Admin_Table_Helper extends SiteBill {
                 */
                 //$model_name .= '_' . $current_lang;
                 if (!$ignore_user_group) {
-                    if ($ar['type'] == 'captcha') {
+                    if ($ar['type'] === 'captcha') {
                         if ($ar['group_id'] != '0' && $ar['group_id'] != '') {
-                            $t = array();
                             $t = explode(',', $ar['group_id']);
-                            //$t[]=0;
                             if ($group_id != 0 && !in_array($group_id, $t)) {
                                 continue;
                             }
                         }
                     } else {
                         if ($ar['group_id'] != '0' && $ar['group_id'] != '') {
-                            $t = array();
                             $t = explode(',', $ar['group_id']);
                             if (!in_array($group_id, $t)) {
                                 continue;
@@ -457,7 +443,7 @@ class Admin_Table_Helper extends SiteBill {
 
                 self::$model_storage[$model_name][$table_name][$ar['name']]['name'] = $ar['name'];
                 self::$model_storage[$model_name][$table_name][$ar['name']]['title'] = $ar['title'];
-                if ($ar['title' . $lang_prefix] != '') {
+                if (isset($ar['title' . $lang_prefix]) && $ar['title' . $lang_prefix] != '') {
                     self::$model_storage[$model_name][$table_name][$ar['name']]['title'] = $ar['title' . $lang_prefix];
                 }
 
@@ -470,7 +456,7 @@ class Admin_Table_Helper extends SiteBill {
                   }
                   } */
 
-                if ( $ar['type'] == 'geodata' ) {
+                if ( $ar['type'] === 'geodata' ) {
                     self::$model_storage[$model_name][$table_name][$ar['name']]['value'] = array('lat' => '', 'lng' => '');
                 } else {
                     self::$model_storage[$model_name][$table_name][$ar['name']]['value'] = $ar['value'];
@@ -483,7 +469,7 @@ class Admin_Table_Helper extends SiteBill {
                 self::$model_storage[$model_name][$table_name][$ar['name']]['query'] = $ar['query'];
                 self::$model_storage[$model_name][$table_name][$ar['name']]['value_name'] = $ar['value_name'];
                 self::$model_storage[$model_name][$table_name][$ar['name']]['title_default'] = $ar['title_default'];
-                if ($ar['title_default' . $lang_prefix] != '') {
+                if (isset($ar['title_default' . $lang_prefix]) && $ar['title_default' . $lang_prefix] != '') {
                     self::$model_storage[$model_name][$table_name][$ar['name']]['title_default'] = $ar['title_default' . $lang_prefix];
                 }
                 self::$model_storage[$model_name][$table_name][$ar['name']]['value_default'] = $ar['value_default'];
@@ -496,7 +482,7 @@ class Admin_Table_Helper extends SiteBill {
                 //self::$model_storage[$model_name][$table_name][$ar['name']]['select_data'] = ($ar['select_data']!='' ? unserialize($ar['select_data']) : array());
                 if ($ar['select_data'] != '') {
                     self::$model_storage[$model_name][$table_name][$ar['name']]['select_data'] = $this->unserializeSelectData($ar['select_data']);
-                    if ($ar['select_data' . $lang_prefix] != '') {
+                    if (isset($ar['select_data' . $lang_prefix]) && $ar['select_data' . $lang_prefix] != '') {
                         self::$model_storage[$model_name][$table_name][$ar['name']]['select_data'] = $this->unserializeSelectData($ar['select_data' . $lang_prefix]);
                     }
                     $select_data_indexed = array();
@@ -509,20 +495,20 @@ class Admin_Table_Helper extends SiteBill {
                     self::$model_storage[$model_name][$table_name][$ar['name']]['select_data_reverse'] = $select_data_reverse;
                 }
                 self::$model_storage[$model_name][$table_name][$ar['name']]['table_name'] = $ar['table_name'];
-                if ((self::$model_storage[$model_name][$table_name][$ar['name']]['type'] == 'uploads' || self::$model_storage[$model_name][$table_name][$ar['name']]['type'] == 'docuploads') && self::$model_storage[$model_name][$table_name][$ar['name']]['table_name'] == '') {
+                if ((self::$model_storage[$model_name][$table_name][$ar['name']]['type'] === 'uploads' || self::$model_storage[$model_name][$table_name][$ar['name']]['type'] === 'docuploads') && self::$model_storage[$model_name][$table_name][$ar['name']]['table_name'] == '') {
                     self::$model_storage[$model_name][$table_name][$ar['name']]['table_name'] = $table_name;
-                } elseif (self::$model_storage[$model_name][$table_name][$ar['name']]['type'] == 'select_by_query' && self::$model_storage[$model_name][$table_name][$ar['name']]['table_name'] == '') {
+                } elseif (self::$model_storage[$model_name][$table_name][$ar['name']]['type'] === 'select_by_query' && self::$model_storage[$model_name][$table_name][$ar['name']]['table_name'] == '') {
                     self::$model_storage[$model_name][$table_name][$ar['name']]['table_name'] = $table_name;
                 }
                 self::$model_storage[$model_name][$table_name][$ar['name']]['primary_key'] = $ar['primary_key'];
                 self::$model_storage[$model_name][$table_name][$ar['name']]['primary_key_value'] = $ar['primary_key_value'];
                 self::$model_storage[$model_name][$table_name][$ar['name']]['action'] = $ar['action'];
                 self::$model_storage[$model_name][$table_name][$ar['name']]['tab'] = $ar['tab'];
-                if ($ar['tab' . $lang_prefix] != '') {
+                if (isset($ar['tab' . $lang_prefix]) && $ar['tab' . $lang_prefix] != '') {
                     self::$model_storage[$model_name][$table_name][$ar['name']]['tab'] = $ar['tab' . $lang_prefix];
                 }
                 self::$model_storage[$model_name][$table_name][$ar['name']]['hint'] = $ar['hint'];
-                if ($ar['hint' . $lang_prefix] != '') {
+                if (isset($ar['hint' . $lang_prefix]) && $ar['hint' . $lang_prefix] != '') {
                     self::$model_storage[$model_name][$table_name][$ar['name']]['hint'] = $ar['hint' . $lang_prefix];
                 }
                 self::$model_storage[$model_name][$table_name][$ar['name']]['active_in_topic'] = $ar['active_in_topic'];
@@ -539,7 +525,7 @@ class Admin_Table_Helper extends SiteBill {
                 self::$model_storage[$model_name][$table_name][$ar['name']]['entity'] = $ar['entity'];
                 self::$model_storage[$model_name][$table_name][$ar['name']]['combo'] = $ar['combo'];
                 if ($ar['parameters'] != '' && $ar['parameters'] != '0') {
-                    self::$model_storage[$model_name][$table_name][$ar['name']]['parameters'] = unserialize($ar['parameters']);
+                    self::$model_storage[$model_name][$table_name][$ar['name']]['parameters'] = unserialize($ar['parameters'], ['allow_classes' => false]);
                 }
 
                 if ($ar['required']) {
@@ -563,17 +549,8 @@ class Admin_Table_Helper extends SiteBill {
                 if ( $api_parameters = $this->parse_api_parameters(self::$model_storage[$model_name][$table_name][$ar['name']]) ) {
                     self::$model_storage[$model_name][$table_name][$ar['name']]['api'] = $api_parameters;
                 }
-
-
-                //$model_data[$table_name][$ar['name']]['is_ml'] = $ar['is_ml'];
             }
-            /*
-              if(!empty($model_data)){
-              self::$model_storage[$model_name]=$model_data;
-              }
-             */
         } else {
-
             $model_data = self::$model_storage[$model_name];
         }
 
@@ -629,11 +606,11 @@ class Admin_Table_Helper extends SiteBill {
 
         $DBC = DBC::getInstance();
         $rs = '';
-        foreach ($ra as $item_id => $item) {
+        foreach ($ra as $item) {
             $query = 'ALTER TABLE ' . DB_PREFIX . '_' . $table_name . ' ADD COLUMN ' . $item;
             $DBC->query($query);
             $last_error = $DBC->getLastError();
-            if (!preg_match('/already/', $last_error) and ! preg_match('/PRIMARY/', $last_error)) {
+            if (false === strpos($last_error, "already") && false === strpos($last_error, "PRIMARY")) {
                 $rs .= $query.'<br>';
                 $rs .= $last_error . '<br>';
             }
@@ -654,13 +631,13 @@ class Admin_Table_Helper extends SiteBill {
             }
 
             foreach ($table_model[$table_name] as $model_column) {
-                if ($model_column['type'] == 'tlocation') {
+                if ($model_column['type'] === 'tlocation') {
                     $real_columns[] = 'country_id';
                     $real_columns[] = 'region_id';
                     $real_columns[] = 'city_id';
                     $real_columns[] = 'district_id';
                     $real_columns[] = 'street_id';
-                } elseif ($model_column['type'] == 'geodata') {
+                } elseif ($model_column['type'] === 'geodata') {
                     $real_columns[] = 'geo_lat';
                     $real_columns[] = 'geo_lng';
                 } else {
@@ -690,8 +667,14 @@ class Admin_Table_Helper extends SiteBill {
         if (empty($table_model)) {
             return $ra;
         }
-        foreach ($table_model as $item_id => $item_array) {
+        foreach ($table_model as $item_array) {
             switch ($item_array['type']) {
+                /*case 'geopoint':
+                    $ra[] = $this->create_geopoint($item_array);
+                    break;*/
+                case 'money':
+                    $ra[] = $this->create_money($item_array);
+                    break;
                 case 'primary_key':
                     $ra[] = $this->create_primary_key($item_array);
                     break;
@@ -873,7 +856,7 @@ class Admin_Table_Helper extends SiteBill {
         $ra = $this->columns_define_generator($table_model[$table_name]);
         $create_table_query = 'CREATE TABLE IF NOT EXISTS `' . DB_PREFIX . '_' . $table_name . '` (' . implode(' , ', $ra) . ') ENGINE=MyISAM DEFAULT CHARSET=' . DB_ENCODING . ' ;';
         $DBC = DBC::getInstance();
-        $stmt = $DBC->query($create_table_query);
+        $DBC->query($create_table_query);
         if ($this->check_table_exist($table_name)) {
             $rs = 'Таблица ' . $table_name . ' создана успешно';
         } else {
@@ -895,15 +878,20 @@ class Admin_Table_Helper extends SiteBill {
             return false;
         }
         return true;
-        //var_dump($stmt);
+    }
 
-        $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $table_name . ' LIMIT 1';
-        $DBC = DBC::getInstance();
-        $stmt = $DBC->query($query);
-        if ($stmt) {
-            return true;
-        } else {
-            return false;
+    /**
+     * Clear redis cache values for all model variants
+     * @param string $tablename
+     */
+    public function clear_model_caches($tablename){
+        if($tablename != ''){
+            $cachedmodels = RedisCache::keys('load_model_'.$tablename.'_*');
+            if(is_array($cachedmodels) && !empty($cachedmodels)){
+                foreach ($cachedmodels as $cachedmodel){
+                    RedisCache::del($cachedmodel);
+                }
+            }
         }
     }
 

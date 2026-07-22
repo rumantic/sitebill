@@ -52,6 +52,9 @@ class API_Common extends SiteBill {
         require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
         $this->permission = new Permission();
 
+        // Track API request
+        $this->trackApiUsage();
+
         //$this->writeLog(__METHOD__.', request = <pre>'. var_export($this->request->dump(), true).'</pre>');
     }
 
@@ -333,9 +336,24 @@ class API_Common extends SiteBill {
                 return new \api\entities\schedule_tour();
                 break;
 
+            case 'votes':
+                return new \votes\api\votes();
+                break;
+
             case 'view_order':
                 return new \api\entities\view_order();
                 break;
+
+            case 'watchlistmanager':
+                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/watchlistmanager/admin/admin.php');
+                return new watchlistmanager_admin();
+                break;
+
+            case 'prices_navigator':
+                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/prices_navigator/admin/admin.php');
+                return new prices_navigator_admin();
+                break;
+
 
             case 'deal':
                 if ( !$this->deal_object ) {
@@ -366,5 +384,37 @@ class API_Common extends SiteBill {
         }
         $this->riseError('model not defined');
         return false;
+    }
+
+    /**
+     * Track API usage metrics
+     */
+    private function trackApiUsage() {
+        if (class_exists('Metrics')) {
+            $endpoint = $_SERVER['REQUEST_URI'] ?? 'unknown';
+            $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+            $action = $this->getRequestValue('action', '');
+            $requestData = $this->request->dump();
+
+            // Sanitize request data for privacy
+            $sanitizedData = [];
+            if ( is_array($requestData) ) {
+                foreach ($requestData as $key => $value) {
+                    if (stripos($key, 'password') !== false || stripos($key, 'token') !== false) {
+                        $sanitizedData[$key] = '[HIDDEN]';
+                    } else {
+                        $sanitizedData[$key] = is_array($value) ? '[ARRAY]' : substr((string)$value, 0, 100);
+                    }
+                }
+            }
+
+            Metrics::trackApiRequest($endpoint, $method, $sanitizedData, 200, $this->get_my_user_id());
+
+            // Also track as API usage for easier querying
+            Metrics::trackUsage('api', $action ?: 'request', [
+                'endpoint' => $endpoint,
+                'method' => $method
+            ], $this->get_my_user_id());
+        }
     }
 }

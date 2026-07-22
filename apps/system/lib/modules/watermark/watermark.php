@@ -1,5 +1,5 @@
 <?php
-
+// DEPRECATED Module doesn't use anywhere. Need to remove.
 /**
  * Watermark class
  * Print watermark on image

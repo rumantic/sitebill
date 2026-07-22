@@ -1,5 +1,8 @@
 <?php
 require_once('../system/bootstrap.php');
+if(!$sitebill->getConfigValue('apps.admin3.enable')){
+    exit();
+}
 ?>
 <!doctype html>
 <html lang="ru">

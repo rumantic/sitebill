@@ -20,12 +20,22 @@ require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/multilanguage/multi
 $smarty = new Smarty;
 $sitebill = new SiteBill();
 
+// Admin template switching
+$_admin_template_allowed = array('template1', 'tailwind');
+$_admin_template = $sitebill->getConfigValue('apps.admin.template');
+if ( !empty($_SESSION['admin_template']) && in_array($_SESSION['admin_template'], $_admin_template_allowed, true) ) {
+    $_admin_template = $_SESSION['admin_template'];
+}
+if ( !in_array($_admin_template, $_admin_template_allowed, true) ) {
+    $_admin_template = 'template1';
+}
+
 if ( defined('BOOTSTRAP_LARAVEL') and BOOTSTRAP_LARAVEL ) {
     $smarty->assign('estate_folder', SITEBILL_MAIN_URL);
     $smarty->assign('estate_folder_control', SITEBILL_MAIN_URL.'/admin/');
-    $smarty->assign('assets_folder', SITEBILL_MAIN_URL.'/apps/admin/admin/template1');
+    $smarty->assign('assets_folder', SITEBILL_MAIN_URL.'/apps/admin/admin/'.$_admin_template);
     $smarty->assign('SITEBILL_DOCUMENT_ROOT', SITEBILL_DOCUMENT_ROOT);
-    $smarty->template_dir = SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/template1';
+    $smarty->template_dir = SITEBILL_DOCUMENT_ROOT.'/apps/admin/admin/'.$_admin_template;
     require_once(SITEBILL_DOCUMENT_ROOT.'/apps/api/classes/class.common.php');
     require_once(SITEBILL_DOCUMENT_ROOT.'/apps/api/classes/class.controller.php');
 } else {

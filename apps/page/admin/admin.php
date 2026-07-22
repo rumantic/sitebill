@@ -33,8 +33,6 @@ class page_admin extends Object_Manager {
                 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/page/admin/page_model.php');
                 $Object = new Page_Model();
                 $form_data = $Object->get_model();
-                //$form_data = $this->get_banner_model();
-                //$form_data = $this->_get_big_city_kvartira_model2($ajax);
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php';
                 $TA = new table_admin();
@@ -58,9 +56,9 @@ class page_admin extends Object_Manager {
         $config_admin->addParamToConfig('apps.page.count_on_main', '3', 'Количество объектов на главной');
         $config_admin->addParamToConfig('apps.page.blog_enable', '1', 'Включить вывод /blog/', SConfig::$fieldtypeCheckbox);
         $config_admin->addParamToConfig('apps.page.recommendations_enable', '1', 'Включить вывод /recommendations/', SConfig::$fieldtypeCheckbox);
-
+        
     }
-
+    
     public function sitemap_pages_count($sitemap) {
         $cnt = 0;
         $DBC = DBC::getInstance();
@@ -115,13 +113,11 @@ class page_admin extends Object_Manager {
         $stmt = $DBC->query($query);
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
-                /* if($ar['uri']!=''){
-                  $url=trim(str_replace('\\', '/', $ar['uri']),'/');
-                  } */
                 if ($ar['uri'] != '') {
-                    //$url=trim(str_replace('\\', '/', $ar['uri']),'/');
-                    $url = SITEBILL_MAIN_URL . '/' . $ar['uri'];
-                    $urls[] = array('url' => $url . (false !== strpos($url, '.') ? '' : self::$_trslashes), 'changefreq' => $changefreq, 'priority' => $priority);
+                    $urls[] = array(
+                        'url' => $ar['uri'],
+                        'changefreq' => $changefreq, 'priority' => $priority
+                    );
                 }
             }
         }
@@ -129,11 +125,6 @@ class page_admin extends Object_Manager {
     }
 
     public function sitemapHTML($sitemap) {
-        if (1 == (int) $this->getConfigValue('apps.seo.no_trailing_slashes')) {
-            $trailing_slashe = '';
-        } else {
-            $trailing_slashe = '/';
-        }
         $urls = array();
         $DBC = DBC::getInstance();
         $query = 'SELECT is_service FROM ' . DB_PREFIX . '_page LIMIT 1';
@@ -144,9 +135,8 @@ class page_admin extends Object_Manager {
             $has_service = false;
         }
 
-
         if ($has_service) {
-            $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE `is_service` <> 1  or `is_service` is NULL  ORDER BY ' . $this->primary_key . ' DESC';
+            $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE `is_service` <> 1  OR `is_service` IS NULL  ORDER BY ' . $this->primary_key . ' DESC';
         } else {
             $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $this->table_name . ' ORDER BY ' . $this->primary_key . ' DESC';
         }
@@ -154,8 +144,10 @@ class page_admin extends Object_Manager {
         $stmt = $DBC->query($query);
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
-                $ar['href'] = SITEBILL_MAIN_URL . '/' . trim($ar['uri'], '/') . (false !== strpos($ar['uri'], '.') ? '' : $trailing_slashe);
-                $urls[] = array('t' => $ar['title'], 'h' => $ar['href']);
+                $urls[] = array(
+                    't' => $ar['title'],
+                    'h' => $ar['uri']
+                );
             }
         }
         return $urls;
@@ -163,13 +155,6 @@ class page_admin extends Object_Manager {
 
     public function _preload() {
         $this->getPagesColumn();
-    }
-
-    function ajax() {
-        if ($this->getRequestValue('action') == 'get_transliteration') {
-            return $this->transliteMe($this->getRequestValue('word'));
-        }
-        return false;
     }
 
     public function _before_check_action($form_data, $type = 'new'){
@@ -181,87 +166,7 @@ class page_admin extends Object_Manager {
         return $form_data;
     }
 
-    function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
-
-        $rs = '';
-
-        $_SESSION['allow_disable_root_structure_select'] = true;
-        global $smarty;
-        if ($button_title == '') {
-            $button_title = Multilanguage::_('L_TEXT_SAVE');
-        }
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
-        $data_model = new Data_Model();
-
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/form/form_generator.php');
-        $form_generator = new Form_Generator();
-
-
-        $rs .= $this->get_ajax_functions();
-        if (1 == $this->getConfigValue('apps.geodata.enable')) {
-            $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/geodata/js/geodata.js"></script>';
-        }
-
-        $rs .= '<form method="post" class="form-horizontal" action="' . $action . '" enctype="multipart/form-data">';
-        $rs .= '<a class="btn btn-mini btn-info alias_create" href="">' . Multilanguage::_('CREATE_ALIAS', 'page') . '</a>
-		<a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-info btn-mini" data-content="Правильный URI страницы должен состоять только из латинских букв, цифр и - _ При нажатии на эту кнопку из заголовка будет автоматически создано значение в транслите в URI. Укажите заголовок." data-original-title="" title=""> <i class="icon-question-sign icon-white"></i></a>    	
-    	';
-        $rs .= '<script>
-    			$(document).ready(function(){
-    			$(\'.alias_create\').click(function(){
-    			var parent=$(this).parents(\'form\').eq(0);
-    			var title=parent.find(\'input[name=title]\');
-    			var uri=parent.find(\'input[name=uri]\');
-    			if(title && uri && title.val()!=\'\'){
-    				$.ajax({
-    					url: \'' . SITEBILL_MAIN_URL . '/apps/page/js/ajax.php\',
-    					type: \'post\',
-    					data: {action: \'get_transliteration\', word: title.val()},
-    					dataType: \'text\',
-    					success: function(text){
-    						uri.val(text);
-    					}
-    				});
-    			}
-    	
-    			return false;
-    			});
-    			});</script>';
-        if ($this->getError()) {
-            $smarty->assign('form_error', $form_generator->get_error_message_row($this->GetErrorMessage()));
-        }
-
-        $el = $form_generator->compile_form_elements($form_data);
-
-        if ($do == 'new') {
-            $el['private'][] = array('html' => '<input type="hidden" name="do" value="new_done" />');
-            $el['private'][] = array('html' => '<input type="hidden" name="' . $this->primary_key . '" value="' . $this->getRequestValue($this->primary_key) . '" />');
-        } else {
-            $el['private'][] = array('html' => '<input type="hidden" name="do" value="edit_done" />');
-            $el['private'][] = array('html' => '<input type="hidden" name="' . $this->primary_key . '" value="' . $form_data[$this->primary_key]['value'] . '" />');
-        }
-        $el['private'][] = array('html' => '<input type="hidden" name="action" value="' . $this->action . '">');
-        $el['private'][] = array('html' => '<input type="hidden" name="language_id" value="' . $language_id . '">');
-
-        $el['form_header'] = $rs;
-        $el['form_footer'] = '</form>';
-
-        $el['controls']['submit'] = array('html' => '<button id="formsubmit" onClick="return SitebillCore.formsubmit(this);" name="submit" class="btn btn-primary">' . $button_title . '</button>');
-        $smarty->assign('form_elements', $el);
-        if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl')) {
-            $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl';
-        } else {
-            $tpl_name = $this->getAdminTplFolder() . '/data_form.tpl';
-        }
-        return $smarty->fetch($tpl_name);
-    }
-
     protected function getPagesColumn() {
-        if (1 == (int) $this->getConfigValue('apps.seo.no_trailing_slashes')) {
-            $trailing_slashe = '';
-        } else {
-            $trailing_slashe = '/';
-        }
         $ret = '';
         $Records = array();
         $DBC = DBC::getInstance();
@@ -273,7 +178,7 @@ class page_admin extends Object_Manager {
         $stmt = $DBC->query($query);
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
-                $ar['href'] = SITEBILL_MAIN_URL . '/' . trim($ar['uri'], '/') . (false !== strpos($ar['uri'], '.') ? '' : $trailing_slashe);
+                $ar['href'] = $this->createUrlTpl($ar['uri']);
                 $fp = strpos($ar['body'], '<p>');
                 $lp = strpos($ar['body'], '</p>');
 
@@ -304,8 +209,7 @@ class page_admin extends Object_Manager {
     }
 
     function main() {
-        $rs .= parent::main();
-        return $rs;
+        return parent::main();
     }
 
     function getTopMenu() {

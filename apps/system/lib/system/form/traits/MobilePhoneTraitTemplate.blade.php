@@ -32,11 +32,11 @@
     // initialise plugin
     var iti{{$id}} = window.intlTelInput(input{{$id}}, {
         utilsScript: "{{SITEBILL_MAIN_URL}}/apps/system/js/intl-tel-input/js/utils.js",
-        initialCountry: "auto",
+        initialCountry: "{{$initialcountry}}",
         separateDialCode: true,
         hiddenInput: "full",
         geoIpLookup: function(success, failure) {
-            $.get("https://ipinfo.io", function() {}, "jsonp").always(function(resp) {
+            $.get(estate_folder + '/js/ajax.php?action=ipinfo', function() {}, "json").always(function(resp) {
                 var countryCode = (resp && resp.country) ? resp.country : "us";
                 success(countryCode);
             });

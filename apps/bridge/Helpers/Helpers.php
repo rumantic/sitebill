@@ -2,10 +2,14 @@
 namespace bridge\Helpers;
 
 
+use Sitebill\Entity\app\Helpers\Sitebill;
+
 class Helpers
 {
     private static $angular_dist_files;
     private static $entity_storage;
+    private static $permission;
+    private static $sitebill;
 
     public static function include($entity_name, $method, $params) {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/api/classes/class.common.php');
@@ -85,7 +89,7 @@ class Helpers
     }
 
     public static function editor_wrapper ($wrapped_value, $name, $uri, $key, $value_key = 'value') {
-        if ( \SConfig::getConfigValueStatic('editor_mode') ) {
+        if ( \SConfig::getConfigValueStatic('editor_mode') and Helpers::can_view('wysiwyg_editor') ) {
             return "<div class=\"editable_entity_wrapper\">
             <div 
                 data-entity-name=\"$name\" 
@@ -129,6 +133,23 @@ class Helpers
         }
         return self::editor_wrapper($entity_content, $name, $uri, $key, $value_key);
     }
+
+    public static function permission()
+    {
+        if ( !isset(self::$permission) ) {
+            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php');
+            self::$permission = new \Permission();
+        }
+        return self::$permission;
+    }
+    public static function can_view($component_name)
+    {
+        if ( !isset(self::$sitebill) ) {
+            self::$sitebill = new \Sitebill();
+        }
+        return self::permission()->get_access(  self::$sitebill->getSessionUserId(), $component_name, 'access');
+    }
+
 
 }
 

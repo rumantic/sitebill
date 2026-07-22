@@ -313,6 +313,9 @@ class Apps_Processor extends SiteBill
         if ($apps_list) {
             foreach ($apps_list as $name => $apps_array) {
                 $app_class_name = false;
+                if ( !$this->isAppEnabled($name) ) {
+                    continue;
+                }
                 if ($apps_array['local_admin_path'] != '') {
                     require_once($apps_array['local_admin_path']);
                     $app_class_name = 'local_' . $name . '_admin';
@@ -410,6 +413,38 @@ class Apps_Processor extends SiteBill
         return false;
     }
 
+    private function isAppEnabled ( $name, $verbose = false )
+    {
+        // эти приложения нужно запускать у них есть frontend или _preload
+        $whiteList = ['angular', 'customentity', 'menu', 'memorylist'];
+
+        // эти приложения сами запускаются, у них нет frontend или _preload
+        $blackList = ['data', 'excel', 'geodata', 'pdfreport', 'tlocation', 'language', 'table'];
+        $cc = SConfig::getConfigStatic();
+        //dd($cc);
+        if ( in_array($name, $whiteList) ) {
+            return true;
+        }
+
+        if ( in_array($name, $blackList) ) {
+            return false;
+        }
+
+        if ( !$this->getConfigValue('apps.'.$name.'.enable') ) {
+            if ( $verbose ) {
+                if ( !isset($cc['apps.'.$name.'.enable']) ) {
+                    echo $name.' skipped '.(!isset($cc['apps.'.$name.'.enable']) ? ' not defined' : 'norm').'<br>';
+                }
+            }
+            return false;
+        } else {
+            if ( $verbose ) {
+                // echo '<b>'.$name.'</b><br>';
+            }
+            return true;
+        }
+    }
+
     /**
      * Run frontend apps
      * @param void
@@ -426,6 +461,9 @@ class Apps_Processor extends SiteBill
         if ($apps_list) {
             //print_r($apps_list);
             foreach ($apps_list as $name => $apps_array) {
+                if ( !$this->isAppEnabled($name) ) {
+                    continue;
+                }
                 $app_class_name = false;
                 if ($apps_array['local_admin_path'] != '') {
                     require_once($apps_array['local_admin_path']);

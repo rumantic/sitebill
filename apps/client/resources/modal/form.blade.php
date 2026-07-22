@@ -32,4 +32,4 @@
 @endpush
 
 
-<button id="{{$formgeneratedid}}_modal" class="btn btn-primary btn-block">{{$modal_button_title}}</button>
+<button id="{{$formgeneratedid}}_modal" class="btn {{ !empty($btn_class) ? $btn_class : "btn-primary" }} btn-block">{{$modal_button_title}}</button>

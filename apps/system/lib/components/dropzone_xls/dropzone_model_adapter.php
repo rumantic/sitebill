@@ -8,7 +8,7 @@ class dropzone_model_adapter extends Data_Manager_Export
     function __construct($table_name, $action, $primary_key, $data_model)
     {
         parent::__construct();
-        $this->user_mode = $user_mode;
+        $this->user_mode = null;
         $this->table_name = $table_name;
         $this->action = $action;
         $this->primary_key = $primary_key;
@@ -72,12 +72,15 @@ class dropzone_model_adapter extends Data_Manager_Export
             }
             if ($model_array[$key]['type'] == 'select_by_query') {
                 $id = $this->get_value_id_by_name($model_array[$key]['primary_key_table'], $model_array[$key]['value_name'], $model_array[$key]['primary_key_name'], $data[$value]);
+
                 if (empty($id)) {
-                    $id = $this->add_value($model_array[$key]['primary_key_table'], $model_array[$key]['value_name'], $model_array[$key]['primary_key_name'], $data[$value]);
+                    if ( isset($model_array[$key]['parameters']) and is_array($model_array[$key]['parameters']) and $model_array[$key]['parameters']['disable_excel_auto_add'] != 1 ) {
+                        $id = $this->add_value($model_array[$key]['primary_key_table'], $model_array[$key]['value_name'], $model_array[$key]['primary_key_name'], $data[$value]);
+                    }
                 }
                 $this->setRequestValue($key, $id);
             } elseif ($model_array[$key]['type'] == 'structure_chain' || $model_array[$key]['type'] == 'select_box_structure') {
-                $chain = $data[$value];
+                $chain = trim($data[$value]);
                 if (empty($chain)) {
                     $chain = $this->category_not_defined_title;
                 }
@@ -103,7 +106,6 @@ class dropzone_model_adapter extends Data_Manager_Export
                 $this->setRequestValue($key, $this->get_multi_ids_from_string($data[$value], $model_array[$key]));
             } elseif ($model_array[$key]['type'] == 'geodata') {
                 $geodata_name = $model_array[$key]['name'];
-                $geodata = array();
                 $geodata = explode(',', $data[$value]);
                 if (count($geodata) > 1) {
                     if (preg_match('/^(-?)([0-9]?)([0-9])((\.?)(\d*)?)$/', trim($geodata[0]))) {
@@ -139,6 +141,8 @@ class dropzone_model_adapter extends Data_Manager_Export
             } elseif ($model_array[$key]['type'] == 'checkbox') {
                 if ($data[$value] == 1) {
                     $this->setRequestValue($key, 1);
+                } elseif ($data[$value] == 0) {
+                    $this->setRequestValue($key, NULL);
                 } else {
                     unset($_POST[$key]);
                     unset($_GET[$key]);

@@ -28,6 +28,15 @@ class excelfree_admin extends Object_Manager {
             '1000',
             'Количество строк загружаемых за один шаг');
 
+        $config_admin->addParamToConfig(
+            'apps.excelfree.calculateFormulas',
+            '0',
+            'Вычислять формулы при загрузке Excel-файлов',
+            SConfig::$fieldtypeCheckbox
+        );
+
+
+
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/excelfree/admin/data_manager_export.php';
         $this->data_manager_export = new Data_Manager_Export();
         $this->action = 'excelfree';
@@ -87,8 +96,8 @@ class excelfree_admin extends Object_Manager {
 
     function get_export_form() {
 
-        require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/grid/grid_constructor.php';
-        $grid_constructor = new Grid_Constructor();
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/frontend/grid/GridConstructorFactory.php';
+        $grid_constructor = GridConstructorFactory::create();
 
         $params['user_id'] = $this->getRequestValue('user_id');
         $params['topic_id'] = $this->getRequestValue('topic_id');
@@ -140,188 +149,121 @@ class excelfree_admin extends Object_Manager {
         }
 
         $cycle_per_page = intval($this->getRequestValue('per_page'));
-        $current_page = 0;
 
-        $query_count = $this->data_manager_export->get_search_query($params, true);
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/excelfree/admin/StreamXlsxWriter.php';
+        $select_maps  = $this->data_manager_export->build_select_maps($exported_fields);
+        $img_base_url = SITEBILL_MAIN_URL . '/img/data/';
+        $base_sql     = $this->data_manager_export->get_search_query($params);
+        $DBC          = DBC::getInstance();
 
-        $DBC = DBC::getInstance();
-        $stmt = $DBC->query($query_count);
-        if ($stmt) {
-            $ar = $DBC->fetch($stmt);
-        }
-        $cycle_total = $ar['total'];
+        if ($cycle_per_page === 0) {
+            // ── Single file: stream all rows in 500-row DB chunks ──────────
+            $xlsx_file_name   = 'data' . date('Y-m-d_H_i') . '.xlsx';
+            $xlsx_output_file = SITEBILL_DOCUMENT_ROOT . '/cache/upl/' . $xlsx_file_name;
+            $xlsxWriter       = new StreamXlsxWriter($xlsx_output_file);
 
-        for ($i = 0; $i <= $cycle_total; $i += $cycle_per_page) {
-            $current_page++;
-
-            $data_a = $this->data_manager_export->grid_array_e($params, $exported_fields, $this->getRequestValue('per_page'), $current_page);
-
-            $objPHPExcel = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
-
-            $styleArray = array(
-                'font' => array(
-                    'bold' => true,
-                ),
-                'alignment' => array(
-                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT,
-                ),
-                'borders' => array(
-                    'bottom' => array(
-                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-                        'color' => array(
-                            'rgb' => '808080'
-                        )
-                    ),
-                ),
-                'fill' => array(
-                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'rotation' => 90,
-                    'color' => array(
-                        'rgb' => 'c5c5c5',
-                    )
-                ),
-            );
-
-            //$objPHPExcel->getActiveSheet()->getStyle('A1:AN1')->applyFromArray($styleArray);
-            $fletter = 'A';
-            $lletter = $this->getNameFromNumber((count($exported_fields) - 1));
-            $objPHPExcel->getActiveSheet()->getStyle($fletter . '1:' . $lletter . '1')->applyFromArray($styleArray);
-
-
-            $column = 0;
-
-            $arrayData=array();
-            $ai=0;
+            $header_row = [];
             foreach ($exported_fields as $ef) {
-                //$objPHPExcel->getActiveSheet()->setCellValueByColumnAndRow($column, 1, SiteBill::iconv(SITE_ENCODING, 'utf-8', $_model[$ef]['title']));
-                $arrayData[]=SiteBill::iconv(SITE_ENCODING, 'utf-8', $_model[$ef]['title']);
-                $column++;
+                $header_row[] = SiteBill::iconv(SITE_ENCODING, 'utf-8', $_model[$ef]['title']);
             }
+            $xlsxWriter->addRow($header_row);
 
-            $objPHPExcel->getActiveSheet()->fromArray($arrayData,NULL,'A1');
-
-            $objPHPExcel->getActiveSheet()->getColumnDimension('A')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('B')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('C')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('D')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('E')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('F')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('G')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('H')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('I')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('J')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('K')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('L')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('M')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('N')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('O')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('P')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('Q')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('R')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('S')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('T')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('U')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('V')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('W')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('X')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('Y')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('Z')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('AA')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('AB')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('AC')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('AD')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('AE')->setAutoSize(true);
-
-            $objPHPExcel->getActiveSheet()->getColumnDimension('AF')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('AG')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('AC')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('AH')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('AI')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('AJ')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('AK')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('AL')->setAutoSize(true);
-            $objPHPExcel->getActiveSheet()->getColumnDimension('AM')->setAutoSize(true);
-
-            $arrayData=array();
-            $ai=0;
-
-
-
-            foreach ($data_a as $item_id => $data_item_a) {
-                $row = $item_id + 2;
-                $column = 0;
-                foreach ($data_item_a as $key => $item) {
-
-                    if ($item['type'] == 'select_by_query') {
-                        $value=$item['value_string'];
-                    } elseif ($item['type'] == 'select_by_query_multi') {
-                        $value=implode(';', $item['value_string']);
-                    } elseif ($item['type'] == 'structure' || $item['type'] == 'structure_chain') {
-                        $value=$item['value_string'];
-                    } elseif ($item['type'] == 'select_box_structure') {
-                        $value=$item['value_string'];
-                    } elseif ($item['type'] == 'date') {
-                        $value=$item['value_string'];
-                    } elseif ($item['type'] == 'client_id') {
-                        $value=$item['value_string'];
-                    } elseif ($item['type'] == 'select_box') {
-                        $value=$item['select_data'][$item['value']];
-                    } elseif ($item['type'] == 'photo') {
-                        $value='';
-                    } elseif ($item['type'] == 'checkbox') {
-                        $value=($item['value'] == 1 ? 1 : 0);
-                    } elseif ($item['type'] == 'uploads') {
-                        $value='';
-                    } elseif ($item['type'] == 'docuploads') {
-                        $value='';
-                    } elseif ($item['type'] == 'geodata') {
-                        $value=$item['value_string'];
-                    } else {
-                        if (is_array($item['value'])) {
-                            $value=implode(';', $item['value']);
-                        } else {
-                            $value=$item['value'];
+            $chunk_size = 500;
+            $offset     = 0;
+            do {
+                $stmt       = $DBC->query($base_sql . ' LIMIT ' . $chunk_size . ' OFFSET ' . $offset);
+                $chunk_rows = 0;
+                if ($stmt) {
+                    while ($ar = $DBC->fetch($stmt)) {
+                        $data_row = [];
+                        foreach ($exported_fields as $field) {
+                            $data_row[] = SiteBill::iconv(SITE_ENCODING, 'utf-8',
+                                $this->_resolveExportValue($field, isset($ar[$field]) ? $ar[$field] : '', $select_maps, $img_base_url, $ar)
+                            );
                         }
+                        $xlsxWriter->addRow($data_row);
+                        $chunk_rows++;
                     }
-
-                    /*if (is_array($value)) {
-                        if (is_array($value['value_string'])) {
-                            $value = implode(',', $value['value_string']);
-                        } else {
-                            $value = $value['value_string'];
-                        }
-                    }*/
-                    $arrayData[$ai][]=$value;
-                    //$objPHPExcel->getActiveSheet()->setCellValueByColumnAndRow($column, $row, SiteBill::iconv(SITE_ENCODING, 'utf-8', $value));
-                    $column++;
-
+                    $stmt->closeCursor();
                 }
-                $ai+=1;
-            }
+                $offset += $chunk_size;
+            } while ($chunk_rows === $chunk_size);
 
-            $objPHPExcel->getActiveSheet()->fromArray($arrayData,NULL,'A2');
+            $xlsxWriter->save();
+            unset($xlsxWriter, $select_maps);
 
-            $objWriter = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($objPHPExcel);
-            $xlsx_file_name = "data" . date('Y-m-d_H_i') . "_page" . $current_page . ".xlsx";
-            $xlsx_output_file = SITEBILL_DOCUMENT_ROOT . "/cache/upl/" . $xlsx_file_name;
-            $objWriter->save($xlsx_output_file);
+            header('Content-type: application/octet-stream');
+            header('Content-disposition: attachment; filename=' . $xlsx_file_name);
+            readfile($xlsx_output_file);
+            exit;
 
-            $handle = fopen($xlsx_output_file, "r");
-            $contents = fread($handle, filesize($xlsx_output_file));
-            fclose($handle);
-            if ($cycle_per_page == 0) {
-                header("Content-type: application/octet-stream");
-                header("Content-disposition: attachment; filename=" . $xlsx_file_name . "");
-                echo $contents;
-                exit;
-            } else {
+        } else {
+            // ── Multi-file: one XLSX per $cycle_per_page rows ──────────────
+            $rs          = '';
+            $page_offset = 0;
+            $page_num    = 0;
+            do {
+                $page_num++;
+                $xlsx_file_name   = 'data' . date('Y-m-d_H_i') . '_page' . $page_num . '.xlsx';
+                $xlsx_output_file = SITEBILL_DOCUMENT_ROOT . '/cache/upl/' . $xlsx_file_name;
+                $xlsxWriter       = new StreamXlsxWriter($xlsx_output_file);
+
+                $header_row = [];
+                foreach ($exported_fields as $ef) {
+                    $header_row[] = SiteBill::iconv(SITE_ENCODING, 'utf-8', $_model[$ef]['title']);
+                }
+                $xlsxWriter->addRow($header_row);
+
+                $stmt      = $DBC->query($base_sql . ' LIMIT ' . $cycle_per_page . ' OFFSET ' . $page_offset);
+                $page_rows = 0;
+                if ($stmt) {
+                    while ($ar = $DBC->fetch($stmt)) {
+                        $data_row = [];
+                        foreach ($exported_fields as $field) {
+                            $data_row[] = SiteBill::iconv(SITE_ENCODING, 'utf-8',
+                                $this->_resolveExportValue($field, isset($ar[$field]) ? $ar[$field] : '', $select_maps, $img_base_url, $ar)
+                            );
+                        }
+                        $xlsxWriter->addRow($data_row);
+                        $page_rows++;
+                    }
+                    $stmt->closeCursor();
+                }
+                $xlsxWriter->save();
+                unset($xlsxWriter);
+
                 $rs .= '<a href="' . SITEBILL_MAIN_URL . '/cache/upl/' . $xlsx_file_name . '" download="' . $xlsx_file_name . '">' . $xlsx_file_name . '</a><br>';
+                $page_offset += $cycle_per_page;
+            } while ($page_rows === $cycle_per_page);
+
+            unset($select_maps);
+            return '<h3>Скачать готовые файлы</h3><br/>' . $rs;
+        }
+    }
+
+    private function _resolveExportValue($field, $raw, array $select_maps, $img_base_url, array $ar)
+    {
+        if (isset($select_maps[$field])) {
+            $entry = $select_maps[$field];
+            switch ($entry['type']) {
+                case 'fk':
+                case 'chain':
+                case 'select':
+                    $resolved = isset($entry['map'][(string)$raw]) ? $entry['map'][(string)$raw] : null;
+                    return $resolved !== null ? (string)$resolved : (string)$raw;
+
+                case 'geodata':
+                    $lat = isset($ar[$field . '_lat']) ? $ar[$field . '_lat'] : '';
+                    $lng = isset($ar[$field . '_lng']) ? $ar[$field . '_lng'] : '';
+                    return ($lat !== '' || $lng !== '') ? $lat . ',' . $lng : '';
             }
         }
 
-        $rsr = '<h3>Скачать готовые файлы</h3><br/>' . $rs . '';
+        if (is_array($raw)) {
+            return implode(';', $raw);
+        }
 
-        return $rsr;
+        return (string)$raw;
     }
 
     function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php') {
@@ -386,7 +328,6 @@ class excelfree_admin extends Object_Manager {
         if ($files) {
             $mapper = $this->mapper();
             $data = $this->load_xls($files[0]);
-
             $assoc_array = ((isset($_POST['assoc_array']) && count($_POST['assoc_array']) > 0) ? $_POST['assoc_array'] : NULL);
             //print_r($assoc_array);
             if ($excel_template_id > 0) {
@@ -812,6 +753,8 @@ EOF;
             $chunkFilter = new \excelfree\admin\ChunkReadFilter();
         }
 
+        error_reporting(E_ERROR );
+        ini_set('display_errors','On');
 
         try {
             $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputFileType);
@@ -834,7 +777,7 @@ EOF;
             return false;
         }
 
-        $sheetData = $objPHPExcel->getActiveSheet()->toArray(null, true, true, true);
+        $sheetData = $objPHPExcel->getActiveSheet()->toArray(null, $this->getConfigValue('apps.excelfree.calculateFormulas', false), true, true);
 
         foreach ($sheetData as $k => $v) {
             $v = self::clearUndecodedXmlEntities($v);

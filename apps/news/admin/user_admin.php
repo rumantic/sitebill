@@ -56,7 +56,7 @@ class user_news_admin extends news_admin {
     }
     
     protected function _editAction(){
-    	$rs='';
+    	$rs = '';
     	if(!$this->checkOwner($this->getSessionUserId(), $this->getRequestValue($this->primary_key))){
     		return $rs;
     	}
@@ -67,27 +67,19 @@ class user_news_admin extends news_admin {
     	unset($form_data[$this->table_name]['user_id']);
     	 
     	if ( $this->getRequestValue('subdo') == 'delete_image' ) {
-    		$this->deleteImage($this->table_name, $this->getRequestValue('image_id'));
+            $this->deleteImage($this->table_name, $this->getRequestValue('image_id'));
     	}
     	 
     	if ( $this->getRequestValue('subdo') == 'up_image' ) {
-    		$this->reorderImage($this->table_name, $this->getRequestValue('image_id'), $this->primary_key, $this->getRequestValue($this->primary_key),'up');
+            $this->reorderImage($this->table_name, $this->getRequestValue('image_id'), $this->primary_key, $this->getRequestValue($this->primary_key),'up');
     	}
     	 
     	if ( $this->getRequestValue('subdo') == 'down_image' ) {
-    		$this->reorderImage($this->table_name, $this->getRequestValue('image_id'), $this->primary_key, $this->getRequestValue($this->primary_key), 'down');
+            $this->reorderImage($this->table_name, $this->getRequestValue('image_id'), $this->primary_key, $this->getRequestValue($this->primary_key), 'down');
     	}
     	 
-    	if ( $this->getRequestValue('language_id') > 0 and !$this->language->get_version($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $this->getRequestValue('language_id')) ) {
-    		$rs = $this->get_form($form_data[$this->table_name], 'new', $this->getRequestValue('language_id'));
-    	} else {
-    		if ( $this->getRequestValue('language_id') > 0 ) {
-    			$form_data[$this->table_name] = $data_model->init_model_data_from_db_language ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name], false, $this->getRequestValue('language_id') );
-    		} else {
-    			$form_data[$this->table_name] = $data_model->init_model_data_from_db ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name] );
-    		}
-    		$rs = $this->get_form($form_data[$this->table_name], 'edit', 0, '', SITEBILL_MAIN_URL.'/account_news/');
-    	}
+        $form_data[$this->table_name] = $data_model->init_model_data_from_db ( $this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name] );
+        $rs = $this->get_form($form_data[$this->table_name], 'edit', 0, '', SITEBILL_MAIN_URL.'/account_news/');
     	return $rs;
     }
     
@@ -95,11 +87,6 @@ class user_news_admin extends news_admin {
     	$rs='';
     	if(!$this->checkOwner($this->getSessionUserId(), $this->getRequestValue($this->primary_key))){
     		return $rs;
-    	}
-    	if($this->getConfigValue('apps.realtylog.enable')){
-    		require_once SITEBILL_DOCUMENT_ROOT.'/apps/realtylog/admin/admin.php';
-    		$Logger=new realtylog_admin();
-    		$Logger->addLog($this->getRequestValue($this->primary_key), $_SESSION['user_id_value'], 'delete', $this->table_name);
     	}
     	if($this->getConfigValue('apps.shoplog.enable')){
     		require_once SITEBILL_DOCUMENT_ROOT.'/apps/shoplog/admin/admin.php';
@@ -164,11 +151,6 @@ class user_news_admin extends news_admin {
     			$form_data['data']=$this->removeTemporaryFields($form_data['data'],$remove_this_names);
     			$rs = $this->get_form($form_data[$this->table_name], 'edit', 0, '', SITEBILL_MAIN_URL.'/account_news/');
     		} else {
-    			if($this->getConfigValue('apps.realtylog.enable')){
-    				require_once SITEBILL_DOCUMENT_ROOT.'/apps/realtylog/admin/admin.php';
-    				$Logger=new realtylog_admin();
-    				$Logger->addLog($form_data['data']['id']['value'], $_SESSION['user_id_value'], 'edit', $this->table_name);
-    			}
     			if($this->getConfigValue('apps.shoplog.enable')){
     				require_once SITEBILL_DOCUMENT_ROOT.'/apps/shoplog/admin/admin.php';
     				$Logger=new shoplog_admin();
@@ -236,11 +218,6 @@ class user_news_admin extends news_admin {
     			$form_data['data']=$this->removeTemporaryFields($form_data['data'],$remove_this_names);
     			$rs = $this->get_form($form_data[$this->table_name], 'new', 0, '', SITEBILL_MAIN_URL.'/account_news/');
     		} else {
-    			if($this->getConfigValue('apps.realtylog.enable')){
-    				require_once SITEBILL_DOCUMENT_ROOT.'/apps/realtylog/admin/admin.php';
-    				$Logger=new realtylog_admin();
-    				$Logger->addLog($new_record_id, $_SESSION['user_id_value'], 'new', $this->table_name);
-    			}
     			if($this->getConfigValue('apps.shoplog.enable')){
     				require_once SITEBILL_DOCUMENT_ROOT.'/apps/shoplog/admin/admin.php';
     				$Logger=new shoplog_admin();

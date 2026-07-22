@@ -51,8 +51,7 @@ class User_Register extends User_Object_Manager {
                     $Login = new Login;
                     $Login->checkLogin($form_data['user']['login']['value'], $form_data['user']['password']['value']);
                     
-                    $user_info_string = $Login->getUserInfo($Login->getUserId());
-                   	$rs = '<h3>'.Multilanguage::_('REGISTER_SUCCESS','system').'</h3><br>';
+                    $rs = '<h3>'.Multilanguage::_('REGISTER_SUCCESS','system').'</h3><br>';
                     $rs .= '<a href="'.SITEBILL_MAIN_URL.'/account/">'.Multilanguage::_('PRIVATE_ACCOUNT','system').'</a>';
                     return $rs;
 			    }

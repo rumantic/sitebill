@@ -35,6 +35,27 @@ CREATE TABLE `".DB_PREFIX."_banner` (
         		$rs .= Multilanguage::_('QUERY_SUCCESS','system').': '.$query.'<br>';
         	}
         }
+
+        // Удаление устаревших файлов
+        $file = SITEBILL_DOCUMENT_ROOT.'/apps/banner/js/ajax.php';
+        $dir = SITEBILL_DOCUMENT_ROOT.'/apps/banner/js';
+        if(file_exists($file)){
+            $rs .= 'Удаляем файл "' . $file . '".'.'<br>';
+            unlink($file);
+            if(file_exists($file)){
+                $rs .= 'Файл "' . $file . '" не удален. Удалите его самостоятельно.'.'<br>';
+            }else{
+                $rs .= 'Файл "' . $file . '" удален успешно.'.'<br>';
+                $rs .= 'Удаляем директорию "' . $dir . '".'.'<br>';
+                rmdir($dir);
+                if(is_dir($dir)){
+                    $rs .= 'Директория "' . $dir . '" не удалена. Удалите ее самостоятельно.'.'<br>';
+                }else{
+                    $rs .= 'Директория "' . $dir . '" удалена успешно.'.'<br>';
+                }
+            }
+        }
+
         return $rs;
     }
 }

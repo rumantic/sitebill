@@ -27,30 +27,31 @@ class API_oauth extends API_Common {
             $query = 'SELECT user_id, group_id FROM ' . DB_PREFIX . '_user WHERE (login=? or email=?) and password=?';
 
             $stmt = $DBC->query($query, array($login, $login, md5($password)));
+            if ($stmt) {
+                $ar = $DBC->fetch($stmt);
+                if ($ar['user_id'] > 0) {
 
-            $ar = $DBC->fetch($stmt);
-            if ($ar['user_id'] > 0) {
+                    //$this->writeLog(array('apps_name' => 'apps.api', 'method' => __METHOD__, 'message' => 'login success ' . var_export($ar, true), 'type' => NOTICE));
+                    $ar['session_key'] = $this->init_session_key($ar['user_id'], ' login');
+                    $this->setSessionUserId($ar['user_id']);
+                    $Login->makeUserLogged($ar['user_id'], 0, $ar['session_key']);
+                    require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
+                    $permission = new Permission();
+                    if ($permission->get_access($ar['user_id'], 'admin_panel', 'login')) {
+                        $ar['admin_panel_login'] = 1;
+                    } else {
+                        $ar['admin_panel_login'] = 0;
+                    }
+                    $ar['success'] = 1;
+                    $ar['api_url'] = $this->get_domain_https();
+                    $structure = $permission->get_structure();
+                    $ar['structure'] = $structure[$ar['group_id']];
+                    if ( !$this->getConfigValue('check_permissions') and $structure[$ar['group_id']]['group_name'] != 'admin' ) {
+                        $ar['admin_panel_login'] = 0;
+                    }
 
-                //$this->writeLog(array('apps_name' => 'apps.api', 'method' => __METHOD__, 'message' => 'login success ' . var_export($ar, true), 'type' => NOTICE));
-                $ar['session_key'] = $this->init_session_key($ar['user_id'], ' login');
-                $this->setSessionUserId($ar['user_id']);
-                $Login->makeUserLogged($ar['user_id'], 0, $ar['session_key']);
-                require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/permission/permission.php' );
-                $permission = new Permission();
-                if ($permission->get_access($ar['user_id'], 'admin_panel', 'login')) {
-                    $ar['admin_panel_login'] = 1;
-                } else {
-                    $ar['admin_panel_login'] = 0;
+                    return $this->json_string($ar);
                 }
-                $ar['success'] = 1;
-                $ar['api_url'] = $this->get_domain_https();
-                $structure = $permission->get_structure();
-                $ar['structure'] = $structure[$ar['group_id']];
-                if ( !$this->getConfigValue('check_permissions') and $structure[$ar['group_id']]['group_name'] != 'admin' ) {
-                    $ar['admin_panel_login'] = 0;
-                }
-
-                return $this->json_string($ar);
             }
         }
         //$this->writeLog(array('apps_name' => 'apps.api', 'method' => __METHOD__, 'message' => 'login failed', 'type' => ERROR));
@@ -179,6 +180,10 @@ class API_oauth extends API_Common {
                 }
             }
 
+        }
+
+        if ( $this->request->get('session_key') == 'demo_session_key' ) {
+            $this->sendFirmMail('report@etown.ru', $this->getConfigValue('system_email'), 'Ошибка входа по demo_session_key ', 'Это значит, что на estate.sitebill.ru в таблице oauth нет ключа demo_session_key для админа');
         }
 
 

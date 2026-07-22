@@ -7,7 +7,7 @@ $(document).ready(function () {
         var select = this.find('select[name=type]');
 
         var query_field = form.find('[name=query]');
-        query_field.after('<div class="showquery">Показать запрос</div>')
+        query_field.after('<div class="showquery">Показать запрос</div>');
         query_field.hide();
         $(document).on('click', '.showquery', function(){
             $(this).text('Спрятать запрос').removeClass('showquery').addClass('hidequery');
@@ -18,20 +18,13 @@ $(document).ready(function () {
             query_field.hide();
         });
 
-        /*form.find('select, input').on('change', function () {
-            displayPreview();
-        });*/
-
-
         var controls = [];
         var common_fields = ['name', 'title', 'value', 'type', 'required', 'unique', 'dbtype', 'active_in_topic', 'active_in_topic[]', 'tab', 'hint', 'parameters[name][]', 'parameters[value][]', 'uaction'];
         if (langs !== undefined) {
-            for (var i = 0, l = langs.length; i < l; i++) {
+            for (let i in langs) {
                 common_fields.push('title_' + langs[i]);
                 common_fields.push('hint_' + langs[i]);
                 common_fields.push('tab_' + langs[i]);
-                //common_fields.push('hint_'+list[i]);
-                //common_fields.push('hint_'+list[i]);
             }
         }
 
@@ -195,8 +188,6 @@ $(document).ready(function () {
             prepare($(this).val());
         });
 
-
-        //displayPreview();
         return this;
 
     };

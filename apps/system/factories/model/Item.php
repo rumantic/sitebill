@@ -49,4 +49,57 @@ class Item {
         return $base;
     }
 
+    public static function select_by_query_multi(
+        $name,
+        $title,
+        $primary_key_name,
+        $primary_key_table,
+        $query,
+        $value_name,
+
+        //optional
+        $title_default = '',
+        $value_default = '',
+        $value = '',
+        $required = 'off',
+        $unique = 'off',
+        $length = '',
+        $parameters = array()
+    ) {
+        $type = \system\types\model\Dictionary::SELECT_BY_QUERY_MULTI;
+        $base = self::base($type, $name, $title, $value, $required,  $unique, $length, $parameters);
+
+        $base[$name][\system\types\model\SelectByQuery::$primary_key_name] = $primary_key_name;
+        $base[$name][\system\types\model\SelectByQuery::$primary_key_table] = $primary_key_table;
+        $base[$name][\system\types\model\SelectByQuery::$query] = $query;
+        $base[$name][\system\types\model\SelectByQuery::$value_name] = $value_name;
+        $base[$name][\system\types\model\SelectByQuery::$title_default] = $title_default;
+        $base[$name][\system\types\model\SelectByQuery::$value_default] = $value_default;
+        return $base;
+    }
+
+    public static function select_box(
+        $name,
+        $title,
+        $select_data,
+
+        //optional
+        $title_default = '',
+        $value_default = '',
+        $value = '',
+        $required = 'off',
+        $unique = 'off',
+        $length = '',
+        $parameters = array()
+    ) {
+        $type = \system\types\model\Dictionary::SELECT_BOX;
+        $base = self::base($type, $name, $title, $value, $required,  $unique, $length, $parameters);
+
+        $base[$name][\system\types\model\SelectBox::$select_data] = $select_data;
+        $base[$name][\system\types\model\SelectBox::$title_default] = $title_default;
+        $base[$name][\system\types\model\SelectBox::$value_default] = $value_default;
+        return $base;
+    }
+
+
 }

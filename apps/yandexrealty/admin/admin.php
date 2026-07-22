@@ -309,6 +309,8 @@ class yandexrealty_admin extends Object_Manager
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
 
+        $config_admin->addParamToConfig('apps.yandexrealty.enable', '1', 'Включить приложение', 1);
+
         if (!$config_admin->check_config_item('apps.yandexrealty.sell')) {
             $config_admin->addParamToConfig('apps.yandexrealty.sell', '', 'Поле:Значение отвечающие за признак продажи');
         }
@@ -334,7 +336,7 @@ class yandexrealty_admin extends Object_Manager
         }
 
         if (!$config_admin->check_config_item('apps.yandexrealty.alias')) {
-            $config_admin->addParamToConfig('apps.yandexrealty.alias', 'yandexrealty', 'Алиас приложения');
+            $config_admin->addParamToConfig('apps.yandexrealty.alias', 'yandex.xml', 'Алиас приложения');
         }
 
         /* if ( !$config_admin->check_config_item('apps.yandexrealty.commercial_not_export') ) {

@@ -179,7 +179,22 @@ class Client_Order extends client_site {
         if (!$form_data) {
             return;
         }
+        // @TODO внедрение csrf-токена (или через форму, или через запрос)
+        /*
+        $form_data['csrftoken'] = array(
+            'name' => '_csrftoken',
+            'type' => 'hidden',
+            'value' => ''
+        );
+        */
         $form_data = $data_model->init_model_data_from_request($form_data);
+        // @TODO внедрение csrf-токена (или через форму, или через запрос)
+        /*
+        if($form_data['csrftoken']['value'] != $this->getCSRFToken()){
+            return json_encode(array('status' => 'error', 'message' => 'csrf error'));
+        }
+        unset($form_data['csrftoken']);
+        */
 
         $form_data_entity = false;
         $pk = 0;
@@ -442,8 +457,16 @@ class Client_Order extends client_site {
         }
         $form_data = $this->loadOrderModel($model_name);
         if (!$form_data) {
-            return '';
+            return 'model '.$model_name.' not found';
         }
+        // @TODO внедрение csrf-токена (или через форму, или через запрос)
+        /*
+        $form_data['csrftoken'] = array(
+            'name' => '_csrftoken',
+            'type' => 'hidden',
+            'value' => $this->getCSRFToken()
+        );
+        */
 
         $options_form_class='form-horizontal';
 
@@ -502,7 +525,7 @@ class Client_Order extends client_site {
         }
         $el['form_footer'] = '</form>';
 
-        $el['controls']['submit'] = array('html' => '<input type="submit" class="btn btn-primary" value="' . $button_title . '">');
+        $el['controls']['submit'] = array('html' => '<input type="submit" class="'.($options['button_class'] ?? 'btn btn-primary').'" value="' . $button_title . '">');
         $this->template->assert('form_elements', $el);
 
         $custom_template_name = '';
@@ -510,6 +533,7 @@ class Client_Order extends client_site {
             $custom_template_name = basename($custom_template);
             $custom_template_name = trim($custom_template_name, '.');
         }
+
 
         $tpl_name = '';
 
@@ -544,6 +568,13 @@ class Client_Order extends client_site {
         if($tpl_name == ''){
             $tpl_name = $this->getAdminTplFolder() . '/data_form.tpl';
         }
+        if ( $options['local_template'] ) {
+            $tmp_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/client/' . $options['local_template'].'.tpl';
+            if ( file_exists( $tmp_name ) ) {
+                $tpl_name = $tmp_name;
+            }
+        }
+
 
         //var_dump($tpl_name);
 
@@ -665,7 +696,7 @@ class Client_Order extends client_site {
         return $form_data[$model_name];
     }
 
-    protected function loadOrderModel($model_name) {
+    public function loadOrderModel($model_name) {
 
         $DBC = DBC::getInstance();
         $query = 'SELECT COUNT(table_id) AS cnt FROM ' . DB_PREFIX . '_table WHERE name=?';

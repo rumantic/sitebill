@@ -31,7 +31,6 @@ class lang_words_admin extends Object_Manager {
             if (empty($form_data)) {
                 $form_data = array();
                 $form_data = $this->get_lang_words_model($ajax);
-                //$form_data = $this->_get_big_city_kvartira_model2($ajax);
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php';
                 $TA = new table_admin();

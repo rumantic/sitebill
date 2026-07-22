@@ -519,7 +519,9 @@ class Data_Manager_Export extends Object_Manager
         $form_data[$this->table_name] = $this->get_model(true);
         $form_data[$this->table_name] = $this->model->init_model_data_from_request($form_data[$this->table_name]);
         $this->model->forse_auto_add_values($form_data[$this->table_name]);
-        $this->edit_data($form_data[$this->table_name]);
+        if ( $this->check_data($form_data[$this->table_name]) ) {
+            $this->edit_data($form_data[$this->table_name]);
+        }
 
         if ($this->getError()) {
             $rs .= '<div style="color: red">Ошибка: ' . $this->GetErrorMessage() . '</div><br>';
@@ -538,7 +540,9 @@ class Data_Manager_Export extends Object_Manager
         $rs = '';
         $form_data[$this->table_name] = $this->get_model(true);
         $form_data[$this->table_name] = $this->model->init_model_data_from_request($form_data[$this->table_name]);
-        $new_record_id = $this->add_data($form_data[$this->table_name]);
+        if ( $this->check_data($form_data[$this->table_name]) ) {
+            $new_record_id = $this->add_data($form_data[$this->table_name]);
+        }
         if ($this->getError()) {
             $rs .= '<div style="color: red">' . Multilanguage::_('L_ERROR') . ': ' . $this->GetErrorMessage() . '</div><br>';
         } else {
@@ -572,6 +576,26 @@ class Data_Manager_Export extends Object_Manager
         return false;
     }
 
+    function extractImages ( $string ) {
+        $imgs = array();
+        $delimiter = $this->getConfigValue('apps.excel.images_delimiter');
+        if ( $delimiter == 'WHITESPACE' ) {
+            $result = preg_split('/\s+/', $string);
+            if ( is_array($result) ) {
+                $imgs = array_filter($result);
+            }
+        } else {
+            $_imgs = explode($delimiter, $string);
+            foreach ($_imgs as $im) {
+                if (trim($im) != '') {
+                    $imgs[] = trim($im);
+                }
+            }
+        }
+        return $imgs;
+    }
+
+
     function init_uploads_cache($record_id, $table_name, $primary_key, $form_data)
     {
         if (1 != (int)$this->getConfigValue('apps.excel.use_image_cache')) {
@@ -584,7 +608,7 @@ class Data_Manager_Export extends Object_Manager
                 $imgs = array();
                 //$form_data[$this->table_name]['image']['value'] = str_replace('_x000D_', '', $form_data[$this->table_name]['image']['value']);
                 $form_data[$table_name][$image_field_name]['value'] = str_replace('\'', '', $form_data[$table_name][$image_field_name]['value']);
-                $_imgs = explode($this->getConfigValue('apps.excel.images_delimiter'), $form_data[$table_name][$image_field_name]['value']);
+                $_imgs = $this->extractImages($form_data[$table_name][$image_field_name]['value']);
 
                 $this->writeLog(array('apps_name' => 'apps.excel', 'method' => __METHOD__, 'message' => 'form_data = <pre>' . var_export($_imgs, true) . '</pre>', 'type' => NOTICE));
 
@@ -1359,6 +1383,72 @@ class Data_Manager_Export extends Object_Manager
             'street_id' => $street_id
         );
 
+    }
+
+    /**
+     * Pre-builds lightweight lookup maps for all $exported_fields so that
+     * FK / select_box / structure values can be resolved without touching the
+     * DB again during the per-row streaming loop.
+     *
+     * @param  array  $exported_fields  List of field names to export
+     * @return array  [ 'field_name' => ['type' => 'fk|select|chain|geodata', 'map' => [...]] ]
+     */
+    public function build_select_maps(array $exported_fields)
+    {
+        $model     = $this->get_model(true);
+        $DBC       = DBC::getInstance();
+        $maps      = [];
+        $chain_map = null;
+
+        foreach ($exported_fields as $field) {
+            if (!isset($model[$field])) {
+                continue;
+            }
+            $fd   = $model[$field];
+            $type = isset($fd['type']) ? $fd['type'] : '';
+
+            if ($type === 'select_by_query' || $type === 'client_id') {
+                if (!isset($fd['primary_key_table'], $fd['primary_key_name'], $fd['value_name'])) {
+                    continue;
+                }
+                $table = DB_PREFIX . '_' . $fd['primary_key_table'];
+                $pk    = $fd['primary_key_name'];
+                $vname = $fd['value_name'];
+                $stmt  = $DBC->query('SELECT `' . $pk . '`, `' . $vname . '` FROM ' . $table);
+                $map   = [];
+                if ($stmt) {
+                    while ($row = $DBC->fetch($stmt)) {
+                        $map[$row[$pk]] = $row[$vname];
+                    }
+                }
+                $maps[$field] = ['type' => 'fk', 'map' => $map];
+
+            } elseif ($type === 'select_box' || $type === 'select_box_multi') {
+                $sd = isset($fd['select_data']) ? $fd['select_data'] : [];
+                if (is_string($sd)) {
+                    $parsed = [];
+                    if (preg_match_all('/\{([^~}]+)~~([^}]*)\}/', $sd, $m)) {
+                        foreach ($m[1] as $i => $k) {
+                            $parsed[$k] = $m[2][$i];
+                        }
+                    }
+                    $sd = $parsed;
+                }
+                $maps[$field] = ['type' => 'select', 'map' => is_array($sd) ? $sd : []];
+
+            } elseif ($type === 'structure_chain' || $type === 'select_box_structure' || $field === 'topic_id') {
+                if ($chain_map === null) {
+                    $x         = $this->getCatalogChains();
+                    $chain_map = $x['txt'];
+                }
+                $maps[$field] = ['type' => 'chain', 'map' => $chain_map];
+
+            } elseif ($type === 'geodata') {
+                $maps[$field] = ['type' => 'geodata', 'map' => []];
+            }
+        }
+
+        return $maps;
     }
 
 }

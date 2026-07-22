@@ -18,10 +18,12 @@ class BlackBoxController extends BaseController
             $apps_processor->run_frontend();
 
             if (count($apps_processor->get_executed_apps()) > 0) {
+                $this->sitebill->template->assign('executed_apps', $apps_processor->get_executed_apps());
                 $work_subcontroller = 'apps';
                 $has_result = true;
             }
         }
+
 
         $sitebill_krascap = new \SiteBill_Krascap();
         $REQUESTURIPATH = $sitebill_krascap::getClearRequestURI();
@@ -30,7 +32,18 @@ class BlackBoxController extends BaseController
         if(!$has_result && $sitebill_krascap->isRealtyDetected($REQUESTURIPATH)){
             $has_result=true;
             $sitebill_krascap->grid_special_right();
-            return $this->return_pageview('pages.realty_view');
+            if ( $this->sitebill->request()->get('action') == 'renovation:reno_estimate' ) {
+                if ( $this->sitebill->request()->get('do') == 'excel' ) {
+                    $reno_estimate = new \renovation\entities\reno_estimate();
+                    $reno_estimate->excel_export(store('data_shared')['id']['value'], $this->sitebill->request()->get('contractor_id'));
+                }
+
+                return $this->return_pageview('pages.realty_view_renovation');
+            } else if ( $this->sitebill->request()->get('action') == 'votes:video-chat' ) {
+                return $this->return_pageview('pages.realty_view_video_chat');
+            } else {
+                return $this->return_pageview('pages.realty_view');
+            }
         }
         if ( $has_result ) {
             return $this->return_default();
@@ -92,7 +105,7 @@ class BlackBoxController extends BaseController
 			//$this->frontend->
             $sitebill_krascap = new \SiteBill_Krascap();
             $this->frontend->grid_special_right();
-            if ($this->frontend->grid_adv() === false ) {
+            if ($this->frontend->grid_adv(array(), 'main_grid') === false ) {
                 return $this->return_pageview('pages.error_message');
             }
 
@@ -105,8 +118,15 @@ class BlackBoxController extends BaseController
             }else{
                 $params['listingtype'] = \SiteBill::$iRequest->cookie('listingtype');
             }
+            if ( $this->sitebill->getConfigValue('apps.memorylist.sharelist.enable') ) {
+                require_once (SITEBILL_DOCUMENT_ROOT.'/apps/memorylist/admin/admin.php');
+                require_once (SITEBILL_DOCUMENT_ROOT.'/apps/memorylist/site/site.php');
+                $memorylist_site = new \memorylist_site();
+                $this->sitebill->set_template_store('save_sharelist_button', $memorylist_site->get_save_sharelist_button());
+            }
+
             return $this->return_pageview('pages.listing', $params);
-            return $this->return_pageview('pages.listing_map', $params);
+            //return $this->return_pageview('pages.listing_map', $params);
         }
         return $this->return_index();
     }
@@ -149,6 +169,10 @@ class BlackBoxController extends BaseController
                 $metadata['meta_keywords'] = $form_data['meta_keywords']['value'];
             }
 
+        } elseif ( $code == '_home' ) {
+            $metadata['title'] = config('meta_title_main') != '' ? config('meta_title_main') : config('site_title');
+            $metadata['meta_description'] = config('meta_description_main');
+            $metadata['meta_keywords'] = config('meta_keywords_main');
         }
 
         return $metadata;
@@ -517,8 +541,7 @@ class BlackBoxController extends BaseController
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/data/site/site.php');
         $data_site = new \data_site();
         $this->sitebill->template->assert('main', $data_site->main());
-
-        return $this->return_default();
+        return $this->return_pageview('pages.internal', ['work_subcontroller' => 'apps.data']);
     }
 
     function account_profile () {
@@ -533,6 +556,7 @@ class BlackBoxController extends BaseController
                 '<a href="' . $folder . '/account/profile/">Профиль</a>'
             )));
 
+        $this->sitebill->template->assign('executed_apps', ['account_profile']);
         $this->sitebill->template->assert('main', $profile->main());
 
         return $this->return_default();
@@ -563,8 +587,19 @@ class BlackBoxController extends BaseController
 
     function myfavorites () {
         $sitebill_krascap = new \SiteBill_Krascap();
+        if ( $this->sitebill->request()->get('format') == 'pdf'  ) {
+            if (is_array($_SESSION['favorites']) and count($_SESSION['favorites']) != 0) {
+                require_once SITEBILL_DOCUMENT_ROOT . '/apps/api/classes/class.common.php';
+                require_once SITEBILL_DOCUMENT_ROOT . '/apps/pdfreport/api/class.pdfreport.php';
+                $ids = $_SESSION['favorites'];
+                $api_pdf = new \API_pdfreport();
+                $api_pdf->_export_collections_pdf_by_ids($ids);
+                exit;
+            }
+
+        }
         $this->sitebill->template->assert('main', '<p><br></p>' . $sitebill_krascap->grid_adv_favorites());
-        return $this->return_default();
+        return $this->return_pageview('pages.favorites');
     }
 
     function robox () {
@@ -745,9 +780,9 @@ class BlackBoxController extends BaseController
     }
 
     function map () {
-        $sitebill_krascap = new \SiteBill_Krascap();
-        $this->sitebill->template->assert('main', '<p><br></p>' . $sitebill_krascap->map());
-        return $this->return_default();
+        $this->sitebill->template->assert('title', _e('Поиск по карте'));
+
+        return $this->return_pageview('pages.map');
     }
 
     function client_order_entity ($entity) {

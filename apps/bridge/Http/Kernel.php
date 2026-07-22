@@ -47,29 +47,15 @@ class Kernel
         }
 
         // Loading apps routes
-        $routes_apps = array(
-            'agents',
-            'articles',
-            'complex',
-            'admin3',
-            'reviewer',
-            'table',
-            'agency'
-        );
+        $routes_apps = $this->getAppsRoutes($router);
 
-        foreach ( $routes_apps as $app_name ) {
-            if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/apps/'.$app_name.'/routes/routes.php') ) {
-                require_once SITEBILL_DOCUMENT_ROOT.'/apps/'.$app_name.'/routes/routes.php';
-            }
-        }
-
-        // Loading system routes
-        require_once SITEBILL_DOCUMENT_ROOT.'/apps/bridge/routes/routes.php';
 
         // Load template and localized routes
         if ( file_exists(SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.\SiteBill::getConfigValueStatic('theme').'/routes/routes.php') ) {
             require_once SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.\SiteBill::getConfigValueStatic('theme').'/routes/routes.php';
         }
+        // Loading system routes
+        require_once SITEBILL_DOCUMENT_ROOT.'/apps/bridge/routes/routes.php';
 
         // Create a request from server variables
         $request = Request::capture();
@@ -95,5 +81,24 @@ class Kernel
         if ( !$silent ) {
             $response->send();
         }
+    }
+
+    private function getAppsRoutes ($router)
+    {
+        $ra = [];
+        if (is_dir(SITEBILL_APPS_DIR)) {
+            if ($dh = opendir(SITEBILL_APPS_DIR)) {
+                while (($app_dir = readdir($dh)) !== false) {
+                    if (is_dir(SITEBILL_APPS_DIR . '/' . $app_dir) and !preg_match('/\./', $app_dir)) {
+                        if ($app_dir != 'bridge' and file_exists(SITEBILL_APPS_DIR . '/' . $app_dir . '/routes/routes.php')) {
+                            require_once SITEBILL_APPS_DIR . '/' . $app_dir . '/routes/routes.php';
+                            $ra[] = $app_dir;
+                        }
+                    }
+                }
+                closedir($dh);
+            }
+        }
+        return $ra;
     }
 }

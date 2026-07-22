@@ -13,9 +13,9 @@ class excelfree_update extends SiteBill {
 
     function main() {
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/excelfree/lib/phpexcel/PHPExcel.php')) {
-            $rs .= 'Удаление устаревшей библиотеки PHPExcel<br>';
+            $rs = 'Удаление устаревшей библиотеки PHPExcel<br>';
             Sitebill::removeDirectory(SITEBILL_DOCUMENT_ROOT . '/apps/excelfree/lib', $msgs);
-            if (count($msg) > 0) {
+            if (@count($msg) > 0) {
                 foreach ($msgs as $msg) {
                     $rs .= $msg . '<br/>';
                 }

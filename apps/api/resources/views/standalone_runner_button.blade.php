@@ -13,8 +13,13 @@ if ( $button_type == 'button' ) {
    title="{{$modal_title}}"
    {{$href_item}}
    data-target="#{{$modal_id}}" id="{{$modal_id}}_button">
-    <i class="icon-white {{ isset($btnicon) ? $btnicon : 'icon-tasks' }}"></i>
+    @if(isset($btnicon) and $btnicon != '')
+        <i class="icon-white {{ isset($btnicon) ? $btnicon : 'icon-tasks' }}"></i>
+    @endif
     {{$button_title}}
+    @if(isset($btnicon_last) and $btnicon_last != '')
+        <i class="icon-white {{ isset($btnicon_last) ? $btnicon_last : 'icon-tasks' }}"></i>
+    @endif
 </{{$button_type}}>
 
 @push('modals')

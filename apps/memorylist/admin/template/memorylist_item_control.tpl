@@ -1,4 +1,4 @@
-<span class="memorylist_controls memorylist_controls_{$id}">
+<span class="memorylist_controls memorylist_controls_{$id}" style="overflow-y: auto; max-height: 100px; display: block; margin-bottom: 8px;">
 
     {if isset($items_in_memory[$id])}
         {foreach from=$items_in_memory[$id] item=item_memorylist key=itemid}

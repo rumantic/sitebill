@@ -22,6 +22,14 @@ class API_mysearch extends API_Common {
         //$this->setRequestValue('params_sql', json_encode($params_sql));
         //$this->setRequestValue('params_sql', 'test');
 
+        // Track search save action
+        if (class_exists('Metrics')) {
+            Metrics::trackBusiness('search_saved', [
+                'search_title' => $this->request->get('search_title'),
+                'params_count' => count($params),
+                'user_id' => $user_id
+            ], $user_id);
+        }
 
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/mysearch/admin/admin.php';
         $mysearch_admin = new mysearch_admin();

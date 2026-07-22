@@ -21,7 +21,7 @@ class news_admin extends Object_Manager
         $this->app_title = Multilanguage::_('APPLICATION_NAME', 'news');
 
         parent::set_mod($mod_name);
-        if ($this->mod_name == 'topic') {
+        if ($this->mod_name === 'topic') {
             $this->initNewsTopicModel();
         } else {
             $this->initNewsModel();
@@ -53,6 +53,8 @@ class news_admin extends Object_Manager
         $config_admin->addParamToConfig('apps.news.meta_desription', '', 'META описание');
         $config_admin->addParamToConfig('apps.news.meta_keywords', '', 'META ключевые слова');
         $config_admin->addParamToConfig('apps.news.preload_column', '1', 'Формировать колонку новостей для главной', SConfig::$fieldtypeCheckbox);
+        $config_admin->addParamToConfig('apps.news.preload_column_by_location', '0', 'Загрузка списка новостей по локации (город или страна)', SConfig::$fieldtypeCheckbox);
+
         $config_admin->addParamToConfig('apps.news.share_access', '0', 'Разделять доступ к записям в админке', SConfig::$fieldtypeCheckbox);
         $config_admin->addParamToConfig('apps.news.sitemaproot', '1', 'Выдавать ссылку на раздел в карту сайта', SConfig::$fieldtypeCheckbox);
         $config_admin->addParamToConfig('apps.news.sitemaptopics', '0', 'Выдавать ссылки на разделы новостей в карту сайта', SConfig::$fieldtypeCheckbox);
@@ -74,6 +76,10 @@ class news_admin extends Object_Manager
             'Выводить на фронте только активные новости (необходимо поле news.active)',
             SConfig::$fieldtypeCheckbox
         );
+
+        /*$config_admin->addParamToConfig('apps.news.collect_viewstat', '0', 'Учитывать просмотры новостей', SConfig::$fieldtypeCheckbox);*/
+
+        $config_admin->addParamToConfig('apps.news.groupbycountry', '0', 'Группировка новостей по странам', SConfig::$fieldtypeCheckbox);
 
     }
 
@@ -100,7 +106,7 @@ class news_admin extends Object_Manager
         $per_page = $this->getConfigValue('apps.page.per_page');
 
         $start = ($page - 1) * $per_page;
-        if ($this->data_model[$this->table_name]['date']['type'] == 'dtdatetime') {
+        if ($this->data_model[$this->table_name]['date']['type'] === 'dtdatetime') {
             $date = date('Y-m-d H:i:s', time());
         } else {
             $date = time();
@@ -136,7 +142,7 @@ class news_admin extends Object_Manager
             }
             if (1 == (int)$this->getConfigValue('apps.news.sitemapitems')) {
                 $DBC = DBC::getInstance();
-                if ($this->data_model[$this->table_name]['date']['type'] == 'dtdatetime') {
+                if ($this->data_model[$this->table_name]['date']['type'] === 'dtdatetime') {
                     $date = date('Y-m-d H:i:s', time());
                 } else {
                     $date = time();
@@ -181,13 +187,13 @@ class news_admin extends Object_Manager
                 $ntl = $this->getNewsTopicsList();
                 if (!empty($ntl)) {
                     foreach ($ntl as $n) {
-                        $news[] = array('url' => $n['url'], 'changefreq' => $sitemap->validateFrequency($this->getConfigValue('apps.news.sitemaptopics_changefreq')), 'priority' => $sitemap->validatePriority($this->getConfigValue('apps.news.sitemaptopics_priority')));
+                        $news[] = array('url' => $n['sitemap_url'], 'changefreq' => $sitemap->validateFrequency($this->getConfigValue('apps.news.sitemaptopics_changefreq')), 'priority' => $sitemap->validatePriority($this->getConfigValue('apps.news.sitemaptopics_priority')));
                     }
                 }
             }
             if (1 == (int)$this->getConfigValue('apps.news.sitemapitems')) {
                 $DBC = DBC::getInstance();
-                if ($this->data_model[$this->table_name]['date']['type'] == 'dtdatetime') {
+                if ($this->data_model[$this->table_name]['date']['type'] === 'dtdatetime') {
                     $date = date('Y-m-d H:i:s', time());
                 } else {
                     $date = time();
@@ -197,7 +203,7 @@ class news_admin extends Object_Manager
 
                 if ($stmt) {
                     while ($ar = $DBC->fetch($stmt)) {
-                        $href = $this->getNewsRoute($ar[$this->primary_key], $ar['newsalias']);
+                        $href = $this->getNewsRoute($ar[$this->primary_key], $ar['newsalias'], true);
                         $news[] = array('url' => $href, 'changefreq' => $sitemap->validateFrequency($this->getConfigValue('apps.news.sitemapitems_changefreq')), 'priority' => $sitemap->validatePriority($this->getConfigValue('apps.news.sitemapitems_priority')));
                     }
                 }
@@ -233,9 +239,9 @@ class news_admin extends Object_Manager
 
 
             return $rs;
-        } else {
-            return parent::_deleteAction();
         }
+
+        return parent::_deleteAction();
     }
 
     protected function _editAction()
@@ -251,18 +257,18 @@ class news_admin extends Object_Manager
         if ((1 === (int)$this->getConfigValue('check_permissions')) && (1 === (int)$this->getConfigValue('apps.news.share_access')) && ($_SESSION['current_user_group_name'] !== 'admin')) {
             if ($this->checkOwning($news_id, $user_id)) {
                 return parent::_editAction();
-            } else {
-                return Multilanguage::_('L_ACCESS_DENIED');
             }
-        } else {
-            return parent::_editAction();
+
+            return Multilanguage::_('L_ACCESS_DENIED');
         }
+
+        return parent::_editAction();
     }
 
     protected function _edit_doneAction()
     {
         $news_id = (int)$this->getRequestValue($this->primary_key);
-        $user_id = (int)$_SESSION['user_id_value'];
+        $user_id = (int)$_SESSION['user_id'];
         if ((1 === (int)$this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && $this->mod_name === 'topic') {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
@@ -276,13 +282,12 @@ class news_admin extends Object_Manager
 
                 $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
 
-
                 $new_values = $this->getRequestValue('_new_value');
                 if (1 == $this->getConfigValue('use_combobox') && count($new_values) > 0) {
                     $remove_this_names = array();
                     foreach ($form_data[$this->table_name] as $fd) {
                         if (isset($new_values[$fd['name']]) && $new_values[$fd['name']] != '' && $fd['combo'] == 1) {
-                            $id = md5(time() . '_' . rand(100, 999));
+                            $id = md5(time() . '_' . random_int(100, 999));
                             $remove_this_names[] = $id;
                             $form_data[$this->table_name][$id]['value'] = $new_values[$fd['name']];
                             $form_data[$this->table_name][$id]['type'] = 'auto_add_value';
@@ -297,6 +302,7 @@ class news_admin extends Object_Manager
                     }
                 }
                 $data_model->forse_auto_add_values($form_data[$this->table_name]);
+                $form_data[$this->table_name] = $this->_before_check_action($form_data[$this->table_name], 'edit');
                 //$data_model->clear_auto_add_values($form_data[$this->table_name]);
                 if (!$this->check_data($form_data[$this->table_name])) {
                     $form_data[$this->table_name] = $this->removeTemporaryFields($form_data[$this->table_name], $remove_this_names);
@@ -304,7 +310,7 @@ class news_admin extends Object_Manager
                 } else {
 
                     if ($this->mod_name !== 'topic' && isset($form_data[$this->table_name]['user_id'])) {
-                        $form_data[$this->table_name]['user_id']['value'] = intval($_SESSION['user_id_value']);
+                        $form_data[$this->table_name]['user_id']['value'] = $user_id;
                     }
                     $this->edit_data($form_data[$this->table_name]);
                     if ($this->getError()) {
@@ -316,7 +322,7 @@ class news_admin extends Object_Manager
                 }
                 return $rs;
             } else {
-                return Multilanguage::_('L_ACCESS_DENIED');;
+                return Multilanguage::_('L_ACCESS_DENIED');
             }
         } else {
             return parent::_edit_doneAction();
@@ -325,7 +331,6 @@ class news_admin extends Object_Manager
 
     protected function _newAction()
     {
-        $rs = '';
         if ((1 === (int)$this->getConfigValue('check_permissions')) && ($_SESSION['current_user_group_name'] !== 'admin') && $this->mod_name === 'topic') {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
@@ -333,11 +338,9 @@ class news_admin extends Object_Manager
             return Multilanguage::_('L_ACCESS_DENIED');
         }
 
-
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
-        $data_model = new Data_Model();
         $form_data = $this->data_model;
-        if ($form_data[$this->table_name]['date']['type'] == 'date') {
+        if ($form_data[$this->table_name]['date']['type'] === 'date') {
             $form_data[$this->table_name]['date']['value'] = time();
         }
 
@@ -366,7 +369,7 @@ class news_admin extends Object_Manager
                 $remove_this_names = array();
                 foreach ($form_data[$this->table_name] as $fd) {
                     if (isset($new_values[$fd['name']]) && $new_values[$fd['name']] != '' && $fd['combo'] == 1) {
-                        $id = md5(time() . '_' . rand(100, 999));
+                        $id = md5(time() . '_' . random_int(100, 999));
                         $remove_this_names[] = $id;
                         $form_data[$this->table_name][$id]['value'] = $new_values[$fd['name']];
                         $form_data[$this->table_name][$id]['type'] = 'auto_add_value';
@@ -381,15 +384,16 @@ class news_admin extends Object_Manager
                 }
             }
             $data_model->forse_auto_add_values($form_data[$this->table_name]);
+            $form_data[$this->table_name] = $this->_before_check_action($form_data[$this->table_name]);
             if (!$this->check_data($form_data[$this->table_name]) || (1 == $this->getConfigValue('filter_double_data') && !$this->checkUniquety($form_data[$this->table_name]))) {
                 $form_data[$this->table_name] = $this->removeTemporaryFields($form_data[$this->table_name], $remove_this_names);
                 $rs = $this->get_form($form_data[$this->table_name], 'new');
             } else {
                 if ($this->mod_name !== 'topic' && isset($form_data[$this->table_name]['user_id'])) {
-                    $form_data[$this->table_name]['user_id']['value'] = intval($_SESSION['user_id_value']);
+                    $form_data[$this->table_name]['user_id']['value'] = (int)$_SESSION['user_id'];
                 }
 
-                $new_record_id = $this->add_data($form_data[$this->table_name], $this->getRequestValue('language_id'));
+                $this->add_data($form_data[$this->table_name], $this->getRequestValue('language_id'));
                 if ($this->getError()) {
                     $form_data[$this->table_name] = $this->removeTemporaryFields($form_data['data'], $remove_this_names);
                     $rs = $this->get_form($form_data[$this->table_name], 'new');
@@ -398,46 +402,25 @@ class news_admin extends Object_Manager
                 }
             }
             return $rs;
-        } else {
-            return parent::_new_doneAction();
         }
-    }
 
-    /*
-      function main(){
-      $rs.=parent::main();
-      return $rs;
-      }
-     */
+        return parent::_new_doneAction();
+    }
 
     protected function initNewsModel()
     {
         $this->action = 'news';
         $this->table_name = 'news';
         $this->primary_key = 'news_id';
-        $form_data = array();
 
-        if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/columns/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php')) {
-            require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
-            $ATH = new Admin_Table_Helper();
-            $form_data = $ATH->load_model($this->table_name, false);
-            if (empty($form_data)) {
-                $form_data = array();
-                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/news/admin/news_model.php');
-                $Object = new News_Model();
-                $form_data = $Object->get_model();
-                require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
-                require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php';
-                $TA = new table_admin();
-                $TA->create_table_and_columns($form_data, $this->table_name);
-                $form_data = array();
-                $form_data = $ATH->load_model($this->table_name, false);
-            }
-        } else {
+        require_once SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/helper.php';
+        $ATH = new Admin_Table_Helper();
+
+        $form_data = $ATH->get_model($this->table_name, false, false, false, function(){
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/news/admin/news_model.php');
             $Object = new News_Model();
-            $form_data = $Object->get_model();
-        }
+            return $Object->get_model();
+        });
 
         $this->data_model = $form_data;
     }
@@ -448,27 +431,14 @@ class news_admin extends Object_Manager
         $this->table_name = 'news_topic';
         $this->primary_key = 'id';
 
-        if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/columns/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php')) {
-            require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
-            $ATH = new Admin_Table_Helper();
-            $form_data = $ATH->load_model($this->table_name, false);
-            if (empty($form_data)) {
-                $form_data = array();
-                require_once(SITEBILL_DOCUMENT_ROOT . '/apps/news/admin/news_topic_model.php');
-                $Object = new News_Topic_Model();
-                $form_data = $Object->get_model();
-                require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
-                require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php';
-                $TA = new table_admin();
-                $TA->create_table_and_columns($form_data, $this->table_name);
-                $form_data = array();
-                $form_data = $ATH->load_model($this->table_name, false);
-            }
-        } else {
+        require_once SITEBILL_DOCUMENT_ROOT.'/apps/table/admin/helper.php';
+        $ATH = new Admin_Table_Helper();
+
+        $form_data = $ATH->get_model($this->table_name, false, false, false, function(){
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/news/admin/news_topic_model.php');
             $Object = new News_Topic_Model();
-            $form_data = $Object->get_model();
-        }
+            return $Object->get_model();
+        });
 
         $this->data_model = $form_data;
     }
@@ -478,21 +448,22 @@ class news_admin extends Object_Manager
     {
         $form_data = parent::_before_check_action($form_data, $type);
         if (isset($form_data['date'])) {
-            if ($form_data['date']['type'] == 'date') {
+            if ($form_data['date']['type'] === 'date') {
                 if ($form_data['date']['value'] != '' && $form_data['date']['value'] != '0') {
                     $time = date('H:i:s', $form_data['date']['value']);
-                    if ($time == '00:00:00') {
+                    if ($time === '00:00:00') {
                         $form_data['date']['value'] = strtotime(date('d-m-Y', $form_data['date']['value']) . ' ' . date('H:i:s', time()));
                     }
                 } else {
                     $form_data['date']['value'] = time();
                 }
-            } elseif ($form_data['date']['type'] == 'dtdatetime') {
+            } elseif ($form_data['date']['type'] === 'dtdatetime') {
 
             }
         }
 
-        if ($this->mod_name == 'topic') {
+        if ($this->mod_name === 'topic') {
+
             if ($form_data['url']['value'] == '') {
                 $form_data['url']['value'] = $this->transliteMe($form_data['name']['value']);
             }
@@ -532,19 +503,7 @@ class news_admin extends Object_Manager
 			  PRIMARY KEY (`news_id`)
 			) ENGINE=MyISAM  DEFAULT CHARSET=" . DB_ENCODING . ";";
         $success = false;
-        $stmt = $DBC->query($query, array(), $rows, $success);
-        $success_result = $success_result && $success;
-        $query = "
-			CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_news_image` (
-			  `news_image_id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-			  `news_id` int(11) NOT NULL DEFAULT '0',
-			  `image_id` int(11) NOT NULL DEFAULT '0',
-			  `sort_order` int(11) NOT NULL DEFAULT '0',
-			  PRIMARY KEY (`news_image_id`)
-			) ENGINE=MyISAM  DEFAULT CHARSET=" . DB_ENCODING . " ;
-        ";
-        $success = false;
-        $stmt = $DBC->query($query, array(), $rows, $success);
+        $DBC->query($query, array(), $rows, $success);
         $success_result = $success_result && $success;
         if ($this->use_topics) {
             $query = "
@@ -556,7 +515,7 @@ class news_admin extends Object_Manager
 				) ENGINE=MyISAM  DEFAULT CHARSET=" . DB_ENCODING . " ;
         ";
             $success = false;
-            $stmt = $DBC->query($query, array(), $rows, $success);
+            $DBC->query($query, array(), $rows, $success);
             $success_result = $success_result && $success;
         }
         if (!$success_result) {
@@ -594,7 +553,6 @@ class news_admin extends Object_Manager
     {
 
         $rs = '';
-        $params = array();
 
         if ((1 === (int)$this->getConfigValue('check_permissions')) && $this->mod_name === 'topic' && ($_SESSION['current_user_group_name'] !== 'admin')) {
             return '';
@@ -602,85 +560,16 @@ class news_admin extends Object_Manager
             $params['grid_conditions'] = array('user_id' => $_SESSION['user_id_value']);
         }
 
-        $rs .= parent::grid($params);
+        $rs .= parent::grid($params, $default_params);
         return $rs;
     }
 
-    function get_form($form_data = array(), $do = 'new', $language_id = 0, $button_title = '', $action = 'index.php')
-    {
-
-        $rs = '';
-
-        $_SESSION['allow_disable_root_structure_select'] = true;
-        global $smarty;
-        if ($button_title == '') {
-            $button_title = Multilanguage::_('L_TEXT_SAVE');
+    function get_default_grid_items () {
+        if($this->mod_name === 'topic'){
+            return [$this->primary_key, 'name'];
+        }else{
+            return [$this->primary_key, 'title'];
         }
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
-        $data_model = new Data_Model();
-
-        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/form/form_generator.php');
-        $form_generator = new Form_Generator();
-
-
-        $rs .= $this->get_ajax_functions();
-        if (1 == $this->getConfigValue('apps.geodata.enable')) {
-            $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/geodata/js/geodata.js"></script>';
-        }
-        $rs .= '<form method="post" class="form-horizontal" action="' . $action . '" enctype="multipart/form-data">';
-        if ($this->mod_name != 'topic') {
-            $rs .= '<a class="btn btn-info alias_create" href="">' . Multilanguage::_('CREATE_ALIAS', 'news') . '</a>';
-            $rs .= '<script>
-    			$(document).ready(function(){
-    			$(\'.alias_create\').click(function(){
-    			var parent=$(this).parents(\'form\').eq(0);
-    			var title=parent.find(\'input[name=title]\');
-    			var newsalias=parent.find(\'input[name=newsalias]\');
-    			if(title && newsalias && title.val()!=\'\'){
-    				$.ajax({
-    					url: \'' . SITEBILL_MAIN_URL . '/apps/news/js/ajax.php\',
-    					type: \'post\',
-    					data: {action: \'get_transliteration\', word: title.val()},
-    					dataType: \'text\',
-    					success: function(text){
-    						newsalias.val(text);	
-    					}
-    				});
-    			}
-    			
-    			return false;
-    			});
-    			});</script>';
-        }
-        if ($this->getError()) {
-            $smarty->assign('form_error', $form_generator->get_error_message_row($this->GetErrorMessage()));
-        }
-
-        $el = $form_generator->compile_form_elements($form_data);
-
-        if ($do == 'new') {
-            $el['private'][] = array('html' => '<input type="hidden" name="do" value="new_done" />');
-            $el['private'][] = array('html' => '<input type="hidden" name="' . $this->primary_key . '" value="' . $this->getRequestValue($this->primary_key) . '" />');
-        } else {
-            $el['private'][] = array('html' => '<input type="hidden" name="do" value="edit_done" />');
-            $el['private'][] = array('html' => '<input type="hidden" name="' . $this->primary_key . '" value="' . $form_data[$this->primary_key]['value'] . '" />');
-        }
-        $el['private'][] = array('html' => '<input type="hidden" name="action" value="' . $this->action . '">');
-        $el['private'][] = array('html' => '<input type="hidden" name="language_id" value="' . $language_id . '">');
-        //$el['private'][] = array('html' => '<input type="hidden" name="section" value="' . $this->mod_name . '">');
-
-        $el['form_header'] = $rs;
-        $el['form_footer'] = '</form>';
-
-        $el['controls']['submit'] = array('html' => '<button id="formsubmit" onClick="return SitebillCore.formsubmit(this);" name="submit" class="btn btn-primary">' . $button_title . '</button>');
-
-        $smarty->assign('form_elements', $el);
-        if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl')) {
-            $tpl_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/admin/template/form_data.tpl';
-        } else {
-            $tpl_name = $this->getAdminTplFolder() . '/data_form.tpl';
-        }
-        return $smarty->fetch($tpl_name);
     }
 
     function _preload()
@@ -692,16 +581,95 @@ class news_admin extends Object_Manager
         } else {
             $smarty->assign('news_list_column_html', '');
         }
+
+        if ($this->getConfigValue('apps.news.enable') && 1 == (int)$this->getConfigValue('apps.news.preload_column_by_location')) {
+            // Загрузка списка новостей для страны или города
+            $this->loadListByLocation();
+        }
+
         return true;
     }
 
-    function ajax()
-    {
-        if ($this->getRequestValue('action') == 'get_transliteration') {
-            $word = $this->getRequestValue('word');
-            return $this->get_transliteration($word);
+    function loadListByLocation() {
+        $params = $this->getCityOrCountryFromUrl(Sitebill::getClearRequestURI());
+
+        $news = $this->getNewsList($params);
+
+        if ( is_array($news) and count($news) > 0  ) {
+            $this->template->assign('news_list_column', $news);
+        } elseif ( ($params['city_id'] > 0 or $params['country_id'] > 0) and  is_array($news) and count($news) == 0  ) {
+            $params = [
+                'city_id' => 0,
+                'country_id' => 0,
+            ];
+            $news = $this->getNewsList($params);
+            $this->template->assign('news_list_column', $news);
         }
-        return false;
+    }
+
+    function getCityOrCountryFromUrl( $REQUESTURIPATH )
+    {
+        $any_url_catched = false;
+        $DBC = DBC::getInstance();
+        $params['city_id'] = 0;
+        $params['country_id'] = 0;
+
+        if (!$any_url_catched && $REQUESTURIPATH != '' && str_contains($REQUESTURIPATH, '/')) {
+            $country_and_city = explode('/', $REQUESTURIPATH);
+            if ( is_array($country_and_city) && count($country_and_city) == 2 ) {
+                $query = 'SELECT c.*, co.country_id as country_id FROM ' . DB_PREFIX . '_city c, ' . DB_PREFIX . '_country co  WHERE co.url=? and c.url=? LIMIT 1';
+                $stmt = $DBC->query($query, array($country_and_city[0], $country_and_city[1]));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+                    if ((int)$ar['city_id'] != 0) {
+                        $city_url_catched = true;
+                        $params['city_id'] = $ar['city_id'];
+                        $any_url_catched = true;
+                    }
+                    if ((int)$ar['country_id'] != 0) {
+                        $params['country_id'] = $ar['country_id'];
+                    }
+
+                }
+            }
+
+        }
+
+
+        if (!$any_url_catched && $REQUESTURIPATH != '') {
+            if (intval($this->getConfigValue('apps.seo.no_city_url')) === 0) {
+                $query = 'SELECT * FROM ' . DB_PREFIX . '_city WHERE url=? LIMIT 1';
+                $stmt = $DBC->query($query, array($REQUESTURIPATH));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+                    if ((int)$ar['city_id'] != 0) {
+                        $city_url_catched = true;
+                        $params['city_id'] = $ar['city_id'];
+                        $any_url_catched = true;
+                    }
+                }
+            }
+        }
+
+
+        if (!$any_url_catched && $REQUESTURIPATH != '') {
+            if (intval($this->getConfigValue('apps.seo.no_country_url')) === 0) {
+                $query = 'SELECT * FROM ' . DB_PREFIX . '_country WHERE url=? LIMIT 1';
+                $stmt = $DBC->query($query, array($REQUESTURIPATH));
+                if ($stmt) {
+                    $ar = $DBC->fetch($stmt);
+
+                    if ((int)$ar['country_id'] != 0) {
+                        $country_url_catched = true;
+                        $params['country_id'] = $ar['country_id'];
+                        $any_url_catched = true;
+                    }
+                }
+            }
+        }
+
+
+        return $params;
     }
 
     private function get_transliteration($word)
@@ -711,17 +679,16 @@ class news_admin extends Object_Manager
 
     function getNewsListBlock()
     {
-        global $smarty;
         $news = $this->getNewsList();
-        $smarty->assign('news_list_column', $news);
+        $this->template->assign('news_list_column', $news);
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/news_list_column.tpl')) {
-            return $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/news_list_column.tpl');
-        } else {
-            return $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/news/site/template/news_list_column.tpl');
+            return $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/news_list_column.tpl');
         }
+
+        return $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/news/site/template/news_list_column.tpl');
     }
 
-    function getNewsList()
+    function getNewsList( $params = array() )
     {
         $where = array();
         $news = array();
@@ -746,45 +713,39 @@ class news_admin extends Object_Manager
         $hasUploadify = false;
         $uploads = false;
         foreach ($this->data_model[$this->table_name] as $mitem) {
-            if ($mitem['type'] == 'uploadify_image') {
+            if ($mitem['type'] === 'uploadify_image') {
                 $hasUploadify = true;
                 continue;
             }
         }
         if (!$hasUploadify) {
             foreach ($this->data_model[$this->table_name] as $mitem) {
-                if ($mitem['type'] == 'uploads') {
+                if ($mitem['type'] === 'uploads') {
                     $uploads = $mitem['name'];
                     continue;
                 }
             }
         }
-        /*
-          if(1==$this->getConfigValue('apps.news.use_news_topics')){
-          $query='SELECT '.$this->primary_key.' FROM '.DB_PREFIX.'_'.$this->table_name.' '.($control_spec ? ' WHERE `n.spec`=1' : '').' ORDER BY `date` DESC LIMIT '.$count;
-
-          }else{
-          $query='SELECT '.$this->primary_key.' FROM '.DB_PREFIX.'_'.$this->table_name.($control_spec ? ' WHERE `spec`=1' : '').' ORDER BY `date` DESC LIMIT '.$count;
-          }
-
-          $ids=array();
-          $DBC=DBC::getInstance();
-          $stmt=$DBC->query($query);
-          if($stmt){
-          while($ar=$DBC->fetch($stmt)){
-          $ids[]=$ar[$this->primary_key];
-          }
-          }
-          print_r($ids); */
 
         if (isset($_SESSION['user_domain_owner']) && (int)$_SESSION['user_domain_owner']['user_id'] != 0) {
             $where[] = 'n.`user_id`=' . $_SESSION['user_domain_owner']['user_id'];
         }
 
-        if ($this->data_model[$this->table_name]['date']['type'] == 'dtdatetime') {
+        if ($this->data_model[$this->table_name]['date']['type'] === 'dtdatetime') {
             $where[] = 'n.`date`<=\'' . date('Y-m-d H:i:s', time()) . '\'';
         } else {
             $where[] = 'n.`date`<=' . time();
+        }
+
+        if ( isset($this->data_model[$this->table_name]['country_id']) and isset($params['country_id']) and $params['country_id'] > 0 ) {
+            $where[] = 'n.`country_id` = ' . intval($params['country_id']);
+        }
+        if ( isset($this->data_model[$this->table_name]['city_id']) and isset($params['city_id']) and $params['city_id'] > 0) {
+            $where[] = 'n.`city_id` = ' . intval($params['city_id']);
+        }
+        if ( isset($params['country_id']) and $params['country_id'] == 0 and isset($params['city_id']) and $params['city_id'] == 0 ) {
+            $where[] = 'n.`city_id` = ' . intval($params['city_id']);
+            $where[] = 'n.`country_id` = ' . intval($params['country_id']);
         }
 
 
@@ -800,7 +761,7 @@ class news_admin extends Object_Manager
         if ($stmt) {
             $i = 0;
             while ($ar = $DBC->fetch($stmt)) {
-                if ($this->data_model[$this->table_name]['date']['type'] == 'dtdatetime') {
+                if ($this->data_model[$this->table_name]['date']['type'] === 'dtdatetime') {
                     $ar['date'] = date('d.m.Y', strtotime($ar['date']));
                 } else {
                     $ar['date'] = date('d.m.Y', $ar['date']);
@@ -858,9 +819,7 @@ class news_admin extends Object_Manager
         $query = 'SELECT id, name, url FROM ' . DB_PREFIX . '_news_topic WHERE url=? LIMIT 1';
         $stmt = $DBC->query($query, array($url));
         if ($stmt) {
-            $ar = $DBC->fetch($stmt);
-
-            return $ar;
+            return $DBC->fetch($stmt);
         }
         return false;
     }
@@ -869,15 +828,14 @@ class news_admin extends Object_Manager
     {
         $DBC = DBC::getInstance();
         $query = 'SELECT news_id FROM ' . DB_PREFIX . '_news WHERE newsalias=? AND `date`<=? LIMIT 1';
-        if ($this->data_model[$this->table_name]['date']['type'] == 'dtdatetime') {
+        if ($this->data_model[$this->table_name]['date']['type'] === 'dtdatetime') {
             $date = date('Y-m-d H:i:s', time());
         } else {
             $date = time();
         }
         $stmt = $DBC->query($query, array($url, $date));
         if ($stmt) {
-            $ar = $DBC->fetch($stmt);
-            return $ar;
+            return $DBC->fetch($stmt);
         }
         return false;
     }
@@ -908,6 +866,7 @@ class news_admin extends Object_Manager
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
                 $ar['url'] = $this->createUrlTpl($app_alias . '/' . $ar['url']);
+                $ar['sitemap_url'] = $this->createUrlTpl($app_alias . '/' . $ar['url'], true);
                 $ret[$ar['id']] = $ar;
             }
         }
@@ -937,15 +896,15 @@ class news_admin extends Object_Manager
         if ($external) {
             if ($news_alias != '') {
                 return $this->createUrlTpl($app_news_alias . '/' . $news_alias, true);
-            } else {
-                return $this->createUrlTpl($app_item_alias . $news_id . '.html', true);
             }
+
+            return $this->createUrlTpl($app_item_alias . $news_id . '.html', true);
         } else {
             if ($news_alias != '') {
                 return $this->createUrlTpl($app_news_alias . '/' . $news_alias);
-            } else {
-                return $this->createUrlTpl($app_item_alias . $news_id . '.html');
             }
+
+            return $this->createUrlTpl($app_item_alias . $news_id . '.html');
         }
     }
 

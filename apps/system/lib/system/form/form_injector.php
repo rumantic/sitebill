@@ -8,6 +8,9 @@ class Form_Injector {
 
     function compile ( $item, \Form_Generator $context = null, $model = null ) {
         switch ( $item['name'] ) {
+            case 'renovation':
+                $form_injection = new \renovation\admin\Form_Injection();
+                break;
             case 'booking':
                 $form_injection = new \reservation\admin\Form_Injection();
                 break;

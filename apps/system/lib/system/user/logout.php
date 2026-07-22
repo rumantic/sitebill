@@ -25,8 +25,14 @@ class Logout extends SiteBill {
     }
 
     function clear_session_and_cookies() {
-        setcookie('logged_user_id', '', time() - $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
-        setcookie('logged_user_token', '', time() - $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+        // Track logout before clearing session
+        $user_id = $_SESSION['user_id'] ?? null;
+        $this->trackUserLogoutMetrics($user_id);
+        
+        $cookies_list = array('logged_user_id', 'logged_user_token', 'user_favorites', 'last_viewed_data');
+        foreach ($cookies_list as $c){
+            setcookie($c, '', time() - $this->get_cookie_duration_in_sec(), '/', self::$_cookiedomain);
+        }
         $_SESSION['key'] = '';
         $this->oauth_logout($_SESSION['user_id']);
         $this->delete_session_key($_SESSION['session_key']);
@@ -49,6 +55,22 @@ class Logout extends SiteBill {
         $DBC = DBC::getInstance();
         $query = "DELETE FROM " . DB_PREFIX . "_oauth WHERE user_id=?";
         $stmt = $DBC->query($query, array((string) $user_id));
+    }
+
+    /**
+     * Track user logout metrics
+     * @param int|null $user_id
+     */
+    private function trackUserLogoutMetrics($user_id)
+    {
+        if (class_exists('Metrics') && $user_id) {
+            $metadata = [
+                'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+                'ip_address' => $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+            ];
+            
+            Metrics::trackLogout($user_id, $metadata);
+        }
     }
 
 }

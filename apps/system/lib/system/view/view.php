@@ -35,6 +35,7 @@ class Table_View extends Data_Model
         //print_r($form_data);
         //echo '</pre>';
 
+        $rs = '';
         foreach ($form_data as $item_id => $item_array) {
             switch ($item_array['type']) {
                 case 'select_box':
@@ -320,6 +321,7 @@ class Table_View extends Data_Model
      */
     function get_checkbox($item_array)
     {
+        $rs = '';
         if ($item_array['value'] == 1) {
             $rs .= Multilanguage::_('L_YES');
         } else {
@@ -450,18 +452,10 @@ class Table_View extends Data_Model
      */
     function get_safe_text_input($item_array)
     {
-
-        /* Un-quote slashes */
-        $value = stripslashes($value);
-        /* HTML code */
-        $string .= "<tr>\n";
-
-        $string .= "<td class=\"$bg_color\">" . $item_array['title'] . "</td>\n";
-
-        $string .= "<td class=\"$bg_color\">" . $item_array['value'] . "</td>\n";
+        $string  = "<tr>\n";
+        $string .= "<td>" . $item_array['title'] . "</td>\n";
+        $string .= "<td>" . htmlspecialchars((string)$item_array['value']) . "</td>\n";
         $string .= "</tr>\n";
-
-        /* Return html code */
         return $string;
     }
 

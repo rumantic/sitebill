@@ -84,8 +84,8 @@ class customentity_site extends customentity_admin {
 	function getEntityListBreadcrumbs($cent, $title){
 		$breadcrumbs_str='';
 		$breadcrumbs=array();
-		$breadcrumbs[]=array('title'=>Multilanguage::_('L_HOME'), 'href'=>SITEBILL_MAIN_URL.'/');
-		$breadcrumbs[]=array('title'=>$title, 'href'=>'');
+		$breadcrumbs[]=array('title' => Multilanguage::_('L_HOME'), 'href' => $this->createUrlTpl(''));
+		$breadcrumbs[]=array('title' => $title, 'href' => '');
 		if(!empty($breadcrumbs)){
 			$bc_ar=array();
 			foreach($breadcrumbs as $bc){
@@ -193,12 +193,12 @@ class customentity_site extends customentity_admin {
 		$breadcrumbs_str='';
 		if($title!='' || $ctitle!=''){
 			$breadcrumbs=array();
-			$breadcrumbs[]=array('title'=>Multilanguage::_('L_HOME'), 'href'=>SITEBILL_MAIN_URL.'/');
+			$breadcrumbs[]=array('title' => Multilanguage::_('L_HOME'), 'href' => $this->createUrlTpl(''));
 			if($ctitle!=''){
-				$breadcrumbs[]=array('title'=>$ctitle, 'href'=>SITEBILL_MAIN_URL.'/'.$cent['alias'].self::$_trslashes);
+				$breadcrumbs[]=array('title' => $ctitle, 'href' => $this->createUrlTpl($cent['alias']));
 			}
 			if($title!=''){
-				$breadcrumbs[]=array('title'=>$title, 'href'=>'');
+				$breadcrumbs[]=array('title' => $title, 'href' => '');
 			}
 				
 			
@@ -304,7 +304,7 @@ class customentity_site extends customentity_admin {
 		$data=$data_model->init_model_data_from_db_multi($table_name, $primary_key_name, $ids, $form_data, true, true, true);
 		
 		foreach ($data as $k=>$v){
-			$data[$k]['_href']=SITEBILL_MAIN_URL.'/'.$entity['alias'].'/'.$data[$k][$primary_key_name]['value'].self::$_trslashes;
+			$data[$k]['_href'] = $this->createUrlTpl($entity['alias'].'/'.$data[$k][$primary_key_name]['value']);
 		}
 		
 		return array('data'=>$data, 'total'=>$total);

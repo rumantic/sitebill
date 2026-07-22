@@ -69,6 +69,21 @@ class API_stat extends API_Common {
             $images = array(0 => $_FILES['uploadedfile']['name']);
             //$this->writeLog(array('apps_name'=>'apps.api', 'method' => __METHOD__, 'message' => 'images = '.var_export($images, true), 'type' => NOTICE));
 
+            // Track file upload metrics
+            if (class_exists('Metrics')) {
+                $fileInfo = $_FILES['uploadedfile'];
+                $fileType = strtolower(pathinfo($fileInfo['name'], PATHINFO_EXTENSION));
+                Metrics::trackFileUpload($fileType, $fileInfo['name'], $fileInfo['size'], $this->get_my_user_id());
+                
+                // Also track as a business action
+                Metrics::trackBusiness('file_uploaded', [
+                    'file_type' => $fileType,
+                    'file_name' => $fileInfo['name'],
+                    'file_size' => $fileInfo['size'],
+                    'realty_id' => $realty_id
+                ], $this->get_my_user_id());
+            }
+
             $imgs = array();
             $updated = false;
 

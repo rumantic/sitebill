@@ -17,6 +17,7 @@ use Illuminate\Routing\Router;
     $router->match(array('GET'), 'myfavorites', 'bridge\Http\Controllers\BlackBoxController@myfavorites');
     $router->match(array('GET', 'POST'), 'account/data', 'bridge\Http\Controllers\BlackBoxController@account_data');
     $router->match(array('GET', 'POST'), 'account/profile', 'bridge\Http\Controllers\BlackBoxController@account_profile');
+    $router->match(array('GET', 'POST'), 'map-page', 'bridge\Http\Controllers\MapController@index')->name('map-page');
 
     $router->match(array('GET'), 'map', 'bridge\Http\Controllers\BlackBoxController@map');
     $router->match(array('GET'), 'map_full_screen', 'bridge\Http\Controllers\BlackBoxController@map_full_screen');

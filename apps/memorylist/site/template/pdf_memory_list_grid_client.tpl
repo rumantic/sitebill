@@ -8,7 +8,6 @@
   margin: 20px;
 }
 body {
-	font-family: "verdana"; font-size: 12px;
 }
 .data_grid_item {
   width: 100%;
@@ -100,7 +99,7 @@ body {
       {if $item.flat_nr.value != ''}
         {append var=c value='кв. '|cat:$item.flat_nr.value}
       {/if}
-      {if !empty($c)}{$c|implode:", "}{/if}
+      {if is_array($c) and !empty($c)}{", "|implode:$c}{/if}
 
 
     </td>

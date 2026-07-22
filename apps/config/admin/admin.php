@@ -12,6 +12,7 @@ class config_admin extends Object_Manager
 
     private $dev_status = 0;
     protected static $check_config_array = array();
+    protected static $check_config_structure_runned = false;
 
 
 
@@ -31,7 +32,10 @@ class config_admin extends Object_Manager
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/config_model.php');
         $model = new Config_Model();
         $this->data_model = $model->get_model();
-        $this->check_config_structure();
+        if ( !self::$check_config_structure_runned ) {
+            $this->check_config_structure();
+            self::$check_config_structure_runned = true;
+        }
     }
 
     function ajax()
@@ -143,7 +147,12 @@ class config_admin extends Object_Manager
                         }
                     }
                 }
-
+                $cachekeys = RedisCache::keys('loadConfig_*');
+                if(is_array($cachekeys) && !empty($cachekeys)){
+                    foreach ($cachekeys as $cachekey){
+                        RedisCache::del($cachekey);
+                    }
+                }
                 $rs .= $this->grid();
                 break;
             }
@@ -483,6 +492,19 @@ class config_admin extends Object_Manager
             return -1;
         }
         return 1;
+    }
+
+    function get_simple_config_hash () {
+        $DBC = DBC::getInstance();
+        $ra = array();
+        $query = 'SELECT * FROM ' . DB_PREFIX . '_config ORDER BY sort_order ASC, config_key ASC';
+        $stmt = $DBC->query($query);
+        if ($stmt) {
+            while ($ar = $DBC->fetch($stmt)) {
+                $ra[$ar['config_key']] = $ar;
+            }
+        }
+        return $ra;
     }
 
     function createConfigStructure()
@@ -1167,12 +1189,6 @@ class config_admin extends Object_Manager
 
         $this->addParamToConfig('apps.realtybuyorder.text_after_send', 'Ваш заказ принят', 'Текст после заказа через Realtybuyorder');
 
-
-
-        $this->addParamToConfig('apps.realtylog.enable', '0', 'Включить Apps.Realtylog', SConfig::$fieldtypeCheckbox);
-
-
-
         $this->addParamToConfig('apps.realtypro.youtube', '1', 'Разрешить youtube-ролики в объявлении', SConfig::$fieldtypeCheckbox);
 
         $this->addParamToConfig('apps.yml.shop_name', 'Some Shop', 'Короткое название магазина');
@@ -1427,10 +1443,18 @@ class config_admin extends Object_Manager
         );
         $this->addParamToConfig(
             'apps.realty.mobilephone_old_mask',
-            '0',
+            '1',
             'Использовать старую маску ввода для mobilephone',
             SConfig::$fieldtypeCheckbox
         );
+
+        $this->addParamToConfig(
+            'eat_all_request_for_paging',
+            '0',
+            'В paging загружать все параметры из REQUEST',
+            SConfig::$fieldtypeCheckbox
+        );
+
 
 
 
@@ -1449,7 +1473,7 @@ class config_admin extends Object_Manager
             return;
         }
         $DBC = DBC::getInstance();
-        $query = "select * from " . DB_PREFIX . "_config";
+        $query = "select * from " . DB_PREFIX . "_config /*config_admin->reloadCheckConfigStructure*/";
         $stmt = $DBC->query($query);
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {

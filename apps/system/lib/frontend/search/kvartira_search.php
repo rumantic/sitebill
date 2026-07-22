@@ -45,7 +45,7 @@ class Kvartira_Search_Form extends SiteBill {
     function cleanUpModel ( $model ) {
         foreach ( $model as $item_key => $item ) {
             if ( isset($item['parameters']['autocomplete']) ) {
-                if ( $item['parameters']['autocomplete'] == 1 and  $item['parameters']['disable_autocomplete_on_search'] == 1 ) {
+                if ( $item['parameters']['autocomplete'] == 1 && isset($item['parameters']['disable_autocomplete_on_search']) && $item['parameters']['disable_autocomplete_on_search'] == 1 ) {
                     $model[$item_key]['parameters']['autocomplete'] = 0;
                 }
             }

@@ -1,4 +1,6 @@
-<td nowrap>
+{if !isset($disable_td_wrap)}
+    <td style="max-width: 200px; line-height: 2.5;">
+{/if}
 
     <button data-id="{$grid_item.id.value}" class="fast_preview btn btn-danger btn-mini"><i class="icon-white icon-eye-open"></i></button>
     {if $data_adv_share_access_can_view_all and $grid_item.user_id.value != $data_adv_share_access_user_id}
@@ -8,7 +10,6 @@
     {else}
 
 
-        {$grid_item._memo}
         {if isset($show_up_icon) && $show_up_icon}
             <a class="btn btn-warning go_up btn-mini" alt="{$grid_item.id.value}" href="#grow_up"><i class="icon-white icon-circle-arrow-up"></i></a>
         {/if}
@@ -31,6 +32,11 @@
             <i class="icon-white fa-exclamation-circle"></i>
         </a>
         {/if}
+
+        {if {getConfig key='apps.reservation.enable'} == 1}
+            <a class="btn btn-warning btn-mini" alt="Цены бронирования" title="Цены бронирования"  href="/account/reservation/my/{$grid_item.id.value}/" target="_blank"><i class="icon-white fa-calendar"></i></a>
+        {/if}
+
 
         <div class="clearfix"></div>
         {if isset($grid_item.status_id)}
@@ -74,5 +80,8 @@
     {if file_exists($local_controls)}
         {include file="$local_controls"}
     {/if}
+    {$grid_item._memo}
 
+{if !isset($disable_td_wrap)}
 </td>
+{/if}

@@ -18,6 +18,17 @@ class data_site extends data_admin
             unset($this->data_model['data']['phone']);
             unset($this->data_model['data']['email']);
         }
+
+        if ( $this->allowChangeUserId() ) {
+            $child_user_ids = \data\helpers\CuratorHelper::getChildUserIds($this->getSessionUserId());
+            if ( is_array($child_user_ids) and count($child_user_ids) > 0  ) {
+                $child_user_ids[] = $this->getSessionUserId();
+                $this->data_model[$this->table_name]['user_id']['query'] .= ' WHERE user_id in ('.implode(',', $child_user_ids).')';
+            }
+            if ( $this->getRequestValue('do') == 'new' ) {
+                $this->data_model[$this->table_name]['user_id']['value'] = $this->getSessionUserId();
+            }
+        }
     }
 
     function frontend()
@@ -27,12 +38,15 @@ class data_site extends data_admin
 
     function main()
     {
-        $uid = $this->getSessionUserId();
-        if ($uid == 0 or !isset($uid)) {
-            $rs = Multilanguage::_('L_ACCESS_DENIED');
-            return $rs;
+        if ( $this->getConfigValue('apps.data.bootstrap_version') != '' ) {
+            $this->setConfigValue('bootstrap_version', $this->getConfigValue('apps.data.bootstrap_version'));
         }
-        if (!$this->allowAddButton() and ($this->getRequestValue('do') == 'new' or $this->getRequestValue('do') == 'new_done')) {
+
+        $uid = $this->getSessionUserId();
+        if ($uid === 0 || !isset($uid)) {
+            return Multilanguage::_('L_ACCESS_DENIED');
+        }
+        if (!$this->allowAddButton() && ($this->getRequestValue('do') == 'new' || $this->getRequestValue('do') == 'new_done')) {
             return '';
         }
         $this->template->assert('search_form', $this->get_search_form());
@@ -42,18 +56,10 @@ class data_site extends data_admin
     protected function _exportPhotoAction()
     {
 
-        $id = intval($this->getRequestValue('id'));
-        $user_id = intval($this->getSessionUserId());
+        $id = (int)$this->getRequestValue('id');
+        $user_id = $this->getSessionUserId();
 
-        $aggregroup = -1;
-        $cgroup_id = intval($_SESSION['current_user_group_id']);
-
-        $rs = '';
-        if ($cgroup_id == $aggregroup) {
-            if (!$this->check_access_to_aggregated_data($user_id, $id)) {
-                return Multilanguage::_('L_ACCESS_DENIED');
-            }
-        } elseif (!$this->check_access_to_data($user_id, $id)) {
+        if (!$this->check_access_to_data($user_id, $id)) {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
 
@@ -62,18 +68,10 @@ class data_site extends data_admin
 
     protected function _exportPhotoClearAction()
     {
-        $id = intval($this->getRequestValue('id'));
-        $user_id = intval($this->getSessionUserId());
+        $id = (int)$this->getRequestValue('id');
+        $user_id = $this->getSessionUserId();
 
-        $aggregroup = -1;
-        $cgroup_id = intval($_SESSION['current_user_group_id']);
-
-        $rs = '';
-        if ($cgroup_id == $aggregroup) {
-            if (!$this->check_access_to_aggregated_data($user_id, $id)) {
-                return Multilanguage::_('L_ACCESS_DENIED');
-            }
-        } elseif (!$this->check_access_to_data($user_id, $id)) {
+        if (!$this->check_access_to_data($user_id, $id)) {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
 
@@ -130,11 +128,8 @@ class data_site extends data_admin
         } else {
             $j = 0;
             foreach ($images as $photo) {
-                $j++;
                 if ($photo['remote'] === 'true') {
-                    $pathinfo = pathinfo($photo['normal']);
-                    $file_name = $j . '.' . $pathinfo['extension'];
-                    $exported[] = array($fold . $photo['normal'], $photo['normal'], 1);
+                    $exported[] = array($photo['normal'], $photo['normal'], 1);
                 } else {
                     $exported[] = array(SITEBILL_DOCUMENT_ROOT . '/img/data/' . $photo['normal'], $photo['normal']);
                 }
@@ -225,7 +220,7 @@ class data_site extends data_admin
 
                 $DBC = DBC::getInstance();
                 $query = 'UPDATE ' . DB_PREFIX . '_data SET active=1 WHERE id IN (' . implode(',', $ids) . ')';
-                $stmt = $DBC->query($query, array(), $rows, $success_mark);
+                $DBC->query($query, array(), $rows, $success_mark);
 
                 if ($success_mark && 0 === intval($this->getConfigValue('apps.billing.enable'))) {
                     foreach ($ids as $id) {
@@ -234,7 +229,6 @@ class data_site extends data_admin
                 }
                 header('location:' . SITEBILL_MAIN_URL . '/'.$this->get_app_root() . self::$_trslashes);
                 exit();
-                return $this->grid();
                 break;
             }
             case 'deactivate' :
@@ -285,7 +279,7 @@ class data_site extends data_admin
         $form_data = $this->data_model;
         $form_data[$this->table_name] = $data_model->init_model_data_from_request($form_data[$this->table_name]);
         foreach ($form_data[$this->table_name] as $key => $value) {
-            if ($value['type'] == 'attachment' || $value['type'] == 'photo' || $value['type'] == 'uploadify_image' || $value['type'] == 'uploads' || $value['type'] == 'avatar' || $value['type'] == 'docuploads' || $value['type'] == 'captcha') {
+            if ($value['type'] === 'attachment' || $value['type'] === 'photo' || $value['type'] === 'uploadify_image' || $value['type'] === 'uploads' || $value['type'] === 'avatar' || $value['type'] === 'docuploads' || $value['type'] === 'captcha') {
                 unset($form_data[$this->table_name][$key]);
             }
         }
@@ -330,7 +324,7 @@ class data_site extends data_admin
                 $remove_this_names = array();
                 foreach ($sub_form[$this->table_name] as $fd) {
                     if (isset($new_values[$fd['name']]) && $new_values[$fd['name']] != '' && $fd['combo'] == 1) {
-                        $id = md5(time() . '_' . rand(100, 999));
+                        $id = md5(time() . '_' . random_int(100, 999));
                         $remove_this_names[] = $id;
                         $sub_form[$this->table_name][$id]['value'] = $new_values[$fd['name']];
                         $sub_form[$this->table_name][$id]['type'] = 'auto_add_value';
@@ -360,11 +354,6 @@ class data_site extends data_admin
                         //$form_data['data']=$this->removeTemporaryFields($form_data['data'],$remove_this_names);
                         //$rs = $this->get_form($form_data[$this->table_name], 'edit');
                     } else {
-                        if ($this->getConfigValue('apps.realtylog.enable')) {
-                            require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylog/admin/admin.php';
-                            $Logger = new realtylog_admin();
-                            $Logger->addLog($concrete_form[$this->table_name][$this->primary_key]['value'], $_SESSION['user_id_value'], 'edit', $this->table_name);
-                        }
                         if ($this->getConfigValue('apps.realtylogv2.enable')) {
                             require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylogv2/admin/admin.php';
                             $Logger = new realtylogv2_admin();
@@ -547,11 +536,163 @@ class data_site extends data_admin
 
     function notifyAdmin($data_id)
     {
-        //@todo: Сделать табличку с подробной инфой об объекте
-        $body = $this->getRealtyHREF($data_id);
+        $data_id = (int) $data_id;
+        $base_url = $this->getServerFullUrl();
+
+        // Load data record via inherited Object_Manager::load_by_id()
+        $data_record = $this->load_by_id($data_id);
+        if (empty($data_record)) {
+            return;
+        }
+
+        $user_id = (int) $data_record['user_id']['value'];
+
+        // Load user record via model
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/users/user_object_manager.php';
+        $user_manager = new User_Object_Manager();
+        $user_record = $user_manager->load_by_id($user_id);
+
+        // Count ads per active status (single GROUP BY query — not a model field)
+        $DBC = DBC::getInstance();
+        $counts = array('active' => 0, 'inactive' => 0);
+        $stmt = $DBC->query(
+            'SELECT active, COUNT(*) AS cnt FROM ' . DB_PREFIX . '_data WHERE user_id = ? GROUP BY active',
+            array($user_id)
+        );
+        if ($stmt) {
+            while ($row = $DBC->fetch($stmt)) {
+                if ((int)$row['active'] === 1) {
+                    $counts['active'] = (int)$row['cnt'];
+                } else {
+                    $counts['inactive'] += (int)$row['cnt'];
+                }
+            }
+        }
+
+        // Build HTML via Table_View::compile_view()
+        require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/view.php';
+        $table_view = new Table_View();
+        $table_view->setAbsoluteUrls();
+
+        $href           = $this->getRealtyHREF($data_id, true);
+        $admin_href     = $base_url . '/admin/index.php?action=data&do=edit&id=' . $data_id;
+        $admin_user_href = $base_url . '/admin/index.php?action=user&do=edit&user_id=' . $user_id;
+
+        $list_style = 'font-family:sans-serif;font-size:13px;line-height:1.7;margin:8px 0 16px;padding:0;list-style:none;';
+
+        $body  = '<h3 style="margin-top:0;">Новое объявление в Личном кабинете</h3>';
+
+        $body .= '<p style="margin-bottom:4px;">📋 <b>Объявление #' . $data_id . '</b>'
+               . ' &mdash; <a href="' . htmlspecialchars($href) . '">Смотреть</a>'
+               . ' | <a href="' . htmlspecialchars($admin_href) . '">Редактировать в адм.</a></p>';
+        $body .= '<ul style="' . $list_style . '">'
+               . '<li>' . implode('</li><li>', explode("\n", $this->_compileTelegramSection($this->_filterEmptyModelFields($data_record), $table_view))) . '</li>'
+               . '</ul>';
+
+        $body .= '<p style="margin-bottom:4px;">👤 <b>Пользователь</b>'
+               . ' &mdash; <a href="' . htmlspecialchars($admin_user_href) . '">профиль в адм.</a>'
+               . '<br>Объявлений активных: ' . $counts['active'] . ', неактивных: ' . $counts['inactive'] . '</p>';
+        $body .= '<ul style="' . $list_style . '">'
+               . '<li>' . implode('</li><li>', explode("\n", $this->_compileTelegramSection($this->_filterEmptyModelFields($user_record), $table_view))) . '</li>'
+               . '</ul>';
+
         $to = $this->getConfigValue('order_email_acceptor');
         $subject = $_SERVER['HTTP_HOST'] . _e(': новое объявление в ЛК');
-        $this->sendFirmMail($to, $this->getConfigValue('system_email'), $subject, $body);
+
+        // Telegram notification
+        if ($this->getConfigValue('apps.telegram.enable')) {
+            $tg  = "\xF0\x9F\x93\x8B <b>Новое объявление #" . $data_id . "</b>\n";
+            $tg .= '<a href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '">Смотреть</a>'
+                 . ' | <a href="' . htmlspecialchars($admin_href, ENT_QUOTES, 'UTF-8') . '">Редактировать</a>' . "\n\n";
+            $tg .= $this->_compileTelegramSection($this->_filterEmptyModelFields($data_record), $table_view);
+            $tg .= "\n\n\xF0\x9F\x91\xA4 <b>Пользователь</b>"
+                 . ' <a href="' . htmlspecialchars($admin_user_href, ENT_QUOTES, 'UTF-8') . '">→ профиль</a>' . "\n"
+                 . 'Активных: ' . $counts['active'] . ', неактивных: ' . $counts['inactive'] . "\n";
+            $tg .= $this->_compileTelegramSection($this->_filterEmptyModelFields($user_record), $table_view);
+
+            // Collect up to 3 photos from uploads fields
+            $tg_photos = [];
+            foreach ($data_record as $field) {
+                if ($field['type'] === 'uploads' && is_array($field['value'] ?? null)) {
+                    foreach ($field['value'] as $photo) {
+                        if (empty($photo['normal'])) continue;
+                        $tg_photos[] = isset($photo['remote']) && $photo['remote'] === 'true'
+                            ? $photo['normal']
+                            : $base_url . '/img/data/' . $photo['normal'];
+                        if (count($tg_photos) >= 3) break 2;
+                    }
+                }
+            }
+
+            require_once SITEBILL_DOCUMENT_ROOT . '/apps/telegram/admin/admin.php';
+            $tg_admin = new telegram_admin();
+            $tg_send = ['text' => $tg, 'parse_mode' => 'HTML'];
+            if (!empty($tg_photos)) {
+                $tg_send['media_group'] = $tg_photos;
+            }
+            $tg_admin->_send(
+                $this->getConfigValue('apps.telegram.token'),
+                $this->getConfigValue('apps.telegram.chat_id'),
+                $tg_send
+            );
+        } else {
+            $this->sendFirmMail($to, $this->getConfigValue('system_email'), $subject, $body);
+        }
+    }
+
+    /**
+     * Convert compile_view HTML rows to Telegram-compatible plain list.
+     * Skips uploads/photos/passwords; truncates long text fields.
+     */
+    public function _compileTelegramSection(array $record, Table_View $table_view): string
+    {
+        $skip_types = ['uploads', 'docuploads', 'photo', 'password', 'injector', 'separator', 'parameter'];
+        $html = $table_view->compile_view($record);
+        preg_match_all('/<tr[^>]*>\s*<td[^>]*>(.*?)<\/td>\s*<td[^>]*>(.*?)<\/td>/s', $html, $m);
+        $lines = [];
+        foreach (array_keys($m[1]) as $i) {
+            $title = trim(strip_tags($m[1][$i]));
+            $value = trim(strip_tags(html_entity_decode($m[2][$i], ENT_QUOTES | ENT_HTML5, 'UTF-8')));
+            if ($title === '' || $value === '') {
+                continue;
+            }
+            // Find original field to check type
+            foreach ($record as $field) {
+                if (trim(strip_tags($field['title'] ?? '')) === $title
+                    && in_array($field['type'] ?? '', $skip_types)) {
+                    $title = ''; // mark for skip
+                    break;
+                }
+            }
+            if ($title === '') continue;
+            // Truncate long text
+            if (mb_strlen($value) > 200) {
+                $value = mb_substr($value, 0, 200) . '…';
+            }
+            $lines[] = '<b>' . htmlspecialchars($title) . ':</b> ' . htmlspecialchars($value);
+        }
+        return implode("\n", $lines);
+    }
+
+    public function _filterEmptyModelFields(array $record): array
+    {
+        return array_filter($record, function ($field) {
+            $type = $field['type'] ?? '';
+            $val  = $field['value'] ?? '';
+            // FK и структурные селекты: 0 = не выбрано
+            if (in_array($type, ['select_by_query', 'select_box_structure', 'structure']) && (int)$val === 0) {
+                return false;
+            }
+            // Пустая строка или null
+            if ($val === '' || $val === null) {
+                return false;
+            }
+            // Пустой массив (uploads/multi без файлов)
+            if (is_array($val) && empty($val)) {
+                return false;
+            }
+            return true;
+        });
     }
 
     protected function _formatgridAction()
@@ -670,35 +811,20 @@ class data_site extends data_admin
             $common_grid->set_conditions($params['grid_conditions']);
         }
 
-        //$common_grid->set_grid_query('SELECT * FROM '.DB_PREFIX.'_'.$this->table_name.' ORDER BY name ASC');
-
-
         $common_grid->setPagerParams(array('action' => $this->action, 'page' => $this->getRequestValue('page'), 'per_page' => $this->getConfigValue('common_per_page')));
 
         $rs = $common_grid->extended_items();
-        //$common_grid->construct_query();
         $common_grid->construct_grid();
         $grid_array = $common_grid->construct_grid_array();
         $grid_array = $common_grid->degradate_grid($grid_array);
-        //echo '<pre>';
-        //print_r($this->data_model);
-        //echo '</pre>';
-        //exit;
-        //echo '<pre>';
-        //print_r($default_params['grid_item']);
-        //echo '</pre>';
 
         $this->template->assign('header_items', $default_params['grid_item']);
         $this->template->assign('data_model', $this->data_model);
 
         $grid_constructor = $this->_getGridConstructor();
         $grid_array_transformed = @$grid_constructor->transformGridData($grid_array);
-        //echo '<pre>';
-        //print_r($grid_array);
-        //echo '</pre>';
-        //exit;
 
-        $this->createPDF($grid_array, $grid_array_transformed, intval($this->getRequestValue('ext')));
+        $this->createPDF($grid_array, $grid_array_transformed);
 
         exit();
     }
@@ -720,11 +846,11 @@ class data_site extends data_admin
         }
 
         $REQUESTURIPATH = $this->getClearRequestURI();
-        if ($REQUESTURIPATH == 'account/data/all') {
+        if ($REQUESTURIPATH === 'account/data/all') {
             $state = 'all';
         }
 
-        if ( $this->request()->get('state') == 'all' ) {
+        if ( $this->request()->get('state') === 'all' ) {
             $state = 'all';
         }
 
@@ -742,12 +868,12 @@ class data_site extends data_admin
         $rs .= '<div class="btn-group" role="group" aria-label="...">';
         if (!$this->getConfigValue('apps.data.disable_all_button') && !$this->is_default_app_root() ) {
             if ( !$this->getConfigValue('apps.data.remove_only_all_button') ) {
-                $rs .= '<a href="' . $this->createUrlTpl($this->get_app_root().'/?state=all') . '" class="btn' . ($state == 'all' ? ' btn-primary btn-current' : '') . '">' . Multilanguage::_('L_ALL') . '</a> ';
+                $rs .= '<a href="' . $this->createUrlTpl($this->get_app_root().'/?state=all') . '" class="btn' . ($state === 'all' ? ' btn-primary btn-current' : '') . '">' . Multilanguage::_('L_ALL') . '</a> ';
             }
         }
         if (!$this->getConfigValue('apps.data.disable_all_button') && $this->is_default_app_root() ) {
             if ( !$this->getConfigValue('apps.data.remove_only_all_button') ) {
-                $rs .= '<a href="' . $this->createUrlTpl($this->get_app_root().'/all/') . '" class="btn' . ($state == 'all' ? ' btn-primary btn-current' : '') . '">' . Multilanguage::_('L_ALL') . '</a> ';
+                $rs .= '<a href="' . $this->createUrlTpl($this->get_app_root().'/all/') . '" class="btn' . ($state === 'all' ? ' btn-primary btn-current' : '') . '">' . Multilanguage::_('L_ALL') . '</a> ';
             }
         }
 
@@ -762,8 +888,8 @@ class data_site extends data_admin
 
 
         $rs .= '<a href="' . $this->createUrlTpl($this->get_app_root()) . '" class="btn' . ($state == '' ? ' btn-primary btn-current' : '') . '">' . _e('Все мои') . '</a>
-            <a href="' . $this->createUrlTpl($this->get_app_root().'/?active=1') . '" class="btn' . ($state == 'active' ? ' btn-primary btn-current' : '') . '">' . _e('Активные') . '</a>
-            <a href="' . $this->createUrlTpl($this->get_app_root().'/?active=0') . '" class="btn' . ($state == 'notactive' ? ' btn-primary btn-current' : '') . '">' . _e('В архиве') . '</a>';
+            <a href="' . $this->createUrlTpl($this->get_app_root().'/?active=1') . '" class="btn' . ($state === 'active' ? ' btn-primary btn-current' : '') . '">' . _e('Активные') . '</a>
+            <a href="' . $this->createUrlTpl($this->get_app_root().'/?active=0') . '" class="btn' . ($state === 'notactive' ? ' btn-primary btn-current' : '') . '">' . _e('В архиве') . '</a>';
         $rs .= '</div>';
         if (1 == $this->getConfigValue('apps.yandexrealty.allow_personal_feeds')) {
             require_once(SITEBILL_DOCUMENT_ROOT . '/apps/yandexrealty/admin/admin.php');
@@ -1006,6 +1132,12 @@ class data_site extends data_admin
 
     function grid($params = array(), $default_params = array())
     {
+        $this->template->assign('SITEBILL_DOCUMENT_ROOT', SITEBILL_DOCUMENT_ROOT);
+
+        if ( $this->getConfigValue('apps.data.disable_vue_in_grid') ) {
+            $this->setConfigValue('use_vue', 0);
+        }
+
         if (isset($this->data_model[$this->table_name]['user_id'])) {
             $this->data_model[$this->table_name]['user_id']['type'] = 'select_by_query';
         }
@@ -1031,9 +1163,9 @@ class data_site extends data_admin
             if (!preg_match('/all[\/]?$/', $REQUESTURIPATH)) {
                 $params['grid_conditions']['user_id'] = $this->getSessionUserId();
             }
-            if ( $this->request()->get('state') != 'all' && $this->get_app_root() != 'account/data' ) {
+            if ( $this->request()->get('state') !== 'all' && $this->get_app_root() !== 'account/data' ) {
                 $params['grid_conditions']['user_id'] = $this->getSessionUserId();
-            } elseif ( $this->get_app_root() == 'account/data' and !preg_match('/all[\/]?$/', $REQUESTURIPATH)) {
+            } elseif ( $this->get_app_root() === 'account/data' and !preg_match('/all[\/]?$/', $REQUESTURIPATH)) {
                 $params['grid_conditions']['user_id'] = $this->getSessionUserId();
             } else {
                 if ( $this->getConfigValue('apps.data.disable_all_button') != 1 ) {
@@ -1096,7 +1228,10 @@ class data_site extends data_admin
             $rs .= $this->billing_plugin();
         }
 
-        return $rs;
+
+        $this->template->assign('legacy_rs', $rs);
+
+        return $this->template->fetch(SITEBILL_DOCUMENT_ROOT.'/apps/data/site/template/grid.tpl');
     }
 
     function get_postponded_params ($params) {
@@ -1165,17 +1300,24 @@ class data_site extends data_admin
     private function add_grid_controls_params ($params) {
         $params['grid_controls'] = array('fast_preview');
         if (!$this->getConfigValue('apps.data.disable_delete_button')) {
-            array_push($params['grid_controls'], 'delete');
+            $params['grid_controls'][] = 'delete';
         }
         if (!$this->getConfigValue('apps.data.disable_edit_button')) {
-            array_push($params['grid_controls'], 'edit');
+            $params['grid_controls'][] = 'edit';
         }
         if ($this->getConfigValue('apps.reservation.enable')) {
-            array_push($params['grid_controls'], 'reservation');
+            $params['grid_controls'][] = 'reservation';
         }
         if (!$this->getConfigValue('apps.data.disable_memory_button')) {
-            array_push($params['grid_controls'], 'memorylist');
+            $params['grid_controls'][] = 'memorylist';
         }
+        if ($this->getConfigValue('apps.data.controls_js')) {
+            $params['grid_controls'][] = 'apps.data.controls_js';
+            // внутри controls_js уже есть кнопки delete, edit, fast_preview, поэтому удаляем их из предыдущего набора,
+            // чтобы не дублировались
+            $params['grid_controls'] = array_diff($params['grid_controls'], ['delete', 'edit', 'fast_preview']);
+        }
+
         return $this->add_custom_grid_controls_params($params);
     }
 
@@ -1216,9 +1358,7 @@ class data_site extends data_admin
 
         if ($this->getRequestValue('topic_id') != '') {
             $all_cats = $Structure_Manager->get_all_childs($this->getRequestValue('topic_id'), $Structure_Manager->loadCategoryStructure());
-            //$all_cats = array_push($all_cats, $this->getRequestValue('topic_id'));
-            array_push($all_cats, $this->getRequestValue('topic_id'));
-            //print_r($all_cats);
+            $all_cats[] = $this->getRequestValue('topic_id');
             $params['grid_conditions']['topic_id'] = $all_cats;
         }
         return $params;
@@ -1394,7 +1534,7 @@ class data_site extends data_admin
 
         $DBC = DBC::getInstance();
         $query = 'SELECT id, text FROM ' . DB_PREFIX . '_data WHERE id <> ?';
-        $stmt = $DBC->query($query, array($id), $success);
+        $stmt = $DBC->query($query, array($id));
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
                 if ($ar['text'] != '') {

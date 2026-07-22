@@ -59,11 +59,13 @@ var ActiveMap = {
     //отключение реакции на изменение карты
     nomapbehaviors: false,
     mapEngine: null,
+    // признак вывода карты в режиме показа определенной области
+    framed: false,
     //Interface
     init: function (containerId, provider, options) {
+        var options = $.extend(true, {}, options);
         this.provider = provider;
         this.containerId = containerId;
-
 
         if (typeof options == 'object') {
             /*if(typeof options.withListing != 'undefined'){
@@ -104,13 +106,24 @@ var ActiveMap = {
             if (typeof options.nomapbehaviors != 'undefined') {
                 this.nomapbehaviors = options.nomapbehaviors;
             }
+
+            /*if(typeof options.mapdefaults != 'undefined'){
+                this.mapdefaults = options.mapdefaults;
+            }*/
+
+            /*if(typeof options.framed != 'undefined'){
+                this.framed = true;
+            } else {
+                this.framed = false;
+            }*/
             /*if(typeof options.reload != 'undefined'){
                 this.reload = 1;
             }*/
+
+
         }
 
         this.initEngine();
-
 
         this.container = $('#' + this.containerId);
         this.mapContainer = $('#ActiveMap');
@@ -132,6 +145,16 @@ var ActiveMap = {
         this.mapdefaults.center.lat = this.mapContainer.data('center-lat');
         this.mapdefaults.center.lng = this.mapContainer.data('center-lng');
         this.mapdefaults.zoom = this.mapContainer.data('zoom');
+
+        if (this.mapContainer.data('frame') && '' != this.mapContainer.data('frame')) {
+            let x = this.mapContainer.data('frame').split(';');
+            if (x.length == 3) {
+                this.mapdefaults.center.lat = x[0];
+                this.mapdefaults.center.lng = x[1];
+                this.mapdefaults.zoom = x[2];
+                this.framed = true;
+            }
+        }
 
         this.mapEngine().buildMap();
 
@@ -229,7 +252,7 @@ var ActiveMap = {
         if (activeform !== null) {
             var a = activeform.serializeArray();
             $.each(a, function () {
-                var name = this.name.replace('[]', '');
+                var name = this.name.replace('[]', ''); // Учесть, что некоторые параметры ДОЛЖНЫ быть массивом, даже если передаются единично
                 if (sparams[name]) {
                     if (!sparams[name].push) {
                         sparams[name] = [sparams[name]];
@@ -275,21 +298,22 @@ var ActiveMap = {
         this.clearItemsViewBlock();
         var _this = this;
         var data = {
-            action: 'map_search_items',
+            action: 'map_search_items_html',
             ids: ids
-        }
+        };
         if (typeof language != 'undefined') {
             data._lang = language;
         }
-        $.ajax({
+        SitebillCore.lajax({
             url: estate_folder + '/js/ajax.php',
             data: data,
             type: 'post',
             dataType: 'json',
             success: function (json) {
                 if (json.length > 0) {
+                    _this.itemsViewBlock.find('.ActiveMapListBlock-items-root').html('');
                     for (var i in json) {
-                        _this.itemsViewBlock.find('.ActiveMapListBlock-items-root').append(_this.decorateItem(json[i]));
+                        _this.itemsViewBlock.find('.ActiveMapListBlock-items-root').append(json[i]);
                     }
                     _this.itemsViewBlock.show();
                 }
@@ -408,7 +432,7 @@ var ActiveMap = {
             params._lang = language;
         }
         var _this = this;
-        $.ajax({
+        SitebillCore.lajax({
             url: estate_folder + '/js/ajax.php',
             data: params,
             type: 'post',
@@ -460,6 +484,7 @@ var ActiveMap = {
         if (all !== true) {
             all = false;
         }
+
         var me = this.mapEngine();
         var bounds = me.getMapBounds();
 
@@ -472,19 +497,23 @@ var ActiveMap = {
         data.action = 'map_search';
         params.action = 'map_search';
         data.params = params;
+        // Если в параметрах поиска из шаблона есть polyline, а текущего не задано, то приоритет тому что из шаблона
+        if (this.currentPolygoneCoordinates.length === 0 && params.polylineString) {
+            this.currentPolygoneCoordinates = params.polylineString;
+        }
         if (!all) {
             data.polylineString = this.currentPolygoneCoordinates;
             data.bounds = bounds;
 
             let search_bounds = parent.document.querySelector('#search_bounds');
             let search_polylineString = parent.document.querySelector('#search_polylineString');
-            if ( search_bounds &&  search_polylineString) {
+            if (search_bounds && search_polylineString) {
                 search_polylineString.value = this.currentPolygoneCoordinates;
                 search_bounds.value = bounds;
             }
             let search_bounds_mobile = parent.document.querySelector('#search_bounds_mobile');
             let search_polylineString_mobile = parent.document.querySelector('#search_polylineString_mobile');
-            if ( search_bounds_mobile &&  search_polylineString_mobile) {
+            if (search_bounds_mobile && search_polylineString_mobile) {
                 search_polylineString_mobile.value = this.currentPolygoneCoordinates;
                 search_bounds_mobile.value = bounds;
             }
@@ -500,7 +529,7 @@ var ActiveMap = {
         }
 
         var _this = this;
-        $.ajax({
+        SitebillCore.lajax({
             url: estate_folder + '/js/ajax.php',
             data: params,
             type: 'post',
@@ -512,7 +541,7 @@ var ActiveMap = {
                             //console.log(json.msg);
                         }
                         var ms = [];
-                        //.//console.log(1);
+
                         me.clearMap();
                         for (var i in json.data) {
                             var lat = json.data[i].geo_lat;
@@ -582,14 +611,8 @@ var ActiveMap = {
                 ]);
             }
 
-            var bounds = _this.mapEngine().getMapBounds();
-
-            var canvas = _this.canvas;
             coordinates = coordinates.map(function (x) {
-                return [
-                    Number((bounds[0][0] + (1 - x[1] / canvas.height) * (bounds[1][0] - bounds[0][0])).toFixed(6)),
-                    Number((bounds[0][1] + x[0] / canvas.width * (bounds[1][1] - bounds[0][1])).toFixed(6)),
-                ];
+                return _this.mapEngine().pixelToLatLng(x[0], x[1]);
             });
 
             var polygon = _this.mapEngine().drawPolygon(coordinates);
@@ -865,27 +888,36 @@ var ActiveMap = {
                     var _bounds = this.parent.map.getBounds();
                     return [[_bounds.getSouthWest().lat, _bounds.getSouthWest().lng], [_bounds.getNorthEast().lat, _bounds.getNorthEast().lng]];
                 },
+                pixelToLatLng: function (x, y) {
+                    var latlng = this.parent.map.containerPointToLatLng([x, y]);
+                    return [Number(latlng.lat.toFixed(6)), Number(latlng.lng.toFixed(6))];
+                },
                 buildMap: function () {
                     var m = this.parent.mapContainer;
                     var centerlat = this.parent.mapdefaults.center.lat;
                     var centerlng = this.parent.mapdefaults.center.lng;
                     var zoom = this.parent.mapdefaults.zoom;
                     var latlng = [centerlat, centerlng];
-
-                    this.parent.map = L.map(document.getElementById("ActiveMap")).setView(latlng, zoom);
-                    this.parent.map.addLayer(new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'}));
-                    this.parent.clusterer = L.markerClusterGroup();
-
                     var parent = this.parent;
-                    var _map = this.parent.map;
 
+                    this.parent.map = L.map(document.getElementById("ActiveMap"));
+                    this.parent.map.addLayer(new L.TileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: 'Map data © <a href="https://openstreetmap.org">OpenStreetMap</a> contributors'}));
                     this.parent.map.on('load', function (ev) {
-                        console.log('load');
-                        parent.reloadMapData(true);
-                        parent.reloadListingData(true);
-                        this.parent.map.off('load', function () {
+                        console.log(_this.framed);
+                        if (_this.framed) {
+                            parent.reloadMapData();
+                            parent.reloadListingData();
+                        } else {
+                            parent.reloadMapData(true);
+                            parent.reloadListingData(true);
+                        }
+                        this.off('load', function () {
                         });
                     });
+                    this.parent.map.setView(latlng, zoom);
+
+                    this.parent.clusterer = L.markerClusterGroup();
+
                     if (!parent.nomapbehaviors) {
                         this.parent.map.on('moveend', function (ev) {
                             if (parent.currentPolygoneCoordinates.length == 0 && !parent.isMapInDrawMode && parent.catchEvents) {
@@ -1013,6 +1045,23 @@ var ActiveMap = {
                     var _bounds = this.parent.map.getBounds();
                     return [[_bounds.getSouthWest().lat(), _bounds.getSouthWest().lng()], [_bounds.getNorthEast().lat(), _bounds.getNorthEast().lng()]];
                 },
+                pixelToLatLng: function (x, y) {
+                    var proj = this.parent.map.getProjection();
+                    var zoom = this.parent.map.getZoom();
+                    var scale = Math.pow(2, zoom);
+                    var bounds = this.parent.map.getBounds();
+                    var nw = new google.maps.LatLng(
+                        bounds.getNorthEast().lat(),
+                        bounds.getSouthWest().lng()
+                    );
+                    var nwWorld = proj.fromLatLngToPoint(nw);
+                    var worldPt = new google.maps.Point(
+                        x / scale + nwWorld.x,
+                        y / scale + nwWorld.y
+                    );
+                    var latlng = proj.fromPointToLatLng(worldPt);
+                    return [Number(latlng.lat().toFixed(6)), Number(latlng.lng().toFixed(6))];
+                },
                 buildMap: function () {
                     var m = this.parent.mapContainer;
                     var centerlat = this.parent.mapdefaults.center.lat;
@@ -1031,11 +1080,13 @@ var ActiveMap = {
                     var parent = this.parent;
                     var _map = this.parent.map;
                     google.maps.event.addListener(this.parent.map, 'tilesloaded', function (evt) {
-
-                        parent.reloadMapData(true);
-                        parent.reloadListingData(true);
-
-
+                        if (_this.framed) {
+                            parent.reloadMapData();
+                            parent.reloadListingData();
+                        } else {
+                            parent.reloadMapData(true);
+                            parent.reloadListingData(true);
+                        }
                         google.maps.event.clearListeners(_map, 'tilesloaded');
                     });
                     if (!parent.nomapbehaviors) {
@@ -1153,6 +1204,15 @@ var ActiveMap = {
                 getMapBounds: function () {
                     return this.parent.map.getBounds();
                 },
+                pixelToLatLng: function (x, y) {
+                    var zoom = this.parent.map.getZoom();
+                    var center = this.parent.map.getGlobalPixelCenter();
+                    var containerSize = this.parent.map.container.getParentElement().getBoundingClientRect();
+                    var globalX = center[0] - containerSize.width / 2 + x;
+                    var globalY = center[1] - containerSize.height / 2 + y;
+                    var geo = this.parent.map.options.get('projection').fromGlobalPixels([globalX, globalY], zoom);
+                    return [Number(Number(geo[0]).toFixed(6)), Number(Number(geo[1]).toFixed(6))];
+                },
                 buildMap: function () {
                     var m = this.parent.mapContainer;
                     var centerlat = this.parent.mapdefaults.center.lat;
@@ -1160,7 +1220,7 @@ var ActiveMap = {
                     var zoom = this.parent.mapdefaults.zoom;
                     this.parent.map = new ymaps.Map('ActiveMap', {center: [centerlat, centerlng], zoom: zoom});
 
-                    if (window.innerWidth < 600 && !enable_mobile_map_drag) {
+                    if (window.innerWidth < 600 && (typeof enable_mobile_map_drag !== 'undefined' && !enable_mobile_map_drag)) {
                         this.parent.map.behaviors.disable('drag');
                     }
 

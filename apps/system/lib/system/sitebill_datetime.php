@@ -29,23 +29,25 @@ class Sitebill_Datetime
         if (!isset($formattypes[$inFormFormat])) {
             $inFormFormat = 'standart';
         }
+        $format = 'Y-m-d H:i:s';
         switch ($inFormFormat) {
             case 'standart' :
             {
-                return date('Y-m-d H:i:s', time());
+                $format = 'Y-m-d H:i:s';
                 break;
             }
             case 'eu' :
             {
-                return date('d/m/Y H:i:s', time());
+                $format = 'd/m/Y H:i:s';
                 break;
             }
             case 'us' :
             {
-                return date('m/d/Y H:i:s', time());
+                $format = 'm/d/Y H:i:s';
                 break;
             }
         }
+        return date($format);
     }
 
     public static function getNowDate()
@@ -56,28 +58,30 @@ class Sitebill_Datetime
         if (!isset($formattypes[$inFormFormat])) {
             $inFormFormat = 'standart';
         }
+        $format = 'Y-m-d';
         switch ($inFormFormat) {
             case 'standart' :
             {
-                return date('Y-m-d', time());
+                $format = 'Y-m-d';
                 break;
             }
             case 'eu' :
             {
-                return date('d/m/Y', time());
+                $format = 'd/m/Y';
                 break;
             }
             case 'us' :
             {
-                return date('m/d/Y', time());
+                $format = 'm/d/Y';
                 break;
             }
         }
+        return date($format);
     }
 
     public static function getNowTime()
     {
-        return date('H:i:s', time());
+        return date('H:i:s');
     }
 
     public static function checkDTDatetime($vl, $parameters = array())
@@ -95,21 +99,7 @@ class Sitebill_Datetime
         $result = true;
 
         list($Y, $M, $D) = explode('-', $valueDate);
-        /*
-                switch($inFormFormat){
-                    case 'standart' : {
-                        list($Y, $M, $D)=explode('-', $valueDate);
-                        break;
-                    }
-                    case 'eu' : {
-                        list($D, $M, $Y)=explode('/', $valueDate);
-                        break;
-                    }
-                    case 'us' : {
-                        list($M, $D, $Y)=explode('/', $valueDate);
-                        break;
-                    }
-                }*/
+
         list($H, $I, $S) = explode(':', $valueTime);
 
         if ((int)$M > 12 || (int)$M < 1) {
@@ -151,21 +141,7 @@ class Sitebill_Datetime
         $result = true;
 
         list($Y, $M, $D) = explode('-', $valueDate);
-        /*
-            switch($inFormFormat){
-                case 'standart' : {
-                    list($Y, $M, $D)=explode('-', $valueDate);
-                    break;
-                }
-                case 'eu' : {
-                    list($D, $M, $Y)=explode('/', $valueDate);
-                    break;
-                }
-                case 'us' : {
-                    list($M, $D, $Y)=explode('/', $valueDate);
-                    break;
-                }
-            }*/
+
         if ((int)$M > 12 || (int)$M < 1) {
             $result = false;
         }
@@ -180,8 +156,6 @@ class Sitebill_Datetime
 
     public static function checkDTTime($vl, $parameters = array())
     {
-
-
         $valueTime = $vl;
         $result = true;
         list($H, $I, $S) = explode(':', $valueTime);

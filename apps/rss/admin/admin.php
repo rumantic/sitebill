@@ -27,13 +27,11 @@ class rss_admin extends Object_Manager
 
     function main()
     {
+        $rs = '';
         $rs .= $this->get_app_title_bar();
         $rs .= Multilanguage::_('RSS_STREAM_ADDRESS', 'rss') . ': <a href="' . $this->getServerFullUrl() . '/rss/" target="_blank">' . $this->getServerFullUrl() . '/rss/</a><br>';
         $rs .= _e('RSS-объявлений') . ': <a href="' . $this->getServerFullUrl() . '/rss/data/" target="_blank">' . $this->getServerFullUrl() . '/rss/data/</a><br>';
         return $rs;
-        //$f=fopen($this->output_file,'w');
-        //fwrite($f,$this->generateRSSText());
-        //fclose($f);
     }
 
     private function checkConfiguration()
@@ -181,6 +179,13 @@ class rss_admin extends Object_Manager
                 SConfig::$fieldtypeCheckbox
             );
 
+            $CF->addParamToConfig(
+                'apps.rss.enable_realty_personal',
+                '0',
+                'Включить персональные фиды объявлений',
+                SConfig::$fieldtypeCheckbox
+            );
+
         }
         unset($CF);
     }
@@ -251,7 +256,12 @@ class rss_admin extends Object_Manager
     }
 
 
-    protected function exportRssData()
+    /**
+     * Формирует и выводит rss-канал для объектов
+     * @param array $params параметры
+     * @throws SmartyException
+     */
+    protected function exportRssData($params = array())
     {
         if (intval($this->getConfigValue('apps.rss.data_cachediff')) > 0) {
             $with_cache = true;
@@ -261,6 +271,10 @@ class rss_admin extends Object_Manager
         }
 
         $cache_file = SITEBILL_DOCUMENT_ROOT . '/cache/rss_data.xml';
+        if(isset($params['user_id'])){
+            $cache_file = SITEBILL_DOCUMENT_ROOT . '/cache/rss_data_u'.$params['user_id'].'.xml';
+        }
+
         if ($with_cache) {
             if (file_exists($cache_file) && ((time() - filemtime($cache_file)) > $cashe_diff)) {
                 unlink($cache_file);
@@ -306,12 +320,12 @@ class rss_admin extends Object_Manager
         switch ($mode) {
             case 1 :
             {
-                $this->getRealtyItemsExtended();
+                $this->getRealtyItemsExtended($params);
                 break;
             }
             default :
             {
-                $this->getRealtyItemsStandart();
+                $this->getRealtyItemsStandart($params);
             }
         }
 
@@ -327,6 +341,12 @@ class rss_admin extends Object_Manager
         }
     }
 
+    /**
+     * Формирует и выводит rss-канал для новостей
+     * @param bool $turbo признак rss_turbo
+     * @param int $page номер генерируемой страницы
+     * @param int $per_page кол-во на страницу
+     */
     protected function exportRssNews($turbo = false, $page = 0, $per_page = 0)
     {
         if ($turbo) {
@@ -369,6 +389,11 @@ class rss_admin extends Object_Manager
         }
     }
 
+    /**
+     * Формирует rss-поток новостей
+     * @param $page номер генерируемой страницы
+     * @param $per_page кол-во на страницу
+     */
     function echo_news_rss_header_and_footer($page, $per_page)
     {
 
@@ -391,6 +416,9 @@ class rss_admin extends Object_Manager
         echo '</rss>';
     }
 
+    /**
+     * Формирует rss-поток статей
+     */
     protected function exportRssArticles()
     {
         if (intval($this->getConfigValue('apps.rss.articles_cachediff')) > 0) {
@@ -573,6 +601,13 @@ class rss_admin extends Object_Manager
         echo '</item>';
     }
 
+    /**
+     * Формирует заголовочную часть канала
+     * @param string $title Заголовок канала
+     * @param string $description Описание канала
+     * @param string $language Язык канала
+     * @return string
+     */
     function generateChannelInfo($title = '', $description = '', $language = '')
     {
         $ret = '';
@@ -589,14 +624,27 @@ class rss_admin extends Object_Manager
         return $ret;
     }
 
-    protected function getExportedRealtyDataIds()
+    protected function getExportedRealtyDataIds($params = array())
     {
         $ids = array();
         $count = intval($this->getConfigValue('apps.rss.data_length'));
         if ($count > 0) {
+
+            $where = array();
+            $whereval = array();
+
+            $where[] = '`active` = ?';
+            $whereval[] = 1;
+
+            if(isset($params['user_id'])){
+                $where[] = '`user_id` = ?';
+                $whereval[] = $params['user_id'];
+            }
+
             $DBC = DBC::getInstance();
-            $query = 'SELECT `id` FROM ' . DB_PREFIX . '_data WHERE `active`=1 ORDER BY `date_added` DESC LIMIT ' . $count;
-            $stmt = $DBC->query($query);
+            $query = 'SELECT `id` FROM ' . DB_PREFIX . '_data WHERE '.implode(' AND ', $where).' ORDER BY `date_added` DESC LIMIT ' . $count;
+
+            $stmt = $DBC->query($query, $whereval);
             if ($stmt) {
                 while ($ar = $DBC->fetch($stmt)) {
                     $ids[] = $ar['id'];
@@ -606,9 +654,9 @@ class rss_admin extends Object_Manager
         return $ids;
     }
 
-    private function getRealtyItemsStandart()
+    private function getRealtyItemsStandart($params = array())
     {
-        $ids = $this->getExportedRealtyDataIds();
+        $ids = $this->getExportedRealtyDataIds($params);
 
         if (empty($ids)) {
             echo '';
@@ -703,6 +751,16 @@ class rss_admin extends Object_Manager
         }
     }
 
+    /**
+     * Форматирование единичного блока item канала
+     * @param array $meta_data массив метаданных объекта
+     * @param string $href ссылка на страницу объекта
+     * @param string $image_field имя свойства модели с графикой
+     * @param string $image_field_type тип свойства модели с графикой
+     * @param array $form_data_shared массив модели объекта
+     * @param string $description описание объекта
+     * @param int $data_imgcount количество выдаваемых фото
+     */
     function echo_realty_item_standart($meta_data, $href, $image_field, $image_field_type, $form_data_shared, $description, $data_imgcount)
     {
         echo '<item>' . "\n";
@@ -717,6 +775,15 @@ class rss_admin extends Object_Manager
         echo '</item>' . "\n";
     }
 
+    /**
+     * Возращает массив ссылок на фото или тело блока графики для item
+     * @param string $image_field имя свойства модели с графикой
+     * @param string $image_field_type тип свойства модели с графикой
+     * @param array $form_data_shared массив модели объекта
+     * @param int $imgcount количество выдаваемых фото
+     * @param bool $return_url признак возращать ли готовую разметку или массив ссылок
+     * @return bool|string|array
+     */
     function echo_image_item_or_return_url($image_field, $image_field_type, $form_data_shared, $imgcount = 1, $return_url = false)
     {
         if ($image_field) {
@@ -819,11 +886,14 @@ class rss_admin extends Object_Manager
     }
 
 
-    private function getRealtyItemsExtended()
+    /**
+     * @param array $params
+     * @throws SmartyException
+     */
+    private function getRealtyItemsExtended($params = array())
     {
 
-
-        $ids = $this->getExportedRealtyDataIds();
+        $ids = $this->getExportedRealtyDataIds($params);
         if (empty($ids)) {
             return;
         }

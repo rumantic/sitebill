@@ -1,6 +1,6 @@
 <?php
 error_reporting(E_ERROR | E_WARNING);
-ini_set('display_errors','On');
+ini_set('display_errors','Off');
 
 session_start();
 require_once("../../../inc/db.inc.php");
@@ -18,9 +18,13 @@ $sitebill_document_root = rtrim($_SERVER['DOCUMENT_ROOT'], '/').$folder;
 
 define('SITEBILL_DOCUMENT_ROOT', $sitebill_document_root);
 define('SITEBILL_MAIN_URL', $folder);
-define('DB_PREFIX', $__db_prefix);
+if(!defined('DB_PREFIX')){
+    define('DB_PREFIX', $__db_prefix);
+}
 
-ini_set("include_path", $include_path );
+if(isset($include_path)){
+    ini_set("include_path", $include_path);
+}
 require_once(SITEBILL_DOCUMENT_ROOT.'/third/smarty/Smarty.class.php');
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/init.php');
 require_once(SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/db/MySQL.php');

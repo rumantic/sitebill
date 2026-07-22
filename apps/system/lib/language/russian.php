@@ -1,4 +1,5 @@
 <?php
+// DEPRECATED
 /**
  * Russian language pack
  * @author Kondin Dmitry <kondin@etown.ru>

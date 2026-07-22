@@ -9,31 +9,27 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
 class banner_admin extends Object_Manager
 {
 
+    public $table_name = 'banner';
+    public $action = 'banner';
+    public $primary_key = 'banner_id';
+
     /**
      * Constructor
      */
     function __construct()
     {
         parent::__construct();
-        $this->table_name = 'banner';
-        $this->action = 'banner';
-        $this->primary_key = 'banner_id';
-
-        $form_data = array();
 
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/columns/admin/admin.php') && file_exists(SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php')) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/helper.php';
             $ATH = new Admin_Table_Helper();
             $form_data = $ATH->load_model($this->table_name, false);
             if (empty($form_data) || count($form_data[$this->table_name]) == 0) {
-                $form_data = array();
                 $form_data = $this->get_banner_model();
-                //$form_data = $this->_get_big_city_kvartira_model2($ajax);
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php';
                 $TA = new table_admin();
                 $TA->create_table_and_columns($form_data, $this->table_name);
-                $form_data = array();
                 $form_data = $ATH->load_model($this->table_name, false);
             }
         } else {
@@ -41,6 +37,11 @@ class banner_admin extends Object_Manager
         }
 
         $this->data_model = $form_data;
+
+        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
+        $config_admin = new config_admin();
+
+        $config_admin->addParamToConfig('apps.banner.enable', '1', 'Включить приложение', 1);
     }
 
     function getTopMenu()
@@ -83,7 +84,6 @@ class banner_admin extends Object_Manager
         if ((int)$client_info['is_active'] === 0) {
             return '';
         }
-        //echo $referer;
 
         $site_url = $this->getServerFullUrl();
         $DBC = DBC::getInstance();
@@ -321,22 +321,30 @@ class banner_admin extends Object_Manager
 
     function _preload()
     {
-        $requesturi = ltrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
-        $banners = array();
-        $banners = $this->get_banners_list();
-        if (count($banners) > 0) {
-            $this->template->assert('random_banner', $banners[array_rand($banners, 1)]['body']);
+        if(1 === (int)$this->getConfigValue('apps.banner.enable')){
+            $requesturi = ltrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+            $banners = $this->get_banners_list();
+            if (count($banners) > 0) {
+                $this->template->assert('random_banner', $banners[array_rand($banners, 1)]['body']);
 
-            foreach ($banners as $v) {
-                $banner_str = '';
-                $active_url = false;
-                if (isset($v['active_url']) && $v['active_url'] != '') {
-                    $active_url = trim($v['active_url'], '/');
-                }
+                foreach ($banners as $v) {
+                    $banner_str = '';
+                    $active_url = false;
+                    if (isset($v['active_url']) && $v['active_url'] != '') {
+                        $active_url = trim($v['active_url'], '/');
+                    }
 
-                if ($active_url) {
+                    if ($active_url) {
 
-                    if (preg_match('/^' . str_replace('/', '\/', $active_url) . '[\/]?/', $requesturi)) {
+                        if (preg_match('/^' . str_replace('/', '\/', $active_url) . '[\/]?/', $requesturi)) {
+                            if ($v['url'] != '') {
+                                $banner_str = '<a href="' . $v['url'] . '" class="thumbnail">' . $v['body'] . '</a>';
+                            } else {
+                                $banner_str = $v['body'];
+                            }
+                            $this->template->assert($v['title'], $banner_str);
+                        }
+                    } else {
                         if ($v['url'] != '') {
                             $banner_str = '<a href="' . $v['url'] . '" class="thumbnail">' . $v['body'] . '</a>';
                         } else {
@@ -344,13 +352,6 @@ class banner_admin extends Object_Manager
                         }
                         $this->template->assert($v['title'], $banner_str);
                     }
-                } else {
-                    if ($v['url'] != '') {
-                        $banner_str = '<a href="' . $v['url'] . '" class="thumbnail">' . $v['body'] . '</a>';
-                    } else {
-                        $banner_str = $v['body'];
-                    }
-                    $this->template->assert($v['title'], $banner_str);
                 }
             }
         }
@@ -362,6 +363,7 @@ class banner_admin extends Object_Manager
      */
     function get_banners_list()
     {
+        $ra = [];
         $DBC = DBC::getInstance();
         $query = "SELECT * FROM " . DB_PREFIX . "_banner WHERE published=1 ORDER BY " . $this->primary_key . " ASC";
         $ra = array();

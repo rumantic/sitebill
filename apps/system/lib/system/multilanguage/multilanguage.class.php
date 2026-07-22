@@ -1,12 +1,43 @@
 <?php
-function md5_key( $text ) {
-    if ( preg_match('/L_/', $text) or preg_match('/LT_/', $text) ) {
-        $key = $text;
-    } else {
-        $key = md5($text);
+if(!function_exists('md5_key')){
+    /**
+     * Create md5-hash for text label
+     * @param string $text
+     * @return string
+     */
+    function md5_key( $text ) {
+        if ( preg_match('/L_/', $text) || preg_match('/LT_/', $text) ) {
+            $key = $text;
+        } else {
+            $key = md5($text);
+        }
+        return $key;
     }
-    return $key;
 }
+
+if(!function_exists('_trans')){
+    /**
+     * Return word value
+     * @param string $key Dictionary key/label (for apps use 'appcode.label')
+     * @param array $replacements Array of placeholders ['varname1' => 'value1', 'varname2' => 'value2']
+     * @return string
+     */
+    function _trans($key, $replacements = [])
+    {
+        $parts = explode('.', $key);
+        $placeholders = [];
+        if(isset($replacements) && is_array($replacements) && !empty($replacements)){
+            $placeholders = $replacements;
+        }
+        if (count($parts) == 2) {
+            return Multilanguage::_($parts[1], $parts[0], $placeholders);
+        } elseif (count($parts) == 1) {
+            return Multilanguage::_($parts[0], '', $placeholders);
+        }
+        return '##ERROR##';
+    }
+}
+
 
 /**
  * Обычная процедурная функция подключается в шаблоне и выполняет перевод с помощью google_translate в шаблонах
@@ -81,9 +112,12 @@ function _ed($value, $editable = false) {
 
 class Multilanguage {
 
+    // Loaded dictionaries
+    //private static $loaded = [];
+
     private static $instance = NULL;
 
-    // Старотовые параметры
+    // Стартовые параметры
     private static $default_lang = 'ru';
     private static $default_mode = 'backend';
     private static $current_lang = '';
@@ -198,32 +232,46 @@ class Multilanguage {
         return $key;
     }
 
-
     /**
-     * Получение значения слова
-     * @param string $key ключ слова
-     * @param string $app код приложения
+     * Return word value
+     * placeholder must be marked with colon inside text. Ex. 'Some text with :placeholder written here'
+     * @param string $key Key/label
+     * @param string $app App code
+     * @param array $placeholders Array of placeholders ['varname1' => 'value1', 'varname2' => 'value2']
      * @return string
      */
-    public static function _($key, $app = '') {
-        //echo 'key = '.$key.', app = '.$app.'<br>';
+    public static function _($key, $app = '', $placeholders = []) {
         if ($app != '' && isset(self::$apps_words[$app])) {
             if (isset(self::$apps_words[$app][$key])) {
-                return self::$apps_words[$app][$key];
+                $word = self::$apps_words[$app][$key];
             } else {
                 self::insert_lang_words($app, self::$current_lang, $key, $key);
-                return $app . '.' . $key;
+                $word = $app . '.' . $key;
             }
         } else {
             if (isset(self::$words[$key])) {
-                return self::$words[$key];
+                $word = self::$words[$key];
             } else {
                 self::insert_lang_words('empty', self::$current_lang, $key, $key);
-                return $key;
+                $word = $key;
             }
         }
+
+        if(!empty($placeholders)){
+            $replaces = [];
+            foreach ($placeholders as $pk => $pv){
+                $replaces[':'.$pk] = $pv;
+            }
+            $word = strtr($word, $replaces);
+        }
+        return $word;
     }
 
+    /**
+     * Получение текстового значения перевода по коду
+     * @param string $key
+     * @return string
+     */
     public static function text($key) {
         if (isset(self::$words[$key])) {
             return self::$words[$key];
@@ -234,7 +282,7 @@ class Multilanguage {
 
     /**
      * Загрузка словаря приложения
-     * @param $app_name код приложения
+     * @param string $app_name код приложения
      * @param string $template имя шаблона, если локализация
      * @param bool $force признак принудительно перезаписи значений
      * @param bool $reload_language код языка, для которого выполняется подключение словаря
@@ -252,44 +300,70 @@ class Multilanguage {
         } elseif ($current_language == '') {
             return;
         }
-        //if ( !$force ) {
-        //    return;
-        //}
-        //echo $app_name.'='.self::$current_lang.'<br>';
-        //echo 'app '.$app_name.'<br>';
+
 
         global $smarty;
-        $file_name = SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_name . '/language/' . $current_language . '/dictionary.ini';
 
-        if (file_exists($file_name)) {
-            self::$apps_words[$app_name] = parse_ini_file($file_name, true);
-            //echo 'init a 1 '.$file_name.'<br>';
-            self::init_db_lang_words(self::$apps_words);
-        } else {
-            $file_name = SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_name . '/language/' . self::$default_lang . '/dictionary.ini';
-            if (file_exists($file_name)) {
-                //echo $file_name . '<br>';
-                self::$apps_words[$app_name] = parse_ini_file($file_name, true);
-                self::init_db_lang_words(self::$apps_words);
-            }
+        $appwords = [];
+        $nativeappdictionary = SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_name . '/language/' . $current_language . '/dictionary.ini';
+        $nativeappdictionary_replacement = SITEBILL_DOCUMENT_ROOT . '/apps/' . $app_name . '/language/' . self::$default_lang . '/dictionary.ini';
+        if (file_exists($nativeappdictionary)) {
+            $appwords = parse_ini_file($nativeappdictionary, true);
+        }elseif (file_exists($nativeappdictionary_replacement)) {
+            $appwords = parse_ini_file($nativeappdictionary_replacement, true);
         }
 
         $SConfig = SConfig::getInstance();
         $template = $SConfig->getConfigValue('theme');
 
         if ($template != '' && file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $template . '/apps/' . $app_name . '/language/' . $current_language . '/dictionary.ini')) {
-            $words = self::$apps_words[$app_name];
+            $appwords = array_merge($appwords, parse_ini_file(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $template . '/apps/' . $app_name . '/language/' . $current_language . '/dictionary.ini', true));
+        }
+        self::$apps_words[$app_name] = $appwords;
+        self::init_db_lang_words(self::$apps_words);
+        self::assign($smarty);
+    }
 
-            $new_words = parse_ini_file(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $template . '/apps/' . $app_name . '/language/' . $current_language . '/dictionary.ini', true);
-            if (isset(self::$apps_words[$app_name])) {
-                self::$apps_words[$app_name] = array_merge(self::$apps_words[$app_name], $new_words);
-            } else {
-                self::$apps_words[$app_name] = $new_words;
+    /**
+     * Пакетная запись слов в БД
+     * @param $app
+     * @param $words
+     * @param $lang
+     * @param $all_db_records
+     * @return bool
+     */
+    private static function storeWords($app, $words, $lang, $all_db_records){
+
+        $start = 0;
+        $step = 100;
+        $insert = array_slice($words, $start, $step);
+
+        $DBC = DBC::getInstance();
+
+        while(!empty($insert)){
+            $insertableplaceholders = array();
+            $insertablevalues = array();
+            foreach ($insert as $key => $value) {
+                if ( !isset($all_db_records[$app]) || $all_db_records[$app][$key] != true ) {
+                    $insertableplaceholders[] = '(?, ?, ?, ?, ?)';
+                    $insertablevalues[] = $app;
+                    $insertablevalues[] = $lang;
+                    $insertablevalues[] = $key;
+                    $insertablevalues[] = $value;
+                    $insertablevalues[] = mb_substr($value, 0, 50, 'utf-8');
+                }
             }
-            self::init_db_lang_words(self::$apps_words);
+
+            if(!empty($insertableplaceholders)){
+                $query = 'INSERT INTO ' . DB_PREFIX . '_lang_words (`word_app`, `lang_key`, `word_key`, `word_default`, `word_pack`) VALUES '.implode(',', $insertableplaceholders).' ON DUPLICATE KEY UPDATE
+word_default = VALUES(word_default), word_pack = VALUES(word_pack)';
+                $stmt = $DBC->query($query, $insertablevalues);
+            }
+            $start += $step;
+            $insert = array_slice($words, $start, $step);
         }
 
-        self::assign($smarty);
+        return true;
     }
 
     /**
@@ -298,19 +372,32 @@ class Multilanguage {
      * @return bool
      */
     public static function init_db_lang_words($words) {
-        //return;
-        //echo '<pre>';
-        //print_r($words);
-        //echo '</pre>';
-        //echo 'init_db_lang_words<br>';
+
+        // Использование пакетной записи слов в БД
+        /*
+        foreach($words as $app => $app_array){
+            if (!is_array($app_array)) {
+                $result = self::storeWords('empty', $words, self::$current_lang, self::$all_db_records);
+            }else{
+                $result = self::storeWords($app, $app_array, self::$current_lang, self::$all_db_records);
+            }
+        }
+
+        return $result;
+        */
+
+
         $DBC = DBC::getInstance();
-        $query = 'INSERT INTO ' . DB_PREFIX . '_lang_words (word_app, lang_key, word_key, word_default, word_pack) values (?, ?, ?, ?, ?)';
+        $query = 'INSERT INTO ' . DB_PREFIX . '_lang_words (word_app, lang_key, word_key, word_default, word_pack) values (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE word_default = VALUES(word_default), word_pack = VALUES(word_pack)';
+
+
+
         foreach ($words as $app => $app_array) {
             if (!is_array($app_array)) {
                 $app = 'empty';
                 foreach ($words as $key => $value) {
                     if ( !isset(self::$all_db_records[$app]) || self::$all_db_records[$app][$key] != true ) {
-                        $stmt = $DBC->query($query, array($app, self::$current_lang, $key, $value, substr($value, 0, 50)), $success);
+                        $stmt = $DBC->query($query, array($app, self::$current_lang, $key, $value, mb_substr($value, 0, 50, 'utf-8')), $success);
                         if (!$success) {
                             //echo $DBC->getLastError() . '<br>';
                         } else {
@@ -323,7 +410,7 @@ class Multilanguage {
             } else {
                 foreach ($app_array as $key => $value) {
                     if ( !isset(self::$all_db_records[$app]) || self::$all_db_records[$app][$key] != true ) {
-                        $stmt = $DBC->query($query, array($app, self::$current_lang, $key, $value, substr($value, 0, 50)), $success);
+                        $stmt = $DBC->query($query, array($app, self::$current_lang, $key, $value, mb_substr($value, 0, 50, 'utf-8')), $success);
                         if (!$success) {
                             //echo $DBC->getLastError() . '<br>';
                         } else {
@@ -347,7 +434,7 @@ class Multilanguage {
         if ( @self::$all_db_records[$app][$key] != true ) {
             $DBC = DBC::getInstance();
             $query = 'INSERT INTO ' . DB_PREFIX . '_lang_words (word_app, lang_key, word_key, word_default, word_pack) values (?, ?, ?, ?, ?)';
-            $stmt = $DBC->query($query, array($app, $lang, $key, $value, substr($value, 0, 50)), $success);
+            $stmt = $DBC->query($query, array($app, $lang, $key, $value, mb_substr($value, 0, 50, 'utf-8')), $success);
         }
     }
 
@@ -379,6 +466,11 @@ class Multilanguage {
         }
     }
 
+    /**
+     * Импорт словарей в переменные Smarty
+     * @param Smarty $smarty
+     * @return false|void
+     */
     public static function assign(&$smarty) {
         if ( self::$words_in_smarty_inited ) {
              return;
@@ -437,6 +529,9 @@ class Multilanguage {
         self::assign($smarty);
     }
 
+    /**
+     * Горячая перезагрузка словарей
+     */
     public static function reLoadWords() {
         $init_languages_array = array('ru');
         $available_languages = self::availableLanguages();
@@ -459,40 +554,30 @@ class Multilanguage {
         }
     }
 
+    /**
+     * Загрузка фронтенд-бекенд словарей из приложения language
+     */
     public static function loadWords() {
-        $dictionary = array();
         if (empty(self::$words)) {
             self::loadBackendWords();
             self::loadFrontendWords();
             self::$words = array_merge(self::$words, self::$backend_words);
             self::$words = array_merge(self::$words, self::$frontend_words);
-            //echo '<pre>';
-            //print_r(self::$words);
-            //echo '</pre>';
-            //self::init_db_lang_words(self::$words);
         }
-        /*
-          $file_name=SITEBILL_DOCUMENT_ROOT.'/apps/language/language/'.self::$current_lang.'/'.self::$current_mode.'.ini';
-          if(file_exists($file_name)){
-
-          }else{
-          $file_name=SITEBILL_DOCUMENT_ROOT.'/apps/language/language/'.self::$default_lang.'/'.self::$default_mode.'.ini';
-          }
-          self::$words=parse_ini_file($file_name,true); */
-
-        /* if ( self::$current_mode == 'frontend' ) {
-          self::loadBackendWords();
-          self::$words = array_merge(self::$words, self::$backend_words);
-          } */
     }
 
+    /**
+     * Загрузка словаря шаблона
+     * @param string $template_name
+     * @param bool $force
+     * @return bool|void
+     */
     public static function appendTemplateDictionary($template_name, $force = false) {
         if (self::$is_tpl_loaded and !$force) {
             return;
         }
         global $smarty;
         $file_name = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $template_name . '/language/' . self::$current_lang . '/dictionary.ini';
-        //echo $file_name.'<br>';
 
         if (file_exists($file_name)) {
             //echo $file_name . '<br>';
@@ -505,7 +590,6 @@ class Multilanguage {
                 self::$words[$k] = $w;
                 $smarty->assign($k, $w);
             }
-            //echo 'init t<br>';
 
             self::init_db_lang_words(self::$apps_words);
             self::$is_tpl_loaded = true;
@@ -540,6 +624,10 @@ class Multilanguage {
         self::init_db_lang_words(self::$frontend_words);
     }
 
+    /**
+     * Получение массива используемых языков
+     * @return array
+     */
     public static function availableLanguages() {
         $langs = array();
 
@@ -553,27 +641,28 @@ class Multilanguage {
             }
         }
         return $langs;
-        /* $path=SITEBILL_DOCUMENT_ROOT.'/apps/system/language/';
-          $skip = array('.', '..', '.svn');
-          $files = scandir($path);
-          foreach($files as $file) {
-          if(!in_array($file, $skip)){
-          $langs[$file]=$file;
-          }
-          }
-          return $langs; */
     }
 
     public static function get_current_language() {
         return $_SESSION['_lang'];
     }
 
+    /**
+     * Получение используемых языков за вычетом RU
+     * @return array
+     */
     public static function foreignLanguages() {
         $languages = self::availableLanguages();
         unset($languages['ru']);
         return $languages;
     }
 
+    /**
+     * Установка нового значения словарной переменной или создание новой переменной
+     * @param string $key
+     * @param mixed $value
+     * @param string $app
+     */
     public static function set_word($key, $value, $app = '') {
         if ($app != '' && isset(self::$apps_words[$app])) {
             self::$apps_words[$app][$key] = $value;
@@ -593,5 +682,40 @@ class Multilanguage {
     public static function get_apps_words () {
         return self::$apps_words;
     }
+
+    /**
+     * Load dictionary for locale
+     * @param string $locale
+     */
+    /*private static function load($locale){
+        if(!isset(self::$loaded[$locale])){
+            self::$loaded[$locale] = [];
+        }
+
+        $DBC = DBC::getInstance();
+        $query = 'SELECT * FROM ' . DB_PREFIX . '_lang_words WHERE lang_key = ?';
+        $stmt = $DBC->query($query, array($locale));
+        if ($stmt) {
+            while ($ar = $DBC->fetch($stmt)) {
+                self::$loaded[$locale][$ar['word_app']][$ar['word_key']] = $ar['word_default'];
+            }
+        }
+    }*/
+
+    /**
+     * Equal for Sitebill::getWord
+     * Translate label to text by dictionary
+     * @param array $params
+     * @return string
+     */
+    /*public static function _trans($params){
+        $parts = explode('.', $params['key']);
+        if (count($parts) == 2) {
+            return Multilanguage::_($parts[1], $parts[0]);
+        } elseif (count($parts) == 1) {
+            return Multilanguage::_($parts[0]);
+        }
+        return '##ERROR##';
+    }*/
 
 }

@@ -19,7 +19,7 @@ ClientOrder={
         if(custom_template){
            data.custom_template=custom_template;
         }
-		$.ajax({
+		SitebillCore.lajax({
 			url: estate_folder+'/js/ajax.php',
 			data: data,
 			dataType: 'html',
@@ -60,7 +60,7 @@ ClientOrder={
 		data.model=model;
 		data._app='client';
 		data._owner_user_id = $('#_owner_user_id').val();
-		$.ajax({
+		SitebillCore.lajax({
 			url: estate_folder+'/js/ajax.php',
 			data: data,
 			dataType: 'json',
@@ -98,7 +98,7 @@ ClientOrder={
 		if(form.find('.captcha_placeholder')){
 			var data={};
 			data.action='build_captcha';
-			$.ajax({
+			SitebillCore.lajax({
 				url: estate_folder+'/js/ajax.php',
 				data: data,
 				dataType: 'html',

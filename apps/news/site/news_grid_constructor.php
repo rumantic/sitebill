@@ -64,7 +64,7 @@ class News_Grid_Constructor extends Grid_Constructor
 
         $model = $form_data['news'];
 
-        if (isset($model['date']) && $model['date']['type'] == 'dtdatetime') {
+        if (isset($model['date']) && $model['date']['type'] === 'dtdatetime') {
             $use_datetime = true;
         } else {
             $use_datetime = false;
@@ -88,6 +88,10 @@ class News_Grid_Constructor extends Grid_Constructor
 
         if (isset($params['news_topic_id']) && $params['news_topic_id'] != 0) {
             $where[] = 'news_topic_id=' . (int)$params['news_topic_id'];
+        }
+
+        if (isset($params['country_id']) && $params['country_id'] != 0) {
+            $where[] = 'country_id = ' . (int)$params['country_id'];
         }
 
         if ($use_datetime) {
@@ -155,17 +159,6 @@ class News_Grid_Constructor extends Grid_Constructor
         $data_model = new Data_Model();
         $params = array();
 
-        if ('' != $this->getConfigValue('apps.news.alias')) {
-            $app_alias = $this->getConfigValue('apps.news.alias');
-        } else {
-            $app_alias = 'news';
-        }
-
-        if ('' != $this->getConfigValue('apps.news.item_alias')) {
-            $app_item_alias = $this->getConfigValue('apps.news.item_alias');
-        } else {
-            $app_item_alias = 'news';
-        }
         $_ids = array();
         foreach ($ra as $item_id => $item_array) {
             $_ids[] = $item_array['news_id'];
@@ -193,17 +186,19 @@ class News_Grid_Constructor extends Grid_Constructor
         }
 
 
+
+
         $hasUploadify = false;
         $uploads = false;
         foreach ($model as $mitem) {
-            if ($mitem['type'] == 'uploadify_image') {
+            if ($mitem['type'] === 'uploadify_image') {
                 $hasUploadify = true;
                 continue;
             }
         }
         if (!$hasUploadify) {
             foreach ($model as $mitem) {
-                if ($mitem['type'] == 'uploads') {
+                if ($mitem['type'] === 'uploads') {
                     $uploads = $mitem['name'];
                     continue;
                 }
@@ -252,26 +247,13 @@ class News_Grid_Constructor extends Grid_Constructor
 
     protected function getNewsRoute($news_id, $news_alias = '')
     {
-        if ('' != $this->getConfigValue('apps.news.alias')) {
-            $app_news_alias = $this->getConfigValue('apps.news.alias');
-        } else {
-            $app_news_alias = 'news';
-        }
-        if (1 == (int)$this->getConfigValue('apps.seo.no_trailing_slashes')) {
-            $trailing_slashe = '';
-        } else {
-            $trailing_slashe = '/';
-        }
-        if ('' != $this->getConfigValue('apps.news.item_alias')) {
-            $app_item_alias = $this->getConfigValue('apps.news.item_alias');
-        } else {
-            $app_item_alias = 'news';
-        }
+        $app_news_alias = ('' !== $this->getConfigValue('apps.news.alias') ? $this->getConfigValue('apps.news.alias') : 'news');
+        $app_item_alias = ('' !== $this->getConfigValue('apps.news.item_alias') ? $this->getConfigValue('apps.news.item_alias') : 'news');
         if ($news_alias != '') {
             return $this->createUrlTpl($app_news_alias . '/' . $news_alias);
-        } else {
-            return $this->createUrlTpl($app_item_alias . $news_id . '.html');
         }
+
+        return $this->createUrlTpl($app_item_alias . $news_id . '.html');
     }
 
 }

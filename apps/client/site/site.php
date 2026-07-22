@@ -21,16 +21,19 @@ class client_site extends client_admin {
 
         $REQUESTURIPATH = $this->getClearRequestURI();
 
-        if(preg_match('/^'.$this->getConfigValue('apps.client.front_manager_alias').'/', $REQUESTURIPATH)){
-            require_once SITEBILL_DOCUMENT_ROOT . '/apps/client/site/frontend_client_manager.php';
-            $frontend_client_manager = new frontend_client_manager();
-            $content = $frontend_client_manager->main();
-            if ( $content ) {
-                $this->template->assign('main', $content);
-                return true;
+        if ($this->getConfigValue('apps.client.frontend_enable')) {
+            if($this->getConfigValue('apps.client.front_manager_alias') != '' and preg_match('/^'.$this->getConfigValue('apps.client.front_manager_alias').'/', $REQUESTURIPATH)){
+                require_once SITEBILL_DOCUMENT_ROOT . '/apps/client/site/frontend_client_manager.php';
+                $frontend_client_manager = new frontend_client_manager();
+                $content = $frontend_client_manager->main();
+                if ( $content ) {
+                    $this->template->assign('main', $content);
+                    return true;
+                }
+                return false;
             }
-            return false;
         }
+
 
         //echo $REQUESTURIPATH;
         /*
@@ -130,42 +133,6 @@ class client_site extends client_admin {
         }
 
         return false;
-
-        $app_alias = $this->getConfigValue('apps.client.namespace');
-
-        $breadcrumbs = array();
-        $breadcrumbs[] = array('href' => (SITEBILL_MAIN_URL != '' ? SITEBILL_MAIN_URL : '') . '/', 'title' => Multilanguage::_('L_HOME'));
-        $breadcrumbs[] = array('href' => (SITEBILL_MAIN_URL != '' ? SITEBILL_MAIN_URL : '') . '/' . $app_alias . '/', 'title' => $this->getConfigValue('apps.client.folder_title'), 'last' => 'true');
-        $this->template->assert('breadcrumbs_array', $breadcrumbs);
-
-
-        $page_array = $this->getPageByURI('client_text');
-        if ($page_array) {
-            $this->template->assert('client_text', $page_array['body']);
-            $this->template->assert('title', $page_array['title']);
-            $this->template->assert('meta_keywords', $page_array['meta_keywords']);
-            $this->template->assert('meta_description', $page_array['meta_description']);
-        }
-
-        $draw_form = true;
-        /*
-          if ( preg_match('/fiz/', $requesturi) ) {
-          $this->set_client_topic_id(1);
-          } elseif ( preg_match('/ur/', $requesturi) ) {
-          $this->set_client_topic_id(6121);
-          } else {
-          $draw_form = false;
-          }
-         */
-        if ($draw_form) {
-            $this->template->assign('form', $this->drawForm());
-            $this->set_apps_template('client', $this->getConfigValue('theme'), 'main_file_tpl', 'form.tpl.html');
-        } else {
-            $this->set_apps_template('client', $this->getConfigValue('theme'), 'main_file_tpl', 'choose_type.tpl.html');
-        }
-
-        //echo 'client frontend';
-        return true;
     }
 
     public function get_email_list() {

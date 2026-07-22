@@ -15,15 +15,22 @@ class RedisCache
 
     private static function connect () {
         if ( !isset(self::$redis) ) {
-            if ( !defined('REDIS_SALT') ) {
-                echo 'REDIS_SALT not defined';
+            if ( !defined('REDIS_SALT') && !defined('REDIS_PREFIX') ) {
+                echo 'REDIS_SALT\REDIS_PREFIX not defined';
                 exit;
             }
             self::$redis = new \Redis();
-            self::$redis->connect('127.0.0.1', 6379);
+            self::$redis->connect((defined('REDIS_HOST') ? REDIS_HOST : '127.0.0.1'), (defined('REDIS_PORT') ? REDIS_PORT : 6379));
             if ( defined('REDIS_PASSWORD') and REDIS_PASSWORD != '' ) {
                 self::$redis->auth(REDIS_PASSWORD);
             }
+            if ( defined('REDIS_DBNR') && REDIS_DBNR != '' ) {
+                self::$redis->select(REDIS_DBNR);
+            }
+            if ( defined('REDIS_PREFIX') && REDIS_PREFIX != '' ) {
+                self::$redis->setOption(\Redis::OPT_PREFIX, REDIS_PREFIX.':');
+            }
+            
         }
     }
 
@@ -34,8 +41,37 @@ class RedisCache
         return false;
     }
 
+    /**
+     * Add salt to key name
+     * @param string $key
+     * @return string
+     */
     private static function key_wrapper ($key) {
-        return REDIS_SALT.'_'.$key;
+        return (REDIS_SALT != '' ? REDIS_SALT.'_' : '').$key;
+    }
+
+    /**
+     * Remove prefix from key name
+     * @param string $key
+     * @return string
+     */
+    private static function remove_prefix($key){
+        if(defined('REDIS_PREFIX') && REDIS_PREFIX != ''){
+            return preg_replace('/^('.preg_quote(REDIS_PREFIX.':').')/', '', $key);
+        }
+        return $key;
+    }
+
+    /**
+     * Remove salt from key name
+     * @param string $key
+     * @return string
+     */
+    private static function remove_key_wrapper ($key) {
+        if(defined('REDIS_SALT') && REDIS_SALT != ''){
+            return preg_replace('/^('.preg_quote(REDIS_SALT).'_)/', '', $key);
+        }
+        return $key;
     }
 
     /**
@@ -65,10 +101,10 @@ class RedisCache
         return NULL;
     }
 
-    public static function set($key, $value){
+    public static function set($key, $value, $timeout = null){
         if ( self::enabled() ) {
             self::connect();
-            self::$redis->set(self::key_wrapper($key), $value);
+            self::$redis->set(self::key_wrapper($key), $value, $timeout);
             return true;
         }
         return NULL;
@@ -79,6 +115,38 @@ class RedisCache
             self::connect();
             self::$redis->hMSet(self::key_wrapper($key), $value);
             return true;
+        }
+        return NULL;
+    }
+
+    /**
+     * Remove key
+     * @param $key
+     * @param $ttl
+     * @return bool|null
+     */
+    public static function del($key){
+        if ( self::enabled() ) {
+            self::connect();
+            return self::$redis->del(self::key_wrapper($key));
+        }
+        return NULL;
+    }
+
+    /**
+     * Return existing keys' names by pattern w\o salt and w\o prefix
+     * @param string $pattern
+     * @return array|null
+     */
+    public static function keys($pattern){
+        if ( self::enabled() ) {
+            self::connect();
+            $keys = self::$redis->keys(self::key_wrapper($pattern));
+            if(!empty($keys)){
+                $keys = array_map(['self', 'remove_key_wrapper'], $keys);
+                $keys = array_map(['self', 'remove_prefix'], $keys);
+            }
+            return $keys;
         }
         return NULL;
     }

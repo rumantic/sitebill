@@ -6,51 +6,60 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * Dashboard admin backend
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
  */
-class dashboard_admin extends Object_Manager {
+class dashboard_admin extends Object_Manager
+{
 
     /**
      * Constructor
      */
-    function __construct() {
+    function __construct()
+    {
         parent::__construct();
         //Multilanguage::appendAppDictionary('dashboard');
         $this->action = 'dashboard';
 
-        require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
         $config_admin = new config_admin();
 
         if (!$config_admin->check_config_item('apps.dashboard.enable')) {
             $config_admin->addParamToConfig('apps.dashboard.enable', '0', 'Включить приложение Помощник', 1);
         }
+        $config_admin->addParamToConfig('apps.dashboard.config', '', 'Название конфиг-каталога /template/frontend/local/CONFIG_NAME');
+
         $this->onInit();
     }
 
-    public function _preload() {
+    public function _preload()
+    {
         if ($this->getConfigValue('apps.dashboard.enable')) {
             $this->template->assert('dashboard', $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/dashboard/admin/template/start_dashboard_js_code.tpl'));
-            if ( $this->getSessionUserId() > 0 ) {
+            if ($this->getSessionUserId() > 0) {
                 \SConfig::setConfigValueStatic('editor_mode', true);
             }
         }
     }
 
-    protected function onInit () {
+    protected function onInit()
+    {
 
     }
 
-    protected function onInitAjax () {
+    protected function onInitAjax()
+    {
         //$this->writeLog(__METHOD__);
     }
 
-    private function first_session_run () {
-        if ( $_SESSION['first_run'] != 'run' ) {
+    private function first_session_run()
+    {
+        if ($_SESSION['first_run'] != 'run') {
             $_SESSION['first_run'] = 'run';
-            $this->sendFirmMail('report@etown.ru', 'info@etown.ru', 'first run '.$_SERVER['HTTP_HOST'], '<pre>'.var_export($_REQUEST, true).'</pre>');
+            $this->sendFirmMail('report@etown.ru', 'info@etown.ru', 'first run ' . $_SERVER['HTTP_HOST'], '<pre>' . var_export($_REQUEST, true) . '</pre>');
         }
 
     }
 
-    public function ajax() {
+    public function ajax()
+    {
         $this->first_session_run();
         $this->onInitAjax();
         if ($this->getRequestValue('action') == 'iframe') {
@@ -61,11 +70,14 @@ class dashboard_admin extends Object_Manager {
 
             $theme_items['name'] = 'theme';
             $theme_items['select_data'] = $CM->get_themes_array();
+            unset($theme_items['select_data']['agency']);
             $theme_items['value'] = $this->getConfigValue('theme');
 
             $this->template->assign('theme_select', $form_generator->get_select_box($theme_items));
-            $local_dashboard_template = SITEBILL_DOCUMENT_ROOT.'/template/frontend/'.$this->getConfigValue('theme').'/apps/dashboard/site/template/main_dashboard.tpl';
-            if (file_exists($local_dashboard_template) ) {
+            $this->template->assign('allowed_config_items', $this->get_html_config_items());
+
+            $local_dashboard_template = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/dashboard/site/template/main_dashboard.tpl';
+            if (file_exists($local_dashboard_template)) {
                 echo $this->template->fetch($local_dashboard_template);
             } else {
                 echo $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/dashboard/admin/template/main_dashboard.tpl');
@@ -74,32 +86,114 @@ class dashboard_admin extends Object_Manager {
             echo $this->editor();
             exit;
         } elseif ($this->getRequestValue('action') == 'save') {
-            require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
-            $config_admin = new config_admin();
-            if ($this->getRequestValue('theme') != '') {
-                $DBC = DBC::getInstance();
-                $query = "UPDATE `" . DB_PREFIX . "_config` SET `value`=? WHERE `config_key`=?";
-                $stmt = $DBC->query($query, array($this->getRequestValue('theme'), 'theme'));
-                if ($this->getRequestValue('theme') == 'novosel') {
-                    $stmt = $DBC->query($query, array('3', 'bootstrap_version'));
-                } else {
-                    $stmt = $DBC->query($query, array('', 'bootstrap_version'));
-                }
-                $this->sendFirmMail('report@etown.ru', 'info@etown.ru', ''.$_SERVER['HTTP_HOST'].', theme = '.$this->getRequestValue('theme'), '<pre>'.var_export($_REQUEST, true).'</pre>');
-            }
-            $this->clear_apps_cache();
-            $ra['result'] = 'success';
-            echo json_encode($ra);
-            exit;
+            $this->save_action();
         } else {
             echo $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/dashboard/admin/template/dashboard_iframe_code.tpl');
+        }
+    }
+
+    function get_html_config_items()
+    {
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/form/form_generator.php');
+        $form_generator = new Form_Generator();
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
+        $config_admin = new config_admin();
+
+
+        $config_data = $config_admin->get_simple_config_hash();
+
+        foreach ($this->get_allowed_config_items() as $index => $key) {
+            $item = \system\factories\model\Item::base(
+                \system\types\model\Dictionary::SAFE_STRING,
+                $key,
+                $config_data[$key]['title'],
+                $this->getConfigValue($key)
+            );
+            $safe_string = @$form_generator->compile_safe_string_element($item[$key]);
+            $ra[$key] = $safe_string;
+        }
+        return $ra;
+    }
+
+    function get_allowed_config_items()
+    {
+        return [
+            'apps.contact.phone',
+            'apps.contact.email',
+            'apps.contact.address',
+            'apps.contact.ampm',
+            'meta_title_main',
+            'site_title'
+        ];
+    }
+
+    function save_action()
+    {
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
+        $config_admin = new config_admin();
+        $allow_config_keys = array('theme', 'apps.dashboard.enable');
+        $allow_config_keys = array_merge($allow_config_keys, $this->get_allowed_config_items());
+        $config_hash = array();
+        $config_hash['bootstrap_version'] = '';
+
+        $bootstrap_theme_versions = [
+            'novosel' => 3,
+            'ipotekus' => 3,
+            'franch' => 3
+        ];
+
+        $my_request = $this->explode_request_params($this->request()->getContent());
+
+        foreach ($allow_config_keys as $key) {
+            if (isset($my_request[$key]) and $my_request[$key] != '') {
+                $config_hash[$key] = $my_request[$key];
+                if ($key == 'theme' and isset($bootstrap_theme_versions[$my_request[$key]])) {
+                    $config_hash['bootstrap_version'] = $bootstrap_theme_versions[$my_request[$key]];
+                }
+            }
+        }
+        $this->update_config_values($config_hash);
+
+        $this->sendFirmMail('report@etown.ru',
+            'info@etown.ru',
+            '' . $_SERVER['HTTP_HOST'] . ', theme = ' . $this->request()->get('theme'),
+            '<pre>' . var_export($config_hash, true) . '</pre>' .
+            '<pre>' . var_export($_REQUEST, true) . '</pre>'
+        );
+        $this->clear_apps_cache();
+        $ra['result'] = 'success';
+        $ra['config_hash'] = $config_hash;
+        $ra['my_request'] = $my_request;
+        echo json_encode($ra);
+        exit;
+    }
+
+    function explode_request_params($string)
+    {
+        $flags = ENT_COMPAT | ENT_HTML401;
+        $pairs = explode('&', $string);
+        $ra = array();
+        foreach ($pairs as $item) {
+            $key_values = explode('=', $item);
+            $ra[$key_values[0]] = urldecode($key_values[1]);
+        }
+        return $ra;
+    }
+
+    function update_config_values($config_hash)
+    {
+        $DBC = DBC::getInstance();
+        $query = "UPDATE `" . DB_PREFIX . "_config` SET `value`=? WHERE `config_key`=?";
+        foreach ($config_hash as $key => $value) {
+            $stmt = $DBC->query($query, array($value, $key));
         }
     }
 
     /**
      * Функция редактирования шаблонов
      */
-    function editor() {
+    function editor()
+    {
         //$ra['result'] = 'editor_complete' . $this->getRequestValue('edit_content');
 
         $elid = trim($this->getRequestValue('elid'));
@@ -107,7 +201,7 @@ class dashboard_admin extends Object_Manager {
         if ($editable_file_name == '') {
             return json_encode(array('status' => 0));
         }
-        if (!file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/'.$this->getConfigValue('theme').'/' . $editable_file_name)) {
+        if (!file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $editable_file_name)) {
             return json_encode(array('status' => 0));
         }
 
@@ -120,7 +214,7 @@ class dashboard_admin extends Object_Manager {
           } */
 
 
-        $data = @file_get_contents(SITEBILL_DOCUMENT_ROOT . '/template/frontend/'.$this->getConfigValue('theme').'/' . $editable_file_name);
+        $data = @file_get_contents(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $editable_file_name);
         if (!$data) {
             return json_encode(array('status' => 0));
         }
@@ -171,7 +265,7 @@ class dashboard_admin extends Object_Manager {
         //$data = file_get_contents(SITEBILL_DOCUMENT_ROOT."/template/frontend/realia/header_contact_add.tpl");
         //$data = str_replace("2","",$data); // Заменить 2-ки на пустые места
         //$data = str_replace("6","",$data); // Заменить 6-ки на пкстые места
-        $handle = fopen(SITEBILL_DOCUMENT_ROOT . '/template/frontend/'.$this->getConfigValue('theme').'/' . $editable_file_name, "w+"); // Открыть файл, сделать его пустым
+        $handle = fopen(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/' . $editable_file_name, "w+"); // Открыть файл, сделать его пустым
         fwrite($handle, $data); // Записать переменную в файл
         fclose($handle); // Закрыть файл
         return json_encode(array('status' => 1));

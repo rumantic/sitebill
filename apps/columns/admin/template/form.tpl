@@ -1,4 +1,4 @@
-<script src="{$estate_folder}/apps/columns/js/interface.js"></script>
+<script src="{$estate_folder}/apps/columns/js/interface.js?v=2"></script>
 <script type="text/javascript">
     var langs = {$langsjs};
     {literal}
@@ -464,6 +464,7 @@
                     <li><a href="" data-task="link_dep">Linked\Depended</a></li>
                     <li><a href="" data-task="autocomplete_set">Autocomplete</a></li>
                     <li><a href="" data-task="allow_html">Allow HTML</a></li>
+                    <li><a href="" data-task="min_max_text">Text MinLength/MaxLength</a> <a href="https://wiki.sitebill.ru/index.php?title=%D0%9F%D1%80%D0%B0%D0%B2%D0%B8%D0%BB%D0%B0_%D0%B2%D0%B0%D0%BB%D0%B8%D0%B4%D0%B0%D1%86%D0%B8%D0%B8_%D0%B4%D0%BB%D1%8F_%D1%8D%D0%BB%D0%B5%D0%BC%D0%B5%D0%BD%D1%82%D0%BE%D0%B2_%D0%BC%D0%BE%D0%B4%D0%B5%D0%BB%D0%B8" target="_blank">?</a></li>
 
                     <li><a href="" data-task="geodata_map_size">Размеры карты</a></li>
                     {if 1==0}
@@ -690,6 +691,14 @@
                     if (-1 === $.inArray('function', exp)) {
                         pr.find('input').eq(0).val('function');
                         pr.find('input').eq(1).val('def_link');
+                        new_elements.push(pr);
+                        pr = pr.clone();
+                    }
+                    hasAct = true;
+                } else if (task == 'min_max_text') {
+                    if (-1 === $.inArray('rules', exp)) {
+                        pr.find('input').eq(0).val('rules');
+                        pr.find('input').eq(1).val('NotBlank,Type:string,MinLength:100,MaxLength:1000');
                         new_elements.push(pr);
                         pr = pr.clone();
                     }

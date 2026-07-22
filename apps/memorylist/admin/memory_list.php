@@ -3,6 +3,7 @@
 defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
 
 class Memory_List extends Object_Manager {
+    use memorylist\admin\traits\PdfTrait;
 
     private $memorylist_table;
     private $memorylist_item_table;
@@ -292,7 +293,11 @@ class Memory_List extends Object_Manager {
      * @param array $ids
      * @param boolean $stuff
      */
-    public function compile_rich_pdf ( $ids, $stuff = false, $user_id = 0 ) {
+    public function compile_rich_pdf ( $ids, $stuff = false, $user_id = 0, $downloaded_filename = 'Подборка' ) {
+        if ( $this->getConfigValue('apps.dashboard.config') == 'moscowbrokers' ) {
+            $this->pdfList( $ids, $stuff, $user_id, $downloaded_filename);
+            return;
+        }
         global $smarty;
 
         $data = $this->init_exported_data($ids);
@@ -317,9 +322,12 @@ class Memory_List extends Object_Manager {
 
         if (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/memorylist/site/template/' . $tplfile)) {
             $tpl = SITEBILL_DOCUMENT_ROOT . '/template/frontend/' . $this->getConfigValue('theme') . '/apps/memorylist/site/template/' . $tplfile;
+        } elseif (file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/local/apps/memorylist/site/template/' . $tplfile)) {
+            $tpl = SITEBILL_DOCUMENT_ROOT . '/template/frontend/local/apps/memorylist/site/template/' . $tplfile;
         } else {
             $tpl = SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/site/template/' . $tplfile;
         }
+        // тут надо идти по data
 
 
         $this->template->assign('_core_folder', SITEBILL_DOCUMENT_ROOT);
@@ -334,6 +342,7 @@ class Memory_List extends Object_Manager {
         $dompdf->render();
         $output = $dompdf->output();
         header("Content-type: application/pdf");
+        // header("Content-Disposition:attachment;filename=\"$downloaded_filename.pdf\"");
         echo $output;
         exit();
     }
@@ -865,6 +874,19 @@ class Memory_List extends Object_Manager {
         }
 
 
+        if ($stmt) {
+            while ($ar = $DBC->fetch($stmt)) {
+                $ids[] = $ar['id'];
+            }
+        }
+        return $ids;
+    }
+
+    public function select_sharelist_data_ids ( $domain, $deal_id ) {
+        $DBC = DBC::getInstance();
+        $ids = array();
+        $query = "SELECT ml.id FROM ".DB_PREFIX."_memorylist_item ml, ".DB_PREFIX."_memorylist m WHERE m.memorylist_id=ml.memorylist_id AND m.domain=? AND m.deal_id=?";
+        $stmt = $DBC->query($query, array($domain, $deal_id));
         if ($stmt) {
             while ($ar = $DBC->fetch($stmt)) {
                 $ids[] = $ar['id'];

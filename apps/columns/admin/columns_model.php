@@ -7,6 +7,25 @@ class columns_Model extends Data_Model {
 	}
 
 	public function get_model(){
+		
+		$langs = Multilanguage::availableLanguages();
+		
+		$default_lng = '';
+		if(1 == $this->getConfigValue('apps.language.use_default_as_ru')){
+			$default_lng = 'ru';
+		}elseif('' != trim($this->getConfigValue('apps.language.use_as_default'))){
+			$default_lng = trim($this->getConfigValue('apps.language.use_as_default'));
+		}
+
+		if($default_lng != ''){
+			foreach ($langs as $k => $lng) {
+				if ($lng == $default_lng) {
+					unset($langs[$k]);
+					break;
+				}
+			}
+		}
+		
 		$form_data = array();
 
 		$form_data['columns']['columns_id']['name'] = 'columns_id';
@@ -55,45 +74,45 @@ class columns_Model extends Data_Model {
         $form_data['columns']['type']['fxFlex'] = 100;
 
 		$seld=array(
-				/*'avatar' => 'avatar',*/
-				'primary_key' => 'primary_key ('._e('ключевое поле').')',
-				'safe_string' => 'safe_string ('._e('строка').')',
-				'hidden' => 'hidden ('._e('скрытое поле').')',
-				'checkbox' => 'checkbox ('._e('галочка').')',
-				'select_box_structure' => 'select_box_structure ('._e('выбор типа из списка').')',
-				'select_by_query' => 'select_by_query ('._e('выбор из списка записей из базы').')',
-				'select_entity' => 'select_entity',
-				'select_box' => 'select_box ('._e('выбор из списка статичных значений').')',
-				'auto_add_value' => 'auto_add_value',
-				'price' => 'price ('._e('цена').')',
-				'textarea' => 'textarea ('._e('поле ввода текста').')',
-				'uploadify_image' => 'uploadify_image ('._e('устарело').')',
-				'uploadify_file' => 'uploadify_file ('._e('устарело').')',
-				'mobilephone' => 'mobilephone ('._e('мобильный телефон').')',
-				'password' => 'password ('._e('пароль').')',
-				'photo' => 'photo ('._e('фото - аватар').')',
-				'geodata' => 'geodata ('._e('координаты').')',
-				'structure' => 'structure ('._e('структура').')',
-				'textarea_editor' => 'textarea_editor ('._e('поле ввода текста с редактором').')',
-				'date'=>'date ('._e('дата').' DD.MM.YYYY)',
-				'attachment'=>'attachment ('._e('вложение').')',
-				'tlocation'=>'tlocation ('._e('связанные списки географии').')',
-				'captcha'=>'captcha ('._e('защитный код').')',
-				'dtdatetime'=>'dtdatetime ('._e('дата и время').' DD.MM.YYYY H:i:s)',
-				'dtdate'=>'dtdate ('._e('дата').' DD.MM.YYYY)',
-				'dttime'=>'dttime ('._e('время').' H:i:s)',
-				'uploads'=>'uploads ('._e('загрузка фотографий').')',
-				'gadres' => 'gadres',
-				'client_id' => 'client_id ('._e('связь с таблицей клиентов').')',
-				'grade'=>'grade ('._e('оценка').')',
-				'docuploads'=>'docuploads ('._e('загрузка документов').')',
-				'select_by_query_multi'=>'select_by_query_multi ('._e('выбор из списка записей из базы с множественным выбором').')',
-				'separator'=>'separator ('._e('визуальный разделитель').')',
-				'injector'=>'injector ('._e('код из компонента').')',
-                'parameter'=>'parameter ('._e('свободный ввод параметров').' key=value)',
-				'compose'=>'compose ('._e('Объединение колонок и функций').')',
-                'youtube'=>'youtube ('._e('Код видео Youtube').')'
-				);
+            /*'avatar' => 'avatar',*/
+            'primary_key' => 'primary_key ('._e('ключевое поле').')',
+            'safe_string' => 'safe_string ('._e('строка').')',
+            'hidden' => 'hidden ('._e('скрытое поле').')',
+            'checkbox' => 'checkbox ('._e('галочка').')',
+            'select_box_structure' => 'select_box_structure ('._e('выбор типа из списка').')',
+            'select_by_query' => 'select_by_query ('._e('выбор из списка записей из базы').')',
+            'select_entity' => 'select_entity',
+            'select_box' => 'select_box ('._e('выбор из списка статичных значений').')',
+            'auto_add_value' => 'auto_add_value',
+            'price' => 'price ('._e('цена').')',
+            'textarea' => 'textarea ('._e('поле ввода текста').')',
+            'uploadify_image' => 'uploadify_image ('._e('устарело').')',
+            'uploadify_file' => 'uploadify_file ('._e('устарело').')',
+            'mobilephone' => 'mobilephone ('._e('мобильный телефон').')',
+            'password' => 'password ('._e('пароль').')',
+            'photo' => 'photo ('._e('фото - аватар').')',
+            'geodata' => 'geodata ('._e('координаты').')',
+            'structure' => 'structure ('._e('структура').')',
+            'textarea_editor' => 'textarea_editor ('._e('поле ввода текста с редактором').')',
+            'date'=>'date ('._e('дата').' DD.MM.YYYY)',
+            'attachment'=>'attachment ('._e('вложение').')',
+            'tlocation'=>'tlocation ('._e('связанные списки географии').')',
+            'captcha'=>'captcha ('._e('защитный код').')',
+            'dtdatetime'=>'dtdatetime ('._e('дата и время').' DD.MM.YYYY H:i:s)',
+            'dtdate'=>'dtdate ('._e('дата').' DD.MM.YYYY)',
+            'dttime'=>'dttime ('._e('время').' H:i:s)',
+            'uploads'=>'uploads ('._e('загрузка фотографий').')',
+            'gadres' => 'gadres',
+            'client_id' => 'client_id ('._e('связь с таблицей клиентов').')',
+            'grade'=>'grade ('._e('оценка').')',
+            'docuploads'=>'docuploads ('._e('загрузка документов').')',
+            'select_by_query_multi'=>'select_by_query_multi ('._e('выбор из списка записей из базы с множественным выбором').')',
+            'separator'=>'separator ('._e('визуальный разделитель').')',
+            'injector'=>'injector ('._e('код из компонента').')',
+            'parameter'=>'parameter ('._e('свободный ввод параметров').' key=value)',
+            'compose'=>'compose ('._e('Объединение колонок и функций').')',
+            'youtube'=>'youtube ('._e('Код видео Youtube').')'
+		);
 		asort($seld);
 		$form_data['columns']['type']['select_data'] = $seld;
         $select_data_indexed = array();
@@ -147,11 +166,7 @@ class columns_Model extends Data_Model {
 				$form_data['columns']['active_in_optype']['unique'] = 'off';
 			}
 		}
-
-
-
-
-
+		
 		$form_data['columns']['name']['name'] = 'name';
 		$form_data['columns']['name']['title'] = _e('Название колонки (системное только латиница)');
 		$form_data['columns']['name']['value'] = '';
@@ -159,25 +174,9 @@ class columns_Model extends Data_Model {
 		$form_data['columns']['name']['required'] = 'on';
 		$form_data['columns']['name']['unique'] = 'off';
 
-		$langs=Multilanguage::availableLanguages();
+		
 
-        $default_lng = '';
-		if(1 == $this->getConfigValue('apps.language.use_default_as_ru')){
-			$default_lng = 'ru';
-		}elseif('' != trim($this->getConfigValue('apps.language.use_as_default'))){
-			$default_lng = trim($this->getConfigValue('apps.language.use_as_default'));
-		}
-
-		if($default_lng != ''){
-			foreach ($langs as $k => $lng) {
-				if ($lng == $default_lng) {
-					unset($langs[$k]);
-					break;
-				}
-			}
-		}
-		//print_r($langs);
-
+        
 		$form_data['columns']['title']['name'] = 'title';
 		$form_data['columns']['title']['title'] = _e('Название колонки (для человека)');
 		$form_data['columns']['title']['value'] = '';
@@ -195,8 +194,6 @@ class columns_Model extends Data_Model {
 				$form_data['columns']['title_'.$lang]['unique'] = 'off';
 			}
 		}
-
-
 
 
 		$form_data['columns']['hint']['name'] = 'hint';
@@ -453,13 +450,6 @@ class columns_Model extends Data_Model {
 		$form_data['columns']['unique']['unique'] = 'off';
         $form_data['columns']['unique']['tab'] = _e('Параметры');
         $form_data['columns']['unique']['fxFlex'] = 100;
-
-		/*$form_data['columns']['is_ml']['name'] = 'is_ml';
-		$form_data['columns']['is_ml']['title'] = 'Мультиязычность';
-		$form_data['columns']['is_ml']['value'] = 0;
-		$form_data['columns']['is_ml']['type'] = 'checkbox';
-		$form_data['columns']['is_ml']['required'] = 'off';
-		$form_data['columns']['is_ml']['unique'] = 'off';*/
 
 		$form_data['columns']['parameters']['name'] = 'parameters';
 		$form_data['columns']['parameters']['title'] = _e('Параметры');

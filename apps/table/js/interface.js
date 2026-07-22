@@ -1,5 +1,5 @@
 function showTableBlocksByLetters(letters) {
-    if(letters.length == 0){
+    if(letters.length === 0){
         $('.columnslist_accordion_group').show();
     }else{
         $('.columnslist_accordion_group').each(function () {
@@ -11,13 +11,36 @@ function showTableBlocksByLetters(letters) {
         });
     }
 }
+
+function changeStateToNotactive(a) {
+    $(a).removeClass('btn-warning');
+    $(a).attr('href', 'activate');
+    $(a).parents('tr').eq(0).removeClass('row3').addClass('row3notactive');
+}
+
+function changeStateToActive(a) {
+    $(a).addClass('btn-warning');
+    $(a).attr('href', 'deactivate');
+    $(a).parents('tr').eq(0).removeClass('row3notactive').addClass('row3');
+}
+
+function changeStateToNotrequired(a) {
+    $(a).removeClass('btn-warning');
+    $(a).attr('href', 'required');
+}
+
+function changeStateToRequired(a) {
+    $(a).addClass('btn-warning');
+    $(a).attr('href', 'derequired');
+}
+
 $(document).ready(function () {
 
     $('.firstletter').click(function () {
         if($(this).hasClass('active')){
             $(this).removeClass('active');
         }else{
-            $(this).addClass('active')
+            $(this).addClass('active');
         }
         var letters = [];
         $(this).parents('.firstletters').eq(0).find('.firstletter').each(function () {
@@ -65,10 +88,10 @@ $(document).ready(function () {
         handle: ".dd-move",
         stop: function (event, ui) {
             var parent = $(ui.item).parents('.accordion-group').eq(0);
-            if (parent.length != 1) {
+            if (parent.length !== 1) {
                 parent = $(ui.item).parents('table').eq(0);
             }
-            if (parent.length == 1) {
+            if (parent.length === 1) {
                 var childs = parent.find('.column');
                 if (childs.length > 0) {
                     var ids = [];
@@ -96,22 +119,45 @@ $(document).ready(function () {
 
             }
         }
-    }).disableSelection();
+    })/*.disableSelection()*/;
     
     /*
      * кнопка создания языковых полей для нескольких колонок
      */
     $('.addml_multi').click(function () {
-        var parent_table = $(this).parents('table').eq(0);
+        var parent_table = $(this).parents('.columns_list').eq(0);
+        var tablename = parent_table.data('table');
         var action = 'columns';
         var ids = [];
         parent_table.find('.checker:checked').each(function () {
             ids.push('columns_id[]=' + $(this).val());
         });
         if (ids.length > 0) {
-            window.location.replace(estate_folder + '/admin/index.php?action=' + action + '&do=add_lang_fields&' + ids.join('&'));
+            window.location.replace(estate_folder + '/admin/index.php?action=' + action + '&do=add_lang_fields&table_name='+tablename+'&' + ids.join('&'));
         }
         //console.log(ids);
+        return false;
+    });
+
+    $('.model_export').click(function (e) {
+        e.preventDefault();
+        const tableid = $(this).data('tableid');
+        const parent_table = $(this).parents('.columnslist_accordion_group').eq(0).find('.columns_list').eq(0);
+        let ids = [];
+        parent_table.find('.checker:checked').each(function () {
+            ids.push($(this).val());
+        });
+        let urlparams = {
+            action: 'table',
+            do: 'exporttable',
+            table_id: tableid
+        };
+        if(ids.length > 0){
+            urlparams.ids = ids;
+        }
+        const params = $.param(urlparams);        
+        let url = estate_folder + '/admin/?'+params;
+        window.location.replace(url);
         return false;
     });
 
@@ -119,16 +165,16 @@ $(document).ready(function () {
      * кнопка отправки на удаление выбранных полей
      */
     $('.delete_checked_columns').click(function () {
-        var parent_table = $(this).parents('table').eq(0);
+        var parent_table = $(this).parents('.columns_list').eq(0);
+        var tablename = parent_table.data('table');
         var action = 'columns';
         var ids = [];
         parent_table.find('.checker:checked').each(function () {
             ids.push($(this).val());
         });
         if (ids.length > 0) {
-            window.location.replace(estate_folder + '/admin/index.php?action=' + action + '&do=mass_delete&ids=' + ids.join(','));
+            window.location.replace(estate_folder + '/admin/index.php?action=' + action + '&do=mass_delete&table_name='+tablename+'&ids=' + ids.join(','));
         }
-        //console.log(ids);
         return false;
     });
 
@@ -138,6 +184,7 @@ $(document).ready(function () {
     $('.activity_set_columns').click(function () {
 
         var parent_table = $(this).parents('.columns_list').eq(0);
+        var tablename = parent_table.data('table');
         var action = 'columns';
         var ids = [];
 
@@ -146,7 +193,7 @@ $(document).ready(function () {
         });
 
         if (ids.length > 0) {
-            window.location.replace(estate_folder + '/admin/index.php?action=' + action + '&do=mass_activity_set&' + ids.join('&'));
+            window.location.replace(estate_folder + '/admin/index.php?action=' + action + '&do=mass_activity_set&table_name='+tablename+'&' + ids.join('&'));
         }
         return false;
     });
@@ -206,6 +253,8 @@ $(document).ready(function () {
      */
     $('a.state_change').click(function (e) {
         e.preventDefault();
+        var parent_table = $(this).parents('.columns_list').eq(0);
+        var tablename = parent_table.data('table');
         var ops = $(this).attr('href');
         var id = $(this).attr('alt');
         var a = this;
@@ -215,7 +264,7 @@ $(document).ready(function () {
             url: estate_folder + '/apps/table/js/ajax.php',
             type: 'POST',
             dataType: 'text',
-            data: 'action=change_column_state&operation=' + ops + '&id=' + id,
+            data: 'action=change_column_state&operation=' + ops + '&id=' + id + '&table_name=' + tablename,
             success: function (data) {
                 if (data == 'activated') {
                     changeStateToActive(a);
@@ -275,7 +324,6 @@ $(document).ready(function () {
         e.preventDefault();
         var _this = $(this);
         var cid = _this.data('cid');
-        
         $.ajax({
             url: estate_folder + '/js/ajax.php',
             type: 'POST',
@@ -292,6 +340,7 @@ $(document).ready(function () {
                 $('#group-restriction-edit input[name=cid]').val(cid);
                 $('#group-restriction-edit .group_ed_ch input').each(function () {
                     var val = Number($(this).val());
+
                     if (json.indexOf(val) === -1) {
                         $(this).prop('checked', false);
                     } else {
@@ -349,27 +398,12 @@ $(document).ready(function () {
         $('#group-restriction-edit .group_ed_ch input').each(function () {
             $(this).prop('checked', false);
         });
-    })
+    });
+
+    $('.parameter_show').on('click', function (e) {
+        e.preventDefault();
+        let pel_id = $(this).data('id');
+        $('.'+pel_id).toggle();
+    });
 });
 
-function changeStateToNotactive(a) {
-    $(a).removeClass('btn-warning');
-    $(a).attr('href', 'activate');
-    $(a).parents('tr').eq(0).removeClass('row3').addClass('row3notactive');
-}
-
-function changeStateToActive(a) {
-    $(a).addClass('btn-warning');
-    $(a).attr('href', 'deactivate');
-    $(a).parents('tr').eq(0).removeClass('row3notactive').addClass('row3');
-}
-
-function changeStateToNotrequired(a) {
-    $(a).removeClass('btn-warning');
-    $(a).attr('href', 'required');
-}
-
-function changeStateToRequired(a) {
-    $(a).addClass('btn-warning');
-    $(a).attr('href', 'derequired');
-}

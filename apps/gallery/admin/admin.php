@@ -21,6 +21,11 @@ class gallery_admin extends Object_Manager
         $this->action = 'gallery';
         $this->primary_key = 'gallery_id';
 
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
+        $config_admin = new config_admin();
+
+        $config_admin->addParamToConfig('apps.gallery.enable', '0', 'Включить gallery', SConfig::$fieldtypeCheckbox);
+
         $this->data_model = $this->get_gallery_model();
         $this->add_resource_path(SITEBILL_DOCUMENT_ROOT . '/apps/gallery/resources/views');
     }

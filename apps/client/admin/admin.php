@@ -81,18 +81,14 @@ class client_admin extends Object_Manager {
             $ATH = new Admin_Table_Helper();
             $form_data = $ATH->load_model($this->table_name, false);
             if (empty($form_data)) {
-                $form_data = array();
-                $form_data = $Object->get_model($ajax);
-                //$form_data = $this->_get_big_city_kvartira_model2($ajax);
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php';
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/table/admin/admin.php';
                 $TA = new table_admin();
-                $TA->create_table_and_columns($form_data, $this->table_name);
-                $form_data = array();
+                $TA->create_table_and_columns($Object->get_model(), $this->table_name);
                 $form_data = $ATH->load_model($this->table_name, false);
             }
         } else {
-            $form_data = $Object->get_model($ajax);
+            $form_data = $Object->get_model();
         }
         $this->redefine_primary_key($form_data);
 
@@ -314,6 +310,7 @@ class client_admin extends Object_Manager {
     }
 
     protected function _change_paramAction() {
+        $rs = '';
         $form_data = $this->data_model;
         $id_array = array();
         $ids = trim($this->getRequestValue('ids'));
@@ -353,13 +350,7 @@ class client_admin extends Object_Manager {
 
         $this->template->assert('default_request', implode('&', $default_request_string));
 
-        //$this->conctact_subaction();
-
-        if ($this->getRequestValue('language_id') > 0) {
-            $form_data[$this->table_name] = $data_model->init_model_data_from_db_language($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name], false, $this->getRequestValue('language_id'));
-        } else {
-            $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
-        }
+        $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/view.php');
         $table_view = new Table_View();
@@ -554,6 +545,25 @@ class client_admin extends Object_Manager {
         $stmt = $DBC->query($query, $where_p);
 
         if ($stmt) {
+
+            // @TODO интеграция libphonenumber для определения страны назначения телефонного номера.
+            // Минимальная версия поддерживает только PHP 8
+            // Полная версия, скорее всего избыточная, но поддерживает версии PHP < 8 (пока)
+            /*
+            $phoneNumberUtil = \libphonenumber\PhoneNumberUtil::getInstance();
+            while ($ar = $DBC->fetch($stmt)) {
+                if($ar['phone'] != ''){
+                    try{
+                        $phoneNumberObject = $phoneNumberUtil->parse($ar['phone'], null);
+                        $ar['phonecountrycountry'] = $phoneNumberUtil->getRegionCodeForNumber($phoneNumberObject);
+                    }catch(Exception $e){
+
+                    }
+                }
+                $ret[] = $ar;
+            }
+            */
+
             while ($ar = $DBC->fetch($stmt)) {
                 $ret[] = $ar;
             }
@@ -568,18 +578,14 @@ class client_admin extends Object_Manager {
         require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/view/page_navigator.php';
         $nurl = 'admin';
 
-
-        //$_params=$pager_params;
-        //unset($_params['page_url']);
         $paging = Page_Navigator::getPagingArray($total, $page, $per_page, $request_params, $nurl);
 
-        global $smarty;
-        $smarty->assign('pager_array', $paging);
-        $smarty->assign('order_types', $order_types);
-        $smarty->assign('order_statuses', $order_statuses);
-        $smarty->assign('orders_m', $this->data_model[$this->table_name]);
-        $smarty->assign('orders', $ret);
-        return $smarty->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/client/admin/template/grid.tpl');
+        $this->template->assign('pager_array', $paging);
+        $this->template->assign('order_types', $order_types);
+        $this->template->assign('order_statuses', $order_statuses);
+        $this->template->assign('orders_m', $this->data_model[$this->table_name]);
+        $this->template->assign('orders', $ret);
+        return $this->template->fetch(SITEBILL_DOCUMENT_ROOT . '/apps/client/admin/template/grid.tpl');
     }
 
     /**
@@ -602,7 +608,7 @@ class client_admin extends Object_Manager {
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/form/form_generator.php');
         $form_generator = new Form_Generator();
 
-
+        $rs = '';
         $rs .= $this->get_ajax_functions();
         if (1 == $this->getConfigValue('apps.geodata.enable')) {
             $rs .= '<script type="text/javascript" src="' . SITEBILL_MAIN_URL . '/apps/geodata/js/geodata.js"></script>';
@@ -686,7 +692,10 @@ class client_admin extends Object_Manager {
     }
 
     function ajax() {
-        if ($this->getRequestValue('action') == 'get_order_form') {
+
+        $action = $this->getRequestValue('action');
+
+        if ($action == 'get_order_form') {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/client/site/site.php';
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/client/admin/client_order.php';
 
@@ -698,7 +707,8 @@ class client_admin extends Object_Manager {
             //$this->writeLog(array('apps_name'=>'apps.client', 'method' => __METHOD__, 'message' => 'get_order_form', 'type' => NOTICE));
 
             return $Client_Order->get_order_form($model, $options, $custom_template);
-        } elseif ($this->getRequestValue('action') == 'send_by_email' && 1 == intval($this->getConfigValue('apps.client.order_mode'))) {
+        }
+        if ($action == 'send_by_email' && 1 == intval($this->getConfigValue('apps.client.order_mode'))) {
             if ($_SESSION['current_user_group_name'] != 'admin') {
                 return json_encode(array('status' => 0, 'txt' => 'Access denied'));
             }
@@ -735,7 +745,8 @@ class client_admin extends Object_Manager {
             $this->sendFirmMail($emails, '', $theme, '<div>' . $message . '</div>' . $ar['order_text']);
 
             return json_encode(array('status' => 1, 'txt' => 'Sended'));
-        } elseif ($this->getRequestValue('action') == 'delete_order' && 1 == intval($this->getConfigValue('apps.client.order_mode'))) {
+        }
+        if ($action == 'delete_order' && 1 == intval($this->getConfigValue('apps.client.order_mode'))) {
             if ($_SESSION['current_user_group_name'] != 'admin') {
                 return json_encode(array('status' => 0, 'txt' => 'Access denied'));
             }
@@ -746,7 +757,8 @@ class client_admin extends Object_Manager {
             } else {
                 return json_encode(array('status' => 1, 'txt' => 'Deleted'));
             }
-        } elseif ($this->getRequestValue('action') == 'set_status' && 1 == intval($this->getConfigValue('apps.client.order_mode'))) {
+        }
+        if ($action == 'set_status' && 1 == intval($this->getConfigValue('apps.client.order_mode'))) {
             if ($_SESSION['current_user_group_name'] != 'admin') {
                 return json_encode(array('status' => 0, 'txt' => 'Access denied'));
             }
@@ -759,7 +771,8 @@ class client_admin extends Object_Manager {
                 return json_encode(array('status' => 1, 'txt' => $this->data_model[$this->table_name]['status_id']['select_data'][$status_id]));
             }
             return json_encode(array('status' => 0, 'txt' => 'Access denied'));
-        } elseif ($this->getRequestValue('action') == 'save_order_form' && 'post' == strtolower($_SERVER['REQUEST_METHOD'])) {
+        }
+        if ($action == 'save_order_form' && 'post' == strtolower($_SERVER['REQUEST_METHOD'])) {
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/client/site/site.php';
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/client/admin/client_order.php';
             if(file_exists(SITEBILL_DOCUMENT_ROOT . '/template/frontend/'.$this->getConfigValue('theme').'/apps/client/admin/local_client_order.php')){
@@ -774,7 +787,8 @@ class client_admin extends Object_Manager {
             $this->writeLog(array('apps_name' => 'apps.client', 'method' => __METHOD__, 'message' => 'save_order_form', 'type' => NOTICE));
 
             return $Client_Order->save_order_form($model);
-        } elseif ($this->getRequestValue('action') == 'get_client') {
+        }
+        if ($action == 'get_client') {
 
             $user_id = $this->getSessionUserID();
             $access_allow = false;
@@ -827,7 +841,8 @@ class client_admin extends Object_Manager {
                 }
             }
             return json_encode(array_values($ret));
-        } elseif ($this->getRequestValue('action') == 'add_client') {
+        }
+        if ($action == 'add_client') {
             $user_id = $this->getSessionUserID();
             $access_allow = false;
 
@@ -868,10 +883,9 @@ class client_admin extends Object_Manager {
 
 
             return json_encode($ret);
-        } else {
-
         }
         return false;
+
     }
 
     protected function createClient($fio, $phone) {

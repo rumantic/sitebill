@@ -7,19 +7,24 @@
 		    <div class="nav pull-right">
 			    <ul class="nav">
                     <li><a href="{$estate_folder}/admin/?action=data&do=memorylist">Подборки</a></li>
-			        <li {if $active == '' and $hot == ''} class="active"{/if}><a href="{$estate_folder}/admin/?action=data">{$apps_words.system.DATATOP_ALL} ({$all_items_count})</a></li>
-			        <li {if $active == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&active=1">{$apps_words.system.DATATOP_ACTIVE} ({$active_items_count})</a></li>
-			        <li {if $active == 'notactive'} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&active=notactive">{$apps_words.system.DATATOP_NOTACTIVE} ({$notactive_items_count})</a></li>
+			        <li {if $active == '' and $hot == ''} class="active"{/if}><a href="{$estate_folder}/admin/?action=data">{$apps_words.system.DATATOP_ALL} (<span class="sb-tab-count" data-count-key="all">…</span>)</a></li>
+			        <li {if $active == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&active=1">{$apps_words.system.DATATOP_ACTIVE} (<span class="sb-tab-count" data-count-key="active">…</span>)</a></li>
+			        <li {if $active == 'notactive'} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&active=notactive">{$apps_words.system.DATATOP_NOTACTIVE} (<span class="sb-tab-count" data-count-key="notactive">…</span>)</a></li>
 			        {if isset($billing_mode_on) && $billing_mode_on==1}
-			        <li {if $billing_mode_on_statuses.vip == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&vip_status=1">{$apps_words.system.DATATOP_VIP} ({$billing_mode_on_counts.vip})</a></li>
-			        <li {if $billing_mode_on_statuses.premium == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&premium_status=1">{$apps_words.system.DATATOP_PREMIUM} ({$billing_mode_on_counts.premium})</a></li>
-			        <li {if $billing_mode_on_statuses.bold == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&bold_status=1">{$apps_words.system.DATATOP_BOLD} ({$billing_mode_on_counts.bold})</a></li>
+			        <li {if $billing_mode_on_statuses.vip == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&vip_status=1">{$apps_words.system.DATATOP_VIP} (<span class="sb-tab-count" data-count-key="vip">…</span>)</a></li>
+			        <li {if $billing_mode_on_statuses.premium == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&premium_status=1">{$apps_words.system.DATATOP_PREMIUM} (<span class="sb-tab-count" data-count-key="premium">…</span>)</a></li>
+			        <li {if $billing_mode_on_statuses.bold == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&bold_status=1">{$apps_words.system.DATATOP_BOLD} (<span class="sb-tab-count" data-count-key="bold">…</span>)</a></li>
 			        {else}
-			        <li {if $hot == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&hot=1">{$apps_words.system.DATATOP_SPECIALS} ({$hot_items_count})</a></li>
+			        <li {if $hot == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&hot=1">{$apps_words.system.DATATOP_SPECIALS} (<span class="sb-tab-count" data-count-key="hot">…</span>)</a></li>
 			        {/if}
 			        {if isset($archived_count)}
-			    	<li {if $hot == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&archived=1">{$apps_words.system.DATATOP_ARCHIVED} ({$archived_count})</a></li>
+			    	<li {if $hot == 1} class="active"{/if}><a href="{$estate_folder}/admin/?action=data&archived=1">{$apps_words.system.DATATOP_ARCHIVED} (<span class="sb-tab-count" data-count-key="archived">…</span>)</a></li>
 			    	{/if}
+					{if isset($data_grid_filters) and is_array($data_grid_filters) and count($data_grid_filters)}
+						{foreach $data_grid_filters as $item}
+							<li {if $item['active'] == 1} class="active"{/if}><a href="{$item['href']}">{$item['title']} (<span class="sb-tab-count" data-count-key="{$item['count_key']|default:''}">…</span>)</a></li>
+						{/foreach}
+					{/if}
 		     	</ul>
 		 		<form class="navbar-search pull-left" action="{$estate_folder}/admin/">
 			    	{$user_select_box}<input type="hidden" name="action" value="data">
@@ -28,3 +33,5 @@
 		</div>
 	</div>
 </div>
+
+

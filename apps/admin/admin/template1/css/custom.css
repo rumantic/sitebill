@@ -93,3 +93,40 @@ a.scrollup {
     color: #d56400 !important;
     font-weight: bold !important;
 }
+
+.multiselect_block .multiselect-holder {
+    vertical-align: middle;
+    margin: 5px 0;
+}
+.multiselect_block .multiselect-holder .multiselect-item {
+    display: inline-block;
+    position: relative;
+    font-size: 13px;
+    font-weight: normal;
+    vertical-align: baseline;
+    white-space: nowrap;
+    background-color: #91b8d0;
+    color: #FFF;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.15);
+    padding: 4px 22px 5px 9px;
+    margin-bottom: 3px;
+    margin-right: 3px;
+    -webkit-transition: all .2s;
+    -moz-transition: all .2s;
+    -o-transition: all .2s;
+    transition: all .2s;
+}
+.multiselect_block .multiselect-holder .multiselect-item .close {
+    font-size: 15px;
+    line-height: 20px;
+    opacity: 1;
+    color: #FFF;
+    text-shadow: none;
+    float: none;
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 18px;
+    text-align: center;
+}

@@ -209,7 +209,9 @@
             <ul class="nav nav-tabs" id="form_tab" role="tablist">
                 {foreach name=tbf from=$form_elements.public key=tab item=tab_elements}
                     {assign var=tab_id value=md5($tab)}
-                    <li role="presentation" {if $smarty.foreach.tbf.iteration==1}class="active"{/if}><a href="#t{$tab_id}" aria-controls="{$tab_id}" role="tab" data-toggle="tab">{$tab}</a></li>
+                    <li role="presentation" class="nav-item {if $smarty.foreach.tbf.iteration==1}active{/if}">
+                        <a class="nav-link {if $smarty.foreach.tbf.iteration==1}active{/if}" href="#t{$tab_id}" aria-controls="{$tab_id}" role="tab" data-toggle="tab">{$tab}</a>
+                    </li>
                     {/foreach}
             </ul>
 
@@ -217,7 +219,7 @@
                 {foreach name=tbf from=$form_elements.public key=tab item=tab_elements}
 
                     {assign var=tab_id value=md5($tab)}
-                    <div role="tabpanel" class="tab-pane fade in{if $smarty.foreach.tbf.iteration==1} active{/if}" id="t{$tab_id}">
+                    <div role="tabpanel" class="tab-pane fade in{if $smarty.foreach.tbf.iteration==1} show active{/if}" id="t{$tab_id}">
                         {if $bootstrap_version=='3' && $smarty.const.ADMIN_MODE!=1}
                             <div class="box">
                                 <div class="row">
@@ -293,11 +295,16 @@
                         {else}
                             {foreach from=$tab_elements item=element}
                                 <div class="form_element control-group" alt="{$element.name}">
-                                    <label class="control-label">{$element.title}{if $element.required eq 1}<span style="color: red;">*</span>{/if}{if $element.hint!=''} <a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-info btn-mini" data-content="{$element.hint}"> <i class="icon-question-sign icon-white"></i></a>{/if}</label>
-                                    <div class="form_element_html controls">{$element.html}</div>
-                                    {if $element.image_list ne ''}
-                                        <div style="clear: both;"></div>
-                                        <div>{$element.image_list}</div>
+                                    {if $element.type == 'separator'}
+                                        <h5 style="font-weight: bold;">{$element.title}</h5>
+                                        <hr>
+                                    {else}
+                                        <label class="control-label">{$element.title}{if $element.required eq 1}<span style="color: red;">*</span>{/if}{if $element.hint!=''} <a href="javascript:void(0);" rel="popover" class="tooltipe_block btn btn-info btn-mini" data-content="{$element.hint}"> <i class="icon-question-sign icon-white"></i></a>{/if}</label>
+                                        <div class="form_element_html controls">{$element.html}</div>
+                                        {if $element.image_list ne ''}
+                                            <div style="clear: both;"></div>
+                                            <div>{$element.image_list}</div>
+                                        {/if}
                                     {/if}
                                 </div>
                             {/foreach}

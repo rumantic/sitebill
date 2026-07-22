@@ -8,7 +8,6 @@ class Company_Structure_Manager extends Structure_Implements {
 		$this->table='company_topic';
 		$this->entity='company';
 		$this->action='structure_'.$this->entity;
-		$this->operation_type_array = $this->load_operation_type_list();
 		require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/version/version.php';
 		$version = new Version();
 		if ( !$version->get_version_value('topic.url') ) {

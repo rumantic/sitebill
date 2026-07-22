@@ -30,6 +30,10 @@ class SConfig
     {
         return self::$config_array;
     }
+    public static function getConfigStatic()
+    {
+        return self::$config_array;
+    }
 
     public function getPublicConfig()
     {
@@ -134,11 +138,9 @@ class SConfig
 
     private static function loadConfig()
     {
-        $redis_cache = RedisCache::getArray('loadConfig');
-        if ( is_array($redis_cache) and count($redis_cache) > 0 ) {
-            self::$config_array = $redis_cache;
-            return;
-        }
+        $domain = $_SERVER['HTTP_HOST'];
+        $domain = preg_replace('/^www\./', '', $domain);
+        $redis_var_name = 'loadConfig_raw'.$domain;
 
 
         self::$config_array['per_page'] = 25;
@@ -175,32 +177,48 @@ class SConfig
         self::$config_array['topic_image_preview_width'] = 200;
         self::$config_array['topic_image_preview_height'] = 200;
 
-        $DBC = DBC::getInstance();
-        $query = 'SELECT * FROM ' . DB_PREFIX . '_config';
-        $stmt = $DBC->query($query);
-        if ($stmt) {
-            while ($ar = $DBC->fetch($stmt)) {
-                if ($ar['vtype'] == self::$fieldtypeLangSelect) {
-                    if ('' != $ar['value']) {
-                        $ar['value'] = json_decode($ar['value'], true);
-                    }
-                }
-                if ($ar['vtype'] == self::$fieldtypeUploads) {
-                    if ('' != $ar['value']) {
-                        $ar['value'] = unserialize($ar['value']);
-                    }
-                }
 
-                self::$config_array[$ar['config_key']] = $ar['value'];
-                self::$config_array_types[$ar['config_key']] = $ar['vtype'];
-                self::$config_array_types_by_id[$ar['id']] = $ar['vtype'];
-                self::$check_config_array[$ar['config_key']] = '1';
+        $raw_array = [];
 
-                if (@$ar['public'] == 1) {
-                    self::$public_config_array[$ar['config_key']] = $ar['value'];
+        $redis_cache = RedisCache::get($redis_var_name);
+        if ( isset($redis_cache) and $redis_cache != '') {
+            $raw_array = unserialize($redis_cache);
+        } else {
+            $DBC = DBC::getInstance();
+            $query = 'SELECT * FROM ' . DB_PREFIX . '_config /*sconfig::loadConfig*/';
+            $stmt = $DBC->query($query);
+            if ($stmt) {
+                while ($ar = $DBC->fetch($stmt)) {
+                    $raw_array[] = $ar;
                 }
             }
+            RedisCache::set($redis_var_name, serialize($raw_array));
         }
+
+
+        foreach ($raw_array as $ar) {
+            if ($ar['vtype'] == self::$fieldtypeLangSelect) {
+                if ('' != $ar['value']) {
+                    $ar['value'] = json_decode($ar['value'], true);
+                }
+            }
+            if ($ar['vtype'] == self::$fieldtypeUploads) {
+                if ('' != $ar['value']) {
+                    $ar['value'] = unserialize($ar['value']);
+                }
+            }
+
+            self::$config_array[$ar['config_key']] = $ar['value'];
+            self::$config_array_types[$ar['config_key']] = $ar['vtype'];
+            self::$config_array_types_by_id[$ar['id']] = $ar['vtype'];
+            self::$check_config_array[$ar['config_key']] = '1';
+
+            if (@$ar['public'] == 1) {
+                self::$public_config_array[$ar['config_key']] = $ar['value'];
+            }
+        }
+
+
         if (isset(self::$config_array['apps.realty.data_image_preview_width'])) {
             self::$config_array['data_image_preview_width'] = self::$config_array['apps.realty.data_image_preview_width'];
         }
@@ -223,7 +241,6 @@ class SConfig
                 self::loadSubdomenalConfig($core_domain);
             }
         }
-        RedisCache::setArray('loadConfig', self::$config_array);
     }
 
     public static function getConfigType($key)

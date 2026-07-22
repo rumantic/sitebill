@@ -154,28 +154,3 @@ var SitebillCore = {
         return km + kw + kd;
     }
 };
-
-function loadScript_beta(url, callback)
-{
-    var head = document.getElementsByTagName('head')[0];
-    var script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = url;
-
-    script.onreadystatechange = callback;
-    script.onload = callback;
-
-    head.appendChild(script);
-}
-
-var googleAnalytics_beta = function () {
-    window.dataLayer = window.dataLayer || [];
-    function gtag() {
-        dataLayer.push(arguments);
-    }
-    gtag('js', new Date());
-
-    gtag('config', 'UA-4228243-28');
-};
-
-loadScript_beta("https://www.googletagmanager.com/gtag/js?id=UA-4228243-28", googleAnalytics_beta);

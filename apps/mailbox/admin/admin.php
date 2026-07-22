@@ -56,7 +56,7 @@ class mailbox_admin extends Object_Manager {
 
     public function _preload() {
         if ($this->getConfigValue('apps.mailbox.enable')) {
-            $this->template->assert('mailbox_panel', $this->getMailboxPanel(intval($_SESSION['user_id'])));
+            $this->template->assert('mailbox_panel', $this->getMailboxPanel((isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0)));
             $this->template->assert('mailbox_on', 1);
             $this->template->assert('post_form_agreement_enable', $this->getConfigValue('post_form_agreement_enable'));
             $this->template->assert('post_form_agreement_text_add', $this->getConfigValue('post_form_agreement_text_add'));
@@ -569,9 +569,10 @@ class mailbox_admin extends Object_Manager {
                 $ret[] = $ar;
             }
         }
+		
         if (count($ret) > 0) {
             foreach ($ret as &$r) {
-                $r['href'] = $this->getRealtyHREF($r['id']);
+                $r['href'] = $this->getRealtyHREF($r['realty_id']);
             }
         }
         return array('count' => count($ret), 'messages' => $ret);

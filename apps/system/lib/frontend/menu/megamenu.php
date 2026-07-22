@@ -77,8 +77,9 @@ class Mega_Menu extends Structure_Manager {
      * @param $category_structure
      * @param $level
      * @param $current_category_id
+     * @param $superparent
      */
-    function getChildNodes($categoryID, $category_structure, $level, $current_category_id) {
+    function getChildNodes($categoryID, $category_structure, $level, $current_category_id, $superparent = 0) {
     	if ( !is_array($category_structure['childs'][$categoryID]) ) {
     		return '';
     	}

@@ -24,4 +24,13 @@ class compose_functions {
         }
         return $model[$key]['value_string'];
     }
+
+    function def_phones_to_links($model, $key){
+        if ( $model[$key]['value'] != '' ) {
+            $phones = explode(' ', $model[$key]['value']);
+            return implode(' ',array_map(function ($phone) { return '<a href="tel:'.$phone.'">'.$phone.'</a>'; }, $phones));
+        }
+        return $model[$key]['value'];
+    }
+
 }

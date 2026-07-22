@@ -131,16 +131,8 @@ class User_Object_Manager extends Object_Manager {
             $this->reorderImage($this->table_name, $this->getRequestValue('image_id'), $this->primary_key, $this->getRequestValue($this->primary_key), 'down');
         }
 
-        if ($this->getRequestValue('language_id') > 0 and ! $this->language->get_version($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $this->getRequestValue('language_id'))) {
-            $rs = $this->get_form($form_data[$this->table_name], 'new', $this->getRequestValue('language_id'));
-        } else {
-            if ($this->getRequestValue('language_id') > 0) {
-                $form_data[$this->table_name] = $data_model->init_model_data_from_db_language($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name], false, $this->getRequestValue('language_id'));
-            } else {
-                $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
-            }
-            $rs = $this->get_form($form_data[$this->table_name], 'edit');
-        }
+        $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
+        $rs = $this->get_form($form_data[$this->table_name], 'edit');
         return $rs;
     }
 
@@ -523,9 +515,9 @@ class User_Object_Manager extends Object_Manager {
      * @return integer
      */
     function getGroupIdByName($group_name) {
-        $query = "select group_id from " . DB_PREFIX . "_group where system_name='$group_name'";
+        $query = "SELECT group_id FROM " . DB_PREFIX . "_group WHERE system_name=?";
         $DBC = DBC::getInstance();
-        $stmt = $DBC->query($query);
+        $stmt = $DBC->query($query, array($group_name));
         if ($stmt) {
             $ar = $DBC->fetch($stmt);
             return $ar['group_id'];
@@ -1231,6 +1223,9 @@ class User_Object_Manager extends Object_Manager {
     }
 
     function grid($params = array(), $default_params = array()) {
+        require_once (SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/permission/permission.php');
+        $permission = new Permission();
+
         $default_params['grid_item'] = array('user_id', 'login', 'fio', 'reg_date', 'group_id', 'email', 'phone');
 
         $where_parts = array();
@@ -1253,10 +1248,25 @@ class User_Object_Manager extends Object_Manager {
         }
 
         $params['grid_controls'] = array('edit', 'delete');
+        if ( $permission->get_access($this->getSessionUserId(), 'user', 'login_as') ) {
+            $params['grid_controls'][] = 'login_as';
+        }
         if ($this->getConfigValue('apps.logger.enable')) {
             array_push($params['grid_controls'], 'viewlog');
         }
         return parent::grid($params, $default_params);
+    }
+
+    function _login_asAction()
+    {
+        require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/login.php');
+        $Login = new Login();
+        $user_id = $this->request()->get('user_id');
+
+        $this->setSessionUserId($user_id);
+        $Login->makeUserLogged($user_id);
+
+        $this->go301('/');
     }
 
     /**

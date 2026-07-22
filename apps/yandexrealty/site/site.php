@@ -267,6 +267,9 @@ class yandexrealty_site extends yandexrealty_admin
 
     function frontend()
     {
+        if(1 !== (int)$this->getConfigValue('apps.yandexrealty.enable')){
+            return false;
+        }
         $REQUESTURIPATH = Sitebill::getClearRequestURI();
         $alias = trim($this->getConfigValue('apps.yandexrealty.alias'));
         if ($alias == '' && 1 === intval($this->getConfigValue('apps.yandexrealty.disable_standart_entrypoint'))) {
@@ -597,9 +600,20 @@ class yandexrealty_site extends yandexrealty_admin
 
         $this->commonExporter = new \yandexrealty\lib\CommonExporter($this->fields_associations, $this->getPropertyDictionaryExtended());
 
-        $data_full_model = $data_model->init_model_data_from_db_multi('data', 'id', $this->get_ids_array(), $this->form_data_shared, true, true, true);
+
+        // получаем модель по 100 штук за раз, чтобы не израсходовать память слишком сильно
+        $chunks = array_chunk($this->get_ids_array(), 100);
+
+        $chunk_index = 0;
+        $data_full_model = [];
+
 
         foreach ($data as $data_item) {
+            if ( !isset($data_full_model[$data_item['id']]) ) {
+                $data_full_model = $data_model->init_model_data_from_db_multi('data', 'id', $chunks[$chunk_index], $this->form_data_shared, true, true, true);
+                $chunk_index++;
+            }
+
             if ($this->is_huge_mode()) {
                 $data_item = $this->extract_one_item($data_item);
             }
@@ -2277,6 +2291,7 @@ class yandexrealty_site extends yandexrealty_admin
 
         $video_field = trim($this->getConfigValue('apps.yandexrealty.video_field'));
 
+        // @todo: необходимо сделать совместимость с полным URL видео и только с частью уникального кода
         if (isset($data_item[$video_field]) && $data_item[$video_field] != '') {
             $videolink = 'https://youtu.be/' . $data_item[$video_field];
         }
@@ -2296,12 +2311,14 @@ class yandexrealty_site extends yandexrealty_admin
             $imgs = array_merge($imgs, $pimages);
         }
 
-        if ($this->getConfigValue('apps.yandexrealty.export_image_cache')) {
+        if ($this->getConfigValue('apps.yandexrealty.export_image_cache') and isset($data_item['image_cache'])) {
             $imgs = unserialize($data_item['image_cache']);
-            foreach ($imgs as $v) {
-                $rs .= '<image>' . $v . '</image>' . "\n";
+            if ( is_array($imgs) ) {
+                foreach ($imgs as $v) {
+                    $rs .= '<image>' . $v . '</image>' . "\n";
+                }
+                return $rs;
             }
-            return $rs;
         }
         if ($hasUploadify) {
             $imgids = array();
@@ -4254,18 +4271,26 @@ class yandexrealty_site extends yandexrealty_admin
                     $max_date = date('Y-m-d', time() - $max_days * 3600 * 24);
                 }
 
-                $where[] = 'dt.active=1';
-                if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting')) {
-                    $where[] = 'dt.`archived`<>1';
-                }
-                $where[] = 'dt.date_added > \'' . $max_date . '\'';
-
                 $forced_pass = trim($this->getRequestValue('pass'));
+                if ($forced_pass == '') {
+                    $forced_pass = trim($this->getRequestValue('force_pass'));
+                }
                 $force_mode = false;
                 //var_dump();
                 if ($forced_pass != '' && $forced_pass == $this->getConfigValue('apps.yandexrealty.force_pass')) {
                     $force_mode = true;
                 }
+
+                if ( $force_mode and $this->request()->get('ignore_activity') == '1' ) {
+
+                } else {
+                    $where[] = 'dt.active=1';
+                }
+                if (1 == (int)$this->getConfigValue('apps.realty.use_predeleting')) {
+                    $where[] = 'dt.`archived`<>1';
+                }
+                $where[] = 'dt.date_added > \'' . $max_date . '\'';
+
 
 
                 if (

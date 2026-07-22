@@ -7,12 +7,21 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * Currencies options and courses admin backend
  * @author Abushyk Kostyantyn <abushyk@gmail.com> http://www.sitebill.ru
  */
+
+/**
+ * TODO
+ * добавить пересчет по курсу ЕЦБ https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml
+ */
 require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/admin/object_manager.php');
 
 class currency_admin extends Object_Manager {
 
     private $courses = array();
     private $currencies_cache = false;
+
+    protected static $loadCourses_runned = false;
+    protected static $courses_static = array();
+
 
     /**
      * Constructor
@@ -131,20 +140,10 @@ class currency_admin extends Object_Manager {
                 }
 
             case 'edit' : {
-
-                    if ($this->getRequestValue('language_id') > 0 and ! $this->language->get_version($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $this->getRequestValue('language_id'))) {
-                        $rs = $this->get_form($form_data[$this->table_name], 'new', $this->getRequestValue('language_id'));
-                    } else {
-                        if ($this->getRequestValue('language_id') > 0) {
-                            $form_data[$this->table_name] = $data_model->init_model_data_from_db_language($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name], false, $this->getRequestValue('language_id'));
-                        } else {
-                            $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
-                        }
-                        $rs = $this->get_form($form_data[$this->table_name], 'edit');
-                    }
-
-                    break;
-                }
+                $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
+                $rs = $this->get_form($form_data[$this->table_name], 'edit');
+                break;
+            }
             case 'delete' : {
                     $this->delete_data($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key));
                     if ($this->getError()) {
@@ -406,8 +405,12 @@ class currency_admin extends Object_Manager {
             $this->courses = $redis_cache;
             return;
         }
+        if ( self::$loadCourses_runned ) {
+            $this->courses = self::$courses_static;
+            return;
+        }
 
-        $query = 'SELECT `currency_id`, `course` FROM ' . DB_PREFIX . '_' . $this->table_name;
+        $query = 'SELECT `currency_id`, `course` FROM ' . DB_PREFIX . '_' . $this->table_name.'/*currency_admin->loadCourses*/';
         $DBC = DBC::getInstance();
         $stmt = $DBC->query($query);
         if ($stmt) {
@@ -416,6 +419,7 @@ class currency_admin extends Object_Manager {
             }
         }
         RedisCache::setArray('loadCourses', $this->courses);
+        self::$loadCourses_runned = true;
     }
 
     public function getActiveCurrencies() {
@@ -461,7 +465,7 @@ class currency_admin extends Object_Manager {
     }
 
     public function getCourse($currency) {
-        if (isset($this->courses[$currency])) {
+        if (isset($this->courses[$currency]) && 0 !== (float)$this->courses[$currency]) {
             return $this->courses[$currency];
         } else {
             return 1;
@@ -561,24 +565,12 @@ class currency_admin extends Object_Manager {
         return $rs;
     }
 
+    public function getConvertCourse($from_currency, $to_currency){
+        return $this->getCourse($from_currency)/$this->getCourse($to_currency);
+    }
+
     function convert($sum, $from_currency, $to_currency) {
-        $result = $sum;
-        $courses = array();
-        $koefficient = 1;
-        $DBC = DBC::getInstance();
-        $query = 'SELECT `currency_id`, `course` FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE ' . $this->primary_key . ' IN (?,?)';
-        $stmt = $DBC->query($query, array((int) $from_currency, (int) $to_currency));
-        if ($stmt) {
-            while ($ar = $DBC->fetch($stmt)) {
-                $courses[$ar['currency_id']] = $ar['course'];
-            }
-        }
-        if (!empty($courses)) {
-            if (floatval($courses[$from_currency]) != 0 && floatval($courses[$to_currency]) != 0) {
-                $koefficient = $courses[$from_currency] / $courses[$to_currency];
-            }
-        }
-        return $sum * $koefficient;
+        return $sum * $this->getConvertCourse($from_currency, $to_currency);
     }
 
 }

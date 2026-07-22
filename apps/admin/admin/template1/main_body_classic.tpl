@@ -29,9 +29,10 @@
             {assign var="local_top" value=$SITEBILL_DOCUMENT_ROOT|cat:'/template/frontend/local/admin/data/top_nav_notify.tpl'}
             {if file_exists($local_top)}
                 {include file="$local_top"}
+            {else}
+                {include file='top_nav_notify.tpl'}
             {/if}
 
-            {include file='top_nav_notify.tpl'}
 
 
             {if $smarty.const.DEVMODE==1}
@@ -74,111 +75,7 @@
                     </div>
                 {/if}
             {/if}
-            <div class="pull-right">
 
-                {assign var=admin3_enable value="{getConfig key='apps.admin3.enable'}"}
-                {assign var=admin3_alias value="{getConfig key='apps.admin3.alias'}"}
-                <a href="{$MAIN_URL}/{if $admin3_alias and $admin3_enable}{$admin3_alias}{else}apps/admin{/if}/" target="_blank" class="btn btn-small btn-warning"><i class="icon-dashboard"></i> Новая админка</a>
-
-                <a href="{$MAIN_URL}/" target="_blank" class="btn btn-small btn-primary"><i class="icon-eye-open"></i> {$L_SITE}</a>
-
-
-                {if $admin_menua.apps.childs}
-
-                    {if $smarty.const.DEVMODE==1}
-                        <a href="#myModalAPP" role="button" class="btn" data-toggle="modal">{$L_ADMIN_MENU_APPLICATIONS}</a>
-                    {else}
-                        <div class="btn-group">
-                            <button data-toggle="dropdown" class="btn btn-info dropdown-toggle">
-                                {$L_ADMIN_MENU_APPLICATIONS}
-                                <i class="icon-angle-down icon-on-right"></i>
-                            </button>
-
-                            <ul class="dropdown-menu">
-                                {foreach from=$admin_menua.apps.childs item=ama}
-                                    <li>
-                                        <a {if isset($ama.childs) && $ama.childs|count>0}data-toggle="dropdown"  class="dropdown-toggle" href="{$ama.href}" data-target="#"{else}href="{$ama.href}"{/if}>{$ama.title}</a>
-                                    </li>
-                                {/foreach}
-                            </ul>
-                        </div>
-                    {/if}
-                {/if}
-                {if isset($custom_admin_entity_menu) && $custom_admin_entity_menu|count>0}
-                    <div class="btn-group">
-                        <button data-toggle="dropdown" class="btn btn-info dropdown-toggle">
-                            {$L_ADMIN_MENU_ADDITIONAL_APPLICATIONS}
-                            <i class="icon-angle-down icon-on-right"></i>
-                        </button>
-
-                        <ul class="dropdown-menu">
-                            {foreach from=$custom_admin_entity_menu item=custom_admin_entity}
-                                <li>
-                                    <a href="{$custom_admin_entity.href}">{$custom_admin_entity.entity_title}</a>
-                                </li>
-                            {/foreach}
-                        </ul>
-                    </div>
-                {/if}
-                <div class="btn-group">
-                    <button data-toggle="dropdown" class="btn btn-info dropdown-toggle">
-                        <i class="icon-globe icon-on-right"></i>
-                    </button>
-
-                    <ul class="dropdown-menu">
-                        <li>
-                            <a href="{$MAIN_URL}/admin/?_lang=ru"><img src="{$MAIN_URL}/apps/admin/admin/template/img/flag_ru.gif" alt="Русский" title="Русский"/> Русский</a>
-                        </li>
-                        <li>
-                            <a href="{$MAIN_URL}/admin/?_lang=en"><img src="{$MAIN_URL}/apps/admin/admin/template/img/flag_en.png" alt="English" title="English"/> English</a>
-                        </li>
-
-                        {foreach item=ln from=$available_langs key=k}
-                            {if ($k != 'ru' and $k != 'en') }
-                                {if $k != 'ar'}
-                                    <li><a href="{$MAIN_URL}/admin/?_lang={$k}">{$ln}</a></li>
-                                {else}
-                                    <li>
-                                        <a href="{$MAIN_URL}/admin/?_lang=ar"><img src="{$MAIN_URL}/apps/admin/admin/template/img/flag_ar.png" alt="Arabian" title="Arabian"/> Arabian</a>
-                                    </li>
-                                {/if}
-                            {/if}
-                        {/foreach}
-
-
-                    </ul>
-                </div>
-
-                {if $smarty.const.BRANDING!=1}
-                    <div class="btn-group">
-                        <button data-toggle="dropdown" class="btn btn-info dropdown-toggle">
-                            <i class="icon-question-sign icon-on-right"></i>
-                        </button>
-
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a href="http://wiki.sitebill.ru/" target="_blank"><i class="icon-white icon-book"></i> База знаний</a>
-                            </li>
-
-                            <li>
-                                <a href="https://www.sitebill.ru/s/" target="_blank"><i class="icon-white icon-comment"></i> Форум</a>
-                            </li>
-
-                            <li>
-                                <a href="http://www.youtube.com/user/DMn1c" target="_blank"><i class="icon-white icon-film"></i> Видео-уроки</a>
-                            </li>
-
-                            <li>
-                                <a href="http://www.sitebill.ru/" target="_blank"><i class="icon-white icon-heart"></i> Наш сайт</a>
-                            </li>
-
-                            <li>
-                                <a href="https://play.google.com/store/apps/details?id=ru.sitebill.mobilecms" target="_blank"><i class="icon-white icon-camera"></i> Мобильное приложение</a>
-                            </li>
-                        </ul>
-                    </div>
-                {/if}
-            </div>
         </div><!-- /.container-fluid -->
     </div><!-- /.navbar-inner -->
 </div>

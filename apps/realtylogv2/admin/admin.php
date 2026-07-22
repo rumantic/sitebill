@@ -85,14 +85,11 @@ class realtylogv2_admin extends Object_Manager {
 
     public function _preload() {
         if ($this->getConfigValue('apps.realtylogv2.enable')) {
-            //require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/user/login.php');
-            //$Login = new Login();
-            $uid = intval($_SESSION['user_id']);
-            //echo $uid;
-            if ($uid != 0) {
-                $query = 'SELECT COUNT(realtylog_id) AS total FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE editor_id=' . $uid . ' AND action=\'delete\'';
+            $uid = (isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0);
+            if ($uid !== 0) {
+                $query = 'SELECT COUNT(`realtylog_id`) AS total FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE `editor_id` = ? AND `action`` = ?';
                 $DBC = DBC::getInstance();
-                $stmt = $DBC->query($query);
+                $stmt = $DBC->query($query, [$uid, 'delete']);
                 if ($stmt) {
                     $ar = $DBC->fetch($stmt);
                     $this->template->assert('trash_count', (int) $ar['total']);
@@ -503,7 +500,16 @@ class realtylogv2_admin extends Object_Manager {
         return $ret;
     }
 
+    function clearOldLogs ( $daysLimit = 365 )
+    {
+        $query = 'delete FROM ' . DB_PREFIX . '_realtylogv2 WHERE log_date < ?';
+        $DBC = DBC::getInstance();
+        $stmt = $DBC->query($query, array(date('Y-m-d', strtotime('-'.$daysLimit.' days'))), $row, $success);
+    }
+
     function addLog($data_id, $editor_id, $action = 'new', $tablename, $pk) {
+        $logid = 0;
+        $this->clearOldLogs();
 
         $query = 'SELECT * FROM ' . DB_PREFIX . '_' . $tablename . ' WHERE ' . $pk . '=' . $data_id . ' LIMIT 1';
         $DBC = DBC::getInstance();
@@ -521,7 +527,7 @@ class realtylogv2_admin extends Object_Manager {
                 $this->data_model[$this->table_name]['action']['value'] = $action;
                 $this->data_model[$this->table_name]['log_date']['value'] = date('Y-m-d H:i:s', time());
                 $this->data_model[$this->table_name]['log_data']['value'] = $serialized_data;
-                $this->add_data($this->data_model[$this->table_name]);
+                $logid = $this->add_data($this->data_model[$this->table_name]);
                 if ($this->getError()) {
                     echo $this->GetErrorMessage();
                 }
@@ -532,13 +538,13 @@ class realtylogv2_admin extends Object_Manager {
                 $this->data_model[$this->table_name]['action']['value'] = $action;
                 $this->data_model[$this->table_name]['log_date']['value'] = date('Y-m-d H:i:s', time());
                 $this->data_model[$this->table_name]['log_data']['value'] = $serialized_data;
-                $this->add_data($this->data_model[$this->table_name]);
+                $logid = $this->add_data($this->data_model[$this->table_name]);
                 if ($this->getError()) {
                     echo $this->GetErrorMessage();
                 }
             }
         }
-        return;
+        return $logid;
     }
 
     function install() {
@@ -671,6 +677,16 @@ class realtylogv2_admin extends Object_Manager {
 
     function getTopMenu() {
 
+    }
+
+    function deleteLog($log_id){
+        $DBC = DBC::getInstance();
+        $query = 'DELETE FROM ' . DB_PREFIX . '_' . $this->table_name . ' WHERE ' . $this->primary_key . '= ?';
+        $stmt = $DBC->query($query, [$log_id]);
+        if (!$stmt) {
+            return false;
+        }
+        return true;
     }
 
 }

@@ -12,8 +12,9 @@ class banner_site extends banner_admin
      */
     function frontend()
     {
-        global $smarty;
-        $banners = array();
+        if(1 !== (int)$this->getConfigValue('apps.banner.enable')){
+            return false;
+        }
         $banners = $this->get_banners_list();
         if (count($banners) > 0) {
             foreach ($banners as $v) {
@@ -26,7 +27,6 @@ class banner_site extends banner_admin
                 $this->template->assert($v['title'], $banner_str);
             }
         }
-
     }
 
     function banner_group($params)

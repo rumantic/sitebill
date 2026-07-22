@@ -39,10 +39,20 @@ class admin3_admin extends Object_Manager
         );
 
         $config_manager->addParamToConfig(
+            'apps.admin3.redirect_from_new_admin',
+            '0',
+            'Включить принудительную переадресацию с новой админки в старую',
+            1
+        );
+
+
+        $config_manager->addParamToConfig(
             'apps.admin3.default_app',
             'data',
             'Запуск приложения по-умолчанию'
         );
+
+
 
         $this->add_apps_local_and_root_resource_paths('admin3');
     }

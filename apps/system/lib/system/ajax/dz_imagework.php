@@ -15,6 +15,12 @@ class dz_imagework extends Ajax_Server
         $reorder = $this->getRequestValue('reorder');
         $rot_dir = $this->getRequestValue('rot_dir');
         $doc_mode = (int)$this->getRequestValue('doc_mode') == 1 ? true : false;
+        if ( $this->get_api_common() ) {
+            $object_model = $this->get_api_common()->init_custom_model_object($table);
+            if ( $object_model->data_model[$table][$field_name]['type'] == 'docuploads' ) {
+                $doc_mode = true;
+            }
+        }
 
         $tags = $this->getRequestValue('tags');
         if (is_array($tags)) {
@@ -305,11 +311,17 @@ class dz_imagework extends Ajax_Server
                     return $this->getErrorResponceJSON();
                 }
 
+                if ( $uploads[$current_position]['remote'] === 'true' && $doc_mode ) {
+                    $doc_mode = false;
+                }
+
                 if ($doc_mode) {
                     @unlink(SITEBILL_DOCUMENT_ROOT . '/img/mediadocs/' . $uploads[$current_position]['normal']);
                 } else {
                     if ($uploads[$current_position]['remote'] === 'true') {
-                        if ($this->getConfigValue('apps.sharder.api_key')) {
+
+                        if ($this->getConfigValue('apps.sharder.api_key') or $this->getConfigValue('apps.sharder.s3.enable')) {
+
                             if (!is_object($this->sharder)) {
                                 $this->sharder = new \sharder\lib\sharder();
                             }
@@ -532,7 +544,7 @@ class dz_imagework extends Ajax_Server
                     }
                 }
             }
-            if ($this->getConfigValue('apps.sharder.api_key') and count($remote_files) > 0) {
+            if (($this->getConfigValue('apps.sharder.api_key') or $this->getConfigValue('apps.sharder.s3.enable')) and count($remote_files) > 0) {
                 if (!is_object($this->sharder)) {
                     $this->sharder = new \sharder\lib\sharder();
                 }

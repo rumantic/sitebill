@@ -48,9 +48,9 @@ class memorylist_site extends memorylist_admin
             require_once SITEBILL_DOCUMENT_ROOT . '/apps/memorylist/admin/memory_list.php';
             $ML = new Memory_List();
 
-            $breadcrumbs[] = '<a href="' . SITEBILL_MAIN_URL . '/">' . Multilanguage::_('L_HOME') . '</a>';
-            $breadcrumbs[] = '<a href="' . SITEBILL_MAIN_URL . '/account/">' . _e('Личный кабинет') . '</a>';
-            $breadcrumbs[] = '<a href="' . SITEBILL_MAIN_URL . '/account/data/">' . _e('Объявления') . '</a>';
+            $breadcrumbs[] = '<a href="' . $this->createUrlTpl('') . '">' . Multilanguage::_('L_HOME') . '</a>';
+            $breadcrumbs[] = '<a href="' . $this->createUrlTpl('account') . '">' . Multilanguage::_('L_LK') . '</a>';
+            $breadcrumbs[] = '<a href="' . $this->createUrlTpl('account/data') . '">' . Multilanguage::_('L_MY_ADVS') . '</a>';
             $breadcrumbs[] = Multilanguage::_('APP_NAME', 'memorylist');
             $this->template->assert('title', Multilanguage::_('APP_NAME', 'memorylist'));
             $this->template->assert('breadcrumbs', implode(' / ', $breadcrumbs));
@@ -77,9 +77,13 @@ class memorylist_site extends memorylist_admin
         if ( $this->request()->get('do') == 'new_done' ) {
             $this->add_share_items($this->request()->get('ids'));
             $this->add_my_sharelist_id($sharelist_id);
+            header('location: '.$this->request()->url().'?reload=1');
+            exit;
         }
         if ( $this->request()->get('do') == 'delete_done' ) {
             $this->delete_share_item($this->request()->get('data_id'));
+            header('location: '.$this->request()->url().'?reload=1');
+            exit;
         }
 
         if ( $this->is_my_sharelist_id($sharelist_id) ) {
@@ -153,10 +157,12 @@ class memorylist_site extends memorylist_admin
         $params['asc'] = $this->getRequestValue('asc');
         $params['order'] = $this->getRequestValue('order');
 
-        $params['favorites'] = $this->ML->select_data_ids_by_deal_id($this->getSessionUserId(), $sharelist_id, 1);
+        $params['favorites'] = $this->ML->select_sharelist_data_ids($sharelist_id, 1);
         if ( is_array($params['favorites']) and count($params['favorites']) == 0 ) {
             $params['favorites'] = array(-1);
         }
+
+        $params['_no_interactive_search'] = 1;
 
         $this->template->assert('onlyspecial', $params['onlyspecial']);
         $grid_constructor->set_myfavorites_uri('sharelist/'.$sharelist_id);

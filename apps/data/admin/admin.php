@@ -47,8 +47,8 @@ class data_admin extends Object_Manager {
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
-        $this->data_model_object = $data_model;
         $this->data_model = $data_model->get_kvartira_model($this->getConfigValue('ajax_form_in_admin'));
+        $this->data_model_shared = $data_model->get_kvartira_model($this->getConfigValue('ajax_form_in_admin'), true);
         if ( !$this->allowChangeUserId() ) {
             $this->data_model[$this->table_name]['user_id']['type'] = 'hidden';
             $this->data_model[$this->table_name]['user_id']['name'] = 'user_id';
@@ -169,6 +169,24 @@ class data_admin extends Object_Manager {
             'Включить отложенные объявления',
             1);
 
+        $config_admin->addParamToConfig(
+            'apps.data.bootstrap_version',
+            '',
+            'Своя версия для Bootstrap');
+
+        $config_admin->addParamToConfig(
+            'apps.data.disable_vue_in_grid',
+            0,
+            'Отключить Vue в таблице',
+            1);
+
+        $config_admin->addParamToConfig(
+            'apps.data.controls_js',
+            0,
+            'Включить вывод дополнительных кнопок (как в админке переключатели:  публиковать, авито, циан...)',
+            SConfig::$fieldtypeCheckbox);
+
+
 
         $this->add_apps_local_and_root_resource_paths('data');
         if ( $this->getConfigValue('apps.agency.enable') ) {
@@ -184,7 +202,7 @@ class data_admin extends Object_Manager {
     }
 
     function set_tags_from_request () {
-        if ( $this->getRequestValue('subdo') == 'set_tags' ) {
+        if ( $this->getRequestValue('subdo') === 'set_tags' ) {
             require_once (SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/components/model_tags/model_tags.php');
             $model_tags = new model_tags();
             $tag_name = $this->getRequestValue('tag_name');
@@ -202,6 +220,9 @@ class data_admin extends Object_Manager {
         $REQUESTURIPATH = Sitebill::getClearRequestURI();
         if ($this->getConfigValue('apps.pdfreport.enabled')) {
             $this->template->assign('pdf_enable', 1);
+        }
+        if ( $this->getConfigValue('apps.data.disable_vue_in_grid') ) {
+            $this->setConfigValue('use_vue', 0);
         }
         //Устанавливаем параметр USER_ID для функции импорта XLS файла.
         //Чтобы при загрузке из XLS пользоатель не смог получить доступ к чужим записям
@@ -281,7 +302,9 @@ class data_admin extends Object_Manager {
                 return false;
             }
         }
-        return parent::delete_data($table_name, $primary_key, $primary_key_value);
+        $result = parent::delete_data($table_name, $primary_key, $primary_key_value);
+        $this->_invalidate_data_counts_cache();
+        return $result;
     }
 
     function _exportAction($input_params = array()) {
@@ -410,7 +433,7 @@ class data_admin extends Object_Manager {
         $queryp = $data_model->get_prepared_edit_query(DB_PREFIX . '_data', 'id', $id, $form_data);
         $DBC = DBC::getInstance();
 
-        $row = 0;
+        $rows = 0;
         $success_mark = false;
         $stmt = $DBC->query($queryp['q'], $queryp['p'], $rows, $success_mark);
         if (!$success_mark) {
@@ -435,7 +458,7 @@ class data_admin extends Object_Manager {
         $imgs = array();
 
         foreach ($form_data as $form_item) {
-            if ($form_item['type'] == 'uploads') {
+            if ($form_item['type'] === 'uploads') {
                 $ims = $this->appendUploads('data', $form_item, 'id', $id);
                 if (is_array($ims) && count($ims) > 0) {
                     $imgs = array_merge($imgs, $ims);
@@ -449,14 +472,14 @@ class data_admin extends Object_Manager {
         }
 
         foreach ($form_data as $form_item) {
-            if ($form_item['type'] == 'docuploads') {
+            if ($form_item['type'] === 'docuploads') {
                 $imgs_uploads = $this->appendDocUploads('data', $form_item, 'id', $id);
             }
         }
 
         $mutiitems = array();
         foreach ($form_data as $k => $form_item) {
-            if ($form_item['type'] == 'select_by_query_multi') {
+            if ($form_item['type'] === 'select_by_query_multi') {
                 $vals = $form_item['value'];
                 if (!is_array($vals)) {
                     $vals = (array) $mutiitems[$k];
@@ -497,15 +520,7 @@ class data_admin extends Object_Manager {
 
         if ($this->getConfigValue('is_watermark')) {
             $filespath = SITEBILL_DOCUMENT_ROOT . '/img/data/';
-            require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/watermark/watermark.php';
-            $Watermark = new Watermark();
-            $Watermark->setPosition($this->getConfigValue('apps.watermark.position'));
-            $Watermark->setOffsets(array(
-                $this->getConfigValue('apps.watermark.offset_left'),
-                $this->getConfigValue('apps.watermark.offset_top'),
-                $this->getConfigValue('apps.watermark.offset_right'),
-                $this->getConfigValue('apps.watermark.offset_bottom')
-            ));
+            $Watermark = $this->createWatermarkInstance(true);
             if (defined('STR_MEDIA') && STR_MEDIA == Sitebill::MEDIA_SAVE_FOLDER) {
                 $copy_folder = MEDIA_FOLDER . '/nowatermark/';
                 if (defined('STR_MEDIA_FOLDERFDAYS') && STR_MEDIA_FOLDERFDAYS === 1) {
@@ -543,34 +558,35 @@ class data_admin extends Object_Manager {
                 }
             }
         }
+        $this->_invalidate_data_counts_cache();
     }
 
     public function setStatusDate($id, $date = '') {
         $DBC = DBC::getInstance();
-        if ($date == '') {
+        if ($date === '') {
             $date = date('Y-m-d H:i:s', time());
         }
         $query = 'UPDATE ' . DB_PREFIX . '_' . $this->table_name . ' SET status_change=? WHERE `' . $this->primary_key . '`=?';
-        $stmt = $DBC->query($query, array($date, $id));
+        $DBC->query($query, array($date, $id));
     }
 
     public function setUpdatedAtDate($id) {
         $field = trim($this->getConfigValue('apps.realty.updated_at_field'));
-        $type = intval($this->getConfigValue('apps.realty.updated_at_field_type'));
-        $update_date_added = intval($this->getConfigValue('apps.realty.update_date_added'));
+        $type = (int)$this->getConfigValue('apps.realty.updated_at_field_type');
+        $update_date_added = (int)$this->getConfigValue('apps.realty.update_date_added');
 
-        if ($field == '' && 1 === $update_date_added) {
+        if ($field === '' && 1 === $update_date_added) {
             $field = 'date_added';
             $type = 0;
         }
 
 
-        if ($field == '' || $type > 1) {
+        if ($field === '' || $type > 1) {
             return false;
         }
 
         $DBC = DBC::getInstance();
-        if ($type == 1) {
+        if ($type === 1) {
             $date = time();
         } else {
             $date = date('Y-m-d H:i:s', time());
@@ -589,24 +605,13 @@ class data_admin extends Object_Manager {
             return false;
         }
 
-        $id = intval($this->getRequestValue('id'));
+        $id = (int)$this->getRequestValue('id');
         $user_id = $this->getSessionUserId();
 
-        $aggregroup = -1;
-        $cgroup_id = intval($_SESSION['current_user_group_id']);
-
         $rs = '';
-        if ($cgroup_id == $aggregroup) {
-            if (!$this->check_access_to_aggregated_data($user_id, $id)) {
-                return Multilanguage::_('L_ACCESS_DENIED');
-            }
-        } elseif (!$this->check_access_to_data($user_id, $id)) {
+        if (!$this->check_access_to_data($user_id, $id)) {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
-
-        /* if ( !$this->check_access_to_data($user_id, $this->getRequestValue('id')) ) {
-          return Multilanguage::_('L_ACCESS_DENIED');
-          } */
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
@@ -635,7 +640,7 @@ class data_admin extends Object_Manager {
         if (1 == $this->getConfigValue('divide_step_form') && isset($_POST['submit'])) {
             $_form_data['data'] = $data_model->init_model_data_from_request($_form_data['data']);
             foreach ($_form_data['data'] as $fdk => $fdv) {
-                if ($fdv['type'] == 'uploadify_image') {
+                if ($fdv['type'] === 'uploadify_image') {
                     unset($_form_data['data'][$fdk]);
                 }
             }
@@ -651,12 +656,6 @@ class data_admin extends Object_Manager {
         }
 
         $rs .= $this->get_form($form_data['data'], 'edit');
-        if ($this->getConfigValue('apps.realtylog.enable')) {
-            $rs .= '<h2>Лог изменений</h2>';
-            require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylog/site/site.php';
-            $Logger = new realtylog_site();
-            $rs .= $Logger->getLogs($this->getRequestValue('id'), $user_id);
-        }
         return $rs;
     }
 
@@ -667,25 +666,12 @@ class data_admin extends Object_Manager {
         }
 
         $user_id = $this->getSessionUserId();
-        $id = intval($this->getRequestValue('id'));
-
-        $aggregroup = -1;
-        $cgroup_id = intval($_SESSION['current_user_group_id']);
+        $id = (int)$this->getRequestValue('id');
 
         $rs = '';
-        if ($cgroup_id == $aggregroup) {
-            if (!$this->check_access_to_aggregated_data($user_id, $id)) {
-                return Multilanguage::_('L_ACCESS_DENIED');
-            }
-        } elseif (!$this->check_access_to_data($user_id, $id)) {
+        if (!$this->check_access_to_data($user_id, $id)) {
             return Multilanguage::_('L_ACCESS_DENIED');
         }
-
-
-        /* $rs='';
-          if ( !$this->check_access_to_data($user_id, $this->getRequestValue('id')) ) {
-          return Multilanguage::_('L_ACCESS_DENIED');
-          } */
 
         require_once(SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/model/model.php');
         $data_model = new Data_Model();
@@ -713,11 +699,11 @@ class data_admin extends Object_Manager {
 
 
         $new_values = $this->getRequestValue('_new_value');
-        if (1 == $this->getConfigValue('use_combobox') && count($new_values) > 0) {
+        if (1 === (int)$this->getConfigValue('use_combobox') && count($new_values) > 0) {
             $remove_this_names = array();
             foreach ($form_data['data'] as $fd) {
                 if (isset($new_values[$fd['name']]) && $new_values[$fd['name']] != '' && $fd['combo'] == 1) {
-                    $id = md5(time() . '_' . rand(100, 999));
+                    $id = md5(time() . '_' . random_int(100, 999));
                     $remove_this_names[] = $id;
 
                     $form_data['data'][$id]['value'] = $new_values[$fd['name']];
@@ -734,7 +720,7 @@ class data_admin extends Object_Manager {
         }
 
         if(isset($form_data['data']['user_id'])){
-            if(1==$this->getConfigValue('enable_curator_mode')){
+            if(1==$this->getConfigValue('enable_curator_mode') and !$this->allowChangeUserId()){
                 unset($form_data['data']['user_id']);
             }else{
                 if ( !$this->allowChangeUserId() ) {
@@ -744,25 +730,6 @@ class data_admin extends Object_Manager {
         }
 
 
-        $y_id = '';
-        if (strpos($form_data['data']['youtube']['value'], 'youtube.com') !== FALSE) {
-            $d = parse_url($form_data['data']['youtube']['value']);
-            if (isset($d['query'])) {
-                parse_str($d['query'], $a);
-                $y_id = $a['v'];
-            }
-        } elseif (strpos($form_data['data']['youtube']['value'], 'youtu.be') !== FALSE) {
-            $d = parse_url($form_data['data']['youtube']['value']);
-            if (isset($d['path']) && trim($d['path'], '/') != '' && strpos(trim($d['path'], '/'), '/') === false) {
-                $y_id = trim($d['path'], '/');
-            }
-        } else {
-
-            if (preg_match('/.*([-_A-Za-z0-9]+).*/', $form_data['data']['youtube']['value'], $matches)) {
-                $y_id = $matches[0];
-            }
-        }
-        $form_data['data']['youtube']['value'] = $y_id;
         unset($form_data['data']['view_count']);
         if ($this->getConfigValue('enable_special_in_account') != 1) {
             unset($form_data['data']['hot']);
@@ -782,11 +749,6 @@ class data_admin extends Object_Manager {
                 $rs = $this->get_form($form_data['data'], 'edit');
             } else {
 
-                if ($this->getConfigValue('apps.realtylog.enable')) {
-                    require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylog/admin/admin.php';
-                    $Logger = new realtylog_admin();
-                    $Logger->addLog($form_data['data']['id']['value'], $user_id, 'edit', 'data');
-                }
                 if ($this->getConfigValue('apps.realtylogv2.enable')) {
                     require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylogv2/admin/admin.php';
                     $Logger = new realtylogv2_admin();
@@ -876,8 +838,8 @@ class data_admin extends Object_Manager {
         $fields = $this->getUniquetyCheckFields($form_data);
 
         $id = 0;
-        if(intval($form_data['id']['value']) != 0){
-            $id = intval($form_data['id']['value']);
+        if((int)$form_data['id']['value'] !== 0){
+            $id = (int)$form_data['id']['value'];
         }
 
         $where = array();
@@ -967,10 +929,7 @@ class data_admin extends Object_Manager {
           exit();
           } */
 
-
-
-        $user_id = $this->getSessionUserId();
-        $user_id = intval($_SESSION['user_id']);
+        $user_id = (int)$_SESSION['user_id'];
         $rs = '';
 
 
@@ -1028,26 +987,6 @@ class data_admin extends Object_Manager {
         $form_data['data']['date_added']['value'] = date('Y-m-d H:i:s', time());
 
 
-        $y_id = '';
-        if (strpos($form_data['data']['youtube']['value'], 'youtube.com') !== FALSE) {
-            $d = parse_url($form_data['data']['youtube']['value']);
-            if (isset($d['query'])) {
-                parse_str($d['query'], $a);
-                $y_id = $a['v'];
-            }
-        } elseif (strpos($form_data['data']['youtube']['value'], 'youtu.be') !== FALSE) {
-            $d = parse_url($form_data['data']['youtube']['value']);
-            if (isset($d['path']) && trim($d['path'], '/') != '' && strpos(trim($d['path'], '/'), '/') === false) {
-                $y_id = trim($d['path'], '/');
-            }
-        } else {
-
-            if (preg_match('/.*([-_A-Za-z0-9]+).*/', $form_data['data']['youtube']['value'], $matches)) {
-                $y_id = $matches[0];
-            }
-        }
-        $form_data['data']['youtube']['value'] = $y_id;
-
         $data_model->forse_auto_add_values($form_data['data']);
         $data_model->forse_injected_values($form_data['data']);
         $form_data[$this->table_name] = $this->_before_check_action($form_data[$this->table_name]);
@@ -1062,11 +1001,6 @@ class data_admin extends Object_Manager {
                 $form_data['data'] = $this->removeTemporaryFields($form_data['data'], $remove_this_names);
                 $rs = $this->get_form($form_data['data']);
             } else {
-                if ($this->getConfigValue('apps.realtylog.enable')) {
-                    require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylog/admin/admin.php';
-                    $Logger = new realtylog_admin();
-                    $Logger->addLog($new_record_id, $user_id, 'new', 'data');
-                }
                 if (1 == $this->getConfigValue('notify_about_added_realty')) {
                     $this->notifyUserAboutAdding($form_data['data']['user_id']['value'], $new_record_id, $form_data['data']['topic_id']['value']);
                 }
@@ -1085,8 +1019,7 @@ class data_admin extends Object_Manager {
 
     protected function _deleteAction() {
         $user_id = $this->getSessionUserId();
-        $id = intval($this->getRequestValue('id'));
-        $rs = '';
+        $id = (int)$this->getRequestValue('id');
 
         if ( $this->getConfigValue('apps.data.disable_delete_button') ) {
             return _e('Функция удаления отключена');
@@ -1105,11 +1038,6 @@ class data_admin extends Object_Manager {
             $stmt = $DBC->query($query, array($id));
             $this->setUpdatedAtDate($id);
         } else {
-            if ($this->getConfigValue('apps.realtylog.enable')) {
-                require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylog/admin/admin.php';
-                $Logger = new realtylog_admin();
-                $Logger->addLog($id, $user_id, 'delete', 'data');
-            }
             if ($this->getConfigValue('apps.realtylogv2.enable')) {
                 require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylogv2/admin/admin.php';
                 $Logger = new realtylogv2_admin();
@@ -1119,8 +1047,6 @@ class data_admin extends Object_Manager {
         }
         header('location: ' . SITEBILL_MAIN_URL . '/'.$this->get_app_root());
         exit();
-        $rs .= $this->grid($user_id, $this->getRequestValue('topic_id'));
-        return $rs;
     }
 
     protected function _newAction() {
@@ -1246,23 +1172,15 @@ class data_admin extends Object_Manager {
         if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
             $DBC = DBC::getInstance();
             $query = 'UPDATE ' . DB_PREFIX . '_data SET archived=1 WHERE `id` IN (' . implode(',', $ids) . ')';
-            $stmt = $DBC->query($query);
+            $DBC->query($query);
             header('location: '.SITEBILL_MAIN_URL.'/'.$this->get_app_root());
             exit();
         } else {
             foreach ($ids as $id) {
                 $log_id = false;
-                if ($this->getConfigValue('apps.realtylog.enable')) {
-                    require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylog/admin/admin.php';
-                    $Logger = new realtylog_admin();
-                    $log_id = $Logger->addLog($id, $cuser_id, 'delete', $table_name);
-                }
                 if ($this->getConfigValue('apps.realtylogv2.enable')) {
-
                     require_once SITEBILL_DOCUMENT_ROOT . '/apps/realtylogv2/admin/admin.php';
-
                     $Logger = new realtylogv2_admin();
-
                     $log_id = $Logger->addLog($id, $cuser_id, 'delete', $table_name, $primary_key);
                 }
                 $this->delete_data($table_name, $primary_key, $id);
@@ -1372,56 +1290,6 @@ class data_admin extends Object_Manager {
             }
         }
         return false;
-
-        /*$DBC = DBC::getInstance();
-        if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
-            $query = "SELECT id FROM " . DB_PREFIX . "_data WHERE user_id=? AND id=? AND archived=0";
-        } else {
-            $query = "SELECT id FROM " . DB_PREFIX . "_data WHERE user_id=? AND id=?";
-        }
-
-        $stmt = $DBC->query($query, array($user_id, $data_id));
-        if ($stmt) {
-            $ar = $DBC->fetch($stmt);
-            if ($ar['id'] > 0) {
-                return true;
-            }
-        }
-        return false;*/
-    }
-
-    /**
-     * Check access to data
-     * @param int $user_id
-     * @param int $data_id
-     * @return boolean
-     */
-    function check_access_to_aggregated_data($user_id, $data_id) {
-        $DBC = DBC::getInstance();
-
-        if ( $this->getConfigValue('apps.agency.enable') ) {
-            if ( $this->check_access_agency($this->table_name, $user_id, 'edit', $this->primary_key, $data_id) ) {
-                return true;
-            }
-        }
-
-        $query = 'SELECT user_id FROM ' . DB_PREFIX . '_user WHERE puser_id=?';
-        if (1 == (int) $this->getConfigValue('apps.realty.use_predeleting')) {
-            $query = "SELECT id FROM " . DB_PREFIX . "_data WHERE user_id IN (SELECT user_id FROM " . DB_PREFIX . "_user WHERE puser_id=? OR user_id=?) AND id=? AND archived=0";
-        } else {
-            $query = "SELECT id FROM " . DB_PREFIX . "_data WHERE user_id IN (SELECT user_id FROM " . DB_PREFIX . "_user WHERE puser_id=? OR user_id=?) AND id=?";
-        }
-
-        $stmt = $DBC->query($query, array($user_id, $user_id, $data_id));
-
-
-        if ($stmt) {
-            $ar = $DBC->fetch($stmt);
-            if ($ar['id'] > 0) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -1489,7 +1357,9 @@ class data_admin extends Object_Manager {
 
         $DBC = DBC::getInstance();
 
-        $stmt = $DBC->query($queryp['q'], $queryp['p'], $row, $success_mark);
+        $row = 0;
+        $success_mark = false;
+        $DBC->query($queryp['q'], $queryp['p'], $row, $success_mark);
         if (!$success_mark) {
             $this->riseError($DBC->getLastError());
             return false;
@@ -1516,7 +1386,7 @@ class data_admin extends Object_Manager {
         $imgs = array();
 
         foreach ($form_data as $form_item) {
-            if ($form_item['type'] == 'uploads') {
+            if ($form_item['type'] === 'uploads') {
                 $ims = $this->appendUploads('data', $form_item, 'id', $new_record_id);
                 if (is_array($ims) && count($ims) > 0) {
                     $imgs = array_merge($imgs, $ims);
@@ -1530,14 +1400,14 @@ class data_admin extends Object_Manager {
         }
 
         foreach ($form_data as $form_item) {
-            if ($form_item['type'] == 'docuploads') {
+            if ($form_item['type'] === 'docuploads') {
                 $imgs_uploads = $this->appendDocUploads('data', $form_item, 'id', $new_record_id);
             }
         }
 
         $mutiitems = array();
         foreach ($form_data as $k => $form_item) {
-            if ($form_item['type'] == 'select_by_query_multi') {
+            if ($form_item['type'] === 'select_by_query_multi') {
                 $vals = $form_item['value'];
                 if (!is_array($vals)) {
                     $vals = (array) $mutiitems[$k];
@@ -1579,15 +1449,7 @@ class data_admin extends Object_Manager {
 
         if ($this->getConfigValue('is_watermark')) {
             $filespath = SITEBILL_DOCUMENT_ROOT . '/img/data/';
-            require_once SITEBILL_DOCUMENT_ROOT . '/apps/system/lib/system/watermark/watermark.php';
-            $Watermark = new Watermark();
-            $Watermark->setPosition($this->getConfigValue('apps.watermark.position'));
-            $Watermark->setOffsets(array(
-                $this->getConfigValue('apps.watermark.offset_left'),
-                $this->getConfigValue('apps.watermark.offset_top'),
-                $this->getConfigValue('apps.watermark.offset_right'),
-                $this->getConfigValue('apps.watermark.offset_bottom')
-            ));
+            $Watermark = $this->createWatermarkInstance(true);
 
             if (defined('STR_MEDIA') && STR_MEDIA == Sitebill::MEDIA_SAVE_FOLDER) {
                 $copy_folder = MEDIA_FOLDER . '/nowatermark/';
@@ -1641,12 +1503,19 @@ class data_admin extends Object_Manager {
                 $Twitter->sendTwit($new_record_id);
             }
         }
+        $this->_invalidate_data_counts_cache();
         return $new_record_id;
 
         //echo "new_record_id = $new_record_id<br>";
         //echo $query;
     }
 
+
+    private function _invalidate_data_counts_cache(): void
+    {
+        $DBC = DBC::getInstance();
+        $DBC->query("DELETE FROM " . DB_PREFIX . "_cache WHERE `parameter` LIKE 'data\\_cnt\\_%'");
+    }
 
     private function notifyAboutModerationNeed($id, $action = 'new') {
 
@@ -1656,7 +1525,7 @@ class data_admin extends Object_Manager {
         $from = $this->getConfigValue('system_email');
         $useremail = $this->getConfigValue('order_email_acceptor');
         $body = '';
-        if ($action == 'edit') {
+        if ($action === 'edit') {
             $body .= _e('Было изменено объявление с ID ') . $id . '<br />';
             $body .= _e('Объявление снято с публикации и ожидает модерации').'.<br />';
         } else {
@@ -1673,7 +1542,7 @@ class data_admin extends Object_Manager {
           } */
 
         $this->template->assign('target_url', $this->getServerFullUrl() . '/admin/?action=data&do=edit&id=' . $id);
-        if ($action == 'edit') {
+        if ($action === 'edit') {
             $this->template->assign('edit_action', 1);
         }
         $this->template->assign('id', $id);
@@ -1825,7 +1694,7 @@ class data_admin extends Object_Manager {
     }
 
     function is_default_app_root () {
-        if ( $this->get_app_root() == 'account/data' ) {
+        if ( $this->get_app_root() === 'account/data' ) {
             return true;
         }
         return false;
@@ -1838,7 +1707,5 @@ class data_admin extends Object_Manager {
     function set_full_access_mode ($mode) {
         $this->full_access_mode = $mode;
     }
-
-
 
 }

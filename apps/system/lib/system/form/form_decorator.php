@@ -6,29 +6,44 @@ class Form_Decorator {
 	public function setFormGenerator($form_generator=null){
 		$this->form_generator=$form_generator;
 	}
+
+    public function getUploadsFieldControlButtonsClass(){
+        return 'btn btn-small';
+    }
+
+    public function getUploadsFieldControlButtons(){
+        return [
+            'upImage' => '<i class="fa fa-chevron-left"></i>',
+            'deleteImage' => '<i class="fa fa-times"></i>',
+            'downImage' => '<i class="fa fa-chevron-right"></i>',
+            'makeMain' => '<i class="fa fa-star"></i>',
+            'rotateImageCCW' => '<i class="fa fa-undo"></i>',
+            'rotateImageCW' => '<i class="fa fa-repeat"></i>',
+        ];
+    }
 	
 	public function decorateCheckboxInput($elementName='', $elementValue='', $isChecked=false, $params=array()){
 		
-		$attrs=array();
-		$attrs[]='type="checkbox"';
-		if($elementName!=''){
-			$attrs[]='name="'.$elementName.'"';
+		$attrs = [];
+		$attrs[] = 'type="checkbox"';
+		if($elementName != ''){
+			$attrs[] = 'name="'.$elementName.'"';
 		}
-		if($elementValue!=''){
+		/*if($elementValue!=''){
 			$attrs[]='value="'.$elementValue.'"';
 		}else{
 			$attrs[]='value=""';
-		}
+		}*/
+        $attrs[] = 'value="1"';
 		if(isset($params['id']) && $params['id']!=''){
-			$attrs[]='id="'.$params['id'].'"';
+			$attrs[] = 'id="'.$params['id'].'"';
 		}
+
 		if($isChecked){
-			$attrs[]='checked="checked"';
+			$attrs[] = 'checked="checked"';
 		}
-		
-		$html='<input '.implode(' ', $attrs).'/>';
-		
-		return $html;
+
+        return '<input type="hidden" name="'.$elementName.'" value="0"><input '.implode(' ', $attrs).'/>';
 	}
 	
 	public function decorateTextInput($elementName='', $elementValue='', $params=array()){

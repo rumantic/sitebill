@@ -1,10 +1,8 @@
 <?php
 
-//require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/system/cache/cache.php';
 require_once SITEBILL_DOCUMENT_ROOT.'/apps/system/lib/sitebill_krascap.php';
 class Structure_Implements extends SiteBill_Krascap {
 
-    var $operation_type_array = array();
     protected $entity;
     protected $table;
     protected $action;
@@ -94,8 +92,6 @@ class Structure_Implements extends SiteBill_Krascap {
                     return $rs;
                 }
                 $this->deleteRecord($this->getRequestValue('id'));
-                $Cache=Cache::getInstance();
-		       	$Cache->clearValue('catalog_structure');
                 $rs = $this->getTopMenu();
                 $rs .= $this->grid();
             break;
@@ -121,17 +117,6 @@ class Structure_Implements extends SiteBill_Krascap {
                 $rs = $this->getForm();
             break;
 
-			case 'associations':
-				$rs = $this->getTopMenu();
-				if(isset($_POST['submit'])){
-					$this->saveAssociations($_POST['data']);
-					$rs .= $this->getCategoryTreeAssoc(0);
-				}else{
-					$rs .= $this->getCategoryTreeAssoc(0);
-				}
-
-				break;
-
 			case 'done':
                 if ( $this->isDemo() ) {
                     return $this->demo_function_disabled();
@@ -140,9 +125,6 @@ class Structure_Implements extends SiteBill_Krascap {
                     $rs = $this->getForm();
                 } else {
                     $this->addRecord();
-                    $Cache=Cache::getInstance();
-
-		        	$Cache->clearValue($this->entity=='' ? 'catalog_structure' : $this->entity.'_structure');
                     $rs = $this->getTopMenu();
                     $rs .= $this->grid();
                 }
@@ -157,8 +139,6 @@ class Structure_Implements extends SiteBill_Krascap {
                     $rs = $this->getForm('edit');
                 } else {
                     $this->editRecord($this->getRequestValue('id'));
-                    $Cache=Cache::getInstance();
-		        	$Cache->clearValue('catalog_structure');
                     $rs = $this->getTopMenu();
                     $rs .= $this->grid();
                 }
@@ -167,10 +147,6 @@ class Structure_Implements extends SiteBill_Krascap {
             case 'reorder_topics':
             	$orderArray=$this->getRequestValue('order');
                 $this->reorderTopics($orderArray);
-
-		        $Cache=Cache::getInstance();
-		        $Cache->clearValue('catalog_structure');
-		        //$Cache->update();
 		        $rs = $this->getTopMenu();
                 $rs .= $this->grid();
 
@@ -220,41 +196,7 @@ class Structure_Implements extends SiteBill_Krascap {
 		}
 	}
 
-    /**
-     * Get operation type name by ID
-     * @param int $operation_type_id operation type id
-     * @return string
-     */
-    function get_operation_type_name_by_id ( $operation_type_id ) {
-        return $this->operation_type_array[$operation_type_id]['name'];
-    }
-
-    /**
-     * Get operation type select box
-     * @param int $operation_type_id operation type id
-     * @return string
-     */
-    function get_operation_type_select_box ( $operation_type_id ) {
-        $query = "SELECT * FROM ".DB_PREFIX."_operation_type order by `operation_type_id` ";
-        $DBC=DBC::getInstance();
-        $stmt=$DBC->query($query);
-        $rs = '<select name="operation_type_id">';
-        if($stmt){
-        	while ( $ar=$DBC->fetch($stmt) ) {
-        		if ( $operation_type_id ==  $ar['operation_type_id'] ) {
-        			$selected = 'selected';
-        		} else {
-        			$selected = '';
-        		}
-        		$rs .= '<option value="'.$ar['operation_type_id'].'" '.$selected.'>'.$ar['name'].'</option>';
-        	}
-        }
-
-        $rs .= '</select>';
-        return $rs;
-    }
-
-    /**
+	/**
      * Edit record
      * @param int $id topic ID
      * @return boolean
@@ -403,13 +345,6 @@ class Structure_Implements extends SiteBill_Krascap {
             $rs .= '</tr>';
         }
 
-        /*
-        $rs .= '<tr>';
-        $rs .= '<td class="left_column">Тип операции <span class="error">*</span>:</td>';
-        $rs .= '<td>'.$this->get_operation_type_select_box( $this->getRequestValue('operation_type_id') ).'</td>';
-        $rs .= '</tr>';
-        */
-
         $rs .= '<tr>';
         $rs .= '<td class="left_column">'.Multilanguage::_('PARENT_TOPIC','system').':</td>';
         $rs .= '<td>'.$this->getCategorySelectBox( $this->getRequestValue('parent_id') ).'</td>';
@@ -550,10 +485,8 @@ class Structure_Implements extends SiteBill_Krascap {
      */
     function getTopMenu () {
 		$rs = '<a href="?action='.$this->action.'" class="btn btn-primary">'.Multilanguage::_('TOPIC_LIST','system').'</a>';
-		//$rs .= '<a href="?action=structure&do=chains" class="btn btn-primary">Структурные цепочки</a>';
         $rs .= '<a href="?action='.$this->action.'&do=new" class="btn btn-primary">'.Multilanguage::_('ADD_TOPIC','system').'</a>';
-		$rs .= '<a href="?action='.$this->action.'&do=associations" class="btn btn-primary">'.Multilanguage::_('COMPARISONS','system').'</a>';
-        return $rs;
+		return $rs;
     }
 
     /**
@@ -562,21 +495,7 @@ class Structure_Implements extends SiteBill_Krascap {
      *
      */
     function loadCategoriesUrls(){
-    	if($this->getConfigValue('apps.cache.enable')==1){
-    		$Cache=Cache::getInstance();
-    		if($Cache->isValid('categories_urls','expired')){
-    			//no caching needed
-    			$ret=$Cache->getValue('categories_urls');
-    		}else{
-    			//caching needed
-    			$ret=$this->createCategoriesUrls();
-    			$Cache->addValue('categories_urls', $ret, (time()+86400));
-    		}
-    	}else{
-    		//working without cache
-    		$ret=$this->createCategoriesUrls();
-    	}
-    	return $ret;
+    	return $this->createCategoriesUrls();
     }
 
     /**
@@ -1491,7 +1410,6 @@ class Structure_Implements extends SiteBill_Krascap {
         $edit_icon = '<a href="?action='.$this->action.($this->section!='' ? '&section='.$this->section : '').'&do=edit&id='.$categoryID.'"><img src="'.SITEBILL_MAIN_URL.'/img/edit.gif" border="0" width="16" height="16" alt="редактировать" title="редактировать"></a>';
         $delete_icon = '<a href="?action='.$this->action.($this->section!='' ? '&section='.$this->section : '').'&do=delete&id='.$categoryID.'" onclick="if ( confirm(\''.Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE').'\') ) {return true;} else {return false;}"><img src="'.SITEBILL_MAIN_URL.'/img/delete.gif" border="0" width="16" height="16" alt="удалить" title="удалить"></a>';
 
-        //$rs .= '<td class="'.$row_class.'">'.$this->get_operation_type_name_by_id($category_structure['catalog'][$categoryID]['operation_type_id']).'</td>';
         $rs .= '<td class="'.$row_class.'"><input type="text" size="5" name="order['.$categoryID.']" value="'.$category_structure['catalog'][$categoryID]['order'].'"/></td>';
         $rs .= '<td class="'.$row_class.'">'.$edit_icon.$delete_icon.'</td>';
         $rs .= '</tr>';
@@ -1544,7 +1462,6 @@ class Structure_Implements extends SiteBill_Krascap {
             $delete_icon = '<a href="?action=structure&do=delete&id='.$categoryID.'" onclick="if ( confirm(\''.Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE').'\') ) {return true;} else {return false;}"><img src="'.SITEBILL_MAIN_URL.'/img/delete.gif" border="0" width="16" height="16" alt="удалить" title="удалить"></a>';
         }
 
-        //$rs .= '<td class="'.$row_class.'">'.$this->get_operation_type_name_by_id($category_structure['catalog'][$categoryID]['operation_type_id']).'</td>';
         if ( $control ) {
             $rs .= '<td class="'.$row_class.'">'.$edit_icon.$delete_icon.'</td>';
         }
@@ -1595,7 +1512,6 @@ class Structure_Implements extends SiteBill_Krascap {
             $edit_icon = '<a href="?action='.$this->action.($this->section!='' ? '&section='.$this->section : '').'&do=edit&id='.$child_id.'"><img src="'.SITEBILL_MAIN_URL.'/img/edit.gif" border="0" width="16" height="16" alt="редактировать" title="редактировать"></a>';
             $delete_icon = '<a href="?action='.$this->action.($this->section!='' ? '&section='.$this->section : '').'&do=delete&id='.$child_id.'" onclick="if ( confirm(\''.Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE').'\') ) {return true;} else {return false;}"><img src="'.SITEBILL_MAIN_URL.'/img/delete.gif" border="0" width="16" height="16" alt="удалить" title="удалить"></a>';
 
-            //$rs .= '<td class="'.$row_class.'">'.$this->get_operation_type_name_by_id($category_structure['catalog'][$child_id]['operation_type_id']).'</td>';
             $rs .= '<td class="'.$row_class.'"><input type="text" size="5" name="order['.$child_id.']" value="'.$category_structure['catalog'][$child_id]['order'].'"/></td>';
             $rs .= '<td class="'.$row_class.'">'.$edit_icon.$delete_icon.'</td>';
             $rs .= '</tr>';
@@ -1661,7 +1577,6 @@ class Structure_Implements extends SiteBill_Krascap {
 	                $delete_icon = '<a href="?action=structure&do=delete&id='.$child_id.'" onclick="if ( confirm(\''.Multilanguage::_('L_MESSAGE_REALLY_WANT_DELETE').'\') ) {return true;} else {return false;}"><img src="'.SITEBILL_MAIN_URL.'/img/delete.gif" border="0" width="16" height="16" alt="удалить" title="удалить"></a>';
 	            }
 
-	            //$rs .= '<td class="'.$row_class.'">'.$this->get_operation_type_name_by_id($category_structure['catalog'][$child_id]['operation_type_id']).'</td>';
 	            if ( $control ) {
 	                $rs .= '<td class="'.$row_class.'">'.$edit_icon.$delete_icon.'</td>';
 	            }
@@ -1915,117 +1830,6 @@ class Structure_Implements extends SiteBill_Krascap {
 		}
 	}
 
-	private function getRealtyTypeSelectbox($realty_type,$topic_id){
-		$re_types=array('0'=>'Игнорировать','1'=>'Жилая','4'=>'Коммерческая','6'=>'Нежилая');
-		$ret='';
-		$ret.='<select name="data['.$topic_id.'][obj_type_id]">';
-		foreach($re_types as $k=>$v){
-			if($realty_type==$k){
-				$ret.='<option value="'.$k.'" selected="selected">'.$v.'</option>';
-			}else{
-				$ret.='<option value="'.$k.'">'.$v.'</option>';
-			}
-		}
-		$ret.='</select>';
-		return $ret;
-	}
 
-	private function getOperationTypeSelectbox($operation_type,$topic_id){
-		$op_types=array('0'=>'Игнорировать','1'=>'Продажа','2'=>'Аренда');
-		$ret='';
-		$ret.='<select name="data['.$topic_id.'][operation_type]">';
-		foreach($op_types as $k=>$v){
-			if($operation_type==$k){
-				$ret.='<option value="'.$k.'" selected="selected">'.$v.'</option>';
-			}else{
-				$ret.='<option value="'.$k.'">'.$v.'</option>';
-			}
-		}
-		$ret.='</select>';
-		return $ret;
-	}
-
-	function getCategoryTreeAssoc () {
-    	//echo '$current_category_id = '.$current_category_id;
-        $category_structure = $this->loadCategoryStructure();
-        //echo '<pre>';
-        //print_r($category_structure);
-        $level = 0;
-        $rs = '';
-        $rs .= '<form method="post">';
-        $rs .= '<table border="0">';
-        $rs .= '<tr>';
-        $rs .= '<td class="row_title" colspan="4"><input type="submit" value="'.Multilanguage::_('L_TEXT_SAVE').'" name="submit" /></td>';
-        $rs .= '</tr>';
-        $rs .= '<tr>';
-        $rs .= '<td class="row_title">'.Multilanguage::_('L_TEXT_TITLE').'</td>';
-        $rs .= '<td class="row_title">'.Multilanguage::_('OPERATION_TYPE','system').'</td>';
-        $rs .= '<td class="row_title">'.Multilanguage::_('ESTATE_TYPE','system').'</td>';
-        $rs .= '<td class="row_title"></td>';
-        $rs .= '</tr>';
-        if ( count($category_structure) > 0 ) {
-            foreach ( $category_structure['childs'][0] as $item_id => $catalog_id ) {
-                //echo $catalog_id.'<br>';
-                $rs .= $this->getRowAssoc($catalog_id, $category_structure, $level, 'row1');
-                $rs .= $this->getChildNodesRowAssoc($catalog_id, $category_structure, $level + 1, $current_category_id);
-            }
-        }
-        $rs .= '<tr>';
-        $rs .= '<input type="hidden" name="action" value="structure" />';
-        $rs .= '<input type="hidden" name="do" value="associations" />';
-        $rs .= '<td class="row_title" colspan="4"><input type="submit" value="'.Multilanguage::_('L_TEXT_SAVE').'" name="submit" /></td>';
-
-        $rs .= '</tr>';
-        $rs .= '</table>';
-        $rs .= '</form>';
-        return $rs;
-    }
-
-	function getRowAssoc ( $categoryID, $category_structure, $level, $row_class ) {
-        $rs .= '<tr>';
-        $rs .= '<td class="'.$row_class.'">'.str_repeat('&nbsp;.&nbsp;', $level).$category_structure['catalog'][$categoryID]['name'].'</td>';
-
-        $rs.='<td class="'.$row_class.'">'.$this->getOperationTypeSelectbox($category_structure['catalog'][$categoryID]['operation_type_id'],$categoryID).'</td>';
-        $rs.='<td class="'.$row_class.'">'.$this->getRealtyTypeSelectbox($category_structure['catalog'][$categoryID]['obj_type_id'],$categoryID).'</td>';
-
-        $rs .= '<td><input type="checkbox" name="data['.$categoryID.'][legacy]" /> '.Multilanguage::_('INHERIT','system').'</td>';
-        $rs .= '</tr>';
-
-        return $rs;
-    }
-
-	function getChildNodesRowAssoc($categoryID, $category_structure, $level, $current_category_id) {
-    	if ( !is_array($category_structure['childs'][$categoryID]) ) {
-    		return '';
-    	}
-        foreach ( $category_structure['childs'][$categoryID] as $child_id ) {
-        	if ( $current_category_id == $child_id ) {
-        		$selected = " selected ";
-        	} else {
-        		$selected = "";
-        	}
-            $this->j++;
-        	if ( ceil($this->j/2) > floor($this->j/2)  ) {
-                $row_class = "row1";
-            } else {
-                $this->j = 0;
-                $row_class = "row2";
-            }
-
-            $rs .= '<tr>';
-            $rs .= '<td class="'.$row_class.'">'.str_repeat('&nbsp;.&nbsp;', $level).$category_structure['catalog'][$child_id]['name'].'</td>';
-
-            $rs.='<td class="'.$row_class.'">'.$this->getOperationTypeSelectbox($category_structure['catalog'][$child_id]['operation_type_id'],$child_id).'</td>';
-			$rs.='<td class="'.$row_class.'">'.$this->getRealtyTypeSelectbox($category_structure['catalog'][$child_id]['obj_type_id'],$child_id).'</td>';
-			$rs .= '<td><input type="checkbox" name="data['.$child_id.'][legacy]" /> '.Multilanguage::_('INHERIT','system').'</td>';
-
-            $rs .= '</tr>';
-            if ( count($category_structure['childs'][$child_id]) > 0 ) {
-                $rs .= $this->getChildNodesRowAssoc($child_id, $category_structure, $level + 1, $current_category_id);
-            }
-        }
-        return $rs;
-    }
 
 }
-?>

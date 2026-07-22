@@ -79,7 +79,7 @@
 
     <div class="modal fade standalone" id="{{$modal_id}}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl">
-            <div class="modal-content">
+            <div class="modal-content"  style="min-height: 50vh;">
                 <div class="modal-header">
                     <h5 class="modal-title">{{ $modal_title }}</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -89,6 +89,8 @@
                 <div class="modal-body" id="{{$modal_id}}_modalModalform">
                     <iframe
                             width="100%"
+                            height="100%"
+                            style="min-height: 50vh; border: 0;"
                             border="0"
                             id="{{$modal_id}}_iframe"
                             src="">

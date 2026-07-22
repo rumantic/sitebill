@@ -9,6 +9,9 @@ trait ConfigTrait {
     }
 
     function get_config_name () {
+        if ( $this->getConfigValue('apps.dashboard.config') != '' ) {
+            return $this->getConfigValue('apps.dashboard.config');
+        }
         return $this->config_name;
     }
 
@@ -35,6 +38,23 @@ trait ConfigTrait {
             $data = array_merge($data, $template_config);
         }
         return $data;
+    }
+
+    function initConfig ( $config_array )
+    {
+        if ( is_array($config_array) ) {
+            require_once (SITEBILL_DOCUMENT_ROOT . '/apps/config/admin/admin.php');
+            $config_admin = new \config_admin();
+            foreach ( $config_array as $key => $item ) {
+                $config_admin->addParamToConfig(
+                    $key,
+                    $item['default'],
+                    $item['title'],
+                    $item['type'],
+                    $item['params']
+                );
+            }
+        }
     }
 
 }

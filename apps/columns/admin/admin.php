@@ -1,6 +1,7 @@
 <?php
 
 defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
+use system\lib\system\cache\RedisCache;
 /**
  * Columns admin backend
  * @author Kondin Dmitriy <kondin@etown.ru> http://www.sitebill.ru
@@ -318,7 +319,8 @@ class columns_admin extends table_admin
                     }
                 }
 
-
+                $tablename = $this->getRequestValue('table_name');
+                $this->helper->clear_model_caches($tablename);
                 $rs .= $this->grid();
                 break;
             }
@@ -347,13 +349,17 @@ class columns_admin extends table_admin
                     if ($this->getError()) {
                         $rs .= $this->get_form($form_data[$this->table_name], 'edit');
                     } else {
+                        $tablename = '';
                         $query = 'SELECT name FROM ' . DB_PREFIX . '_table WHERE table_id=' . $this->getRequestValue('table_id') . ' LIMIT 1';
                         $stmt = $DBC->query($query);
                         if ($stmt) {
                             $ar = $DBC->fetch($stmt);
+                            $tablename = $ar['name'];
                             $this->helper->update_table($ar['name']);
                             $_POST['table_name'] = $ar['name'];
                         }
+
+                        $this->helper->clear_model_caches($tablename);
                         $rs .= $this->grid();
                     }
                 }
@@ -364,64 +370,43 @@ class columns_admin extends table_admin
             case 'edit' :
             {
                 $this->template->assign('disable_vue', 1);
-                if ($this->getRequestValue('subdo') == 'delete_image') {
-                    $this->deleteImage($this->table_name, $this->getRequestValue('image_id'));
+                $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
+                if ($form_data[$this->table_name]) {
+                    if (1 == $this->getConfigValue('apps.language.autotrans_enable')) {
+                        $form_data[$this->table_name] = $data_model->init_model_data_auto_translate($form_data[$this->table_name]);
+                    }
                 }
 
-                if ($this->getRequestValue('subdo') == 'up_image') {
-                    $this->reorderImage($this->table_name, $this->getRequestValue('image_id'), $this->primary_key, $this->getRequestValue($this->primary_key), 'up');
+                $form_data[$this->table_name]['action']['name'] = 'uaction';
+
+                //$form_data[$this->table_name]['name']['readonly'] = true;
+                //$form_data[$this->table_name]['table_id']['readonly'] = true;
+
+                if ($form_data[$this->table_name]['primary_key_table']['value'] != '') {
+                    $form_data[$this->table_name]['primary_key_name']['select_data'] = $this->getTableFields($form_data[$this->table_name]['primary_key_table']['value']);
+                    $form_data[$this->table_name]['value_name']['select_data'] = $this->getTableFields($form_data[$this->table_name]['primary_key_table']['value']);
                 }
-
-                if ($this->getRequestValue('subdo') == 'down_image') {
-                    $this->reorderImage($this->table_name, $this->getRequestValue('image_id'), $this->primary_key, $this->getRequestValue($this->primary_key), 'down');
-                }
-
-
-                //echo '<pre>';
-
-                if ($this->getRequestValue('language_id') > 0 and !$this->language->get_version($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $this->getRequestValue('language_id'))) {
-                    $rs .= $this->get_form($form_data[$this->table_name], 'new', $this->getRequestValue('language_id'));
+                if ($form_data[$this->table_name]['dbtype']['value'] == 'notable' || $form_data[$this->table_name]['dbtype']['value'] == '0') {
+                    $form_data[$this->table_name]['dbtype']['value'] = 0;
                 } else {
-                    if ($this->getRequestValue('language_id') > 0) {
-                        $form_data[$this->table_name] = $data_model->init_model_data_from_db_language($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name], false, $this->getRequestValue('language_id'));
-                    } else {
-                        $form_data[$this->table_name] = $data_model->init_model_data_from_db($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key), $form_data[$this->table_name]);
-                    }
-                    if ($form_data[$this->table_name]) {
-                        if (1 == $this->getConfigValue('apps.language.autotrans_enable')) {
-                            $form_data[$this->table_name] = $data_model->init_model_data_auto_translate($form_data[$this->table_name]);
-                        }
-                    }
-
-
-                    $form_data[$this->table_name]['action']['name'] = 'uaction';
-
-                    if ($form_data[$this->table_name]['primary_key_table']['value'] != '') {
-                        $form_data[$this->table_name]['primary_key_name']['select_data'] = $this->getTableFields($form_data[$this->table_name]['primary_key_table']['value']);
-                        $form_data[$this->table_name]['value_name']['select_data'] = $this->getTableFields($form_data[$this->table_name]['primary_key_table']['value']);
-                    }
-                    if ($form_data[$this->table_name]['dbtype']['value'] == 'notable' || $form_data[$this->table_name]['dbtype']['value'] == '0') {
-                        $form_data[$this->table_name]['dbtype']['value'] = 0;
-                    } else {
-                        $form_data[$this->table_name]['dbtype']['value'] = 1;
-                    }
-                    $rs .= $this->get_form($form_data[$this->table_name], 'edit');
+                    $form_data[$this->table_name]['dbtype']['value'] = 1;
                 }
+                $rs .= $this->get_form($form_data[$this->table_name], 'edit');
 
                 break;
             }
             case 'delete' :
             {
+                $tablename = $this->getRequestValue('table_name');
                 $this->delete_data($this->table_name, $this->primary_key, $this->getRequestValue($this->primary_key));
                 if ($this->getError()) {
                     $rs .= '<div align="center">Ошибка при удалении записи: ' . $this->GetErrorMessage() . '<br>';
                     $rs .= '<a href="?action=' . $this->action . '">ОК</a>';
                     $rs .= '</div>';
                 } else {
+                    $this->helper->clear_model_caches($tablename);
                     $rs .= $this->grid();
                 }
-
-
                 break;
             }
             case 'add_meta' :
@@ -496,15 +481,18 @@ class columns_admin extends table_admin
                     if ($this->getError()) {
                         $rs .= $this->get_form($form_data[$this->table_name], 'new');
                     } else {
+                        $tablename = '';
                         $query = "update " . DB_PREFIX . "_columns set sort_order={$new_record_id} where columns_id={$new_record_id}";
                         $stmt = $DBC->query($query);
                         $query = 'SELECT name FROM ' . DB_PREFIX . '_table WHERE table_id=' . $this->getRequestValue('table_id') . ' LIMIT 1';
                         $stmt = $DBC->query($query);
                         if ($stmt) {
                             $ar = $DBC->fetch($stmt);
+                            $tablename = $ar['name'];
                             $this->helper->update_table($ar['name']);
                             $_POST['table_name'] = $ar['name'];
                         }
+                        $this->helper->clear_model_caches($tablename);
                         $rs .= $this->grid();
                     }
                 }
@@ -532,16 +520,15 @@ class columns_admin extends table_admin
                     $id_array = explode(',', $ids);
                 }
                 $rs .= $this->mass_delete_data($this->table_name, $this->primary_key, $id_array);
+                $tablename = $this->getRequestValue('table_name');
+                $this->helper->clear_model_caches($tablename);
                 break;
             }
             case 'mass_activity_set' :
             {
-                /* $id_array=array();
-                  $ids=trim($this->getRequestValue('ids'));
-                  if($ids!=''){
-                  $id_array=explode(',',$ids);
-                  } */
                 $rs .= $this->_mass_activity_setAction();
+                $tablename = $this->getRequestValue('table_name');
+                $this->helper->clear_model_caches($tablename);
                 break;
             }
             default :
@@ -572,6 +559,7 @@ class columns_admin extends table_admin
         $form_generator = new Form_Generator();
 
         $langs = array_values(Multilanguage::availableLanguages());
+
         $default_lng = '';
         if (1 == $this->getConfigValue('apps.language.use_default_as_ru')) {
             $default_lng = 'ru';
@@ -588,12 +576,12 @@ class columns_admin extends table_admin
             }
         }
 
-        $smarty->assign('langs', $langs);
-        $smarty->assign('langsjs', json_encode($langs));
+        $smarty->assign('langs', array_values($langs));
+        $smarty->assign('langsjs', json_encode(array_values($langs)));
 
-        $rs .= $this->get_ajax_functions();
-        $rs .= '<script>var langs=' . json_encode(array_values($langs)) . '</script>';
-        $rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/columns/js/interface.js"></script>';
+        $rs = $this->get_ajax_functions();
+        //$rs .= '<script>var langs=' . json_encode(array_values($langs)) . '</script>';
+        //$rs .= '<script src="' . SITEBILL_MAIN_URL . '/apps/columns/js/interface.js"></script>';
 
         $rs .= '<form method="post" id="column_form" class="form-horizontal" action="' . $form_action . '" enctype="multipart/form-data">';
         if ($this->getError()) {

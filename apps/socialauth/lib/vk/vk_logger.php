@@ -24,6 +24,7 @@ class Vk_Logger extends Common_Logger {
             'REDIRECT_URI' => (1 === (int) $Config->getConfigValue('work_on_https') ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . SITEBILL_MAIN_URL . '/socialauth/login?do=login_vk',
             'DISPLAY' => 'popup', // page OR popup OR touch OR wap
             'SCOPE' => array(
+                'email',
             //'notify', // Пользователь разрешил отправлять ему уведомления.
             //'friends', // Доступ к друзьям. 
             //'photos', // Доступ к фотографиям. 
@@ -75,6 +76,7 @@ class Vk_Logger extends Common_Logger {
             $json = curl_exec($ch);
             curl_close($ch);
             $result = json_decode($json);
+            $ssInfo['email'] = $result->email;
 
             //echo($json);
 
@@ -107,12 +109,11 @@ class Vk_Logger extends Common_Logger {
 
                     $ssInfo['ssType'] = 'vk';
                     $ssInfo['id'] = $result->id;
-                    $ssInfo['email'] = $result->email;
                     $ssInfo['name'] = $result->first_name . ' ' . $result->last_name;
                     //$ssInfo['link']=$userInfo->link;
                     $ssInfo['picture'] = $userInfo->photo_400_orig;
-                    $ssInfo['_email'] = 'vk' . $result->id . '@vk.com';
-                    $ssInfo['_login'] = 'vk' . $result->id;
+                    $ssInfo['_email'] = $ssInfo['email'];
+                    $ssInfo['_login'] = $ssInfo['email'];
                     $ssInfo['_pass'] = $_pass;
                     $_SESSION['ssAuthData'] = $ssInfo;
                     //$this->authUser($_login, $_pass, SiteBill::iconv('utf-8', SITE_ENCODING, $result->first_name.' '.$result->last_name), $email);

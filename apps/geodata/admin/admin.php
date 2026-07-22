@@ -6,6 +6,7 @@ defined('SITEBILL_DOCUMENT_ROOT') or die('Restricted access');
  * GeoData admin backend
  * @author Abushyk Kostyantyn <abushyk@gmail.com> http://www.sitebill.ru
  */
+use system\lib\system\geocoordinates\Helper;
 class geodata_admin extends Object_Manager
 {
 
@@ -28,7 +29,8 @@ class geodata_admin extends Object_Manager
         $config_admin = new config_admin();
 
         $config_admin->addParamToConfig('apps.geodata.enable', '0', 'Включить приложение GeoData', SConfig::$fieldtypeCheckbox);
-        $config_admin->addParamToConfig('apps.geodata.yandex_api_key_server', '', 'Ключь API Yandex');
+        $config_admin->addParamToConfig('apps.geodata.yandex_api_key_server', '', 'Ключ API Yandex');
+        $config_admin->addParamToConfig('apps.geodata.yandex_suggest_apikey', '', 'Ключ API Suggest Yandex');
         $config_admin->addParamToConfig('apps.geodata.query_count', '2500', 'Количество запросов на геокодирование');
         $config_admin->addParamToConfig('apps.geodata.per_step', '100', 'Количество записей за проход');
         $config_admin->addParamToConfig('apps.geodata.geocode_partial', '0', 'Геокодировать неполные данные', SConfig::$fieldtypeCheckbox);
@@ -44,7 +46,7 @@ class geodata_admin extends Object_Manager
         $config_admin->addParamToConfig('apps.geodata.save_geocoder', 'g', 'Геокодер используемый при сохранении\изменении (g - Google, y - Yandex)');
         $config_admin->addParamToConfig('apps.geodata.prevtext', '', 'Предварительный текст для геокодирования на форме');
         $config_admin->addParamToConfig('apps.geodata.no_scroll_zoom', '0', 'Выключить зуммирование карты скроллом', SConfig::$fieldtypeCheckbox);
-        $config_admin->addParamToConfig('apps.geodata.iframe_map_limit', '0', 'Количество объектов выводимых на iframe-карте. 0 - выводить все');
+        $config_admin->addParamToConfig('apps.geodata.iframe_map_limit', '2500', 'Количество объектов выводимых на iframe-карте. 0 - выводить все');
         $config_admin->addParamToConfig(
             'apps.geodata.iframe_scroll_zoom',
             '0',
@@ -65,6 +67,20 @@ class geodata_admin extends Object_Manager
             'Разрешить двигать карту на мобильных устройствах',
             SConfig::$fieldtypeCheckbox
         );
+        $config_admin->addParamToConfig(
+            'apps.geodata.disable_all_data_in_ajax',
+            '0',
+            'Запретить выдачу всех данных в ajax-запросе для карты',
+            SConfig::$fieldtypeCheckbox
+        );
+        $config_admin->addParamToConfig(
+            'apps.geodata.disable_every_data_in_ajax',
+            '0',
+            'Запретить выдачу любых маркеров в ajax-запросе для карты',
+            SConfig::$fieldtypeCheckbox
+        );
+
+
 
 
     }
@@ -158,7 +174,25 @@ class geodata_admin extends Object_Manager
             if (!empty($cache)) {
                 $result = array('address' => $str, 'lat' => $cache['lat'], 'lng' => $cache['lng'], 'cached' => 1);
             } else {
-                if (1 === intval($this->getConfigValue('use_google_map')) || 2 === intval($this->getConfigValue('use_google_map'))) {
+
+                if ('y' == $this->getConfigValue('apps.geodata.save_geocoder')) {
+                    $res = $this->geocode_address($str);
+                    if ($res) {
+                        $result = $res;
+                    }
+                } else {
+                    $res = $this->geocode_address_by_google($str);
+
+                    if ($res) {
+                        $result = $res;
+                    }
+                }
+
+				if(1 == 0){
+					$result = $this->geocode_address_by_nominatim($str);
+				}
+
+                /*if (1 === intval($this->getConfigValue('use_google_map')) || 2 === intval($this->getConfigValue('use_google_map'))) {
                     $res = $this->geocode_address_by_google($str);
                     if ($res) {
                         $result = $res;
@@ -168,7 +202,7 @@ class geodata_admin extends Object_Manager
                     if ($res) {
                         $result = $res;
                     }
-                }
+                }*/
 
                 if (!empty($result) && !isset($result['error'])) {
                     $r = $result;
@@ -182,6 +216,41 @@ class geodata_admin extends Object_Manager
         }
         return false;
     }
+
+	public function geocode_address_by_nominatim($address){
+		$url = 'https://nominatim.openstreetmap.org/search?format=json&accept-language=en-GB&q=' . urlencode($address);
+		//echo $url;
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+		curl_setopt($ch, CURLOPT_MAXREDIRS, 10);
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+		curl_setopt($ch, CURLOPT_USERAGENT, 'Sitebill geodata');
+		curl_setopt($ch, CURLOPT_REFERER, $this->getServerFullUrl(true));
+        curl_setopt($ch, CURLOPT_HEADER, 1);
+		$response = curl_exec($ch);
+
+
+		$RESPONSE_CODE = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+
+        $header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+        $header = substr($response, 0, $header_size);
+        $body = substr($response, $header_size);
+
+		curl_close($ch);
+
+		if($RESPONSE_CODE === 200 && $body){
+			$geodata = json_decode($body, true);
+			if(!empty($geodata)){
+				$geodata = $geodata[0];
+				return array('address' => $geodata['display_name'], 'lat' => $geodata['lat'], 'lng' => $geodata['lon']);
+			}
+		}
+		return false;
+
+	}
 
     public function geocode_me($input)
     {
@@ -596,7 +665,7 @@ class geodata_admin extends Object_Manager
             return $result;
         } else {
             $Config = SConfig::getInstance();
-            if ('' != $Config::getConfigValue('google_api_key_server')) {
+            if ('' != $Config::getConfigValueStatic('google_api_key_server')) {
                 $url = 'https://maps.googleapis.com/maps/api/geocode/json?key=' . $Config::getConfigValue('google_api_key_server') . '&address=' . urlencode($str);
             } else {
                 $url = 'https://maps.googleapis.com/maps/api/geocode/json?address=' . urlencode($str);
@@ -615,11 +684,12 @@ class geodata_admin extends Object_Manager
 
             //var_dump($output);
             $geodata = json_decode($output, true);
+            //тут надо добавить логирование ответа, чтобы проверить как геокодинг идет
             //return $geodata;
 
             if ($geodata['status'] == 'OK') {
                 $g = $geodata['results'][0]['geometry']['location'];
-                $r = array('address' => $str, 'lat' => str_replace(',', '.', $g['lat']), 'lng' => str_replace(',', '.', $g['lng']));
+                $r = array('address' => $str, 'lat' => str_replace(',', '.', $g['lat']), 'lng' => str_replace(',', '.', $g['lng']), 'gc' => 'g');
                 $r2 = $r;
                 unset($r2['address']);
                 geodata_admin::setGeocoderDataToCache($str, $r2);
@@ -725,15 +795,15 @@ class geodata_admin extends Object_Manager
             }
             return false;
         }
-        //var_dump($this->action);
+
         $cache = geodata_admin::getGeocoderDataFromCache($address);
-        //var_dump($cache);
+
         if (!empty($cache)) {
             $result = array('address' => $str, 'lat' => $cache['lat'], 'lng' => $cache['lng'], 'cached' => 1);
             return $result;
         } else {
             $url = 'https://geocode-maps.yandex.ru/1.x/?apikey=' . SConfig::getConfigValueStatic('apps.geodata.yandex_api_key_server') . '&geocode=' . urlencode($str);
-            //echo $url;
+
             $ch = curl_init();
             curl_setopt($ch, CURLOPT_URL, $url);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -750,7 +820,7 @@ class geodata_admin extends Object_Manager
                     $pos = $geodata->GeoObjectCollection[0]->featureMember[0]->GeoObject[0]->Point[0]->pos[0];
                     if ($pos != '') {
                         list($lng, $lat) = explode(' ', $pos);
-                        $r = array('address' => $str, 'lat' => str_replace(',', '.', $lat), 'lng' => str_replace(',', '.', $lng));
+                        $r = array('address' => $str, 'lat' => str_replace(',', '.', $lat), 'lng' => str_replace(',', '.', $lng), 'gc' => 'y');
                         $r2 = $r;
                         unset($r2['address']);
                         geodata_admin::setGeocoderDataToCache($str, $r2);
@@ -792,17 +862,7 @@ class geodata_admin extends Object_Manager
 
     public static function isBetween($point, $fp1, $fp2)
     {
-        $start = $fp1;
-        if ($fp2 < $start) {
-            $start = $fp2;
-            $end = $fp1;
-        } else {
-            $end = $fp2;
-        }
-        if ($point >= $start && $point <= $end) {
-            return true;
-        }
-        return false;
+        return Helper::isBetween($point, $fp1, $fp2);
     }
 
     public static function converStringToLinesArray($string)
@@ -893,72 +953,9 @@ class geodata_admin extends Object_Manager
         return $lines;
     }
 
-    /* public static function detectLineType($point1, $point2){
-      $delta_lat=$point2['lat']-$point1['lat'];
-      $delta_lng=$point2['lng']-$point1['lng'];
-      if($delta_lng==0){
-      $type='v';
-      $koef=0;
-      }elseif($delta_lat==0){
-      $type='h';
-      $koef=0;
-      }else{
-      $type='c';
-      $koef=($delta_lat)/($delta_lng);
-      }
-
-      //$lines[$k]['koef']=$koef;
-      if($type=='c'){
-      $ckoef=$point1['lat']-$koef*$point1['lng'];
-      }else{
-      $ckoef=0;
-      }
-      return array('type'=>$type, 'koef'=>$koef, 'ckoef'=>$ckoef);
-      } */
-
     public static function isInRegion($point, $lines)
     {
-        //$line='49.769069,24.014407;49.774342,24.014268;49.77764,24.014172;49.78148,24.014072;49.78352,24.014194;49.783959,24.014211;49.785909,24.01458;49.794193,24.016371;49.80172,24.018023;49.801893,24.018013;49.805279,24.018806;49.808152,24.01917;49.814694,24.019878;49.818404,24.020232;49.81801,24.023718;49.817934,24.023814;49.817865,24.02435;49.817892,24.024618;49.817968,24.024811;49.818334,24.025208;49.820362,24.027364;49.821421,24.028608;49.821594,24.028897;49.821718,24.02924;49.821787,24.02954;49.82214,24.032297;49.822216,24.03264;49.822182,24.032865;49.821968,24.033111;49.821602,24.033389;49.821927,24.034343;49.821907,24.034858;49.821941,24.035641;49.821996,24.03681;49.822169,24.037786;49.822328,24.038054;49.822944,24.038461;49.81992,24.040317;49.819567,24.040617;49.81927,24.041046;49.818377,24.043653;49.818031,24.044082;49.817651,24.044339;49.817409,24.044457;49.817457,24.044789;49.817381,24.045143;49.817415,24.04555;49.817235,24.045625;49.816661,24.045583;49.816142,24.045754;49.815789,24.046226;49.815748,24.046526;49.815831,24.046654;49.816232,24.046547;49.816335,24.046632;49.816355,24.046825;49.81713,24.050118;49.817226,24.050214;49.817558,24.051619;49.817724,24.051501;49.818395,24.054408;49.819924,24.05369;49.820983,24.055674;49.818969,24.057454;49.818769,24.05769;49.818271,24.058569;49.816672,24.061476;49.816506,24.061636;49.816236,24.0617;49.816043,24.061785;49.815981,24.061956;49.815926,24.062846;49.816071,24.06644;49.816147,24.067566;49.816147,24.068445;49.816044,24.069131;49.815851,24.070128;49.815311,24.072295;49.814155,24.076565;49.814045,24.077165;49.813838,24.078441;49.81082,24.079535;49.810377,24.079535;49.809893,24.079471;49.809215,24.078914;49.807983,24.077498;49.805782,24.078528;49.805982,24.079622;49.805809,24.080534;49.804051,24.081231;49.80365,24.081552;49.803083,24.081573;49.802516,24.081626;49.801803,24.081872;49.801644,24.081947;49.801471,24.082086;49.801305,24.082161;49.801174,24.081947;49.798072,24.085541;49.797823,24.085562;49.797643,24.084575;49.797436,24.082623;49.789998,24.084479;49.789721,24.082838;49.788835,24.082281;49.787547,24.082366;49.78691,24.078847;49.783655,24.079619;49.783433,24.078911;49.782353,24.076616;49.781872,24.076258;49.781163,24.073076;49.780997,24.069536;49.780804,24.062091;49.781108,24.056555;49.781095,24.054259;49.781219,24.05177;49.781745,24.052048;49.782908,24.05192;49.783406,24.05222;49.785165,24.051899;49.785913,24.051556;49.785761,24.049346;49.786938,24.049218;49.786883,24.048296;49.787575,24.048039;49.788004,24.04806;49.788114,24.047674;49.788391,24.047674;49.787907,24.045636;49.787464,24.044456;49.786716,24.043126;49.785747,24.041646;49.786675,24.039007;49.787478,24.034866;49.784264,24.033161;49.783727,24.031977;49.781718,24.031012;49.776963,24.030319;49.768004,24.030319;49.768683,24.020213;';
-        $point_lat = $point['lat'];
-        $point_lng = $point['lng'];
-
-        foreach ($lines as $line) {
-            if ($line['type'] == 'v' && self::isBetween($point_lat, $line['s']['lat'], $line['e']['lat']) && $point_lng == $line['s']['lng']) {
-                return true;
-            } elseif ($line['type'] == 'h' && self::isBetween($point_lng, $line['s']['lng'], $line['e']['lng']) && $point_lat == $line['s']['lat']) {
-                return true;
-            }
-        }
-
-        $intersectCount = 0;
-
-        foreach ($lines as $line) {
-            if ($line['type'] == 'v') {
-
-            } elseif ($line['type'] == 'h' && self::isBetween($point_lng, $line['s']['lng'], $line['e']['lng']) && $point_lat < $line['s']['lat']) {
-                $intersectCount++;
-            } else {
-                //echo 'LINE: '.$line['s']['lng'].' '.$line['e']['lng']."\n\r";
-                if (self::isBetween($point_lng, $line['s']['lng'], $line['e']['lng'])) {
-                    $intersect_lat = $line['koef'] * $point_lng + $line['ckoef'];
-                    if ($intersect_lat >= $point_lat) {
-                        $intersectCount++;
-                    }
-                }
-            }
-        }
-        //echo $intersectCount;
-
-        if ($intersectCount == 0) {
-            return false;
-        }
-        if ($intersectCount == 1) {
-            return true;
-        }
-        if ($intersectCount % 2 == 0) {
-            return false;
-        }
-        return true;
+        return Helper::isInRegion($point, $lines);
     }
 
     public static function setGeocoderDataToCache($str, $g)

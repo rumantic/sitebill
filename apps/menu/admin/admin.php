@@ -28,10 +28,6 @@ class menu_admin extends Object_Manager {
         $query = "SELECT ms.*, m.tag, m.name as menu_title FROM " . DB_PREFIX . "_menu m, " . DB_PREFIX . "_menu_structure ms WHERE m.menu_id=ms.menu_id ORDER BY ms.sort_order";
         $stmt = $DBC->query($query);
         if ($stmt) {
-            $trailing_slashe = '/';
-            if (1 == (int) $this->getConfigValue('apps.seo.no_trailing_slashes')) {
-                $trailing_slashe = '';
-            }
             while ($ar = $DBC->fetch($stmt)) {
                 if (isset($ar['name_' . Multilanguage::get_current_language()]) && $ar['name_' . Multilanguage::get_current_language()] != '') {
                     $ar['name'] = $ar['name_' . Multilanguage::get_current_language()];
@@ -39,14 +35,11 @@ class menu_admin extends Object_Manager {
                 $ar['url'] = trim($ar['url']);
                 if ($ar['url'] != '' && 0 !== strpos($ar['url'], 'http:') && 0 !== strpos($ar['url'], 'https:')) {
                     $ar['url'] = $this->createUrlTpl($ar['url']);
-                    //$ar['url'] = SITEBILL_MAIN_URL . (self::$current_lang_prefix != '' ? '/'.self::$current_lang_prefix : '') . '/' . trim($ar['url'], '/') . ((false === strpos($ar['url'], '.') && $ar['url'] != '#' && false === strpos($ar['url'], '?')) ? $trailing_slashe : '');
                 }
                 $ra[$ar['tag']][] = $ar;
             }
         }
-        //echo '<pre>';
-        //print_r($ra);
-        //exit();
+
         if (!empty($ra)) {
             foreach ($ra as $tag => $menu_structure) {
                 $this->template->assign($tag, $menu_structure);
